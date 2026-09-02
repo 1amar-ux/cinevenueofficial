@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* @import url... */
+
+@theme {
+  --color-gold: #D4AF37;
+  --color-gold-light: #F3D77A;
+  --color-gold-dim: #967B27;
+  --color-gold-glow: rgba(212, 175, 55, 0.1);
+  
+  --color-dark-bg: #0A0A0B;
+  --color-dark-surface: #121213;
+  --color-dark-card: #18181A;
+  --color-dark-card2: #212124;
+  --color-dark-border: rgba(255, 255, 255, 0.1);
+  --color-dark-border2: rgba(255, 255, 255, 0.05);
+
+  --color-text-primary: #E0D8D0;
+  --color-text-secondary: #999999;
+  --color-text-muted: #666666;
+
+  --color-neon-teal: #00D4AA;
+  --color-accent: #E5C05E;
+
+  --font-display: "Playfair Display", "Cinzel", "Cormorant Garamond", serif;
+  --font-cinevenue: "Cinzel", "Playfair Display", "Cormorant Garamond", serif;
+  --font-sans: "DM Sans", sans-serif;
+}
+
+.font-cinevenue {
+  font-family: "Cinzel", "Playfair Display", "Cormorant Garamond", serif;
+}
+
+@keyframes float {
+  0% { opacity: 0; transform: translateY(0) scale(0); }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.2; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(1.5); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s infinite;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #C9A84C;
+  border-radius: 50%;
+  opacity: 0;
+  animation: float 10s linear infinite;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

@@ -1,0 +1,623 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. ENUMS
+// ==========================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  THEATRE_ADMIN
+  EVENT_ORGANIZER
+  CUSTOMER
+}
+
+enum TheatreStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ScreenStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SeatCategory {
+  REGULAR
+  PREMIUM
+  RECLINER
+  WHEELCHAIR
+  COUPLE
+}
+
+enum SeatStatus {
+  AVAILABLE
+  BLOCKED
+}
+
+enum ShowStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+enum ShowSeatStatus {
+  AVAILABLE
+  LOCKED
+  BOOKED
+  BLOCKED
+  SOLD
+  USED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum BankVerificationStatus {
+  NOT_ADDED
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  APPROVED
+  REJECTED
+}
+
+// ==========================================
+// 2. USER & AUTHENTICATION MODELS
+// ==========================================
+
+model User {
+  id               String               @id @default(cuid())
+  email            String               @unique
+  passwordHash     String
+  name             String
+  mobile           String?
+  role             UserRole             @default(CUSTOMER)
+  isActive         Boolean              @default(true)
+  isVerified       Boolean              @default(false)
+  
+  refreshTokens    RefreshToken[]
+  passwordResets   PasswordResetToken[]
+  bookings         Booking[]
+  wallet           CineCoinWallet?
+  registrations    EventRegistration[]
+  applications     JobApplication[]
+  
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([email])
+  @@index([mobile])
+  @@index([role])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// ==========================================
+// 3. MOVIES CATALOG
+// ==========================================
+
+model Movie {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  posterUrl   String?
+  backdropUrl String?
+  trailerUrl  String?
+  duration    Int      // Duration in minutes
+  rating      Decimal? @db.Decimal(3, 1)
+  votes       Int      @default(0)
+  genres      String[]
+  languages   String[]
+  formats     String[]
+  status      String   @default("NOW_SHOWING") // NOW_SHOWING, COMING_SOON, SPOTLIGHT
+  releaseDate DateTime?
+  isActive    Boolean  @default(true)
+  
+  shows       Show[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([title])
+  @@index([status])
+}
+
+// ==========================================
+// 4. THEATRES & SCREENS
+// ==========================================
+
+model Theatre {
+  id          String        @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  phone       String?
+  status      TheatreStatus @default(ACTIVE)
+
+  screens      Screen[]
+  shows        Show[]
+  bookings     Booking[]
+  settlements  Settlement[]
+  bankAccounts TheatreBankAccount[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([city])
+  @@index([status])
+}
+
+model TheatreBankAccount {
+  id                     String                 @id @default(cuid())
+  theatreId              String
+  accountHolderName      String
+  bankName               String
+  encryptedAccountNumber String
+  maskedAccountNumber    String
+  ifscCode               String
+  accountType            String                 @default("Current")
+  branchName             String
+  branchAddress          String?
+  beneficiaryName        String
+  pan                    String?
+  gstin                  String?
+  upiId                  String?
+  verificationStatus     BankVerificationStatus @default(PENDING_VERIFICATION)
+  isPrimary              Boolean                @default(false)
+  verifiedBy             String?
+  verifiedAt             DateTime?
+  verificationNotes      String?
+  isActive               Boolean                @default(true)
+
+  theatre                Theatre                @relation(fields: [theatreId], references: [id], onDelete: Cascade)
+
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@index([theatreId])
+  @@index([verificationStatus])
+}
+
+model Screen {
+  id          String       @id @default(cuid())
+  theatreId   String
+  name        String
+  capacity    Int
+  status      ScreenStatus @default(ACTIVE)
+
+  theatre     Theatre      @relation(fields: [theatreId], references: [id], onDelete: Cascade)
+  seats       Seat[]
+  shows       Show[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([theatreId])
+}
+
+model Seat {
+  id            String        @id @default(cuid())
+  screenId      String
+  row           String
+  number        String
+  category      SeatCategory  @default(REGULAR)
+  price         Decimal       @db.Decimal(10, 2)
+  status        SeatStatus    @default(AVAILABLE)
+
+  screen        Screen        @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  showSeats     ShowSeat[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([screenId, row, number])
+  @@index([screenId])
+}
+
+// ==========================================
+// 5. SHOWS & REALTIME SEATS
+// ==========================================
+
+model Show {
+  id          String       @id @default(cuid())
+  theatreId   String
+  screenId    String
+  movieId     String?
+  eventId     String?
+
+  startTime   DateTime
+  endTime     DateTime
+  language    String?
+  format      String?
+  status      ShowStatus @default(ACTIVE)
+
+  theatre     Theatre      @relation(fields: [theatreId], references: [id])
+  screen      Screen       @relation(fields: [screenId], references: [id])
+  movie       Movie?       @relation(fields: [movieId], references: [id])
+  showSeats   ShowSeat[]
+  bookings    Booking[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([theatreId])
+  @@index([screenId])
+  @@index([movieId])
+  @@index([startTime])
+}
+
+model ShowSeat {
+  id          String         @id @default(cuid())
+  showId      String
+  seatId      String
+
+  price       Decimal        @db.Decimal(10, 2)
+  status      ShowSeatStatus @default(AVAILABLE)
+
+  lockedUntil DateTime?
+  lockedBy    String?
+
+  show        Show           @relation(fields: [showId], references: [id], onDelete: Cascade)
+  seat        Seat           @relation(fields: [seatId], references: [id])
+
+  bookingItems BookingItem[]
+
+  @@unique([showId, seatId])
+  @@index([showId, status])
+}
+
+// ==========================================
+// 6. BOOKINGS & PAYMENTS
+// ==========================================
+
+model Booking {
+  id              String        @id @default(cuid())
+  bookingNumber   String        @unique
+
+  theatreId       String
+  showId          String
+  userId          String?
+
+  ticketAmount    Decimal       @db.Decimal(12, 2)
+  platformFee     Decimal       @db.Decimal(12, 2)
+  convenienceFee  Decimal       @db.Decimal(12, 2)
+  taxAmount       Decimal       @db.Decimal(12, 2)
+  discountAmount  Decimal       @db.Decimal(12, 2)
+  gatewayFee      Decimal       @db.Decimal(12, 2)
+  totalAmount     Decimal       @db.Decimal(12, 2)
+
+  status          BookingStatus @default(PENDING)
+
+  theatre         Theatre       @relation(fields: [theatreId], references: [id])
+  show            Show          @relation(fields: [showId], references: [id])
+  user            User?         @relation(fields: [userId], references: [id])
+
+  items           BookingItem[]
+  payment         Payment?
+  ticket          Ticket?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([theatreId])
+  @@index([showId])
+  @@index([userId])
+  @@index([bookingNumber])
+  @@index([status])
+}
+
+model BookingItem {
+  id          String   @id @default(cuid())
+  bookingId   String
+  showSeatId  String
+
+  price       Decimal  @db.Decimal(10, 2)
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  showSeat    ShowSeat @relation(fields: [showSeatId], references: [id])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  bookingId   String        @unique
+
+  provider    String        @default("RAZORPAY")
+  providerId  String?
+  orderId     String?
+  signature   String?
+  amount      Decimal       @db.Decimal(12, 2)
+  currency    String        @default("INR")
+  status      PaymentStatus @default(CREATED)
+
+  booking     Booking       @relation(fields: [bookingId], references: [id])
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([providerId])
+  @@index([orderId])
+}
+
+model Ticket {
+  id          String    @id @default(cuid())
+  bookingId   String    @unique
+  ticketCode  String    @unique
+  qrToken     String    @unique
+  isUsed      Boolean   @default(false)
+  usedAt      DateTime?
+  scannedBy   String?
+
+  booking     Booking   @relation(fields: [bookingId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ticketCode])
+  @@index([qrToken])
+}
+
+// ==========================================
+// 7. SETTLEMENTS & FINANCIAL AUDIT
+// ==========================================
+
+model Settlement {
+  id              String   @id @default(cuid())
+  theatreId       String
+
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  grossSales      Decimal  @db.Decimal(12, 2)
+  commission      Decimal  @db.Decimal(12, 2)
+  refunds         Decimal  @db.Decimal(12, 2)
+  netAmount       Decimal  @db.Decimal(12, 2)
+
+  status          String   @default("PENDING") // PENDING, PROCESSED, PAID
+
+  theatre         Theatre  @relation(fields: [theatreId], references: [id])
+
+  createdAt       DateTime @default(now())
+
+  @@index([theatreId])
+  @@index([status])
+}
+
+model FinancialAuditLog {
+  id          String   @id @default(cuid())
+  eventType   String
+  amount      Decimal? @db.Decimal(12, 2)
+  referenceId String?
+  description String
+  actorEmail  String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([referenceId])
+}
+
+// ==========================================
+// 8. CINECOIN LOYALTY SYSTEM
+// ==========================================
+
+model CineCoinWallet {
+  id             String                @id @default(cuid())
+  userId         String                @unique
+  balance        Int                   @default(0)
+  lifetimeEarned Int                   @default(0)
+  totalRedeemed  Int                   @default(0)
+
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   CineCoinTransaction[]
+
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([userId])
+}
+
+model CineCoinTransaction {
+  id          String         @id @default(cuid())
+  walletId    String
+  amount      Int
+  type        String         // EARNED, REDEEMED, REFUNDED, EXPIRED
+  activityKey String?        // DAILY_LOGIN, REGISTRATION_BONUS, FIRST_BOOKING, etc.
+  referenceId String?
+  description String
+
+  wallet      CineCoinWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime       @default(now())
+
+  @@index([walletId])
+}
+
+// ==========================================
+// 9. EVENTS PORTAL
+// ==========================================
+
+model Event {
+  id          String              @id @default(cuid())
+  title       String
+  description String
+  category    String
+  bannerUrl   String?
+  date        DateTime
+  time        String
+  city        String
+  venue       String
+  price       Decimal             @db.Decimal(10, 2)
+  capacity    Int
+  organizerId String
+  status      EventStatus         @default(PUBLISHED)
+
+  ticketTypes   EventTicketType[]
+  registrations EventRegistration[]
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([city])
+  @@index([status])
+}
+
+model EventTicketType {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  capacity    Int
+  available   Int
+
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model EventRegistration {
+  id          String             @id @default(cuid())
+  eventId     String
+  userId      String
+  ticketCount Int
+  totalAmount Decimal            @db.Decimal(10, 2)
+  status      RegistrationStatus @default(CONFIRMED)
+  passCode    String             @unique
+
+  event       Event              @relation(fields: [eventId], references: [id])
+  user        User               @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime           @default(now())
+
+  @@index([eventId])
+  @@index([userId])
+}
+
+// ==========================================
+// 10. FILM PRODUCTION MARKETPLACE
+// ==========================================
+
+model FilmProject {
+  id          String            @id @default(cuid())
+  title       String
+  genre       String
+  synopsis    String
+  budget      Decimal?          @db.Decimal(14, 2)
+  director    String?
+  producer    String?
+  status      String            @default("PRE_PRODUCTION")
+
+  castingCalls CastingCall[]
+  applications JobApplication[]
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model CastingCall {
+  id          String           @id @default(cuid())
+  projectId   String
+  roleName    String
+  category    String           // ACTOR, ACTRESS, SUPPORTING, CHILD, etc.
+  description String
+  ageRange    String?
+  gender      String?
+  deadline    DateTime?
+  status      String           @default("OPEN")
+
+  project     FilmProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  createdAt   DateTime         @default(now())
+
+  @@index([projectId])
+}
+
+model JobApplication {
+  id            String       @id @default(cuid())
+  userId        String
+  castingCallId String?
+  projectId     String?
+  coverLetter   String?
+  portfolioUrl  String?
+  status        String       @default("SUBMITTED") // SUBMITTED, SHORTLISTED, REJECTED, HIRED
+
+  user          User         @relation(fields: [userId], references: [id])
+  castingCall   CastingCall? @relation(fields: [castingCallId], references: [id])
+  project       FilmProject? @relation(fields: [projectId], references: [id])
+
+  createdAt     DateTime     @default(now())
+
+  @@index([userId])
+}
+
+// ==========================================
+// 11. PLATFORM SETTINGS & MAINTENANCE
+// ==========================================
+
+model PlatformSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}

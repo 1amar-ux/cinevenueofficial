@@ -1,0 +1,6 @@
+{
+  "name": "CineVenue",
+  "description": "Comprehensive CineVenue ecosystem featuring movie ticket booking, events, CineCoins rewards wallet, proposal management & quotation system, and CineVenue Productions sub-website for movie production, casting, web series, story submissions, and brand partnerships.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
