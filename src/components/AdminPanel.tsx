@@ -226,7 +226,15 @@ export default function AdminPanel({
   cineCoinsTransactions,
   onUpdateCineCoinsTransactions,
 }: AdminPanelProps) {
-  const { settings: globalAppSettings, updateGlobalSettings } = useAppSettings();
+  const { settings: globalAppSettings, updateGlobalSettings, setGlobalSubwebsiteEnabled } = useAppSettings();
+
+  // Global Sub-Website Control State
+  const [subwebsiteConfirmModalOpen, setSubwebsiteConfirmModalOpen] = useState(false);
+  const [subwebsitePendingAction, setSubwebsitePendingAction] = useState<"enable" | "disable">("disable");
+  const [subwebsiteCustomMsg, setSubwebsiteCustomMsg] = useState(
+    globalAppSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
+  );
+  const [isSubmittingSubwebsiteToggle, setIsSubmittingSubwebsiteToggle] = useState(false);
 
   // Mobile menu control
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -5251,6 +5259,89 @@ export default function AdminPanel({
                 </p>
               </div>
 
+              {/* ========================================================= */}
+              {/* WEBSITE SETTINGS -> GLOBAL CONTROLS -> SUB-WEBSITE SYSTEM */}
+              {/* ========================================================= */}
+              <div className="bg-gradient-to-r from-red-950/40 via-[#131118] to-amber-950/30 border-2 border-gold/40 rounded-2xl p-6 md:p-7 space-y-5 shadow-2xl relative overflow-hidden text-left" id="global-subwebsite-control-panel">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-2 max-w-2xl">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-2xl">🌐</span>
+                      <h3 className="text-lg md:text-xl font-mono font-black text-white uppercase tracking-wider">
+                        GLOBAL CONTROLS — SUB-WEBSITE SYSTEM
+                      </h3>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider ${
+                        globalAppSettings.globalSubwebsiteEnabled !== false
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                          : "bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse"
+                      }`}>
+                        {globalAppSettings.globalSubwebsiteEnabled !== false ? "● ONLINE (ENABLED)" : "● OFFLINE (DISABLED GLOBALLY)"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed font-sans">
+                      Central server-authoritative switch for all CineVenue sub-websites (/production, /events, /promotions, etc.). Turning this OFF immediately blocks all user devices, incognito windows, direct URLs, and API endpoints with HTTP 503.
+                    </p>
+                  </div>
+
+                  {/* Switch and Action */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/10">
+                    <div className="text-left sm:text-right">
+                      <span className="text-[10px] text-text-muted font-bold block uppercase tracking-wider">GLOBAL ACCESS</span>
+                      <span className={`text-sm font-black font-mono ${
+                        globalAppSettings.globalSubwebsiteEnabled !== false ? "text-emerald-400" : "text-rose-400"
+                      }`}>
+                        {globalAppSettings.globalSubwebsiteEnabled !== false ? "ALL SUB-WEBSITES ACTIVE" : "ALL SUB-WEBSITES DISABLED"}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      id="btn-global-subwebsite-toggle-settings"
+                      onClick={() => {
+                        const current = globalAppSettings.globalSubwebsiteEnabled !== false;
+                        setSubwebsitePendingAction(current ? "disable" : "enable");
+                        setSubwebsiteConfirmModalOpen(true);
+                      }}
+                      className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        globalAppSettings.globalSubwebsiteEnabled !== false ? "bg-emerald-500 shadow-lg shadow-emerald-500/40" : "bg-rose-600 shadow-lg shadow-rose-600/40"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          globalAppSettings.globalSubwebsiteEnabled !== false ? "translate-x-8" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-Website Custom Maintenance Message */}
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">
+                    Public Maintenance Notice Message (Displayed on HTTP 503 Page & APIs)
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={subwebsiteCustomMsg}
+                      onChange={(e) => setSubwebsiteCustomMsg(e.target.value)}
+                      placeholder="CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
+                      className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-text-primary focus:outline-none focus:border-gold font-sans"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await updateGlobalSettings({ subwebsiteMaintenanceMessage: subwebsiteCustomMsg });
+                        alert("Sub-website maintenance notice message updated successfully!");
+                      }}
+                      className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-white/10"
+                    >
+                      Save Notice
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <form onSubmit={handleSaveSettings} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* Column 1: Platform Identity */}
                 <div className="xl:col-span-1 bg-[#0F0F11] border border-white/5 p-5 rounded-xl space-y-4 text-left">
@@ -6958,6 +7049,47 @@ export default function AdminPanel({
                   <span className="text-xs font-mono text-gold bg-gold/10 px-3 py-1 rounded border border-gold/30 font-bold">
                     5 Pillar Operations
                   </span>
+                </div>
+              </div>
+
+              {/* Master Global Sub-Website ON/OFF Control Banner */}
+              <div className="bg-gradient-to-r from-red-950/40 via-[#131118] to-amber-950/30 border-2 border-gold/40 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🌐</span>
+                    <h4 className="text-sm font-mono font-black text-white uppercase tracking-wider">
+                      Master Global Sub-Website Kill Switch
+                    </h4>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase ${
+                      globalAppSettings.globalSubwebsiteEnabled !== false
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        : "bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse"
+                    }`}>
+                      {globalAppSettings.globalSubwebsiteEnabled !== false ? "ALL SUB-WEBSITES ONLINE" : "ALL SUB-WEBSITES DISABLED GLOBALLY"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    Centrally cuts access to all sub-websites across all devices and direct URLs. Managed via centralized database record.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 self-end md:self-center">
+                  <button
+                    type="button"
+                    id="btn-global-subwebsite-toggle-subwebsites"
+                    onClick={() => {
+                      const current = globalAppSettings.globalSubwebsiteEnabled !== false;
+                      setSubwebsitePendingAction(current ? "disable" : "enable");
+                      setSubwebsiteConfirmModalOpen(true);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold font-mono tracking-wider text-white transition-all cursor-pointer shadow-lg flex items-center gap-2 ${
+                      globalAppSettings.globalSubwebsiteEnabled !== false
+                        ? "bg-rose-600 hover:bg-rose-500 border border-rose-400/50 shadow-rose-950/50"
+                        : "bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/50 shadow-emerald-950/50"
+                    }`}
+                  >
+                    <span>{globalAppSettings.globalSubwebsiteEnabled !== false ? "🛑 DISABLE ALL SUB-WEBSITES" : "⚡ ENABLE ALL SUB-WEBSITES"}</span>
+                  </button>
                 </div>
               </div>
 
@@ -9256,6 +9388,95 @@ export default function AdminPanel({
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Dedicated Central Sub-Website ON/OFF Confirmation Modal */}
+          {subwebsiteConfirmModalOpen && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+              <div className="bg-[#121826] border-2 border-rose-500/50 rounded-2xl max-w-lg w-full p-6 md:p-7 space-y-5 shadow-2xl text-left animate-fade-in relative">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
+                    subwebsitePendingAction === "disable" ? "bg-rose-500/20 text-rose-400 border border-rose-500/40" : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                  }`}>
+                    {subwebsitePendingAction === "disable" ? "⚠️" : "🚀"}
+                  </div>
+                  <div>
+                    <h3 className="text-base md:text-lg font-black text-white uppercase tracking-wider">
+                      {subwebsitePendingAction === "disable"
+                        ? "Confirm Global Sub-Website Shutdown"
+                        : "Enable All Sub-Websites Globally?"}
+                    </h3>
+                    <span className="text-[10px] font-mono text-rose-400 font-bold uppercase tracking-wider block">
+                      Server-Authoritative Setting • Affects All Devices
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-black/40 p-4 rounded-xl border border-white/5 space-y-2 text-xs text-slate-300 leading-relaxed font-sans">
+                  {subwebsitePendingAction === "disable" ? (
+                    <>
+                      <p className="font-semibold text-rose-300">
+                        Are you sure you want to disable all sub-websites globally? This will affect ALL users and ALL devices immediately.
+                      </p>
+                      <p className="text-slate-400">
+                        Direct URLs (/production, /events, /promotions, etc.) will return HTTP 503 with the maintenance screen. Sub-website APIs will return HTTP 503 JSON. The main website, movie ticketing, and admin panel will remain unaffected.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-slate-200">
+                      Are you sure you want to enable all sub-websites globally? All sub-websites (/production, /events, /promotions, etc.) and backend APIs will be immediately restored for all users across all platforms.
+                    </p>
+                  )}
+                </div>
+
+                {subwebsitePendingAction === "disable" && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase block">
+                      Maintenance Notice Message (Publicly visible)
+                    </label>
+                    <input
+                      type="text"
+                      value={subwebsiteCustomMsg}
+                      onChange={(e) => setSubwebsiteCustomMsg(e.target.value)}
+                      className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold"
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setSubwebsiteConfirmModalOpen(false)}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-confirm-subwebsite-toggle"
+                    disabled={isSubmittingSubwebsiteToggle}
+                    onClick={async () => {
+                      setIsSubmittingSubwebsiteToggle(true);
+                      const shouldEnable = subwebsitePendingAction === "enable";
+                      await setGlobalSubwebsiteEnabled(shouldEnable, subwebsiteCustomMsg);
+                      setIsSubmittingSubwebsiteToggle(false);
+                      setSubwebsiteConfirmModalOpen(false);
+                    }}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all cursor-pointer flex items-center gap-2 shadow-lg ${
+                      subwebsitePendingAction === "disable"
+                        ? "bg-rose-600 hover:bg-rose-500 shadow-rose-950/60 border border-rose-500"
+                        : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/60 border border-emerald-500"
+                    }`}
+                  >
+                    {isSubmittingSubwebsiteToggle
+                      ? "Updating Cloud Servers..."
+                      : subwebsitePendingAction === "disable"
+                      ? "Yes, Disable All Sub-Websites"
+                      : "Yes, Enable All Sub-Websites"}
+                  </button>
+                </div>
               </div>
             </div>
           )}

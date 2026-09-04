@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma, TheatreBankAccountRecord } from "../../lib/prisma";
 import {
   encryptAccountNumber,

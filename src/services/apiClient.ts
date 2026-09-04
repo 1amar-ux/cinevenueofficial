@@ -20,9 +20,8 @@ class ApiClient {
       (config) => {
         if (typeof window !== "undefined") {
           const passcode = localStorage.getItem("cine_admin_passcode") || "8888";
-          if (passcode) {
-            config.headers = config.headers || {};
-            config.headers["x-admin-passcode"] = passcode;
+          if (passcode && config.headers) {
+            (config.headers as any)["x-admin-passcode"] = passcode;
           }
         }
         return config;

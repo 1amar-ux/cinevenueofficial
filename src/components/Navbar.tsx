@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2 } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
+import { useAppSettings } from "../context/AppSettingsContext";
 
 interface NavbarProps {
+
   selectedCity: string;
   setSelectedCity: (city: string) => void;
   onOpenLocation: () => void;
@@ -11,7 +13,7 @@ interface NavbarProps {
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
   onLogout: () => void;
-  onOpenAuth: () => void;
+  onOpenAuth: (mode?: any) => void;
   onOpenAdmin: () => void;
   onOpenTheatreDashboard: (theatreId: number) => void;
   onOpenEventDashboard: (organizerId: string) => void;
@@ -47,6 +49,7 @@ export default function Navbar({
 }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isSubwebsiteEnabled } = useAppSettings();
 
   // Determine user role
   const isSuperAdmin = userEmail?.toLowerCase() === superAdminEmail.toLowerCase();
@@ -102,17 +105,30 @@ export default function Navbar({
           </button>
           <button 
             onClick={() => window.location.href = "/productions"} 
-            className="text-amber-400 font-bold hover:text-gold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5"
+            className={`font-bold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
+              isSubwebsiteEnabled ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
+            title={!isSubwebsiteEnabled ? "Sub-websites are temporarily offline" : "Film Productions"}
           >
-            <Film className="w-3.5 h-3.5 text-amber-400" />
+            <Film className="w-3.5 h-3.5" />
             <span>Film Productions</span>
+            {!isSubwebsiteEnabled && (
+              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+            )}
           </button>
           <button 
             onClick={() => window.location.href = "/events"} 
-            className="text-amber-400 font-bold hover:text-gold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1"
+            className={`font-bold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
+              isSubwebsiteEnabled ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
+            title={!isSubwebsiteEnabled ? "Sub-websites are temporarily offline" : "Events"}
           >
             <span>Events</span>
+            {!isSubwebsiteEnabled && (
+              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+            )}
           </button>
+
           <button 
             onClick={() => {
               if (onOpenAccount) onOpenAccount();
@@ -256,17 +272,31 @@ export default function Navbar({
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/productions"; }} 
-            className="text-left px-3 py-2 text-xs uppercase font-bold text-amber-400 hover:text-gold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center gap-2"
+            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isSubwebsiteEnabled ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
           >
-            <Film className="w-4 h-4 text-amber-400" />
-            <span>Film Productions & 24 Crafts</span>
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4" />
+              <span>Film Productions & 24 Crafts</span>
+            </div>
+            {!isSubwebsiteEnabled && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+            )}
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/events"; }} 
-            className="text-left px-3 py-2 text-xs uppercase font-bold text-amber-400 hover:text-gold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center gap-2"
+            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isSubwebsiteEnabled ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Events & Organization</span>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span>Events & Organization</span>
+            </div>
+            {!isSubwebsiteEnabled && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+            )}
           </button>
           <button 
             onClick={() => { 

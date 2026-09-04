@@ -173,18 +173,26 @@ router.post("/settings", authorize("SUPER_ADMIN"), async (req: Request, res: Res
 // 6. Centralized Global App Settings & Maintenance Control (Supabase Singleton)
 router.get("/settings/global", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const settings = await prisma.appSettings.upsert({
-      where: { id: "global_default" },
-      update: {},
-      create: {
-        id: "global_default",
-        maintenanceMode: false,
-        maintenanceTitle: "Movie Booking Temporarily Unavailable",
-        maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
-        maintenanceCountdownEnabled: false,
-        serviceControls: {}
-      }
-    });
+    let settings: any;
+    try {
+      settings = await prisma.appSettings.upsert({
+        where: { id: "global_default" },
+        update: {},
+        create: {
+          id: "global_default",
+          maintenanceMode: false,
+          maintenanceTitle: "Movie Booking Temporarily Unavailable",
+          maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+          maintenanceCountdownEnabled: false,
+          globalSubwebsiteEnabled: true,
+          subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+          serviceControls: {}
+        }
+      });
+    } catch (dbErr) {
+      const { getGlobalAppSettings } = await import("../../middleware/maintenance");
+      settings = await getGlobalAppSettings();
+    }
 
     return res.json({
       success: true,
@@ -203,6 +211,8 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
       maintenanceMessage,
       maintenanceCountdownEnabled,
       maintenanceEndTime,
+      globalSubwebsiteEnabled,
+      subwebsiteMaintenanceMessage,
       serviceControls
     } = req.body;
 
@@ -214,7 +224,8 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
 
       const previousValue = existing ? {
         maintenanceMode: existing.maintenanceMode,
-        maintenanceTitle: existing.maintenanceTitle
+        maintenanceTitle: existing.maintenanceTitle,
+        globalSubwebsiteEnabled: existing.globalSubwebsiteEnabled
       } : null;
 
       updated = await prisma.appSettings.upsert({
@@ -227,6 +238,8 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
           ...(maintenanceEndTime !== undefined && {
             maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null
           }),
+          ...(typeof globalSubwebsiteEnabled === "boolean" && { globalSubwebsiteEnabled }),
+          ...(subwebsiteMaintenanceMessage !== undefined && { subwebsiteMaintenanceMessage }),
           ...(serviceControls !== undefined && { serviceControls }),
           updatedBy: req.user?.email || "admin",
           updatedAt: new Date()
@@ -238,33 +251,55 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
           maintenanceMessage: maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
           maintenanceCountdownEnabled: !!maintenanceCountdownEnabled,
           maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null,
+          globalSubwebsiteEnabled: globalSubwebsiteEnabled !== false,
+          subwebsiteMaintenanceMessage: subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
           serviceControls: serviceControls || {},
           updatedBy: req.user?.email || "admin"
         }
       });
 
-      // Step 23: Audit logging of maintenance status changes
-      await prisma.financialAuditLog.create({
-        data: {
-          eventType: "MAINTENANCE_STATUS_CHANGE",
-          actorEmail: req.user?.email || "system_admin",
-          description: `Admin toggled global maintenance mode: ${previousValue?.maintenanceMode ?? false} -> ${updated.maintenanceMode}`,
-          metadata: {
-            changedBy: req.user?.email,
-            previousValue,
-            newValue: {
-              maintenanceMode: updated.maintenanceMode,
-              maintenanceTitle: updated.maintenanceTitle,
-              maintenanceMessage: updated.maintenanceMessage,
-              maintenanceEndTime: updated.maintenanceEndTime
-            },
-            timestamp: new Date().toISOString()
+      // Audit logging of global subwebsite status changes
+      if (typeof globalSubwebsiteEnabled === "boolean" && previousValue?.globalSubwebsiteEnabled !== globalSubwebsiteEnabled) {
+        await prisma.financialAuditLog.create({
+          data: {
+            eventType: "GLOBAL_SUBWEBSITE_STATUS_CHANGE",
+            actorEmail: req.user?.email || "system_admin",
+            description: `Admin changed Global Sub-Website status: ${previousValue?.globalSubwebsiteEnabled ?? true} -> ${globalSubwebsiteEnabled}`,
+            metadata: {
+              changedBy: req.user?.email,
+              previousValue: previousValue?.globalSubwebsiteEnabled ?? true,
+              newValue: globalSubwebsiteEnabled,
+              timestamp: new Date().toISOString()
+            }
           }
-        }
-      }).catch((err) => {
-        // Non-blocking log
-        console.error("Audit log error:", err);
-      });
+        }).catch((err) => {
+          console.error("Audit log error:", err);
+        });
+      }
+
+      // Audit logging of maintenance status changes
+      if (typeof maintenanceMode === "boolean" && previousValue?.maintenanceMode !== maintenanceMode) {
+        await prisma.financialAuditLog.create({
+          data: {
+            eventType: "MAINTENANCE_STATUS_CHANGE",
+            actorEmail: req.user?.email || "system_admin",
+            description: `Admin toggled global maintenance mode: ${previousValue?.maintenanceMode ?? false} -> ${updated.maintenanceMode}`,
+            metadata: {
+              changedBy: req.user?.email,
+              previousValue,
+              newValue: {
+                maintenanceMode: updated.maintenanceMode,
+                maintenanceTitle: updated.maintenanceTitle,
+                maintenanceMessage: updated.maintenanceMessage,
+                maintenanceEndTime: updated.maintenanceEndTime
+              },
+              timestamp: new Date().toISOString()
+            }
+          }
+        }).catch((err) => {
+          console.error("Audit log error:", err);
+        });
+      }
     } catch (dbErr: any) {
       console.warn("[AdminSettings] Database update notice, activating resilient fallback:", dbErr?.message);
       updated = {
@@ -274,6 +309,8 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
         maintenanceMessage: maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
         maintenanceCountdownEnabled: !!maintenanceCountdownEnabled,
         maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null,
+        globalSubwebsiteEnabled: typeof globalSubwebsiteEnabled === "boolean" ? globalSubwebsiteEnabled : true,
+        subwebsiteMaintenanceMessage: subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
         serviceControls: serviceControls || {},
         updatedBy: req.user?.email || "admin",
         updatedAt: new Date()
@@ -288,13 +325,96 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
       maintenanceMessage: updated.maintenanceMessage,
       maintenanceCountdownEnabled: updated.maintenanceCountdownEnabled,
       maintenanceEndTime: updated.maintenanceEndTime,
+      globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+      subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
       serviceControls: updated.serviceControls
     });
 
     return res.json({
       success: true,
-      message: `Global maintenance mode ${updated.maintenanceMode ? "ENABLED (ON)" : "DISABLED (OFF)"}`,
+      message: `Global settings updated successfully. Sub-websites: ${updated.globalSubwebsiteEnabled ? "ENABLED" : "DISABLED"}`,
       data: { settings: updated }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 7. Dedicated Global Sub-Website Switch Endpoint
+router.post("/settings/subwebsite", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { enabled, message } = req.body;
+    if (typeof enabled !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "Field 'enabled' (boolean) is required."
+      });
+    }
+
+    let updated: any;
+    try {
+      const existing = await prisma.appSettings.findUnique({
+        where: { id: "global_default" }
+      }).catch(() => null);
+
+      const previousStatus = existing ? existing.globalSubwebsiteEnabled : true;
+
+      updated = await prisma.appSettings.upsert({
+        where: { id: "global_default" },
+        update: {
+          globalSubwebsiteEnabled: enabled,
+          ...(message !== undefined && { subwebsiteMaintenanceMessage: message }),
+          updatedBy: req.user?.email || "admin",
+          updatedAt: new Date()
+        },
+        create: {
+          id: "global_default",
+          maintenanceMode: false,
+          globalSubwebsiteEnabled: enabled,
+          subwebsiteMaintenanceMessage: message || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+          updatedBy: req.user?.email || "admin"
+        }
+      });
+
+      // Financial Audit Log
+      await prisma.financialAuditLog.create({
+        data: {
+          eventType: "GLOBAL_SUBWEBSITE_STATUS_CHANGE",
+          actorEmail: req.user?.email || "system_admin",
+          description: `Admin changed Global Sub-Website switch to: ${enabled ? "ON (ENABLED)" : "OFF (DISABLED)"}`,
+          metadata: {
+            changedBy: req.user?.email,
+            previousStatus,
+            newStatus: enabled,
+            message: updated.subwebsiteMaintenanceMessage,
+            timestamp: new Date().toISOString()
+          }
+        }
+      }).catch(() => {});
+    } catch (dbErr: any) {
+      console.warn("[AdminSettings] DB notice for subwebsite switch:", dbErr?.message);
+      updated = {
+        id: "global_default",
+        globalSubwebsiteEnabled: enabled,
+        subwebsiteMaintenanceMessage: message || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+        updatedBy: req.user?.email || "admin",
+        updatedAt: new Date()
+      };
+    }
+
+    const { setTestMaintenanceState } = await import("../../middleware/maintenance");
+    setTestMaintenanceState({
+      globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+      subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage
+    });
+
+    return res.json({
+      success: true,
+      message: `Global Sub-Website System is now ${enabled ? "ONLINE (ENABLED)" : "OFFLINE (DISABLED)"}`,
+      data: {
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage
+      }
     });
   } catch (error) {
     next(error);

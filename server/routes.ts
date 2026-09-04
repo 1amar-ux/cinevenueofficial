@@ -69,7 +69,25 @@ router.get("/settings/app", async (req, res, next) => {
         maintenanceMessage: settings.maintenanceMessage,
         maintenanceCountdownEnabled: settings.maintenanceCountdownEnabled,
         maintenanceEndTime: settings.maintenanceEndTime,
+        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage,
         serviceControls: settings.serviceControls
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/settings/subwebsite", async (req, res, next) => {
+  try {
+    const { getGlobalAppSettings } = await import("./middleware/maintenance");
+    const settings = await getGlobalAppSettings();
+    return res.json({
+      success: true,
+      data: {
+        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage
       }
     });
   } catch (error) {

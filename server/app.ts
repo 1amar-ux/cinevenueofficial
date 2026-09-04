@@ -5,6 +5,7 @@ import apiV1Router from "./routes";
 import { requestIdMiddleware } from "./middleware/requestId";
 import { errorHandler } from "./middleware/errorHandler";
 import { logger } from "./shared/logger";
+import { checkGlobalSubwebsiteMiddleware } from "./middleware/subwebsiteGate";
 
 export function createApp(): Express {
   const app = express();
@@ -33,8 +34,13 @@ export function createApp(): Express {
     res.json({ status: "ok", service: "CineVenue Full Stack Unified Server" });
   });
 
-  // 5. Mount Canonical API Routes under /api/v1 and alias to /api for backward compatibility
+  // 5. Authoritative Global Sub-Website Gatekeeper
+  // Enforces HTTP 503 HTML for direct browser visits & HTTP 503 JSON for subwebsite APIs when disabled
+  app.use(checkGlobalSubwebsiteMiddleware);
+
+  // 6. Mount Canonical API Routes under /api/v1 and alias to /api for backward compatibility
   app.use("/api/v1", apiV1Router);
+
   app.use("/api", apiV1Router);
 
   // 6. Centralized Error Handler (Must be last middleware)

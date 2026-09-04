@@ -412,7 +412,7 @@ export class AuthService {
     const supabaseUserId = data.supabaseUserId;
 
     try {
-      let user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+      let user: any = email ? await prisma.user.findUnique({ where: { email } }) : null;
 
       if (!user && supabaseUserId) {
         const existingLink = await prisma.authProvider.findFirst({

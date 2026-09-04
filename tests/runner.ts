@@ -1,5 +1,6 @@
 import { runAuthTests } from "./unit/auth.test";
 import { runMaintenanceTests } from "./unit/maintenance.test";
+import { runSubwebsiteGateTests } from "./unit/subwebsiteGate.test";
 
 async function main() {
   console.log("==========================================");
@@ -24,6 +25,18 @@ async function main() {
   console.log("\n--- 2. Centralized Maintenance Mode & API Gate Tests ---");
   const maintenanceResults = await runMaintenanceTests();
   for (const r of maintenanceResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 3. Centralized Global Sub-Website Control System Tests ---");
+  const subwebsiteResults = await runSubwebsiteGateTests();
+  for (const r of subwebsiteResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;

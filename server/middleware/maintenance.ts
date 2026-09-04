@@ -1,15 +1,42 @@
+import fs from "fs";
+import path from "path";
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/database";
 import { logger } from "../shared/logger";
 
-interface CachedMaintenanceState {
+export interface CachedMaintenanceState {
   maintenanceMode: boolean;
   maintenanceTitle: string;
   maintenanceMessage: string;
   maintenanceCountdownEnabled: boolean;
   maintenanceEndTime: Date | null;
+  globalSubwebsiteEnabled: boolean;
+  subwebsiteMaintenanceMessage: string;
   serviceControls: any;
   cachedAt: number;
+}
+
+const CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
+
+export function readPersistedFileSettings(): any {
+  try {
+    if (fs.existsSync(CONFIG_FILE_PATH)) {
+      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
+      return JSON.parse(content);
+    }
+  } catch (e) {}
+  return {
+    globalSubwebsiteEnabled: false,
+    subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
+  };
+}
+
+export function writePersistedFileSettings(settings: any) {
+  try {
+    const existing = readPersistedFileSettings();
+    const merged = { ...existing, ...settings, updatedAt: new Date().toISOString() };
+    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(merged, null, 2), "utf-8");
+  } catch (e) {}
 }
 
 let cachedState: CachedMaintenanceState | null = null;
@@ -23,12 +50,21 @@ export function setTestMaintenanceState(state: Partial<CachedMaintenanceState> |
   if (state === null) {
     cachedState = null;
   } else {
+    if (state.globalSubwebsiteEnabled !== undefined) {
+      writePersistedFileSettings({
+        globalSubwebsiteEnabled: state.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: state.subwebsiteMaintenanceMessage
+      });
+    }
+
     cachedState = {
       maintenanceMode: state.maintenanceMode ?? false,
       maintenanceTitle: state.maintenanceTitle ?? "Movie Booking Temporarily Unavailable",
       maintenanceMessage: state.maintenanceMessage ?? "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
       maintenanceCountdownEnabled: state.maintenanceCountdownEnabled ?? false,
       maintenanceEndTime: state.maintenanceEndTime ?? null,
+      globalSubwebsiteEnabled: state.globalSubwebsiteEnabled ?? false,
+      subwebsiteMaintenanceMessage: state.subwebsiteMaintenanceMessage ?? "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: state.serviceControls ?? {},
       cachedAt: Date.now() + 100000
     };
@@ -40,6 +76,8 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
   if (cachedState && now - cachedState.cachedAt < CACHE_TTL_MS) {
     return cachedState;
   }
+
+  const fileSettings = readPersistedFileSettings();
 
   try {
     const settings = await prisma.appSettings.findUnique({
@@ -53,6 +91,8 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
         maintenanceMessage: settings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
         maintenanceCountdownEnabled: settings.maintenanceCountdownEnabled,
         maintenanceEndTime: settings.maintenanceEndTime,
+        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled !== false && fileSettings.globalSubwebsiteEnabled !== false,
+        subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage || fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
         serviceControls: settings.serviceControls || {},
         cachedAt: now
       };
@@ -60,31 +100,37 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
     }
 
     // Fallback if singleton record hasn't been seeded yet
-    return {
+    cachedState = {
       maintenanceMode: false,
       maintenanceTitle: "Movie Booking Temporarily Unavailable",
       maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
       maintenanceCountdownEnabled: false,
       maintenanceEndTime: null,
+      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== undefined ? fileSettings.globalSubwebsiteEnabled : false,
+      subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: {},
       cachedAt: now
     };
+    return cachedState;
   } catch (error: any) {
     logger.warn(`Failed to fetch app_settings from database: ${error.message}`);
     // If DB is unreachable and we have cached state, use it
     if (cachedState) {
       return cachedState;
     }
-    // Resilient fallback when running in offline/testing mode without active PostgreSQL connection
-    return {
+    // Resilient fallback: uses persistent server configuration file
+    cachedState = {
       maintenanceMode: false,
       maintenanceTitle: "Movie Booking Temporarily Unavailable",
       maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
       maintenanceCountdownEnabled: false,
       maintenanceEndTime: null,
+      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== undefined ? fileSettings.globalSubwebsiteEnabled : false,
+      subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: {},
       cachedAt: now
     };
+    return cachedState;
   }
 }
 

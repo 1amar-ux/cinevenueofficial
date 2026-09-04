@@ -173,6 +173,8 @@ export default function App() {
   const serviceControl = useMemo(() => {
     const remote = globalAppSettings.serviceControls || {};
     const isMaintenance = globalAppSettings.maintenanceMode === true;
+    const isSubwebsiteEnabled = globalAppSettings.globalSubwebsiteEnabled !== false;
+    const subwebsiteNotice = globalAppSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.";
 
     return {
       website: {
@@ -190,28 +192,28 @@ export default function App() {
         visitors: remote.movieBooking?.visitors || 1240
       },
       eventBooking: {
-        status: remote.eventBooking?.status !== false,
-        title: remote.eventBooking?.title || "Event Booking Temporarily Unavailable",
-        message: remote.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.",
+        status: isSubwebsiteEnabled && (remote.eventBooking?.status !== false),
+        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.eventBooking?.title || "Event Booking Temporarily Unavailable"),
+        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon."),
         expectedTime: remote.eventBooking?.expectedTime || "31 July 2026, 10:00 AM",
         visitors: remote.eventBooking?.visitors || 327
       },
       filmProduction: {
-        status: remote.filmProduction?.status !== false,
-        title: remote.filmProduction?.title || "Film Production Division Under Maintenance",
-        message: remote.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com",
+        status: isSubwebsiteEnabled && (remote.filmProduction?.status !== false),
+        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.filmProduction?.title || "Film Production Division Under Maintenance"),
+        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com"),
         expectedTime: remote.filmProduction?.expectedTime || "30 July 2026, 12:00 PM"
       },
       eventManagement: {
-        status: remote.eventManagement?.status !== false,
-        title: remote.eventManagement?.title || "Event Management Under Maintenance",
-        message: remote.eventManagement?.message || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon.",
+        status: isSubwebsiteEnabled && (remote.eventManagement?.status !== false),
+        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.eventManagement?.title || "Event Management Under Maintenance"),
+        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.eventManagement?.message || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon."),
         expectedTime: remote.eventManagement?.expectedTime || "31 July 2026, 02:00 PM"
       },
       brandPromotion: {
-        status: remote.brandPromotion?.status !== false,
-        title: remote.brandPromotion?.title || "Brand Promotion Under Maintenance",
-        message: remote.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.",
+        status: isSubwebsiteEnabled && (remote.brandPromotion?.status !== false),
+        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.brandPromotion?.title || "Brand Promotion Under Maintenance"),
+        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly."),
         expectedTime: remote.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"
       },
       cinecoins: {
@@ -436,8 +438,8 @@ export default function App() {
   });
 
   // Credentials settings — loaded from env vars, never hardcoded in source
-  const [superAdminEmail, setSuperAdminEmail] = useState(() => localStorage.getItem("cine_sa_email") || import.meta.env.VITE_SUPER_ADMIN_EMAIL || "");
-  const [superAdminPassword, setSuperAdminPassword] = useState(() => localStorage.getItem("cine_sa_pass") || import.meta.env.VITE_SUPER_ADMIN_PASSWORD || "");
+  const [superAdminEmail, setSuperAdminEmail] = useState(() => localStorage.getItem("cine_sa_email") || (import.meta as any).env?.VITE_SUPER_ADMIN_EMAIL || "");
+  const [superAdminPassword, setSuperAdminPassword] = useState(() => localStorage.getItem("cine_sa_pass") || (import.meta as any).env?.VITE_SUPER_ADMIN_PASSWORD || "");
   const [cities, setCities] = useState<string[]>(() => {
     const saved = localStorage.getItem("cine_cities");
     return saved ? JSON.parse(saved) : CITIES;

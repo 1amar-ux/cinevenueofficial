@@ -663,9 +663,12 @@ model AppSettings {
   maintenanceMessage         String?   @default("We are upgrading our ticket booking experience. Movie booking will be available shortly.") @map("maintenance_message")
   maintenanceCountdownEnabled Boolean   @default(false) @map("maintenance_countdown_enabled")
   maintenanceEndTime         DateTime? @map("maintenance_end_time")
+  globalSubwebsiteEnabled    Boolean   @default(true) @map("global_subwebsite_enabled")
+  subwebsiteMaintenanceMessage String? @default("CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.") @map("subwebsite_maintenance_message")
   serviceControls            Json?     @map("service_controls")
   updatedAt                  DateTime  @default(now()) @updatedAt @map("updated_at")
   updatedBy                  String?   @map("updated_by")
 
   @@map("app_settings")
 }
+
