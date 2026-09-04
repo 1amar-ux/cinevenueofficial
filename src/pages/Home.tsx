@@ -1741,7 +1741,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
 
                     <div className="flex items-center gap-3 w-full lg:w-auto">
                       <button
-                        onClick={onOpenAuth}
+                        onClick={() => onOpenAuth?.("signin")}
                         className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <UserCheck className="w-4 h-4 text-amber-400" />

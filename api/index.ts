@@ -6,8 +6,29 @@
  */
 import { createApp } from "../server/app";
 
-const app = createApp();
+let app: any = null;
 
-export default function handler(req: any, res: any) {
-  return app(req, res);
+function getApp() {
+  if (!app) {
+    app = createApp();
+  }
+  return app;
+}
+
+export default async function handler(req: any, res: any) {
+  try {
+    const expressApp = getApp();
+    return expressApp(req, res);
+  } catch (error: any) {
+    console.error("[VERCEL_HANDLER_ERROR]", error);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: "FUNCTION_INVOCATION_ERROR",
+          message: error?.message || "Internal serverless error"
+        }
+      });
+    }
+  }
 }

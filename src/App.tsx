@@ -1218,26 +1218,6 @@ export default function App() {
             )}
 
             {/* Overlays / Modals */}
-            <InfoModal
-              isOpen={infoModalType !== null}
-              onClose={() => setInfoModalType(null)}
-              type={infoModalType}
-              footerPagesData={footerPagesData}
-            />
-            <AuthModal
-              isOpen={authOpen}
-              initialMode={authMode}
-              onClose={() => setAuthOpen(false)}
-              onAuthSuccess={handleLoginSuccess}
-              registeredUsers={registeredUsers}
-              onRegisterUser={(email, passwordHash, mobile) => {
-                setRegisteredUsers([...registeredUsers, { email, passwordHash, mobile, joinedAt: new Date().toLocaleDateString() }]);
-              }}
-              superAdminEmail={superAdminEmail}
-              superAdminPassword={superAdminPassword}
-              theatreAdmins={theatreAdmins}
-              eventOrganizers={eventOrganizers}
-            />
 
             
             <LocationSelector 
@@ -1888,6 +1868,30 @@ export default function App() {
     </Routes>
 
     <MobileBottomNav />
+
+    {/* Global Auth Modal */}
+    <AuthModal
+      isOpen={authOpen}
+      initialMode={authMode}
+      onClose={() => setAuthOpen(false)}
+      onAuthSuccess={handleLoginSuccess}
+      registeredUsers={registeredUsers}
+      onRegisterUser={(email, passwordHash, mobile) => {
+        setRegisteredUsers([...registeredUsers, { email, passwordHash, mobile, joinedAt: new Date().toLocaleDateString() }]);
+      }}
+      superAdminEmail={superAdminEmail}
+      superAdminPassword={superAdminPassword}
+      theatreAdmins={theatreAdmins}
+      eventOrganizers={eventOrganizers}
+    />
+
+    {/* Global Info Modal */}
+    <InfoModal
+      isOpen={infoModalType !== null}
+      onClose={() => setInfoModalType(null)}
+      type={infoModalType}
+      footerPagesData={footerPagesData}
+    />
 
     {/* Global Theatre Manager / Admin Workspace Modal Overlay */}
     {activeTheatreId !== null && (

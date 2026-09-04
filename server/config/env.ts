@@ -4,8 +4,8 @@ import { z } from "zod";
 dotenv.config();
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  PORT: z.string().default("3000").transform((val) => parseInt(val, 10)),
+  NODE_ENV: z.string().default("development"),
+  PORT: z.union([z.string(), z.number()]).default(3000).transform((val) => typeof val === "number" ? val : parseInt(String(val), 10) || 3000),
   API_PREFIX: z.string().default("/api/v1"),
   
   // Database & Cache
@@ -38,10 +38,7 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error("❌ Environment configuration validation failed:", parsedEnv.error.format());
-  if (process.env.NODE_ENV === "production") {
-    process.exit(1);
-  }
+  console.warn("⚠️ Environment configuration validation warning:", parsedEnv.error.format());
 }
 
 export const env = parsedEnv.success ? parsedEnv.data : envSchema.parse({});

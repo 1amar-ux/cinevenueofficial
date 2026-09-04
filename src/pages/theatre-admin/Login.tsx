@@ -19,8 +19,8 @@ export default function Login({ onLoginSuccess, theatreAdmins }: LoginProps) {
     setLoading(true);
 
     setTimeout(() => {
-      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL || "";
-      const superAdminPassword = import.meta.env.VITE_SUPER_ADMIN_PASSWORD || "";
+      const superAdminEmail = (import.meta as any).env?.VITE_SUPER_ADMIN_EMAIL || "";
+      const superAdminPassword = (import.meta as any).env?.VITE_SUPER_ADMIN_PASSWORD || "";
 
       const admin = theatreAdmins.find(
         (a) => a.email.toLowerCase() === email.toLowerCase()
