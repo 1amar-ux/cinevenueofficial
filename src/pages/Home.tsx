@@ -2758,7 +2758,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             {proposalSuccess ? (
               <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center space-y-2">
                 <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto animate-bounce" />
-                <h4 className="text-base font-bold text-emerald-300">Proposal Delivered to Admin Panel!</h4>
+                <h4 className="text-base font-bold text-emerald-300">Proposal Successfully Submitted!</h4>
                 <p className="text-xs text-text-secondary">
                   Our division manager has received your inquiry and will contact you via email/phone shortly.
                 </p>
@@ -2881,7 +2881,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                   className="w-full py-3 bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-gold/20"
                 >
                   <Send className="w-4 h-4 text-black" />
-                  <span>Send Proposal to Admin Panel</span>
+                  <span>Submit Proposal</span>
                 </button>
               </form>
             )}
