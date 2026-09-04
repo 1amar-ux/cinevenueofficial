@@ -368,36 +368,61 @@ export class AuthService {
   }
 
   public async getGoogleAuthRedirectUrl() {
-    const clientId = env.GOOGLE_CLIENT_ID;
-    const redirectUri = env.GOOGLE_CALLBACK_URL;
+    const supabaseUrl = env.SUPABASE_URL;
+    const frontendUrl = env.FRONTEND_URL || "https://cinevenue.com";
+    const callbackUrl = `${frontendUrl.replace(/\/$/, "")}/auth/callback`;
 
-    if (!clientId || !redirectUri) {
-      throw new ValidationError("Google OAuth is not configured");
+    // 1. If Supabase is configured, use the canonical Supabase OAuth endpoint
+    if (supabaseUrl) {
+      const params = new URLSearchParams({
+        provider: "google",
+        redirect_to: callbackUrl
+      });
+      return `${supabaseUrl.replace(/\/$/, "")}/auth/v1/authorize?${params.toString()}`;
     }
 
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: "code",
-      scope: "openid email profile",
-      access_type: "offline",
-      prompt: "consent"
-    });
+    // 2. Direct Google OAuth fallback if Google Client ID is configured
+    const clientId = env.GOOGLE_CLIENT_ID;
+    const redirectUri = env.GOOGLE_CALLBACK_URL || callbackUrl;
 
-    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    if (clientId && redirectUri) {
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope: "openid email profile",
+        access_type: "offline",
+        prompt: "consent"
+      });
+      return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    }
+
+    // 3. Fallback to frontend login if no direct credentials
+    return `${frontendUrl}/login?notice=google_auth_via_supabase`;
   }
 
-  public async googleLogin(data: { idToken?: string; code?: string; state?: string; email?: string; name?: string; image?: string }) {
-    if (!data?.email && !data?.idToken && !data?.code) {
+  public async googleLogin(data: { idToken?: string; code?: string; state?: string; email?: string; name?: string; image?: string; supabaseUserId?: string }) {
+    if (!data?.email && !data?.idToken && !data?.code && !data?.supabaseUserId) {
       throw new ValidationError("Google authentication payload is missing required fields");
     }
 
     const email = (data.email || "").trim().toLowerCase();
     const name = data.name || "Google User";
     const profileImageUrl = data.image || null;
+    const supabaseUserId = data.supabaseUserId;
 
     try {
       let user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+
+      if (!user && supabaseUserId) {
+        const existingLink = await prisma.authProvider.findFirst({
+          where: { provider: "google", providerAccountId: supabaseUserId },
+          include: { user: true }
+        });
+        if (existingLink?.user) {
+          user = existingLink.user;
+        }
+      }
 
       if (!user) {
         user = await prisma.user.create({
@@ -408,6 +433,7 @@ export class AuthService {
             profileImageUrl,
             role: "CUSTOMER",
             isVerified: true,
+            lastLoginAt: new Date(),
             wallet: {
               create: {
                 balance: 100,
@@ -432,7 +458,8 @@ export class AuthService {
           data: {
             name: user.name || name,
             profileImageUrl: profileImageUrl || user.profileImageUrl,
-            isVerified: true
+            isVerified: true,
+            lastLoginAt: new Date()
           },
           select: {
             id: true,
@@ -447,7 +474,7 @@ export class AuthService {
       }
 
       const provider = "google";
-      const providerAccountId = String(data.idToken || data.code || email || user.id);
+      const providerAccountId = String(supabaseUserId || data.idToken || data.code || email || user.id);
       await prisma.authProvider.upsert({
         where: {
           provider_providerAccountId: {

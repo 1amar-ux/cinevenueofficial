@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { X, Mail, Lock, User, Phone, ChevronRight, ArrowRight } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 import apiClient from "../services/apiClient";
+import { AuthContext } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,9 +19,11 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = "signin" }: AuthModalProps) {
+  const { signInWithGoogle } = useContext(AuthContext);
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -130,8 +134,27 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     }
   };
 
-  const handleGoogle = () => {
-    window.location.href = "/api/v1/auth/google";
+  const handleGoogle = async () => {
+    if (isGoogleLoading) return;
+    setIsGoogleLoading(true);
+    setErrorMessage("");
+    try {
+      if (signInWithGoogle) {
+        await signInWithGoogle();
+      } else {
+        const callbackUrl = `${window.location.origin}/auth/callback`;
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: callbackUrl }
+        });
+        if (error) throw error;
+        if (data?.url) window.location.href = data.url;
+      }
+    } catch (err: any) {
+      console.error("Google OAuth error:", err);
+      setErrorMessage(err?.message || "Failed to initiate Google Sign-In. Please check your connection or use Email.");
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -265,10 +288,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
             <button
               type="button"
               onClick={handleGoogle}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/50 hover:bg-white/10"
+              disabled={isGoogleLoading || isLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/50 hover:bg-white/10 disabled:opacity-60 cursor-pointer"
             >
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-black text-[10px] font-black">G</span>
-              Continue with Google
+              {isGoogleLoading ? "Connecting to Google..." : "Continue with Google"}
             </button>
           </form>
 

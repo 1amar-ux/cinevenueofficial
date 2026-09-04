@@ -18,7 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const { signIn } = useContext(AuthContext);
+  const { signIn, signInWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -87,6 +87,21 @@ export default function Login() {
           sx={{ mt: 3, backgroundColor: "#F84464", "&:hover": { backgroundColor: "#df3553" } }}
         >
           Login
+        </Button>
+
+        <Button
+          variant="outlined"
+          fullWidth
+          size="large"
+          onClick={() => signInWithGoogle?.()}
+          sx={{
+            mt: 2,
+            borderColor: "rgba(255,255,255,0.2)",
+            color: "#fff",
+            "&:hover": { borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)" }
+          }}
+        >
+          Continue with Google
         </Button>
       </Paper>
     </Container>

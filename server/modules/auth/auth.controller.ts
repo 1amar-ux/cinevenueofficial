@@ -71,8 +71,8 @@ export class AuthController {
 
   public googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { idToken, code, state, email, name, image } = req.body || {};
-      const result = await authService.googleLogin({ idToken, code, state, email, name, image });
+      const { idToken, code, state, email, name, image, supabaseUserId } = req.body || {};
+      const result = await authService.googleLogin({ idToken, code, state, email, name, image, supabaseUserId });
       this.setSessionCookies(res, result.tokens);
       return res.json({
         success: true,

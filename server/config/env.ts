@@ -30,6 +30,12 @@ const envSchema = z.object({
   // AI Service
   GEMINI_API_KEY: z.string().optional(),
   
+  // Supabase Platform
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+  SUPABASE_SECRET_KEY: z.string().optional(),
+  
   // CORS & Network
   CORS_ORIGIN: z.string().default("*"),
   FRONTEND_URL: z.string().optional().default("http://localhost:3000")

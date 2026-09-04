@@ -80,8 +80,46 @@ export async function runAuthTests(): Promise<{ name: string; passed: boolean; e
     } else {
       results.push({ name: "AuthService: Login output incomplete", passed: false, error: "Missing user or tokens" });
     }
+
+    // Test 6: Google OAuth redirect URL resolution
+    const googleRedirectUrl = await authService.getGoogleAuthRedirectUrl();
+    if (typeof googleRedirectUrl === "string" && googleRedirectUrl.length > 0) {
+      results.push({ name: "AuthService: Google OAuth redirect URL resolves without error", passed: true });
+    } else {
+      results.push({ name: "AuthService: Google OAuth redirect URL resolution", passed: false, error: "Empty redirect URL" });
+    }
+
+    // Test 7: Google OAuth profile synchronization with Supabase user ID
+    const googleTestEmail = `google_test_${Date.now()}@cinevenue.test`;
+    const googleResult = await authService.googleLogin({
+      email: googleTestEmail,
+      name: "Google Customer",
+      image: "https://lh3.googleusercontent.com/a/default-user",
+      supabaseUserId: `sb_usr_${Date.now()}`
+    });
+
+    if (googleResult.user?.email === googleTestEmail && googleResult.tokens?.accessToken) {
+      results.push({ name: "AuthService: Google OAuth profile sync and session generation succeed", passed: true });
+    } else {
+      results.push({ name: "AuthService: Google OAuth profile sync incomplete", passed: false, error: "Missing user or tokens" });
+    }
+
+    // Test 8: Existing Google user profile re-authentication
+    const reAuthResult = await authService.googleLogin({
+      email: googleTestEmail,
+      name: "Google Customer Updated",
+      image: "https://lh3.googleusercontent.com/a/default-user-2",
+      supabaseUserId: `sb_usr_${Date.now()}`
+    });
+
+    if (reAuthResult.user?.email === googleTestEmail && reAuthResult.tokens?.accessToken) {
+      results.push({ name: "AuthService: Existing Google account profile re-authentication succeeds", passed: true });
+    } else {
+      results.push({ name: "AuthService: Re-authentication incomplete", passed: false, error: "Failed to re-authenticate existing Google user" });
+    }
+
   } catch (err: any) {
-    results.push({ name: "AuthService: User registration and login flow", passed: false, error: err.message });
+    results.push({ name: "AuthService: Google OAuth and registration flow", passed: false, error: err.message });
   }
 
   return results;

@@ -36,6 +36,7 @@ import MaintenancePage from "./components/MaintenancePage";
 import EventsApp from "./pages/events/EventsApp";
 import LegalPolicies from "./pages/LegalPolicies";
 import Services from "./pages/Services";
+import AuthCallback from "./pages/AuthCallback";
 import MobileBottomNav from "./components/MobileBottomNav";
 
 // Admin Sub-Pages
@@ -924,6 +925,10 @@ export default function App() {
   return (
     <>
       <Routes>
+      {/* Supabase OAuth Callback Handler */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/callback" element={<AuthCallback />} />
+
       {/* Events Sub-website */}
       <Route path="/events/*" element={<EventsApp />} />
       <Route path="/movies" element={<Navigate to="/booking" replace />} />

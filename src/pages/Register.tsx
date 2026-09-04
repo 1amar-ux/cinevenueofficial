@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Container, TextField, Button, Typography, Paper, Alert, Box } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import api from "../services/api";
+import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function Register() {
+  const { signInWithGoogle } = useContext(AuthContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,6 +95,21 @@ export default function Register() {
           sx={{ mt: 3, backgroundColor: "#F84464", "&:hover": { backgroundColor: "#df3553" } }}
         >
           Register
+        </Button>
+
+        <Button
+          variant="outlined"
+          fullWidth
+          size="large"
+          onClick={() => signInWithGoogle?.()}
+          sx={{
+            mt: 2,
+            borderColor: "rgba(255,255,255,0.2)",
+            color: "#fff",
+            "&:hover": { borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)" }
+          }}
+        >
+          Continue with Google
         </Button>
       </Paper>
     </Container>
