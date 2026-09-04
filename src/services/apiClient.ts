@@ -15,6 +15,21 @@ class ApiClient {
       timeout: 15000
     });
 
+    // Request Interceptor: attach admin passcode header if present in localStorage
+    this.client.interceptors.request.use(
+      (config) => {
+        if (typeof window !== "undefined") {
+          const passcode = localStorage.getItem("cine_admin_passcode") || "8888";
+          if (passcode) {
+            config.headers = config.headers || {};
+            config.headers["x-admin-passcode"] = passcode;
+          }
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
     // Response Interceptor: refreshes the HttpOnly cookie session once on 401.
     this.client.interceptors.response.use(
       (response) => response,

@@ -6273,6 +6273,19 @@ export default function AdminPanel({
                                 website: { ...prev.website, status: newStatus },
                                 globalWebsite: { ...prev.globalWebsite, status: newStatus }
                               }));
+                              if (setServiceControlLogs) {
+                                setServiceControlLogs((prevLogs: any[]) => [
+                                  {
+                                    id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+                                    timestamp: new Date().toISOString(),
+                                    actor: "SUPER ADMIN",
+                                    action: "STATUS_TOGGLED",
+                                    service: "Global Website",
+                                    details: `Global Website toggled to ${newStatus ? "LIVE (Turned ON)" : "OFFLINE (Turned OFF)"}`
+                                  },
+                                  ...(prevLogs || [])
+                                ]);
+                              }
                             }}
                             className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                               (serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true)
@@ -6348,6 +6361,19 @@ export default function AdminPanel({
                                       ...prev,
                                       [pillar.key]: { ...prev[pillar.key], status: true }
                                     }));
+                                    if (setServiceControlLogs) {
+                                      setServiceControlLogs((prevLogs: any[]) => [
+                                        {
+                                          id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+                                          timestamp: new Date().toISOString(),
+                                          actor: "SUPER ADMIN",
+                                          action: "STATUS_TOGGLED",
+                                          service: pillar.name,
+                                          details: `Turned ON service: ${pillar.name}`
+                                        },
+                                        ...(prevLogs || [])
+                                      ]);
+                                    }
                                   }}
                                   className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
                                     isLive ? "bg-emerald-500 text-black border-emerald-400 font-extrabold shadow-md" : "bg-white/5 text-white/50 border-white/10 hover:text-white"
@@ -6362,6 +6388,19 @@ export default function AdminPanel({
                                       ...prev,
                                       [pillar.key]: { ...prev[pillar.key], status: false }
                                     }));
+                                    if (setServiceControlLogs) {
+                                      setServiceControlLogs((prevLogs: any[]) => [
+                                        {
+                                          id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+                                          timestamp: new Date().toISOString(),
+                                          actor: "SUPER ADMIN",
+                                          action: "STATUS_TOGGLED",
+                                          service: pillar.name,
+                                          details: `Turned OFF service: ${pillar.name}`
+                                        },
+                                        ...(prevLogs || [])
+                                      ]);
+                                    }
                                   }}
                                   className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
                                     !isLive ? "bg-rose-600 text-white border-rose-500 font-extrabold shadow-md animate-pulse" : "bg-white/5 text-white/50 border-white/10 hover:text-white"
