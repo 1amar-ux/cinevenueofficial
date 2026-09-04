@@ -450,6 +450,11 @@ export default function App() {
 
   // Open Modals / Workspace Triggers
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const handleOpenAuth = (mode: "signin" | "signup" = "signin") => {
+    setAuthMode(mode);
+    setAuthOpen(true);
+  };
   const [locationOpen, setLocationOpen] = useState(false);
   const [bookingMovieTitle, setBookingMovieTitle] = useState("");
   const [bookingTimeSlot, setBookingTimeSlot] = useState("7:30 PM");
@@ -937,7 +942,7 @@ export default function App() {
               setServiceControl={setServiceControl}
               onAddServiceProposal={handleAddServiceProposal}
               onOpenOrders={() => setOrdersOpen(true)}
-              onOpenAuth={() => setAuthOpen(true)}
+              onOpenAuth={handleOpenAuth}
             />
             <AdminPanel
               isOpen={adminOpen}
@@ -1077,7 +1082,7 @@ export default function App() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               onLogout={handleLogout}
-              onOpenAuth={() => setAuthOpen(true)}
+              onOpenAuth={handleOpenAuth}
               onOpenAdmin={handleOpenAdmin}
               onOpenTheatreDashboard={handleOpenManagerDashboard}
               onOpenEventDashboard={handleOpenEventDashboard}
@@ -1221,6 +1226,7 @@ export default function App() {
             />
             <AuthModal
               isOpen={authOpen}
+              initialMode={authMode}
               onClose={() => setAuthOpen(false)}
               onAuthSuccess={handleLoginSuccess}
               registeredUsers={registeredUsers}

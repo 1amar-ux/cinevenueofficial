@@ -226,11 +226,16 @@ export default function Navbar({
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={onOpenAuth}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-light text-black text-[10px] font-bold uppercase tracking-[0.15em] rounded shadow-lg shadow-gold/15 transition-all cursor-pointer border-none"
+                onClick={() => onOpenAuth?.("signin")}
+                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-black" />
-                <span>Sign In / Sign Up</span>
+                Sign In
+              </button>
+              <button
+                onClick={() => onOpenAuth?.("signup")}
+                className="inline-flex rounded-full bg-gold px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light shadow-lg shadow-gold/15 transition-all cursor-pointer border-none"
+              >
+                Sign Up
               </button>
             </div>
           )}
@@ -280,6 +285,22 @@ export default function Navbar({
           >
             Contact Concierge
           </button>
+          {!userEmail && (
+            <div className="flex items-center gap-2 pt-2 border-t border-white/10 sm:hidden">
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenAuth?.("signin"); }}
+                className="flex-1 rounded-full border border-white/15 bg-transparent py-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold transition-all"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenAuth?.("signup"); }}
+                className="flex-1 rounded-full bg-gold py-2 text-center text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light transition-all"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
         </div>
       )}
     </nav>
