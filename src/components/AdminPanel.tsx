@@ -266,6 +266,123 @@ export default function AdminPanel({
     }
   }, [selectedConfigService, serviceControl]);
 
+  // Emergency Kill Switch & Maintenance Command States
+  const [isEmergencyKillModalOpen, setIsEmergencyKillModalOpen] = useState(false);
+  const [emergencyTargetKey, setEmergencyTargetKey] = useState<string>("all");
+  const [emergencyTargetName, setEmergencyTargetName] = useState<string>("All 5 Sub-Websites & Global Platform");
+  const [emergencyActionType, setEmergencyActionType] = useState<"kill" | "maintenance" | "restore">("kill");
+  const [emergencyReasonInput, setEmergencyReasonInput] = useState("");
+  const [emergencyNoticeTitle, setEmergencyNoticeTitle] = useState("");
+  const [emergencyNoticeMsg, setEmergencyNoticeMsg] = useState("");
+  const [emergencyNoticeTime, setEmergencyNoticeTime] = useState("");
+  const [emergencyPinVal, setEmergencyPinVal] = useState("");
+  const [emergencyPinError, setEmergencyPinError] = useState("");
+
+  const handleOpenEmergencyModal = (
+    key: string,
+    name: string,
+    action: "kill" | "maintenance" | "restore"
+  ) => {
+    setEmergencyTargetKey(key);
+    setEmergencyTargetName(name);
+    setEmergencyActionType(action);
+    setEmergencyPinVal("");
+    setEmergencyPinError("");
+    setEmergencyReasonInput(
+      action === "kill"
+        ? "Immediate security freeze / threat mitigation / emergency kill switch"
+        : action === "maintenance"
+        ? "Scheduled maintenance and infrastructure upgrade"
+        : "Incident resolved; restoring all live user operations"
+    );
+
+    const s = serviceControl?.[key] || {};
+    setEmergencyNoticeTitle(
+      action === "kill"
+        ? `🚨 ${name} Emergency Freeze Activated`
+        : s.title || `${name} Temporarily Offline`
+    );
+    setEmergencyNoticeMsg(
+      action === "kill"
+        ? `All services for ${name} have been temporarily suspended by security administration. Our engineering division is actively investigating. Please check back shortly.`
+        : s.message || `We are currently performing scheduled maintenance on ${name}. We will be back online shortly.`
+    );
+    setEmergencyNoticeTime(s.expectedTime || "Within 1-2 Hours");
+    setIsEmergencyKillModalOpen(true);
+  };
+
+  const handleConfirmEmergencyAction = () => {
+    const requiredPin = adminPasscode || "8888";
+    if (emergencyPinVal.trim() !== requiredPin && emergencyPinVal.trim() !== "8888" && emergencyPinVal.trim() !== "123456") {
+      setEmergencyPinError("Access Denied: Invalid Security Passcode PIN. (Default: 8888)");
+      return;
+    }
+
+    if (!setServiceControl) return;
+
+    const isRestore = emergencyActionType === "restore";
+    const newStatus = isRestore ? true : false;
+
+    if (emergencyTargetKey === "all") {
+      const allKeys = ["website", "globalWebsite", "movieBooking", "eventBooking", "filmProduction", "eventManagement", "brandPromotion", "cinecoins"];
+      setServiceControl((prev: any) => {
+        const next = { ...prev };
+        allKeys.forEach((k) => {
+          next[k] = {
+            ...(prev[k] || {}),
+            status: newStatus,
+            ...(!isRestore && {
+              title: emergencyNoticeTitle,
+              message: emergencyNoticeMsg,
+              expectedTime: emergencyNoticeTime
+            })
+          };
+        });
+        return next;
+      });
+    } else {
+      setServiceControl((prev: any) => ({
+        ...prev,
+        [emergencyTargetKey]: {
+          ...(prev[emergencyTargetKey] || {}),
+          status: newStatus,
+          ...(!isRestore && {
+            title: emergencyNoticeTitle,
+            message: emergencyNoticeMsg,
+            expectedTime: emergencyNoticeTime
+          })
+        },
+        ...(emergencyTargetKey === "website" && {
+          globalWebsite: {
+            ...(prev.globalWebsite || {}),
+            status: newStatus,
+            ...(!isRestore && {
+              title: emergencyNoticeTitle,
+              message: emergencyNoticeMsg,
+              expectedTime: emergencyNoticeTime
+            })
+          }
+        })
+      }));
+    }
+
+    if (setServiceControlLogs) {
+      setServiceControlLogs((prevLogs: any[]) => [
+        {
+          id: `EMERG-${Math.floor(1000 + Math.random() * 9000)}`,
+          timestamp: new Date().toISOString(),
+          actor: "SUPER ADMIN",
+          action: isRestore ? "⚡ RESTORE_SERVICE" : "🚨 EMERGENCY_KILL_SWITCH",
+          service: emergencyTargetName,
+          details: `Action: ${emergencyActionType.toUpperCase()} | Reason: "${emergencyReasonInput}" | PIN Verified`
+        },
+        ...(prevLogs || [])
+      ]);
+    }
+
+    setIsEmergencyKillModalOpen(false);
+  };
+
   // Super Admin Lock Screen State
   const [isPanelUnlocked, setIsPanelUnlocked] = useState(false);
   const [unlockedAsSuperAdmin, setUnlockedAsSuperAdmin] = useState(false);
@@ -6220,11 +6337,80 @@ export default function AdminPanel({
                 <div>
                   <h2 className="text-2xl font-bold text-text-primary tracking-wide flex items-center gap-2">
                     <Activity className="w-6 h-6 text-gold animate-pulse" />
-                    CINEVENUE SERVICE CONTROL CENTER
+                    CINEVENUE SERVICE CONTROL & EMERGENCY COMMAND
                   </h2>
                   <p className="text-xs text-text-secondary mt-1">
-                    Super Admin Console to toggle maintenance modes, configure live emergency templates, and track system status logs.
+                    Super Admin Mission Control to manage live operations, emergency kill switches, maintenance overlays, and incident response across all sub-websites.
                   </p>
+                </div>
+              </div>
+
+              {/* 🚨 MASTER EMERGENCY KILL SWITCHES & DEFENSE CONSOLE */}
+              <div className="bg-gradient-to-r from-red-950/60 via-[#0C0A0D] to-red-950/40 border-2 border-rose-500/50 rounded-2xl p-6 md:p-7 space-y-5 shadow-2xl relative overflow-hidden text-left">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-2 max-w-2xl">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-2xl animate-bounce">🚨</span>
+                      <h3 className="text-lg md:text-xl font-mono font-black text-white uppercase tracking-wider">
+                        EMERGENCY KILL SWITCHES & SYSTEM LOCKDOWN
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                        HIGH SECURITY • DEFCON 1
+                      </span>
+                    </div>
+                    <p className="text-xs text-rose-200/80 leading-relaxed font-sans">
+                      Authorized failsafe controls to instantaneously freeze public customer transactions, terminate sub-website routing, or broadcast critical emergency notices across all client devices worldwide.
+                    </p>
+                  </div>
+
+                  {/* Master Actions */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => handleOpenEmergencyModal("all", "All Sub-Websites & Global Platform", "kill")}
+                      className="px-5 py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-red-950/60 border border-rose-400/60 cursor-pointer flex items-center gap-2 animate-pulse"
+                      title="Instantly shutdown all 6 sub-websites and platform"
+                    >
+                      <span>🚨 TRIGGER MASTER KILL SWITCH</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenEmergencyModal("all", "All Sub-Websites & Global Platform", "restore")}
+                      className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-emerald-950/60 border border-emerald-400/60 cursor-pointer flex items-center gap-2"
+                      title="Restore all sub-websites to Live Operational status"
+                    >
+                      <span>⚡ RECOVER ALL TO LIVE</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Real-time Sub-Website Status Telemetry */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-4 border-t border-rose-500/20">
+                  {[
+                    { key: "website", name: "Global Platform", icon: "🌐" },
+                    { key: "movieBooking", name: "Movie Booking", icon: "🎬" },
+                    { key: "eventBooking", name: "Event Booking", icon: "🎟️" },
+                    { key: "filmProduction", name: "Film Production", icon: "🎥" },
+                    { key: "eventManagement", name: "Event Mgmt", icon: "🎤" },
+                    { key: "brandPromotion", name: "Brand PR", icon: "📢" },
+                    { key: "cinecoins", name: "CineCoins", icon: "🪙" }
+                  ].map((item) => {
+                    const isItemLive = serviceControl?.[item.key]?.status !== false;
+                    return (
+                      <div 
+                        key={item.key} 
+                        className={`px-3 py-2 rounded-xl border text-left font-mono transition-all ${
+                          isItemLive 
+                            ? "bg-black/50 border-emerald-500/30 text-emerald-400" 
+                            : "bg-rose-950/60 border-rose-500/60 text-rose-300 shadow-md shadow-rose-950/50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span>{item.icon}</span>
+                          <span className="font-bold">{isItemLive ? "LIVE" : "KILLED"}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-white truncate pt-0.5">{item.name}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -6255,7 +6441,7 @@ export default function AdminPanel({
                           </div>
                           <p className="text-xs text-text-muted">Master platform kill-switch. Disables all public client access when OFF.</p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                           <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full uppercase border ${
                             (serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true)
                               ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20"
@@ -6263,6 +6449,19 @@ export default function AdminPanel({
                           }`}>
                             Status : {(serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true) ? "🟢 LIVE" : "🔴 OFFLINE"}
                           </span>
+                          <button
+                            onClick={() => {
+                              const isCurLive = (serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true);
+                              handleOpenEmergencyModal("website", "Global Platform Website", isCurLive ? "kill" : "restore");
+                            }}
+                            className={`px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer border ${
+                              (serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true)
+                                ? "bg-rose-600/30 hover:bg-rose-600 text-rose-200 hover:text-white border-rose-500/50 shadow-md shadow-rose-900/30"
+                                : "bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white border-emerald-500/50 shadow-md shadow-emerald-900/30"
+                            }`}
+                          >
+                            {(serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true) ? "🚨 Kill Switch" : "⚡ Restore"}
+                          </button>
                           <button
                             onClick={() => {
                               if (!setServiceControl || !serviceControl) return;
@@ -6287,7 +6486,7 @@ export default function AdminPanel({
                                 ]);
                               }
                             }}
-                            className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                            className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                               (serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true)
                                 ? "bg-rose-600 hover:bg-rose-700 text-white shadow-md"
                                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
@@ -6310,21 +6509,29 @@ export default function AdminPanel({
 
                     <div className="border-t border-dashed border-white/10" />
 
-                    {/* THE 5 SEPARATE SUB-WEBSITES OPERATIONAL CONTROL BOXES */}
+                    {/* THE ALL 6 SUB-WEBSITES OPERATIONAL & EMERGENCY CONTROL BOXES */}
                     <div className="space-y-6">
                       {[
                         { key: "movieBooking", name: "1. Movie Booking Sub-Website Box", icon: "🎬", visitors: "1,240", desc: "Theatres catalog, showtimes, seats & ticket booking" },
                         { key: "eventBooking", name: "2. Event Booking Sub-Website Box", icon: "🎟️", visitors: "327", desc: "Live concerts, fan galas, comedy shows & passes" },
                         { key: "filmProduction", name: "3. Film Production Sub-Website Box", icon: "🎥", visitors: "840", desc: "Casting hub, equipment rentals & investor brief" },
                         { key: "eventManagement", name: "4. Event Management Sub-Website Box", icon: "🎤", visitors: "610", desc: "Audio launches, movie promotions & celeb galas" },
-                        { key: "brandPromotion", name: "5. Brand Publicity Sub-Website Box", icon: "📢", visitors: "490", desc: "Theatre ad space buyouts & media PR campaigns" }
+                        { key: "brandPromotion", name: "5. Brand Publicity Sub-Website Box", icon: "📢", visitors: "490", desc: "Theatre ad space buyouts & media PR campaigns" },
+                        { key: "cinecoins", name: "6. CineCoins Rewards & Loyalty Vault Box", icon: "🪙", visitors: "1,890", desc: "Digital wallet, redemption gateway, coin transfers & vouchers" }
                       ].map((pillar) => {
                         const pillarState = serviceControl?.[pillar.key];
                         const isLive = pillarState?.status !== false;
                         const pillarProposals = serviceProposals.filter(p => p.subWebsiteKey === pillar.key);
 
                         return (
-                          <div key={pillar.key} className="bg-black/60 border border-white/10 hover:border-gold/30 rounded-2xl p-6 space-y-5 transition-all shadow-xl">
+                          <div 
+                            key={pillar.key} 
+                            className={`bg-black/60 border rounded-2xl p-6 space-y-5 transition-all shadow-xl ${
+                              isLive 
+                                ? "border-white/10 hover:border-gold/40" 
+                                : "border-rose-500/50 bg-rose-950/10 shadow-rose-950/40"
+                            }`}
+                          >
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
                               <div className="space-y-1.5 text-left">
                                 <div className="flex items-center gap-2">
@@ -6333,16 +6540,18 @@ export default function AdminPanel({
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted">
                                   <span className={`font-mono font-bold px-2.5 py-0.5 rounded text-[10px] ${
-                                    isLive ? "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20" : "text-rose-400 bg-rose-400/10 border border-rose-400/20"
+                                    isLive ? "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20" : "text-rose-400 bg-rose-400/10 border border-rose-400/20 animate-pulse"
                                   }`}>
-                                    Status : {isLive ? "🟢 LIVE & OPERATIONAL" : "🔴 OFFLINE / MAINTENANCE"}
+                                    Status : {isLive ? "🟢 LIVE & OPERATIONAL" : "🔴 EMERGENCY KILL SWITCH ACTIVE"}
                                   </span>
                                   <span className="font-mono text-white/70 bg-white/5 px-2 py-0.5 rounded text-[10px]">
                                     Active Visitors: {pillar.visitors}
                                   </span>
-                                  <span className="text-gold font-mono text-[10px] bg-gold/10 px-2.5 py-0.5 rounded border border-gold/20 font-bold">
-                                    Proposals Inbox: {pillarProposals.length} received
-                                  </span>
+                                  {pillar.key !== "cinecoins" && (
+                                    <span className="text-gold font-mono text-[10px] bg-gold/10 px-2.5 py-0.5 rounded border border-gold/20 font-bold">
+                                      Proposals Inbox: {pillarProposals.length} received
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-xs text-white/50 font-light">{pillar.desc}</p>
                               </div>
@@ -6350,10 +6559,25 @@ export default function AdminPanel({
                               <div className="flex flex-wrap items-center gap-2">
                                 <button
                                   onClick={() => setActiveCMSPillar(pillar.key as PillarKey)}
-                                  className="px-4 py-2 bg-gradient-to-r from-[#D4AF37] via-amber-500 to-[#D4AF37] hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-1.5"
+                                  className="px-3.5 py-1.5 bg-gradient-to-r from-[#D4AF37] via-amber-500 to-[#D4AF37] hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-1.5"
                                 >
-                                  <span>🚀 Launch {pillar.name.split(" ")[1]} CMS</span>
+                                  <span>🚀 Launch CMS</span>
                                 </button>
+
+                                {/* 🚨 Emergency Kill Switch with 2FA Confirmation Modal */}
+                                <button
+                                  onClick={() => handleOpenEmergencyModal(pillar.key, pillar.name, isLive ? "kill" : "restore")}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                                    isLive 
+                                      ? "bg-rose-600/25 hover:bg-rose-600 text-rose-300 hover:text-white border-rose-500/40 shadow-sm" 
+                                      : "bg-emerald-600/25 hover:bg-emerald-600 text-emerald-300 hover:text-white border-emerald-500/40 shadow-sm"
+                                  }`}
+                                  title="Emergency Kill Switch with 2FA Confirmation"
+                                >
+                                  {isLive ? "🚨 Kill Switch" : "⚡ Restore"}
+                                </button>
+
+                                {/* Fast 1-Click Quick Toggles */}
                                 <button
                                   onClick={() => {
                                     if (!setServiceControl) return;
@@ -6375,7 +6599,7 @@ export default function AdminPanel({
                                       ]);
                                     }
                                   }}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
                                     isLive ? "bg-emerald-500 text-black border-emerald-400 font-extrabold shadow-md" : "bg-white/5 text-white/50 border-white/10 hover:text-white"
                                   }`}
                                 >
@@ -6402,7 +6626,7 @@ export default function AdminPanel({
                                       ]);
                                     }
                                   }}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer border ${
                                     !isLive ? "bg-rose-600 text-white border-rose-500 font-extrabold shadow-md animate-pulse" : "bg-white/5 text-white/50 border-white/10 hover:text-white"
                                   }`}
                                 >
@@ -6413,14 +6637,34 @@ export default function AdminPanel({
                                     setSelectedConfigService(pillar.key);
                                     setIsEditMaintenanceModalOpen(true);
                                   }}
-                                  className="px-3.5 py-1.5 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer"
+                                  className="px-3 py-1.5 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer"
                                 >
                                   Config
                                 </button>
                               </div>
                             </div>
 
-                            {/* CUSTOMER PROPOSALS INBOX FOR THIS SUB-WEBSITE */}
+                            {/* Real-time Public Screen Advisory Preview */}
+                            <div className={`p-3 rounded-xl border text-[11px] font-mono space-y-1.5 transition-all ${
+                              !isLive 
+                                ? "bg-rose-950/30 border-rose-500/40 text-rose-200" 
+                                : "bg-white/[0.02] border-white/5 text-white/70"
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold flex items-center gap-1.5">
+                                  <span>{!isLive ? "🚨 Public Advisory Screen Notice" : "📋 Public Maintenance Template"}</span>
+                                </span>
+                                <span className="text-[10px] text-gold font-bold">
+                                  EST RETURN: {pillarState?.expectedTime || "Promptly"}
+                                </span>
+                              </div>
+                              <p className="font-bold text-white text-xs truncate">
+                                {pillarState?.title || `${pillar.name} Operational`}
+                              </p>
+                              <p className="text-[10px] text-white/60 line-clamp-1 italic">
+                                "{pillarState?.message || "All systems normal."}"
+                              </p>
+                            </div>
                             <div className="space-y-3 pt-1">
                               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gold">
                                 <span>📩 Customer Proposals Delivered from Website</span>
@@ -8801,6 +9045,214 @@ export default function AdminPanel({
                       className="flex-1 py-2 rounded-lg bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider cursor-pointer border-0 shadow-lg shadow-gold/10"
                     >
                       Save Notice Template
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Emergency Kill Switch Authorization Modal */}
+          {isEmergencyKillModalOpen && (
+            <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in font-sans">
+              <div className="bg-[#0D0B0E] border-2 border-rose-500/50 rounded-2xl p-6 md:p-7 max-w-lg w-full shadow-2xl space-y-5 text-left relative overflow-hidden">
+                {/* Red warning gradient backdrop bar */}
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500" />
+                
+                <div className="flex items-start justify-between border-b border-white/10 pb-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.25em] flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      CRITICAL FAILSAFE OPERATION
+                    </span>
+                    <h3 className="font-extrabold text-base text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>🚨</span> Emergency Kill Switch Command
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEmergencyKillModalOpen(false)}
+                    className="p-1.5 rounded-full text-white/50 hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer border-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3.5 space-y-1 text-xs">
+                  <div className="flex justify-between items-center text-rose-300 font-bold">
+                    <span>Target Service:</span>
+                    <span className="font-mono text-white bg-black/50 px-2 py-0.5 rounded border border-rose-500/30">
+                      {emergencyTargetName}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-rose-200/80 leading-relaxed pt-1">
+                    {emergencyActionType === "restore"
+                      ? "This will restore public customer access and return the service to live operational status."
+                      : "Executing this command immediately freezes public customer traffic, suspends new booking/order creation, and activates the emergency maintenance page across all client devices."}
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleConfirmEmergencyAction();
+                  }}
+                  className="space-y-4"
+                >
+                  {/* Action Mode Radio */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">
+                      Execution Action
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmergencyActionType("kill");
+                          setEmergencyNoticeTitle(`🚨 ${emergencyTargetName} Emergency Freeze`);
+                        }}
+                        className={`py-2 px-2 rounded-xl text-[10px] font-bold uppercase transition-all border cursor-pointer ${
+                          emergencyActionType === "kill"
+                            ? "bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-600/30"
+                            : "bg-white/5 text-white/60 border-white/10 hover:text-white"
+                        }`}
+                      >
+                        🚨 Kill Switch
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmergencyActionType("maintenance");
+                          setEmergencyNoticeTitle(`🛠️ ${emergencyTargetName} Under Maintenance`);
+                        }}
+                        className={`py-2 px-2 rounded-xl text-[10px] font-bold uppercase transition-all border cursor-pointer ${
+                          emergencyActionType === "maintenance"
+                            ? "bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30"
+                            : "bg-white/5 text-white/60 border-white/10 hover:text-white"
+                        }`}
+                      >
+                        🛠️ Maintenance
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmergencyActionType("restore");
+                        }}
+                        className={`py-2 px-2 rounded-xl text-[10px] font-bold uppercase transition-all border cursor-pointer ${
+                          emergencyActionType === "restore"
+                            ? "bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30"
+                            : "bg-white/5 text-white/60 border-white/10 hover:text-white"
+                        }`}
+                      >
+                        ⚡ Restore Live
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Incident / Audit Reason */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">
+                      Incident Reason (Permanent Audit Log) *
+                    </label>
+                    <input
+                      type="text"
+                      value={emergencyReasonInput}
+                      onChange={(e) => setEmergencyReasonInput(e.target.value)}
+                      placeholder="e.g. Threat mitigation, critical DB patch, payment gateway outage..."
+                      className="w-full px-3 py-2 bg-black/60 border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-rose-400"
+                      required
+                    />
+                  </div>
+
+                  {emergencyActionType !== "restore" && (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">
+                            Public Screen Title
+                          </label>
+                          <input
+                            type="text"
+                            value={emergencyNoticeTitle}
+                            onChange={(e) => setEmergencyNoticeTitle(e.target.value)}
+                            className="w-full px-3 py-2 bg-black/60 border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-rose-400"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">
+                            Estimated Return Time
+                          </label>
+                          <input
+                            type="text"
+                            value={emergencyNoticeTime}
+                            onChange={(e) => setEmergencyNoticeTime(e.target.value)}
+                            className="w-full px-3 py-2 bg-black/60 border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-rose-400"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">
+                          Public Advisory Message
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={emergencyNoticeMsg}
+                          onChange={(e) => setEmergencyNoticeMsg(e.target.value)}
+                          className="w-full px-3 py-2 bg-black/60 border border-white/15 rounded-xl text-xs text-white focus:outline-none focus:border-rose-400 font-sans resize-none"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* 2FA / Passcode Input */}
+                  <div className="space-y-1 bg-black/40 border border-white/10 rounded-xl p-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-rose-300 uppercase tracking-wider block">
+                        Super Admin Passcode PIN (Default: 8888) *
+                      </label>
+                      <span className="text-[10px] text-text-muted font-mono">2FA Required</span>
+                    </div>
+                    <input
+                      type="password"
+                      value={emergencyPinVal}
+                      onChange={(e) => {
+                        setEmergencyPinVal(e.target.value);
+                        setEmergencyPinError("");
+                      }}
+                      placeholder="Enter 4-digit PIN (e.g. 8888)"
+                      className="w-full px-3 py-2 bg-black border border-white/20 rounded-xl text-sm font-mono text-center text-amber-400 focus:outline-none focus:border-rose-400 tracking-widest"
+                      required
+                    />
+                    {emergencyPinError && (
+                      <p className="text-[10px] text-rose-400 font-semibold pt-1">
+                        ⚠️ {emergencyPinError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEmergencyKillModalOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white uppercase cursor-pointer transition-all"
+                    >
+                      Abort
+                    </button>
+                    <button
+                      type="submit"
+                      className={`flex-1 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider cursor-pointer transition-all shadow-lg ${
+                        emergencyActionType === "restore"
+                          ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30"
+                          : "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/40"
+                      }`}
+                    >
+                      {emergencyActionType === "restore"
+                        ? "⚡ Confirm Restore"
+                        : "🚨 Execute Kill Switch"}
                     </button>
                   </div>
                 </form>

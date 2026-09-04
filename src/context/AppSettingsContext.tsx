@@ -35,7 +35,8 @@ const DEFAULT_SETTINGS: GlobalAppSettings = {
     eventBooking: { status: true, title: "Event Booking Temporarily Unavailable", message: "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.", expectedTime: "31 July 2026, 10:00 AM", visitors: 327 },
     filmProduction: { status: true, title: "Film Production Division Under Maintenance", message: "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com", expectedTime: "30 July 2026, 12:00 PM" },
     eventManagement: { status: true, title: "Event Management Under Maintenance", message: "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon.", expectedTime: "31 July 2026, 02:00 PM" },
-    brandPromotion: { status: true, title: "Brand Promotion Under Maintenance", message: "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.", expectedTime: "31 July 2026, 05:00 PM" }
+    brandPromotion: { status: true, title: "Brand Promotion Under Maintenance", message: "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.", expectedTime: "31 July 2026, 05:00 PM" },
+    cinecoins: { status: true, title: "CineCoins Rewards Vault Under Maintenance", message: "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back shortly.", expectedTime: "31 July 2026, 06:00 PM" }
   }
 };
 

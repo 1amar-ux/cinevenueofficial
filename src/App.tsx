@@ -213,6 +213,12 @@ export default function App() {
         title: remote.brandPromotion?.title || "Brand Promotion Under Maintenance",
         message: remote.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.",
         expectedTime: remote.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"
+      },
+      cinecoins: {
+        status: remote.cinecoins?.status !== false,
+        title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+        message: remote.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
+        expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
       }
     };
   }, [globalAppSettings]);
@@ -930,9 +936,41 @@ export default function App() {
       <Route path="/callback" element={<AuthCallback />} />
 
       {/* Events Sub-website */}
-      <Route path="/events/*" element={<EventsApp />} />
+      <Route 
+        path="/events/*" 
+        element={
+          serviceControl?.eventBooking?.status === false ? (
+            <MaintenancePage
+              serviceName="Event Booking"
+              title={serviceControl?.eventBooking?.title || "Event Booking Temporarily Unavailable"}
+              message={serviceControl?.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon."}
+              expectedTime={serviceControl?.eventBooking?.expectedTime || "31 July 2026, 10:00 AM"}
+              icon="🎟️"
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <EventsApp />
+          )
+        } 
+      />
       <Route path="/movies" element={<Navigate to="/booking" replace />} />
-      <Route path="/services" element={<Services />} />
+      <Route 
+        path="/services" 
+        element={
+          serviceControl?.brandPromotion?.status === false ? (
+            <MaintenancePage
+              serviceName="Brand Publicity"
+              title={serviceControl?.brandPromotion?.title || "Brand Promotion Under Maintenance"}
+              message={serviceControl?.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly."}
+              expectedTime={serviceControl?.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"}
+              icon="📢"
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <Services />
+          )
+        } 
+      />
 
       {/* Corporate Luxury Homepage */}
       <Route
@@ -1624,130 +1662,105 @@ export default function App() {
       <Route 
         path="/cinecoins" 
         element={
-          <CineCoinsModule 
-            settings={cineCoinsSettings}
-            rewards={cineCoinsRewards}
-            challenges={cineCoinsChallenges}
-            userWallet={cineCoinsUserWallet}
-            transactions={cineCoinsTransactions}
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
-            onAddTransaction={(tx) => setCineCoinsTransactions([tx, ...cineCoinsTransactions])}
-          />
+          serviceControl?.cinecoins?.status === false ? (
+            <MaintenancePage
+              serviceName="CineCoins Rewards Vault"
+              title={serviceControl?.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance"}
+              message={serviceControl?.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly."}
+              expectedTime={serviceControl?.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"}
+              icon="🪙"
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <CineCoinsModule 
+              settings={cineCoinsSettings}
+              rewards={cineCoinsRewards}
+              challenges={cineCoinsChallenges}
+              userWallet={cineCoinsUserWallet}
+              transactions={cineCoinsTransactions}
+              userEmail={userEmail}
+              onOpenAuth={() => setAuthOpen(true)}
+              onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
+              onAddTransaction={(tx) => setCineCoinsTransactions([tx, ...cineCoinsTransactions])}
+            />
+          )
         } 
       />
 
       {/* CineVenue Productions Sub-website */}
-      <Route 
-        path="/productions" 
-        element={
-          <FilmProductionSubWebsite 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onBookTickets={(title) => {
-              setBookingMovieTitle(title);
-            }}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-          />
-        } 
-      />
-      <Route
-        path="/media-promotions"
-        element={
-          <FilmProductionSubWebsite
-            userEmail={userEmail}
-            initialModule="media"
-            onOpenAuth={() => setAuthOpen(true)}
-            onBookTickets={(title) => setBookingMovieTitle(title)}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-          />
-        }
-      />
-      <Route 
-        path="/film-production" 
-        element={
-          <FilmProductionSubWebsite 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onBookTickets={(title) => {
-              setBookingMovieTitle(title);
-            }}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-          />
-        } 
-      />
-      <Route 
-        path="/filmproduction" 
-        element={
-          <FilmProductionSubWebsite 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onBookTickets={(title) => {
-              setBookingMovieTitle(title);
-            }}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-          />
-        } 
-      />
-      <Route 
-        path="/24crafts" 
-        element={
-          <FilmProductionSubWebsite 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onBookTickets={(title) => {
-              setBookingMovieTitle(title);
-            }}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-          />
-        } 
-      />
-      <Route 
-        path="/crafts" 
-        element={
-          <FilmProductionSubWebsite 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onBookTickets={(title) => {
-              setBookingMovieTitle(title);
-            }}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-          />
-        } 
-      />
+      {(() => {
+        const renderFilmProduction = (initialMod?: any) => {
+          if (serviceControl?.filmProduction?.status === false) {
+            return (
+              <MaintenancePage
+                serviceName="Film Production"
+                title={serviceControl?.filmProduction?.title || "Film Production Division Under Maintenance"}
+                message={serviceControl?.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com"}
+                expectedTime={serviceControl?.filmProduction?.expectedTime || "30 July 2026, 12:00 PM"}
+                icon="🎥"
+                onBackToHome={() => window.location.href = "/"}
+              />
+            );
+          }
+          return (
+            <FilmProductionSubWebsite 
+              userEmail={userEmail}
+              initialModule={initialMod}
+              onOpenAuth={() => setAuthOpen(true)}
+              onBookTickets={(title) => {
+                setBookingMovieTitle(title);
+              }}
+              castingApplications={castingApplications}
+              onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
+            />
+          );
+        };
+
+        return (
+          <>
+            <Route path="/productions" element={renderFilmProduction()} />
+            <Route path="/media-promotions" element={renderFilmProduction("media")} />
+            <Route path="/film-production" element={renderFilmProduction()} />
+            <Route path="/filmproduction" element={renderFilmProduction()} />
+            <Route path="/24crafts" element={renderFilmProduction()} />
+            <Route path="/crafts" element={renderFilmProduction()} />
+          </>
+        );
+      })()}
 
       {/* CineVenue Event Management Hub & Create Event Sub-website */}
-      <Route 
-        path="/events" 
-        element={
-          <EventManagementHub 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onNavigateHome={() => window.location.href = "/"}
-          />
-        } 
-      />
-      <Route 
-        path="/event-management" 
-        element={
-          <EventManagementHub 
-            userEmail={userEmail}
-            onOpenAuth={() => setAuthOpen(true)}
-            onNavigateHome={() => window.location.href = "/"}
-          />
-        } 
-      />
-      <Route 
-        path="/create-event" 
-        element={<CreateEvent />} 
-      />
+      {(() => {
+        const renderEventManagement = (isCreate = false) => {
+          if (serviceControl?.eventManagement?.status === false) {
+            return (
+              <MaintenancePage
+                serviceName="Event Management"
+                title={serviceControl?.eventManagement?.title || "Event Management Under Maintenance"}
+                message={serviceControl?.eventManagement?.message || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon."}
+                expectedTime={serviceControl?.eventManagement?.expectedTime || "31 July 2026, 02:00 PM"}
+                icon="🎤"
+                onBackToHome={() => window.location.href = "/"}
+              />
+            );
+          }
+          if (isCreate) return <CreateEvent />;
+          return (
+            <EventManagementHub 
+              userEmail={userEmail}
+              onOpenAuth={() => setAuthOpen(true)}
+              onNavigateHome={() => window.location.href = "/"}
+            />
+          );
+        };
+
+        return (
+          <>
+            <Route path="/events" element={renderEventManagement()} />
+            <Route path="/event-management" element={renderEventManagement()} />
+            <Route path="/create-event" element={renderEventManagement(true)} />
+          </>
+        );
+      })()}
 
       {/* My Account Sub-website */}
       <Route 
