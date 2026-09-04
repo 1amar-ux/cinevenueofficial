@@ -147,4 +147,112 @@ router.post("/settings", authorize("SUPER_ADMIN"), async (req: Request, res: Res
   }
 });
 
+// 6. Centralized Global App Settings & Maintenance Control (Supabase Singleton)
+router.get("/settings/global", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const settings = await prisma.appSettings.upsert({
+      where: { id: "global_default" },
+      update: {},
+      create: {
+        id: "global_default",
+        maintenanceMode: false,
+        maintenanceTitle: "Movie Booking Temporarily Unavailable",
+        maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+        maintenanceCountdownEnabled: false,
+        serviceControls: {}
+      }
+    });
+
+    return res.json({
+      success: true,
+      data: { settings }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/settings/global", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      maintenanceMode,
+      maintenanceTitle,
+      maintenanceMessage,
+      maintenanceCountdownEnabled,
+      maintenanceEndTime,
+      serviceControls
+    } = req.body;
+
+    const existing = await prisma.appSettings.findUnique({
+      where: { id: "global_default" }
+    });
+
+    const previousValue = existing ? {
+      maintenanceMode: existing.maintenanceMode,
+      maintenanceTitle: existing.maintenanceTitle
+    } : null;
+
+    const updated = await prisma.appSettings.upsert({
+      where: { id: "global_default" },
+      update: {
+        ...(typeof maintenanceMode === "boolean" && { maintenanceMode }),
+        ...(maintenanceTitle !== undefined && { maintenanceTitle }),
+        ...(maintenanceMessage !== undefined && { maintenanceMessage }),
+        ...(typeof maintenanceCountdownEnabled === "boolean" && { maintenanceCountdownEnabled }),
+        ...(maintenanceEndTime !== undefined && {
+          maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null
+        }),
+        ...(serviceControls !== undefined && { serviceControls }),
+        updatedBy: req.user?.email || "admin",
+        updatedAt: new Date()
+      },
+      create: {
+        id: "global_default",
+        maintenanceMode: !!maintenanceMode,
+        maintenanceTitle: maintenanceTitle || "Movie Booking Temporarily Unavailable",
+        maintenanceMessage: maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+        maintenanceCountdownEnabled: !!maintenanceCountdownEnabled,
+        maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null,
+        serviceControls: serviceControls || {},
+        updatedBy: req.user?.email || "admin"
+      }
+    });
+
+    // Step 23: Audit logging of maintenance status changes
+    await prisma.financialAuditLog.create({
+      data: {
+        eventType: "MAINTENANCE_STATUS_CHANGE",
+        actorEmail: req.user?.email || "system_admin",
+        description: `Admin toggled global maintenance mode: ${previousValue?.maintenanceMode ?? false} -> ${updated.maintenanceMode}`,
+        metadata: {
+          changedBy: req.user?.email,
+          previousValue,
+          newValue: {
+            maintenanceMode: updated.maintenanceMode,
+            maintenanceTitle: updated.maintenanceTitle,
+            maintenanceMessage: updated.maintenanceMessage,
+            maintenanceEndTime: updated.maintenanceEndTime
+          },
+          timestamp: new Date().toISOString()
+        }
+      }
+    }).catch((err) => {
+      // Non-blocking log
+      console.error("Audit log error:", err);
+    });
+
+    // Invalidate memory cache so next request reads the new state immediately
+    const { invalidateMaintenanceCache } = await import("../../middleware/maintenance");
+    invalidateMaintenanceCache();
+
+    return res.json({
+      success: true,
+      message: `Global maintenance mode ${updated.maintenanceMode ? "ENABLED (ON)" : "DISABLED (OFF)"}`,
+      data: { settings: updated }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

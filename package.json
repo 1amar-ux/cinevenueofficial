@@ -22,6 +22,7 @@
     "@mui/x-data-grid": "^9.8.0",
     "@prisma/client": "^5.22.0",
     "@supabase/server": "^1.3.0",
+    "@supabase/supabase-js": "^2.49.1",
     "@tailwindcss/vite": "^4.1.14",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",

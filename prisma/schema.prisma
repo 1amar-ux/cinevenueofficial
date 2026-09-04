@@ -655,3 +655,17 @@ model PlatformSetting {
   description String?
   updatedAt   DateTime @updatedAt
 }
+
+model AppSettings {
+  id                         String    @id @default("global_default")
+  maintenanceMode            Boolean   @default(false) @map("maintenance_mode")
+  maintenanceTitle           String?   @default("Movie Booking Temporarily Unavailable") @map("maintenance_title")
+  maintenanceMessage         String?   @default("We are upgrading our ticket booking experience. Movie booking will be available shortly.") @map("maintenance_message")
+  maintenanceCountdownEnabled Boolean   @default(false) @map("maintenance_countdown_enabled")
+  maintenanceEndTime         DateTime? @map("maintenance_end_time")
+  serviceControls            Json?     @map("service_controls")
+  updatedAt                  DateTime  @default(now()) @updatedAt @map("updated_at")
+  updatedBy                  String?   @map("updated_by")
+
+  @@map("app_settings")
+}

@@ -1,12 +1,13 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { bookingService } from "./booking.service";
 import { authenticate } from "../../middleware/auth";
+import { checkMovieBookingMaintenance } from "../../middleware/maintenance";
 import { prisma } from "../../config/database";
 
 const router = Router();
 
 // 1. Lock Seats
-router.post("/lock-seats", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/lock-seats", authenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { showId, seatIds } = req.body;
     const result = await bookingService.lockSeats(showId, seatIds, req.user!.userId);
@@ -21,7 +22,7 @@ router.post("/lock-seats", authenticate, async (req: Request, res: Response, nex
 });
 
 // 2. Server-side Calculate Price Breakdown
-router.post("/calculate-price", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/calculate-price", checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { showId, seatIds, couponCode } = req.body;
     const result = await bookingService.calculateBookingPrice(showId, seatIds, couponCode);
@@ -35,7 +36,7 @@ router.post("/calculate-price", async (req: Request, res: Response, next: NextFu
 });
 
 // 3. Create Pending Booking
-router.post("/", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", authenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { showId, seatIds, couponCode } = req.body;
     const result = await bookingService.createPendingBooking({

@@ -3,6 +3,7 @@ import React, {
 } from "react";
 import EventsAdminModule from "./admin/events/EventsAdminModule";
 import { useState, useEffect } from "react";
+import { useAppSettings } from "../context/AppSettingsContext";
 import { 
   X, Check, Ban, Eye, Mail, Film, PlusCircle, Trash2, MapPin, Database, Award, Landmark, 
   Sparkles, Clock, DollarSign, CalendarRange, Wallet, CheckCircle, Ticket, 
@@ -225,6 +226,8 @@ export default function AdminPanel({
   cineCoinsTransactions,
   onUpdateCineCoinsTransactions,
 }: AdminPanelProps) {
+  const { settings: globalAppSettings, updateGlobalSettings } = useAppSettings();
+
   // Mobile menu control
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -954,9 +957,13 @@ export default function AdminPanel({
   const [gstPercentage, setGstPercentage] = useState(18);
   const [supportEmail, setSupportEmail] = useState("support@cinevenue.com");
   const [supportPhone, setSupportPhone] = useState("+91 90000 12345");
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(globalAppSettings.maintenanceMode);
   const [autoTimeoutMinutes, setAutoTimeoutMinutes] = useState(15);
   const [isSettingsSaved, setIsSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    setMaintenanceMode(globalAppSettings.maintenanceMode);
+  }, [globalAppSettings.maintenanceMode]);
 
   // State: Settlements Ledger & Range Allocations
   const [allocationSplitPercent, setAllocationSplitPercent] = useState<number>(45);
@@ -978,11 +985,12 @@ export default function AdminPanel({
     alert(`Successfully saved updated settlement ledger configurations for "${editingSettleTheatre.name}"!`);
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    await updateGlobalSettings({ maintenanceMode });
     setIsSettingsSaved(true);
     setTimeout(() => setIsSettingsSaved(false), 3000);
-    alert("CineVenue Platform configuration saved successfully!");
+    alert("CineVenue Platform configuration saved and synchronized globally!");
   };
 
   // Dynamic Cities/Locations Management Handlers
@@ -5218,13 +5226,18 @@ export default function AdminPanel({
                         </div>
                         <button
                           type="button"
-                          onClick={() => setMaintenanceMode(!maintenanceMode)}
+                          id="btn-admin-platform-maintenance-toggle"
+                          onClick={async () => {
+                            const nextVal = !globalAppSettings.maintenanceMode;
+                            setMaintenanceMode(nextVal);
+                            await updateGlobalSettings({ maintenanceMode: nextVal });
+                          }}
                           className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 border-0 cursor-pointer ${
-                            maintenanceMode ? "bg-red-500" : "bg-white/10"
+                            globalAppSettings.maintenanceMode ? "bg-red-500" : "bg-white/10"
                           }`}
                         >
                           <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
-                            maintenanceMode ? "translate-x-5" : "translate-x-0"
+                            globalAppSettings.maintenanceMode ? "translate-x-5" : "translate-x-0"
                           }`} />
                         </button>
                       </div>

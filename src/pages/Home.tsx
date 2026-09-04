@@ -397,9 +397,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6">
               <button
                 onClick={() => navigate("/booking")}
-                className="w-full py-2 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none"
+                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
+                  (serviceControl?.movieBooking?.status ?? true)
+                    ? "bg-[#D4AF37] hover:bg-[#E5C158] text-black"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
+                }`}
               >
-                <span>Launch Ticket Engine</span>
+                <span>{(serviceControl?.movieBooking?.status ?? true) ? "Launch Ticket Engine" : "Under Maintenance"}</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>

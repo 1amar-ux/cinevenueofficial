@@ -12,14 +12,17 @@ import App from "./App.tsx";
 import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { BookingProvider } from "./context/BookingContext";
+import { AppSettingsProvider } from "./context/AppSettingsContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <BookingProvider>
-          <App />
-        </BookingProvider>
+        <AppSettingsProvider>
+          <BookingProvider>
+            <App />
+          </BookingProvider>
+        </AppSettingsProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

@@ -54,4 +54,27 @@ router.use("/events", eventRoutes);
 router.use("/marketplace", marketplaceRoutes);
 router.use("/admin", adminRoutes);
 
+// ==========================================
+// 3. PUBLIC APP SETTINGS ROUTE (/api/v1/settings/app)
+// ==========================================
+router.get("/settings/app", async (req, res, next) => {
+  try {
+    const { getGlobalAppSettings } = await import("./middleware/maintenance");
+    const settings = await getGlobalAppSettings();
+    return res.json({
+      success: true,
+      data: {
+        maintenanceMode: settings.maintenanceMode,
+        maintenanceTitle: settings.maintenanceTitle,
+        maintenanceMessage: settings.maintenanceMessage,
+        maintenanceCountdownEnabled: settings.maintenanceCountdownEnabled,
+        maintenanceEndTime: settings.maintenanceEndTime,
+        serviceControls: settings.serviceControls
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
