@@ -24,6 +24,18 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     confirmPassword: "",
   });
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const authErr = params.get("authError");
+      if (authErr) {
+        setErrorMessage(decodeURIComponent(authErr));
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, "", cleanUrl);
+      }
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -95,7 +107,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         onClose();
       }
     } catch (err: any) {
-      const message = err.response?.data?.message || err.response?.data?.error?.message || err.message || "Something went wrong. Please try again.";
+      let message = err.response?.data?.error?.message || err.response?.data?.message || err.message;
+      if (!message || message.includes("500") || message.includes("Network Error")) {
+        message = "A temporary server connection issue occurred. Please check your network and try again.";
+      }
       setErrorMessage(message);
     } finally {
       setIsLoading(false);

@@ -28,7 +28,7 @@ export default function Register() {
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.message || "Registration failed or server error");
+      setError(err.response?.data?.error?.message || err.response?.data?.message || "Registration failed or server error");
     }
   };
 

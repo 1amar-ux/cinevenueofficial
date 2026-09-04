@@ -2,13 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import { authService } from "./auth.service";
 
 export class AuthController {
-  private setSessionCookies(res: Response, tokens: { accessToken: string; refreshToken: string }) {
+  private setSessionCookies = (res: Response, tokens: { accessToken: string; refreshToken: string }) => {
     const secure = process.env.NODE_ENV === "production";
     const base = { httpOnly: true, secure, sameSite: "lax" as const, path: "/" };
     res.cookie("cine_access_token", tokens.accessToken, { ...base, maxAge: 60 * 60 * 1000 });
     res.cookie("cine_refresh_token", tokens.refreshToken, { ...base, maxAge: 7 * 24 * 60 * 60 * 1000 });
-  }
-  public async register(req: Request, res: Response, next: NextFunction) {
+  };
+
+  public register = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.register(req.body);
       this.setSessionCookies(res, result.tokens);
@@ -20,9 +21,9 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async login(req: Request, res: Response, next: NextFunction) {
+  public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.login(req.body);
       this.setSessionCookies(res, result.tokens);
@@ -34,9 +35,9 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async verifyEmail(req: Request, res: Response, next: NextFunction) {
+  public verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = String(req.query.token || "");
       const result = await authService.verifyEmail(token);
@@ -44,27 +45,31 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async resendVerification(req: Request, res: Response, next: NextFunction) {
+  public resendVerification = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.resendVerification(String(req.body?.email || ""));
       return res.json(result);
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async googleLoginRedirect(req: Request, res: Response, next: NextFunction) {
+  public googleLoginRedirect = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const redirectUrl = await authService.getGoogleAuthRedirectUrl();
       return res.redirect(redirectUrl);
-    } catch (error) {
-      next(error);
+    } catch (error: any) {
+      // In production, if Google OAuth credentials are not set, redirect back gracefully to the app with clear feedback
+      const referer = (req.headers.referer as string) || "/booking";
+      const separator = referer.includes("?") ? "&" : "?";
+      const friendlyMsg = encodeURIComponent("Google Sign-In is not currently configured in production. Please use Email & Password to create an account or sign in.");
+      return res.redirect(`${referer}${separator}authError=${friendlyMsg}`);
     }
-  }
+  };
 
-  public async googleLogin(req: Request, res: Response, next: NextFunction) {
+  public googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { idToken, code, state, email, name, image } = req.body || {};
       const result = await authService.googleLogin({ idToken, code, state, email, name, image });
@@ -77,9 +82,9 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async refresh(req: Request, res: Response, next: NextFunction) {
+  public refresh = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refreshToken = req.body.refreshToken || req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_refresh_token="))?.split("=")[1];
       const tokens = await authService.refreshToken(refreshToken);
@@ -92,9 +97,9 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async logout(req: Request, res: Response, next: NextFunction) {
+  public logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refreshToken = req.body.refreshToken || req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_refresh_token="))?.split("=")[1];
       const result = await authService.logout(refreshToken);
@@ -104,9 +109,9 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async getMe(req: Request, res: Response, next: NextFunction) {
+  public getMe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await authService.getProfile(req.user!.userId);
       return res.json({
@@ -116,18 +121,18 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async forgotPassword(req: Request, res: Response, next: NextFunction) {
+  public forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.requestPasswordReset(req.body.email);
       return res.json(result);
     } catch (error) {
       next(error);
     }
-  }
+  };
 
-  public async resetPassword(req: Request, res: Response, next: NextFunction) {
+  public resetPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { token, newPassword } = req.body;
       const result = await authService.resetPassword(token, newPassword);
@@ -135,7 +140,7 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 }
 
 export const authController = new AuthController();

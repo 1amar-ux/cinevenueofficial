@@ -49,7 +49,39 @@ export async function runAuthTests(): Promise<{ name: string; passed: boolean; e
       results.push({ name: "JWT: Reject token with invalid signature", passed: true });
     }
   } catch (err: any) {
-    results.push({ name: "JWT: Rejection test", passed: false, error: err.message });
+    results.push({ name: "JWT: Reject token with invalid signature", passed: false, error: err.message });
+  }
+
+  // Test 4: Resilient User Registration & Session Generation
+  try {
+    const { authService } = await import("../../server/modules/auth/auth.service");
+    const testEmail = `test_${Date.now()}@cinevenue.test`;
+    const regResult = await authService.register({
+      name: "Amar Test",
+      email: testEmail,
+      mobile: "9491336999",
+      password: "Password@123"
+    });
+
+    if (regResult.user?.email === testEmail && regResult.tokens?.accessToken) {
+      results.push({ name: "AuthService: User registration and token generation succeed", passed: true });
+    } else {
+      results.push({ name: "AuthService: Registration output incomplete", passed: false, error: "Missing user or tokens" });
+    }
+
+    // Test 5: Login with newly registered user
+    const loginResult = await authService.login({
+      email: testEmail,
+      password: "Password@123"
+    });
+
+    if (loginResult.user?.email === testEmail && loginResult.tokens?.accessToken) {
+      results.push({ name: "AuthService: User login and authentication succeed", passed: true });
+    } else {
+      results.push({ name: "AuthService: Login output incomplete", passed: false, error: "Missing user or tokens" });
+    }
+  } catch (err: any) {
+    results.push({ name: "AuthService: User registration and login flow", passed: false, error: err.message });
   }
 
   return results;

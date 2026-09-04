@@ -27,9 +27,8 @@ if (process.env.NODE_ENV === "development") {
   });
 }
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prismaGlobal = prisma;
-}
+// Reuse PrismaClient instance across warm serverless invocations to prevent connection leaks
+globalThis.prismaGlobal = prisma;
 
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
