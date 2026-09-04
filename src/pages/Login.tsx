@@ -18,26 +18,15 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const { login } = useContext(AuthContext);
+  const { signIn } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
       setError("");
-      const res = await api.post("/auth/login", {
-        email,
-        password
-      });
-      console.log(res.data);
-      if (res.data && res.data.token) {
-        login(res.data);
-        setSuccess("Login successful!");
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
-      } else {
-        setError("Invalid response format from server");
-      }
+      await signIn(email, password);
+      setSuccess("Login successful!");
+      setTimeout(() => navigate("/"), 500);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || "Invalid credentials or server error");

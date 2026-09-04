@@ -1,477 +1,259 @@
 import React, { useState } from "react";
-import { X, Mail, Lock, ShieldCheck, Sparkles, MapPin, Phone } from "lucide-react";
+import { X, Mail, Lock, User, Phone, ChevronRight, ArrowRight } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
-import { TheatreAdmin, EventOrganizer } from "../types";
-
 import apiClient from "../services/apiClient";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess: (email: string) => void;
-  theatreAdmins?: TheatreAdmin[];
-  eventOrganizers?: EventOrganizer[];
-  superAdminEmail?: string;
-  superAdminPassword?: string;
-  registeredUsers?: { email: string; passwordHash: string; joinedAt: string; mobile?: string }[];
-  onRegisterUser?: (email: string, passwordHash: string, mobile?: string) => void;
-  onUpdateRegisteredUsers?: (users: { email: string; passwordHash: string; joinedAt: string; mobile?: string }[]) => void;
 }
 
-export default function AuthModal({ 
-  isOpen, 
-  onClose, 
-  onAuthSuccess, 
-  theatreAdmins = [],
-  eventOrganizers = [],
-  superAdminEmail = "superadmin@cinevenue.com",
-  superAdminPassword = "",
-  registeredUsers = [],
-  onRegisterUser,
-  onUpdateRegisteredUsers
-}: AuthModalProps) {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-
-  // Password Recovery States
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [recoveryEmail, setRecoveryEmail] = useState("");
-  const [recoveryMobile, setRecoveryMobile] = useState("");
-  const [verifiedUser, setVerifiedUser] = useState<{ email: string; passwordHash: string; joinedAt: string; mobile?: string } | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-
+export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    mobile: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleChange = (field: keyof typeof form, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
+
+  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const validateMobile = (value: string) => /^\+?[1-9]\d{7,14}$/.test(value.replace(/\s+/g, ""));
+  const validatePassword = (value: string) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(value);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!email || !password) {
-      setErrorMessage("Please fill in both email and password fields.");
-      return;
+    if (mode === "signup") {
+      if (!form.fullName.trim()) {
+        setErrorMessage("Full name is required.");
+        return;
+      }
+      if (!validateEmail(form.email)) {
+        setErrorMessage("Please enter a valid email address.");
+        return;
+      }
+      if (!validateMobile(form.mobile)) {
+        setErrorMessage("Please enter a valid mobile number.");
+        return;
+      }
+      if (!validatePassword(form.password)) {
+        setErrorMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.");
+        return;
+      }
+      if (form.password !== form.confirmPassword) {
+        setErrorMessage("Passwords do not match.");
+        return;
+      }
+    } else {
+      if (!form.email.trim() && !form.mobile.trim()) {
+        setErrorMessage("Email or mobile number is required.");
+        return;
+      }
+      if (!form.password) {
+        setErrorMessage("Password is required.");
+        return;
+      }
     }
 
-    if (!email.includes("@")) {
-      setErrorMessage("Please enter a valid email address.");
-      return;
-    }
-
-    if (password.length < 5) {
-      setErrorMessage("Password must contain at least 5 characters.");
-      return;
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        // 1. Attempt backend registration
-        try {
-          const res = await apiClient.post("/auth/register", {
-            email: normalizedEmail,
-            password,
-            name: name.trim() || normalizedEmail.split("@")[0],
-            mobile: mobile.trim()
-          });
-
-          if (res.data?.data?.tokens?.accessToken) {
-            localStorage.setItem("cine_access_token", res.data.data.tokens.accessToken);
-            localStorage.setItem("token", res.data.data.tokens.accessToken);
-            if (res.data.data.tokens.refreshToken) {
-              localStorage.setItem("cine_refresh_token", res.data.data.tokens.refreshToken);
-            }
-          }
-        } catch (apiErr: any) {
-          console.warn("Backend registration API fallback note:", apiErr.message);
-        }
-
-        if (onRegisterUser) {
-          onRegisterUser(normalizedEmail, password, mobile.trim());
-        }
+      if (mode === "signup") {
+        await apiClient.post("/auth/register", {
+          name: form.fullName.trim(),
+          email: form.email.trim().toLowerCase(),
+          mobile: form.mobile.trim(),
+          password: form.password,
+        });
+        setSuccessMessage("Your account has been created. Please verify your email address to continue.");
+        setMode("signin");
+        setForm(prev => ({ ...prev, password: "", confirmPassword: "" }));
       } else {
-        // 2. Attempt backend login
-        try {
-          const res = await apiClient.post("/auth/login", {
-            email: normalizedEmail,
-            password
-          });
-
-          if (res.data?.data?.tokens?.accessToken) {
-            localStorage.setItem("cine_access_token", res.data.data.tokens.accessToken);
-            localStorage.setItem("token", res.data.data.tokens.accessToken);
-            if (res.data.data.tokens.refreshToken) {
-              localStorage.setItem("cine_refresh_token", res.data.data.tokens.refreshToken);
-            }
-          }
-        } catch (loginErr: any) {
-          console.warn("Backend login API fallback check:", loginErr.message);
-        }
+        const identifier = form.email.trim() || form.mobile.trim();
+        const response = await apiClient.post("/auth/login", { identifier, password: form.password });
+        const emailAddress = response.data?.data?.user?.email || form.email.trim().toLowerCase() || form.mobile.trim();
+        setSuccessMessage("Authentication successful.");
+        onAuthSuccess(emailAddress);
+        onClose();
       }
-
-      // Successful authentication!
-      onAuthSuccess(normalizedEmail);
-      setEmail("");
-      setPassword("");
-      setName("");
-      setMobile("");
-      onClose();
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.error?.message || err.message || "Authentication failed. Please verify credentials.");
+      const message = err.response?.data?.message || err.response?.data?.error?.message || err.message || "Something went wrong. Please try again.";
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRecoverVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
-    setVerifiedUser(null);
-
-    const normEmail = recoveryEmail.trim().toLowerCase();
-    const normMobile = recoveryMobile.trim();
-
-    if (!normEmail) {
-      setErrorMessage("Please enter your registered email address.");
-      return;
-    }
-
-    // Check registered customers
-    const matchedUser = registeredUsers.find((u) => u.email.toLowerCase() === normEmail);
-
-    if (matchedUser) {
-      // If user has a mobile saved, verify it
-      if (matchedUser.mobile && normMobile) {
-        const cleanSaved = matchedUser.mobile.replace(/[^0-9]/g, "");
-        const cleanEntered = normMobile.replace(/[^0-9]/g, "");
-        if (cleanSaved && cleanEntered && !cleanSaved.endsWith(cleanEntered) && !cleanEntered.endsWith(cleanSaved)) {
-          setErrorMessage("Verification Failed: Mobile number does not match our records for this user.");
-          return;
-        }
-      }
-      setVerifiedUser(matchedUser);
-      setSuccessMessage(`Account identity verified! You may reset your password below.`);
-    } else {
-      // Check admin profiles
-      const matchAdmin = theatreAdmins.find((a) => a.email.toLowerCase() === normEmail);
-      const matchOrganizer = eventOrganizers.find((o) => o.email.toLowerCase() === normEmail);
-      const isSuper = normEmail === superAdminEmail.toLowerCase();
-
-      if (isSuper) {
-        setSuccessMessage(`Super Admin Account Verified! Contact systems manager to update your password.`);
-      } else if (matchAdmin) {
-        setSuccessMessage(`Theatre Admin Account Verified! Contact Super Admin to reset your access password.`);
-      } else if (matchOrganizer) {
-        setSuccessMessage(`Event Organizer Account Verified! Contact Super Admin to reset your access key.`);
-      } else {
-        setErrorMessage("No registered account found with this email address.");
-      }
-    }
-  };
-
-  const handleResetPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    if (!newPassword || newPassword.length < 5) {
-      setErrorMessage("New password must be at least 5 characters long.");
-      return;
-    }
-
-    if (verifiedUser && onUpdateRegisteredUsers) {
-      const updated = registeredUsers.map((u) => {
-        if (u.email.toLowerCase() === verifiedUser.email.toLowerCase()) {
-          return { ...u, passwordHash: newPassword };
-        }
-        return u;
-      });
-      onUpdateRegisteredUsers(updated);
-      setSuccessMessage("Success: Your password has been updated. You can now use the new credentials.");
-      
-      // Auto-fill sign-in fields
-      setEmail(verifiedUser.email);
-      setPassword(newPassword);
-      
-      // Clear recovery state & return to sign in
-      setVerifiedUser(null);
-      setRecoveryEmail("");
-      setRecoveryMobile("");
-      setNewPassword("");
-      setIsForgotPassword(false);
-    } else {
-      setErrorMessage("An unexpected error occurred during password reset.");
-    }
+  const handleGoogle = () => {
+    window.location.href = "/api/v1/auth/google";
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
-      <div 
-        className="bg-[#0A0A0B] border border-white/10 w-full max-w-md rounded-xl relative shadow-2xl overflow-hidden text-left"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Absolute header bar */}
-        <div className="bg-white/[0.02] p-6 border-b border-white/10 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <CineVenueLogo size="sm" subText="Club" />
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0B0B0D] shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <CineVenueLogo size="sm" />
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/10 flex items-center justify-center text-text-secondary hover:text-gold hover:border-gold cursor-pointer transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:border-gold/50 hover:text-gold"
+            aria-label="Close auth modal"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Auth form content */}
-        <div className="p-8">
-          {isForgotPassword ? (
-            <div>
-              <div className="text-center mb-6">
-                <h4 className="text-[10px] font-semibold tracking-[0.2em] uppercase text-text-secondary">
-                  Recover Account Password
-                </h4>
-                <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
-                  Enter your registered email address and mobile number to verify your identity and retrieve/reset your password.
-                </p>
-              </div>
+        <div className="px-5 py-6">
+          <div className="mb-5 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-gold/80">CineVenue</p>
+            <h2 className="mt-2 text-2xl font-black text-white">
+              {mode === "signin" ? "Welcome back" : "Create your account"}
+            </h2>
+          </div>
 
-              {errorMessage && (
-                <div className="bg-gold-glow border border-gold/30 text-gold text-xs p-3.5 rounded-md mb-6 font-medium">
-                  ⚠️ {errorMessage}
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs p-3.5 rounded-md mb-6 font-medium">
-                  {successMessage}
-                </div>
-              )}
-
-              {!verifiedUser ? (
-                <form onSubmit={handleRecoverVerify} className="space-y-5">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                      <input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={recoveryEmail}
-                        onChange={(e) => setRecoveryEmail(e.target.value)}
-                        className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md pl-11 pr-4 py-3.5 text-sm text-text-primary focus:border-gold focus:outline-none transition-colors"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
-                      Mobile Number (Optional / If Registered)
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                      <input
-                        type="tel"
-                        placeholder="e.g. +91 98765 43210"
-                        value={recoveryMobile}
-                        onChange={(e) => setRecoveryMobile(e.target.value)}
-                        className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md pl-11 pr-4 py-3.5 text-sm text-text-primary focus:border-gold focus:outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-gold hover:bg-gold-light text-black py-4 rounded-sm text-xs font-bold tracking-[0.2em] uppercase cursor-pointer transition-all duration-200 shadow-xl shadow-gold/10 mt-3"
-                  >
-                    Verify Identity
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetPassword} className="space-y-5">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
-                      Set New Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md pl-11 pr-4 py-3.5 text-sm text-text-primary focus:border-gold focus:outline-none transition-colors"
-                        required
-                        minLength={5}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-black py-4 rounded-sm text-xs font-bold tracking-[0.2em] uppercase cursor-pointer transition-all duration-200 shadow-xl shadow-emerald-500/10 mt-3"
-                  >
-                    Update Password & Return to Login
-                  </button>
-                </form>
-              )}
-
-              <div className="text-center mt-6 pt-6 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsForgotPassword(false);
-                    setVerifiedUser(null);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  className="text-gold font-bold text-xs hover:underline cursor-pointer bg-transparent border-0"
-                >
-                  Back to Secure Login
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="text-center mb-6">
-                <h4 className="text-[10px] font-semibold tracking-[0.2em] uppercase text-text-secondary">
-                  {isSignUp ? "Create Premium Account" : "Access Member Portal"}
-                </h4>
-                <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
-                  {isSignUp 
-                    ? "Unlock unlimited bookings, 10% on concessions & bespoke screen customizer access"
-                    : "Enter your VIP membership credentials to manage tickets & private rental enquiries"
-                  }
-                </p>
-              </div>
-
-              {errorMessage && (
-                <div className="bg-gold-glow border border-gold/30 text-gold text-xs p-3.5 rounded-md mb-6 font-medium">
-                  ⚠️ {errorMessage}
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs p-3.5 rounded-md mb-6 font-medium">
-                  {successMessage}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                    <input
-                      type="email"
-                      placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md pl-11 pr-4 py-3.5 text-sm text-text-primary focus:border-gold focus:outline-none transition-colors"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {isSignUp && (
-                  <div className="flex flex-col gap-2 animate-fade-in">
-                    <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
-                      Mobile Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                      <input
-                        type="tel"
-                        placeholder="e.g. +91 98765 43210"
-                        value={mobile}
-                        onChange={(e) => setMobile(e.target.value)}
-                        className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md pl-11 pr-4 py-3.5 text-sm text-text-primary focus:border-gold focus:outline-none transition-colors"
-                        required={isSignUp}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
-                    Account Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                    <input
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md pl-11 pr-4 py-3.5 text-sm text-text-primary focus:border-gold focus:outline-none transition-colors"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {!isSignUp && (
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsForgotPassword(true);
-                        setErrorMessage("");
-                        setSuccessMessage("");
-                        setRecoveryEmail(email);
-                      }}
-                      className="text-[10px] text-gold hover:underline font-bold uppercase tracking-wider bg-transparent border-0 cursor-pointer"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full bg-gold hover:bg-gold-light text-black py-4 rounded-sm text-xs font-bold tracking-[0.2em] uppercase cursor-pointer transition-all duration-200 shadow-xl shadow-gold/10 mt-3"
-                >
-                  {isSignUp ? "Register CineVenue Membership" : "Secure Member Login"}
-                </button>
-              </form>
-
-              {/* Switch controls */}
-              <div className="text-center mt-6 pt-6 border-t border-white/10 text-xs text-text-secondary">
-                <span>
-                  {isSignUp ? "Already have an account?" : "New to CineVenue?"}{" "}
-                </span>
-                <button
-                  onClick={() => {
-                    setIsSignUp(!isSignUp);
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  className="text-gold font-bold hover:underline cursor-pointer"
-                >
-                  {isSignUp ? "Log In Now" : "Join CineVenue Membership"}
-                </button>
-              </div>
+          {errorMessage && (
+            <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              {errorMessage}
             </div>
           )}
-        </div>
 
-        {/* Security badge footer */}
-        <div className="bg-white/[0.02] border-t border-white/10 py-3.5 px-6 flex items-center justify-center gap-1.5 text-[9px] text-text-secondary font-semibold tracking-[0.2em] uppercase select-none">
-          <ShieldCheck className="w-4 h-4 text-gold" />
-          End-to-End Encrypted Session
+          {successMessage && (
+            <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+              {successMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                <input
+                  value={form.fullName}
+                  onChange={(e) => handleChange("fullName", e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
+                  placeholder="Full Name"
+                />
+              </div>
+            )}
+
+            <div className="relative">
+              <Mail className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
+                placeholder={mode === "signup" ? "Email Address" : "Email or Mobile Number"}
+              />
+            </div>
+
+            {mode === "signup" && (
+              <div className="relative">
+                <Phone className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                <input
+                  value={form.mobile}
+                  onChange={(e) => handleChange("mobile", e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
+                  placeholder="Mobile Number"
+                />
+              </div>
+            )}
+
+            <div className="relative">
+              <Lock className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
+                placeholder="Password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-3.5 text-[10px] uppercase tracking-wide text-white/60 hover:text-gold"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            {mode === "signup" && (
+              <div className="relative">
+                <Lock className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.confirmPassword}
+                  onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
+                  placeholder="Confirm Password"
+                />
+              </div>
+            )}
+
+            {mode === "signin" && (
+              <div className="flex items-center justify-between text-xs text-white/60">
+                <label className="inline-flex items-center gap-2">
+                  <input type="checkbox" className="accent-gold" />
+                  Remember me
+                </label>
+                <button type="button" className="text-gold hover:text-gold-light">Forgot Password?</button>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-gold-light disabled:opacity-60"
+            >
+              {isLoading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-[10px] uppercase tracking-[0.3em] text-white/45">or</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogle}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/50 hover:bg-white/10"
+            >
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-black text-[10px] font-black">G</span>
+              Continue with Google
+            </button>
+          </form>
+
+          <div className="mt-5 text-center text-sm text-white/60">
+            {mode === "signin" ? "Need an account?" : "Already have an account?"}{" "}
+            <button
+              type="button"
+              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+              className="font-semibold text-gold transition hover:text-gold-light"
+            >
+              {mode === "signin" ? "Sign Up" : "Sign In"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

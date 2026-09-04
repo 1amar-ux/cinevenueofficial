@@ -21,13 +21,11 @@ declare global {
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new UnauthorizedError("Authentication token is missing. Format: Bearer <token>");
-    }
-
-    const token = authHeader.split(" ")[1];
+    const cookieToken = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_access_token="))?.split("=")[1];
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+    const token = bearerToken || cookieToken;
     if (!token) {
-      throw new UnauthorizedError("Authentication token is missing");
+      throw new UnauthorizedError("Authentication token is missing. Format: Bearer <token>");
     }
 
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthenticatedUserPayload;

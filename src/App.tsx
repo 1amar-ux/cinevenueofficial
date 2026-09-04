@@ -34,6 +34,8 @@ import Home from "./pages/Home";
 import MaintenancePage from "./components/MaintenancePage";
 import EventsApp from "./pages/events/EventsApp";
 import LegalPolicies from "./pages/LegalPolicies";
+import Services from "./pages/Services";
+import MobileBottomNav from "./components/MobileBottomNav";
 
 // Admin Sub-Pages
 import AdminLayout from "./admin/AdminLayout";
@@ -865,6 +867,8 @@ export default function App() {
       <Routes>
       {/* Events Sub-website */}
       <Route path="/events/*" element={<EventsApp />} />
+      <Route path="/movies" element={<Navigate to="/booking" replace />} />
+      <Route path="/services" element={<Services />} />
 
       {/* Corporate Luxury Homepage */}
       <Route
@@ -1544,6 +1548,19 @@ export default function App() {
           />
         } 
       />
+      <Route
+        path="/media-promotions"
+        element={
+          <FilmProductionSubWebsite
+            userEmail={userEmail}
+            initialModule="media"
+            onOpenAuth={() => setAuthOpen(true)}
+            onBookTickets={(title) => setBookingMovieTitle(title)}
+            castingApplications={castingApplications}
+            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
+          />
+        }
+      />
       <Route 
         path="/film-production" 
         element={
@@ -1749,6 +1766,8 @@ export default function App() {
       {/* Catch-all redirection to root */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+
+    <MobileBottomNav />
 
     {/* Global Theatre Manager / Admin Workspace Modal Overlay */}
     {activeTheatreId !== null && (

@@ -58,7 +58,7 @@ export default function Hero({
   };
 
   return (
-    <section id="home" className="relative min-h-screen flex items-center overflow-hidden bg-dark-bg text-text-primary pt-24 pb-12">
+    <section id="home" className="relative min-h-[720px] md:min-h-screen flex items-center overflow-hidden bg-dark-bg text-text-primary pt-24 pb-12">
       {/* Background with custom movie theater image */}
       <div className="absolute inset-0 z-0">
         <img
@@ -87,7 +87,7 @@ export default function Hero({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col items-start">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex flex-col items-start">
         {/* Premium badge */}
         <div className="inline-flex items-center gap-2.5 bg-white/[0.03] border border-white/10 text-gold text-[10px] font-semibold tracking-[0.3em] uppercase px-5 py-2 rounded-full mb-8 backdrop-blur-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
@@ -95,7 +95,7 @@ export default function Hero({
         </div>
 
         {/* Display Typography Header */}
-        <h1 className="font-display text-5xl sm:text-7xl md:text-[88px] leading-[0.95] font-light mb-6 select-none italic text-text-primary">
+        <h1 className="font-display text-[clamp(2.3rem,11vw,5.5rem)] sm:text-7xl md:text-[88px] leading-[0.95] font-light mb-6 select-none italic text-text-primary break-words">
           The Architecture <br />
           <span className="not-italic text-gold font-normal">of Cinema.</span>
         </h1>
@@ -233,7 +233,7 @@ export default function Hero({
         })()}
 
         {/* Dynamic Stats Row */}
-        <div className="flex flex-wrap gap-12 md:gap-20 mt-16 pt-10 border-t border-white/10 w-full">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-6 sm:gap-12 md:gap-20 mt-12 sm:mt-16 pt-8 sm:pt-10 border-t border-white/10 w-full">
           <div>
             <div className="font-display text-4xl font-light text-text-primary leading-none">
               240<span className="text-gold font-light">+</span>

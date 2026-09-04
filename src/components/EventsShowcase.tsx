@@ -25,7 +25,7 @@ interface EventsShowcaseProps {
 }
 
 export default function EventsShowcase({
-  events,
+  events = [],
   userEmail,
   onOpenAuth,
   selectedCity,
@@ -39,6 +39,13 @@ export default function EventsShowcase({
   onToggleEventSystemActive,
   onToggleEventBookingStatus,
 }: EventsShowcaseProps) {
+  const safeEvents = Array.isArray(events)
+    ? events.map((event) => ({
+        ...event,
+        categories: Array.isArray(event.categories) ? event.categories : [],
+        reviews: Array.isArray(event.reviews) ? event.reviews : [],
+      }))
+    : [];
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [activeModalTab, setActiveModalTab] = useState<"booking" | "reviews">("booking");
   
@@ -137,7 +144,7 @@ export default function EventsShowcase({
       }
 
       if (targetEventId) {
-        const found = events.find(e => e.id === targetEventId);
+        const found = safeEvents.find(e => e.id === targetEventId);
         if (found) {
           setSelectedEvent(found);
           // Scroll to the events showcase section
@@ -149,7 +156,7 @@ export default function EventsShowcase({
       }
     };
 
-    if (events.length > 0) {
+    if (safeEvents.length > 0) {
       handleHashAndQuery();
     }
 
@@ -157,7 +164,7 @@ export default function EventsShowcase({
     return () => {
       window.removeEventListener("hashchange", handleHashAndQuery);
     };
-  }, [events]);
+  }, [safeEvents]);
 
   // Pre-fill user details if logged in
   useEffect(() => {
@@ -183,7 +190,7 @@ export default function EventsShowcase({
 
   // Sync default category when event changes
   useEffect(() => {
-    if (selectedEvent && selectedEvent.categories.length > 0) {
+    if (selectedEvent && (selectedEvent.categories || []).length > 0) {
       setSelectedCategory(selectedEvent.categories[0]);
       setTicketQuantity(1);
       setBookingPass(null);
@@ -230,7 +237,7 @@ export default function EventsShowcase({
   };
 
   // Filter events based on selected city and search query
-  const filteredEvents = events.filter((evt) => {
+  const filteredEvents = safeEvents.filter((evt) => {
     // Hide disabled events or if master event system is off
     const isEventActive = evt.isActive !== false && isEventBookingSystemActive;
     if (!isEventActive) {
@@ -996,9 +1003,10 @@ Please keep this copy secure and show it at the venue gates.
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="events-showroom-grid">
           {filteredEvents.map((evt) => {
-            const minPrice = Math.min(...evt.categories.map(c => c.price));
-            const avgRating = evt.reviews.length > 0 
-              ? (evt.reviews.reduce((sum, r) => sum + r.rating, 0) / evt.reviews.length).toFixed(1)
+            const minPrice = Math.min(...(evt.categories || []).map(c => c.price));
+            const reviews = evt.reviews || [];
+            const avgRating = reviews.length > 0
+              ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
               : null;
 
             return (
@@ -1395,7 +1403,7 @@ Please keep this copy secure and show it at the venue gates.
                           activeModalTab === "reviews" ? "text-gold" : "text-text-muted"
                         }`}
                       >
-                        <span>Verified Reviews ({selectedEvent.reviews.length})</span>
+                        <span>Verified Reviews ({(selectedEvent.reviews || []).length})</span>
                         {activeModalTab === "reviews" && (
                           <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
                         )}
@@ -1478,13 +1486,13 @@ Please keep this copy secure and show it at the venue gates.
                         </form>
 
                         {/* REVIEWS LIST */}
-                        {selectedEvent.reviews.length === 0 ? (
+                        {(selectedEvent.reviews || []).length === 0 ? (
                           <div className="text-center py-6 text-text-muted text-xs font-sans">
                             No reviews have been posted for this event yet. Be the first to share your anticipation!
                           </div>
                         ) : (
                           <div className="space-y-3">
-                            {selectedEvent.reviews.map((rev) => (
+                            {(selectedEvent.reviews || []).map((rev) => (
                               <div key={rev.id} className="bg-white/[0.01] border border-white/5 p-3 rounded-xl space-y-1.5">
                                 <div className="flex justify-between items-center text-xs font-semibold">
                                   <span className="text-text-primary">{rev.userName}</span>
@@ -1787,7 +1795,7 @@ Please keep this copy secure and show it at the venue gates.
                         </h4>
 
                         <div className="space-y-2">
-                          {selectedEvent.categories.map((cat, idx) => (
+                          {(selectedEvent.categories || []).map((cat, idx) => (
                             <button
                               key={idx}
                               type="button"

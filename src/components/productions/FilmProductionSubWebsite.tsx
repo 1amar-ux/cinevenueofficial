@@ -59,6 +59,7 @@ import CineVenueFilmAdminTab from "../film-production/CineVenueFilmAdminTab";
 
 interface FilmProductionSubWebsiteProps {
   userEmail?: string | null;
+  initialModule?: "film" | "events" | "media";
   onOpenAuth?: () => void;
   onBookTickets?: (movieTitle: string) => void;
   castingApplications?: any[];
@@ -67,6 +68,7 @@ interface FilmProductionSubWebsiteProps {
 
 export default function FilmProductionSubWebsite({
   userEmail,
+  initialModule = "film",
   onOpenAuth,
   onBookTickets,
   castingApplications = [],
@@ -74,7 +76,7 @@ export default function FilmProductionSubWebsite({
 }: FilmProductionSubWebsiteProps) {
   
   // Active Sub-Website Section / Module
-  const [activeModule, setActiveModule] = useState<"film" | "events" | "media">("film");
+  const [activeModule, setActiveModule] = useState<"film" | "events" | "media">(initialModule);
   const [filmViewMode, setFilmViewMode] = useState<"marketplace" | "showcase">("marketplace");
   const [isFilmMarketplaceAdminOpen, setIsFilmMarketplaceAdminOpen] = useState(false);
 

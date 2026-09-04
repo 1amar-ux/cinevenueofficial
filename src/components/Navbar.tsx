@@ -95,12 +95,6 @@ export default function Navbar({
           </div>
         </div>
         
-        {/* Left Side: Brand Logo */}
-        <CineVenueLogo 
-          size="md" 
-          onClick={() => handleScroll("home")} 
-        />
-
         {/* Center: Navigation Links */}
         <div className="hidden lg:flex items-center gap-6 text-[11px] uppercase tracking-[0.2em] font-medium text-text-secondary">
           <button onClick={() => window.location.href = "/#services"} className="hover:text-gold transition-colors cursor-pointer bg-transparent border-none">
@@ -140,7 +134,7 @@ export default function Navbar({
         <div className="flex items-center gap-4">
           
           {/* Location Dropdown selector */}
-          <div className="relative">
+          <div className="relative hidden md:block">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-white/[0.03] border border-white/10 text-xs font-semibold uppercase text-text-primary hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
@@ -176,8 +170,6 @@ export default function Navbar({
           {/* User Member Actions */}
           {userEmail ? (
             <div className="flex items-center gap-3.5">
-              
-              {/* Conditional Workspace button depending on user role */}
               {isSuperAdmin && (
                 <button
                   onClick={onOpenAdmin}
@@ -211,7 +203,6 @@ export default function Navbar({
                 </button>
               )}
 
-              {/* My Bookings Trigger button */}
               <button
                 onClick={onOpenOrders}
                 className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded border border-gold/30 bg-gold-glow text-gold text-[10px] font-bold uppercase tracking-wider hover:bg-gold hover:text-black hover:border-transparent transition-all cursor-pointer shadow-lg shadow-gold/5"
@@ -221,7 +212,6 @@ export default function Navbar({
                 <span>My Bookings</span>
               </button>
 
-              {/* Logged in member badge/email */}
               <div 
                 className="flex items-center gap-2 bg-white/[0.02] border border-white/10 px-3.5 py-1.5 rounded-full"
                 title={`Logged in as: ${userEmail}`}
@@ -257,19 +247,10 @@ export default function Navbar({
                 className="flex items-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-light text-black text-[10px] font-bold uppercase tracking-[0.15em] rounded shadow-lg shadow-gold/15 transition-all cursor-pointer border-none"
               >
                 <Sparkles className="w-3.5 h-3.5 text-black" />
-                <span>Join Club / Log In</span>
+                <span>Sign In / Sign Up</span>
               </button>
             </div>
           )}
-
-          {/* Mobile Menu Toggle Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-white/80 hover:text-gold rounded-lg hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
 
         </div>
 

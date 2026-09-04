@@ -18,6 +18,9 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().default("cinevenue_dev_refresh_jwt_secret_key_882714"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("1h"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
   
   // Payment Gateway
   RAZORPAY_KEY_ID: z.string().optional().default("rzp_test_TB7njDD8MonAMK"),

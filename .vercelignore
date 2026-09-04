@@ -1,0 +1,38 @@
+# Development & test files
+tests/
+*.test.ts
+*.spec.ts
+
+# Python helper scripts (not needed in deployment)
+*.py
+*.cjs
+*.js
+!vite.config.ts
+
+# Temporary/debug files
+wait_lint*.js
+check_*.js
+test_*.js
+fix_*.js
+fix_*.py
+find_*.py
+append_*.py
+modify_*.cjs
+mount_*.cjs
+mount_*.js
+update_*.cjs
+revert_*.py
+check_*.py
+
+# Local dev
+.env
+.env.local
+.env.development
+backend/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -9,7 +9,7 @@ import {
   Film, Sparkles, Megaphone, Ticket, Shield, Mail, Phone, Users, 
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
   TrendingUp, BarChart2, Briefcase, Camera, Video, Compass, HelpCircle,
-  Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send,
+  Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send, Menu,
   Target, FileText, Tv, X, UserCheck, Coins, PlusCircle, ExternalLink, Clapperboard
 } from "lucide-react";
 
@@ -30,6 +30,7 @@ interface HomeProps {
 export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceControl, setServiceControl, onAddServiceProposal, onOpenOrders, onOpenAuth }: HomeProps) {
   const navigate = useNavigate();
   const [activeDivision, setActiveDivision] = useState<DivisionType>("none");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Film Studio Sub-Website states
   const [filmStudioTab, setFilmStudioTab] = useState<'marketplace' | 'films' | 'casting' | 'investors' | 'portfolio' | 'contact'>('marketplace');
@@ -180,10 +181,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
   };
 
   return (
-    <div className="bg-[#09090A] min-h-screen text-[#F3F4F6] font-sans selection:bg-[#D4AF37] selection:text-black antialiased">
+    <div className="home-page bg-[#09090A] min-h-screen text-[#F3F4F6] font-sans selection:bg-[#D4AF37] selection:text-black antialiased">
       
       {/* LUXURY FLOATING NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#09090A]/90 backdrop-blur-md border-b border-white/10 py-3.5 px-6 md:px-12 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#09090A]/90 backdrop-blur-md border-b border-white/10 py-3.5 px-4 sm:px-6 md:px-12 flex items-center justify-between">
         <div 
           onClick={() => {
             setActiveDivision("none");
@@ -194,81 +195,121 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <CineVenueLogo size="md" />
         </div>
 
-        <nav className="hidden lg:flex items-center gap-7 text-xs uppercase tracking-widest font-semibold text-white/80">
-          <button
-            onClick={() => {
-              setActiveDivision("none");
-              setTimeout(() => {
-                document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
-              }, 50);
-            }}
-            className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-none text-white/80 font-semibold text-xs tracking-widest uppercase"
-          >
-            <Ticket className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Booking</span>
-          </button>
-
-          <button
-            onClick={() => navigate("/events")}
-            className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-none text-amber-400 font-bold text-xs tracking-widest uppercase"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Events</span>
-          </button>
-
-          <button
-            onClick={() => setProposalModalKey("movieBooking")}
-            className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-none text-white/80 font-semibold text-xs tracking-widest uppercase"
-          >
-            <Send className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Proposal</span>
-          </button>
-
-          <button
-            onClick={() => {
-              document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-none text-white/80 font-semibold text-xs tracking-widest uppercase"
-          >
-            <Phone className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Contact</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (onOpenOrders) {
-                onOpenOrders();
-              } else {
-                navigate("/booking");
-              }
-            }}
-            className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-none text-cyan-400 font-semibold text-xs tracking-widest uppercase"
-          >
-            <Ticket className="w-3.5 h-3.5 text-cyan-400" />
-            <span>My Pass</span>
-          </button>
-        </nav>
-
         <div className="flex items-center gap-3">
           <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white/80 transition hover:border-gold/50 hover:text-gold md:hidden"
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <button
             onClick={() => {
               setActiveDivision("none");
               setTimeout(() => {
                 document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
               }, 50);
             }}
-            className="bg-[#D4AF37] hover:bg-[#E5C158] text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-lg shadow-lg shadow-[#D4AF37]/10 hover:shadow-[#D4AF37]/20 transition-all cursor-pointer border-none flex items-center gap-1.5"
+            className="hidden md:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 hover:border-gold/40 hover:text-gold"
           >
-            <Ticket className="w-4 h-4 text-black" />
-            <span>Booking & Sub-Websites (6 Pillars)</span>
+            <span>☰</span>
+            <span>Menu</span>
           </button>
+
+          {userEmail ? (
+            <button
+              onClick={() => navigate("/account")}
+              className="rounded-full border border-gold/40 bg-gold/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-gold hover:bg-gold hover:text-black"
+            >
+              {userEmail.split("@")[0]}
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => onOpenAuth?.()}
+                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => onOpenAuth?.()}
+                className="hidden sm:inline-flex rounded-full bg-gold px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
       </header>
 
+      <div className="fixed left-0 right-0 top-20 z-40 hidden px-6 md:block md:px-12">
+        <div className="mx-auto max-w-7xl rounded-2xl border border-white/10 bg-[#0B0B0D]/80 p-3 backdrop-blur-md shadow-2xl">
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 text-[10px] uppercase tracking-[0.22em] text-white/70">
+            <button onClick={() => navigate("/booking")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🎬 Movie Booking</button>
+            <button onClick={() => navigate("/events")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🎟 Events</button>
+            <button onClick={() => navigate("/productions")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🎥 Film Production</button>
+            <button onClick={() => navigate("/proposals")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">📢 Brand Publicity</button>
+            <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🪙 CineCoins</button>
+            {!userEmail ? (
+              <>
+                <button onClick={() => onOpenAuth?.()} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">Sign In</button>
+                <button onClick={() => onOpenAuth?.()} className="rounded-full bg-gold px-3 py-2 font-bold text-black transition hover:bg-gold-light">Sign Up</button>
+              </>
+            ) : (
+              <button onClick={() => navigate("/account")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">Profile</button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="fixed left-4 right-4 top-[76px] z-40 rounded-2xl border border-white/10 bg-[#0B0B0D]/95 p-3 shadow-2xl backdrop-blur-xl md:hidden">
+          <div className="flex flex-col gap-1 text-sm text-white/80">
+            {[
+              ["Home", "/"],
+              ["Movie Booking", "/booking"],
+              ["Events", "/events"],
+              ["Film Production", "/film-production"],
+              ["Event Management", "/event-management"],
+              ["Brand Publicity", "/media-promotions"],
+              ["CineCoins", "/cinecoins"],
+              ["About", "#contact"],
+            ].map(([label, path]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (path.startsWith("#")) {
+                    document.getElementById(path.slice(1))?.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    navigate(path);
+                  }
+                }}
+                className="min-h-11 rounded-xl px-4 text-left transition hover:bg-white/5 hover:text-gold"
+              >
+                {label}
+              </button>
+            ))}
+            {!userEmail ? (
+              <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAuth?.(); }} className="min-h-11 rounded-xl bg-gold px-4 text-left font-bold text-black">
+                Sign In / Sign Up
+              </button>
+            ) : (
+              <button type="button" onClick={() => { setMobileMenuOpen(false); navigate("/account"); }} className="min-h-11 rounded-xl bg-gold px-4 text-left font-bold text-black">
+                Profile
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* LUXURY CINEMATIC HERO */}
-      <section className="relative pt-36 pb-24 md:pt-48 md:pb-36 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
+      <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 md:pt-48 md:pb-36 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
         {/* Subtle decorative glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-[#D4AF37]/5 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
         
         <div className="space-y-6 relative z-10 max-w-4xl">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold tracking-widest text-[#D4AF37] uppercase animate-fade-in">
@@ -276,7 +317,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             The Standard of Indian Cinema & Entertainment
           </div>
 
-          <h1 className="font-display text-5xl md:text-7xl font-light tracking-tight text-white italic leading-[1.1]">
+          <h1 className="font-display text-[clamp(2.2rem,9vw,4.5rem)] md:text-7xl font-light tracking-tight text-white italic leading-[1.08] break-words">
             Redefining Luxury in <br className="hidden md:inline" />
             <span className="text-[#D4AF37] not-italic font-normal">Cinema & Corporate Entertainment</span>
           </h1>
@@ -285,17 +326,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             From premier live movie ticket engines with verified offline-first seat mappings, to major pan-Indian physical film production, celebrity launches, viral media campaigns, and CineCoins rewards.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4">
             <button
               onClick={() => navigate("/booking")}
-              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-white/95 text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-white hover:bg-white/95 text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Ticket className="w-4 h-4 text-black" />
               Book Movie Tickets
             </button>
             <a
               href="#services"
-              className="w-full sm:w-auto px-8 py-4 bg-transparent hover:bg-white/5 border border-white/15 text-white hover:border-white/30 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-transparent hover:bg-white/5 border border-white/15 text-white hover:border-white/30 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <Compass className="w-4 h-4 text-[#D4AF37]" />
               Explore Business Divisions
@@ -305,8 +346,8 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       </section>
 
       {/* THE SIX PILLARS SERVICES GRID */}
-      <section id="services" className="py-24 px-6 md:px-12 max-w-[90rem] mx-auto border-t border-white/5 relative">
-        <div className="text-center space-y-3 mb-16">
+      <section id="services" className="py-14 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 max-w-[90rem] mx-auto border-t border-white/5 relative">
+        <div className="text-center space-y-3 mb-10">
           <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.4em] uppercase block">Our Corporate Framework</span>
           <h2 className="font-display text-3xl md:text-4xl font-light italic text-white">
             The Core <span className="text-[#D4AF37] not-italic font-normal">Sub-Websites & Pillars</span> of CineVenue
@@ -314,9 +355,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <p className="text-xs text-white/50 max-w-2xl mx-auto leading-relaxed">
             Operating as an integrated media holding company with six distinct elite sub-website divisions spanning cinema bookings, exclusive live passes, physical production, PR campaigns, and CineCoins loyalty.
           </p>
+          <button
+            type="button"
+            onClick={() => navigate("/services")}
+            className="mx-auto mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-gold/40 px-5 text-xs font-bold uppercase tracking-[0.16em] text-gold transition hover:bg-gold hover:text-black"
+          >
+            View All Services
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Module 1: Movie Booking */}
           <div className="bg-white/[0.01] border border-white/5 hover:border-[#D4AF37]/50 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-lg">
             <div className="space-y-4">
@@ -2687,7 +2736,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           navigator.clipboard.writeText(window.location.origin);
           alert("Platform Link Copied: Share CineVenue with other luxury film critics!");
         }}
-        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+        className="home-share-button fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
         title="Share Platform"
       >
         <Share2 className="w-5 h-5 text-black" />

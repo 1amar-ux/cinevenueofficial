@@ -130,7 +130,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
       {/* Floating Action Share Button */}
       <button
         onClick={onShare}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gold hover:bg-gold-light text-dark-bg flex items-center justify-center cursor-pointer shadow-xl shadow-gold/30 hover:scale-110 active:scale-95 transition-all duration-200"
+        className="home-share-button fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gold hover:bg-gold-light text-dark-bg flex items-center justify-center cursor-pointer shadow-xl shadow-gold/30 hover:scale-110 active:scale-95 transition-all duration-200"
         title="Share CineVenue"
       >
         <Share2 className="w-5 h-5 stroke-[2.5]" />
