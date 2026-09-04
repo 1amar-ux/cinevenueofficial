@@ -24,7 +24,7 @@ interface HomeProps {
   setServiceControl?: (val: any) => void;
   onAddServiceProposal?: (proposal: Omit<any, "id" | "submittedAt" | "status">) => void;
   onOpenOrders?: () => void;
-  onOpenAuth?: () => void;
+  onOpenAuth?: (mode?: "signin" | "signup") => void;
 }
 
 export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceControl, setServiceControl, onAddServiceProposal, onOpenOrders, onOpenAuth }: HomeProps) {
@@ -195,6 +195,15 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <CineVenueLogo size="md" />
         </div>
 
+        {/* Sub-Website Navigation Links beside Sign In */}
+        <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[10px] uppercase tracking-[0.2em] text-white/70">
+          <button onClick={() => navigate("/booking")} className="rounded-full px-3 py-1.5 transition hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🎬 Movie Booking</button>
+          <button onClick={() => navigate("/events")} className="rounded-full px-3 py-1.5 transition hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🎟 Events</button>
+          <button onClick={() => navigate("/productions")} className="rounded-full px-3 py-1.5 transition hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🎥 Film Production</button>
+          <button onClick={() => navigate("/proposals")} className="rounded-full px-3 py-1.5 transition hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">📢 Brand Publicity</button>
+          <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-1.5 transition hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🪙 CineCoins</button>
+        </div>
+
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -228,14 +237,14 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           ) : (
             <>
               <button
-                onClick={() => onOpenAuth?.()}
-                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold"
+                onClick={() => onOpenAuth?.("signin")}
+                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
               >
                 Sign In
               </button>
               <button
-                onClick={() => onOpenAuth?.()}
-                className="hidden sm:inline-flex rounded-full bg-gold px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light"
+                onClick={() => onOpenAuth?.("signup")}
+                className="hidden sm:inline-flex rounded-full bg-gold px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light shadow-lg shadow-gold/15 transition-all cursor-pointer border-none"
               >
                 Sign Up
               </button>
@@ -243,26 +252,6 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           )}
         </div>
       </header>
-
-      <div className="fixed left-0 right-0 top-20 z-40 hidden px-6 md:block md:px-12">
-        <div className="mx-auto max-w-7xl rounded-2xl border border-white/10 bg-[#0B0B0D]/80 p-3 backdrop-blur-md shadow-2xl">
-          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 text-[10px] uppercase tracking-[0.22em] text-white/70">
-            <button onClick={() => navigate("/booking")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🎬 Movie Booking</button>
-            <button onClick={() => navigate("/events")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🎟 Events</button>
-            <button onClick={() => navigate("/productions")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🎥 Film Production</button>
-            <button onClick={() => navigate("/proposals")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">📢 Brand Publicity</button>
-            <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">🪙 CineCoins</button>
-            {!userEmail ? (
-              <>
-                <button onClick={() => onOpenAuth?.()} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">Sign In</button>
-                <button onClick={() => onOpenAuth?.()} className="rounded-full bg-gold px-3 py-2 font-bold text-black transition hover:bg-gold-light">Sign Up</button>
-              </>
-            ) : (
-              <button onClick={() => navigate("/account")} className="rounded-full px-3 py-2 transition hover:bg-white/5 hover:text-gold">Profile</button>
-            )}
-          </div>
-        </div>
-      </div>
 
       {mobileMenuOpen && (
         <div className="fixed left-4 right-4 top-[76px] z-40 rounded-2xl border border-white/10 bg-[#0B0B0D]/95 p-3 shadow-2xl backdrop-blur-xl md:hidden">
