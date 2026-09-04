@@ -19,16 +19,20 @@ export default function Login({ onLoginSuccess, theatreAdmins }: LoginProps) {
     setLoading(true);
 
     setTimeout(() => {
+      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL || "";
+      const superAdminPassword = import.meta.env.VITE_SUPER_ADMIN_PASSWORD || "";
+
       const admin = theatreAdmins.find(
         (a) => a.email.toLowerCase() === email.toLowerCase()
       );
 
-      if (admin && (password === "admin123" || password === admin.passwordHash || password === "Amarnath123" || password === "PvrAdmin123")) {
-        onLoginSuccess(email);
-      } else if ((email === "theatre@cinevenue.com" || email === "pvr.admin@cinevenue.com" || email === "superadmin@cinevenue.com") && (password === "admin123" || password === "PvrAdmin123" || password === "Amarnath123")) {
+      const isSuperAdmin = superAdminEmail && email.toLowerCase() === superAdminEmail.toLowerCase() && password === superAdminPassword;
+      const isTheatreAdmin = admin && password === admin.passwordHash;
+
+      if (isSuperAdmin || isTheatreAdmin) {
         onLoginSuccess(email);
       } else {
-        setError("Invalid theatre partner credentials. Try email: pvr.admin@cinevenue.com / password: PvrAdmin123");
+        setError("Invalid credentials. Please check your email and password.");
       }
       setLoading(false);
     }, 800);

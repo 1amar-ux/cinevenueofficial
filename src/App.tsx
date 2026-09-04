@@ -374,9 +374,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Credentials settings (Loaded dynamically from session/API)
-  const [superAdminEmail, setSuperAdminEmail] = useState(() => localStorage.getItem("cine_sa_email") || "superadmin@cinevenue.com");
-  const [superAdminPassword, setSuperAdminPassword] = useState(() => localStorage.getItem("cine_sa_pass") || "");
+  // Credentials settings — loaded from env vars, never hardcoded in source
+  const [superAdminEmail, setSuperAdminEmail] = useState(() => localStorage.getItem("cine_sa_email") || import.meta.env.VITE_SUPER_ADMIN_EMAIL || "");
+  const [superAdminPassword, setSuperAdminPassword] = useState(() => localStorage.getItem("cine_sa_pass") || import.meta.env.VITE_SUPER_ADMIN_PASSWORD || "");
   const [cities, setCities] = useState<string[]>(() => {
     const saved = localStorage.getItem("cine_cities");
     return saved ? JSON.parse(saved) : CITIES;
