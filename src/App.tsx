@@ -1359,7 +1359,7 @@ export default function App() {
               onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
               onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
               
-              isSuperAdmin={userEmail?.toLowerCase() === superAdminEmail.toLowerCase()}
+              isSuperAdmin={Boolean(userEmail?.toLowerCase() === superAdminEmail.toLowerCase() || (!userEmail && localStorage.getItem("cine_user_email")?.toLowerCase() === superAdminEmail.toLowerCase()))}
               isTheatreAdmin={theatreAdmins.some(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
               activeTheatreAdmin={theatreAdmins.find(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
               theatreAdmins={theatreAdmins}
@@ -1489,7 +1489,7 @@ export default function App() {
               onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
               onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
               
-              isSuperAdmin={userEmail?.toLowerCase() === superAdminEmail.toLowerCase()}
+              isSuperAdmin={Boolean(userEmail?.toLowerCase() === superAdminEmail.toLowerCase() || (!userEmail && localStorage.getItem("cine_user_email")?.toLowerCase() === superAdminEmail.toLowerCase()))}
               isTheatreAdmin={theatreAdmins.some(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
               activeTheatreAdmin={theatreAdmins.find(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
               theatreAdmins={theatreAdmins}

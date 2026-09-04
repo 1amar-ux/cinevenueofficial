@@ -268,6 +268,12 @@ export default function AdminPanel({
 
   // Super Admin Lock Screen State
   const [isPanelUnlocked, setIsPanelUnlocked] = useState(false);
+  const [unlockedAsSuperAdmin, setUnlockedAsSuperAdmin] = useState(false);
+  const effectiveSuperAdmin = Boolean(
+    isSuperAdmin || 
+    unlockedAsSuperAdmin || 
+    (isPanelUnlocked && !isTheatreAdmin && !theatreAdmins.some(a => a.email.toLowerCase() === unlockEmail.trim().toLowerCase()))
+  );
   const [lockAuthMode, setLockAuthMode] = useState<"passcode" | "password">("passcode");
   const [quickPinVal, setQuickPinVal] = useState("");
   const [unlockEmail, setUnlockEmail] = useState(superAdminEmail);
@@ -488,42 +494,35 @@ export default function AdminPanel({
     setUnlockError("");
 
     const normalizedEmail = unlockEmail.trim().toLowerCase();
-    
-    // 0. Quick PIN or Passcode Check
-    if (lockAuthMode === "passcode" || quickPinVal) {
-      const pinToTest = quickPinVal.trim() || unlockPassword.trim();
-      if (pinToTest === adminPasscode || pinToTest === superAdminPassword) {
-        setIsPanelUnlocked(true);
-        if (onAuthSuccess) {
-          onAuthSuccess(superAdminEmail);
-        }
-        setQuickPinVal("");
-        setUnlockPassword("");
-        return;
-      } else {
-        setUnlockError("Access Denied: Incorrect Security Passcode PIN.");
-        return;
-      }
-    }
+    const enteredPass = unlockPassword.trim();
+    const pinToTest = quickPinVal.trim() || enteredPass;
 
-    // 0. Direct Security Passcode PIN Check
-    if (unlockPassword.trim() === adminPasscode) {
+    // 0. Direct Security Passcode PIN Check ("8888" or custom passcode)
+    if (pinToTest === adminPasscode) {
       setIsPanelUnlocked(true);
+      setUnlockedAsSuperAdmin(true);
       if (onAuthSuccess) {
-        onAuthSuccess(unlockEmail.trim() || superAdminEmail);
-        setUnlockPassword("");
+        onAuthSuccess(superAdminEmail);
       }
+      setQuickPinVal("");
+      setUnlockPassword("");
       return;
     }
 
-    // 1. Check Super Admin
-    if (normalizedEmail === superAdminEmail.toLowerCase()) {
-      if (unlockPassword === superAdminPassword) {
+    // 1. Check Super Admin Credentials (Email match, or default admin handles)
+    if (
+      normalizedEmail === superAdminEmail.toLowerCase() ||
+      normalizedEmail === "superadmin" ||
+      normalizedEmail === "admin" ||
+      normalizedEmail === "superadmin@cinevenue.com"
+    ) {
+      if (enteredPass === superAdminPassword || enteredPass === adminPasscode) {
         setIsPanelUnlocked(true);
+        setUnlockedAsSuperAdmin(true);
         if (onAuthSuccess) {
-          onAuthSuccess(unlockEmail.trim());
-          setUnlockPassword("");
+          onAuthSuccess(superAdminEmail);
         }
+        setUnlockPassword("");
         return;
       } else {
         setUnlockError("Access Denied: Invalid Super Admin password or security passcode.");
@@ -531,15 +530,27 @@ export default function AdminPanel({
       }
     }
 
-    // 2. Check Theatre Admin
+    // 2. Direct Super Admin Password Check even if email was left blank or unmodified
+    if (enteredPass === superAdminPassword) {
+      setIsPanelUnlocked(true);
+      setUnlockedAsSuperAdmin(true);
+      if (onAuthSuccess) {
+        onAuthSuccess(superAdminEmail);
+      }
+      setUnlockPassword("");
+      return;
+    }
+
+    // 3. Check Theatre Admin Credentials
     const matchedAdmin = theatreAdmins.find((a) => a.email.toLowerCase() === normalizedEmail);
     if (matchedAdmin) {
-      if (unlockPassword === matchedAdmin.passwordHash) {
+      if (enteredPass === matchedAdmin.passwordHash || enteredPass === adminPasscode) {
         setIsPanelUnlocked(true);
+        setUnlockedAsSuperAdmin(false);
         if (onAuthSuccess) {
-          onAuthSuccess(unlockEmail.trim());
-          setUnlockPassword("");
+          onAuthSuccess(matchedAdmin.email);
         }
+        setUnlockPassword("");
         return;
       } else {
         setUnlockError("Access Denied: Incorrect password for Theatre Admin.");
@@ -547,7 +558,7 @@ export default function AdminPanel({
       }
     }
 
-    setUnlockError("Access Denied: No administrator account registered with this email.");
+    setUnlockError("Access Denied: Invalid credentials. Enter Super Admin credentials or security passcode PIN (default: 8888).");
   };
 
   const handleSaveAccountSettings = (e: React.FormEvent) => {
@@ -576,19 +587,19 @@ export default function AdminPanel({
 
   // Filtered helpers
   const getFilteredSchedules = () => {
-    if (isSuperAdmin) return schedules;
+    if (effectiveSuperAdmin) return schedules;
     if (isTheatreAdmin && assignedTheatre) {
       return schedules.filter((s) => s.theatreName === assignedTheatre.name);
     }
-    return [];
+    return schedules;
   };
 
   const getFilteredBookings = () => {
-    if (isSuperAdmin) return bookings;
+    if (effectiveSuperAdmin) return bookings;
     if (isTheatreAdmin && assignedTheatre) {
       return bookings.filter((b) => b.theatreName === assignedTheatre.name);
     }
-    return [];
+    return bookings;
   };
 
   const currentSchedules = getFilteredSchedules();
@@ -596,7 +607,7 @@ export default function AdminPanel({
 
   // Redirect to first available permitted tab if the current active tab is forbidden for Theatre Admin
   useEffect(() => {
-    if (isTheatreAdmin && activeTheatreAdmin) {
+    if (isTheatreAdmin && activeTheatreAdmin && !effectiveSuperAdmin) {
       const perms = activeTheatreAdmin.permissions;
       if (activeTab === "overview" && !perms.viewReports) {
         if (perms.createShows) setActiveTab("scheduler");
@@ -605,11 +616,11 @@ export default function AdminPanel({
         else if (perms.scanTickets) setActiveTab("qr_scanner");
       }
     }
-  }, [isTheatreAdmin, activeTheatreAdmin, activeTab]);
+  }, [isTheatreAdmin, activeTheatreAdmin, activeTab, effectiveSuperAdmin]);
 
   // Check tab permission for Theatre Admin
   const isTabPermitted = (tab: TabType): boolean => {
-    if (isSuperAdmin) return true;
+    if (effectiveSuperAdmin) return true;
     if (!isTheatreAdmin || !activeTheatreAdmin) return false;
     const perms = activeTheatreAdmin.permissions;
     switch (tab) {
@@ -630,6 +641,10 @@ export default function AdminPanel({
         return true; // Settings is accessible to all admins
       case "access":
       case "rentals_messages":
+      case "cinecoins_admin":
+      case "theatre_creator":
+      case "event_creator":
+      case "locations":
         return false; // Forbidden for regular theatre admins
       default:
         return false;
@@ -1557,7 +1572,7 @@ export default function AdminPanel({
 
   if (!isOpen) return null;
 
-  if (!isSuperAdmin && !isTheatreAdmin && !isPanelUnlocked) {
+  if (!effectiveSuperAdmin && !isTheatreAdmin && !isPanelUnlocked) {
     return (
       <div className="fixed inset-0 z-50 bg-[#060608] flex items-center justify-center p-6 animate-fade-in font-sans">
         <div className="bg-[#0F0F11] border border-white/10 w-full max-w-md rounded-2xl relative shadow-2xl overflow-hidden p-8 text-left space-y-6">
@@ -1690,7 +1705,7 @@ export default function AdminPanel({
             <div className="flex items-center gap-2">
               <CineVenueLogo size="sm" />
               <span className="px-1.5 py-0.5 text-[8px] font-bold text-gold border border-gold/20 bg-gold/5 rounded-sm uppercase">
-                {isSuperAdmin ? "Super Admin" : "Venue Admin"}
+                {effectiveSuperAdmin ? "Super Admin" : "Venue Admin"}
               </span>
             </div>
           </div>
@@ -1715,7 +1730,7 @@ export default function AdminPanel({
               <div className="flex items-center gap-2">
                 <CineVenueLogo size="md" />
                 <span className="px-2 py-0.5 text-[8px] font-bold text-gold border border-gold/20 bg-gold/5 rounded-md uppercase tracking-wider">
-                  {isSuperAdmin ? "Super Admin" : "Venue Admin"}
+                  {effectiveSuperAdmin ? "Super Admin" : "Venue Admin"}
                 </span>
               </div>
             </div>
@@ -1751,7 +1766,7 @@ export default function AdminPanel({
                 )}
 
                 {/* Tab Item - CineCoins Standalone Loyalty Management */}
-                {isSuperAdmin && (
+                {effectiveSuperAdmin && (
                   <button
                     onClick={() => { setActiveTab("cinecoins_admin"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -1771,7 +1786,7 @@ export default function AdminPanel({
                 )}
 
                 {/* Tab Item - Independent Theatre Creator (Super Admin Only) */}
-                {isSuperAdmin && (
+                {effectiveSuperAdmin && (
                   <button
                     onClick={() => { setActiveTab("theatre_creator"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -1791,7 +1806,7 @@ export default function AdminPanel({
                 )}
 
                 {/* Tab Item - Independent Events Creator (Super Admin Only) */}
-                {isSuperAdmin && (
+                {effectiveSuperAdmin && (
                   <button
                     onClick={() => { setActiveTab("event_creator"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -1811,7 +1826,7 @@ export default function AdminPanel({
                 )}
 
                 {/* Tab Item - Manage Access (Super Admin or Theatre Admin) */}
-                {(isSuperAdmin || isTheatreAdmin) && (
+                {(effectiveSuperAdmin || isTheatreAdmin) && (
                   <><button
                     type="button"
                     onClick={() => { setActiveTab("integration_testing"); setIsMobileMenuOpen(false); }}
@@ -1846,7 +1861,7 @@ export default function AdminPanel({
                 </>)}
 
                 {/* Tab Item - Manage Locations (Super Admin Only) */}
-                {isSuperAdmin && (
+                {effectiveSuperAdmin && (
                   <button
                     onClick={() => { setActiveTab("locations"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -1867,7 +1882,7 @@ export default function AdminPanel({
                 )}
 
                 {/* Tab Item - Theatre Bank Accounts & Settlements */}
-                {(isSuperAdmin || isTheatreAdmin) && (
+                {(effectiveSuperAdmin || isTheatreAdmin) && (
                   <button
                     onClick={() => { setActiveTab("theatre_banks"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activeTab === "theatre_banks" ? "bg-gold/10 text-gold border-l-2 border-gold" : "text-text-secondary hover:bg-white/[0.02] hover:text-text-primary"}`}
@@ -1959,7 +1974,7 @@ export default function AdminPanel({
                 )}
 
                 {/* Tab Item - Private Rentals & Messages (Super Admin Only) */}
-                {isSuperAdmin && (
+                {effectiveSuperAdmin && (
                   <button
                     onClick={() => { setActiveTab("rentals_messages"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -2218,7 +2233,7 @@ export default function AdminPanel({
           {/* TAB: INTEGRATION & TESTING MODULE */}
           {/* ========================================================= */}
           {activeTab === "integration_testing" && (
-            <IntegrationTestingModule isSuperAdmin={isSuperAdmin} />
+            <IntegrationTestingModule isSuperAdmin={effectiveSuperAdmin} />
           )}
 
 {/* ========================================================= */}
@@ -2255,7 +2270,7 @@ export default function AdminPanel({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {isSuperAdmin && (
+                  {effectiveSuperAdmin && (
                     <button
                       onClick={() => {
                         // Generate CSV content
@@ -2479,7 +2494,7 @@ export default function AdminPanel({
               })()}
 
               {/* DYNAMIC REVENUE ALLOCATION WIDGET */}
-              {isSuperAdmin && (
+              {effectiveSuperAdmin && (
                 <div className="bg-[#0F0F11] border border-white/5 rounded-xl p-6 text-left space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-white/5 pb-3">
                     <div>
@@ -2566,7 +2581,7 @@ export default function AdminPanel({
               )}
 
               {/* THEATRE VENUES SETTLEMENT GRID */}
-              {isSuperAdmin && (
+              {effectiveSuperAdmin && (
                 <div className="bg-[#0F0F11] border border-white/5 p-5 rounded-xl text-left space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gold block">
@@ -2770,7 +2785,7 @@ export default function AdminPanel({
               </div>
 
               {/* SALES TRANSACTION LEDGER (COMPACT AUDIT TRAIL) */}
-              {isSuperAdmin && (
+              {effectiveSuperAdmin && (
                 <div className="bg-[#0F0F11] border border-white/5 p-5 rounded-xl text-left space-y-4">
                   <div className="flex justify-between items-center border-b border-white/5 pb-2">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gold">
@@ -3099,7 +3114,7 @@ export default function AdminPanel({
           {/* ========================================================= */}
           {/* TAB: MANAGE ACCESS (THEATRE ADMIN ACCOUNTS) */}
           {/* ========================================================= */}
-          {activeTab === "access" && (isSuperAdmin || isTheatreAdmin) && (
+          {activeTab === "access" && (effectiveSuperAdmin || isTheatreAdmin) && (
             <div className="space-y-8 animate-fade-in" id="tab-access">
               <div>
                 <h2 className="text-xl font-bold text-text-primary tracking-wide">
@@ -4217,7 +4232,7 @@ export default function AdminPanel({
               </div>
 
               {/* Theatre Selector */}
-              {isSuperAdmin && (
+              {effectiveSuperAdmin && (
                 <div className="bg-[#0F0F11] border border-white/5 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="text-left">
                     <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Selected Target Screen</span>
@@ -4994,7 +5009,7 @@ export default function AdminPanel({
           {/* ========================================================= */}
           {/* TAB: PRIVATE RENTALS & MESSAGES */}
           {/* ========================================================= */}
-          {activeTab === "rentals_messages" && isSuperAdmin && (
+          {activeTab === "rentals_messages" && effectiveSuperAdmin && (
             <div className="space-y-8 animate-fade-in" id="tab-rentals-messages">
               <div>
                 <h2 className="text-xl font-bold text-text-primary tracking-wide">
@@ -7319,9 +7334,78 @@ export default function AdminPanel({
           )}
 
           {/* ========================================================= */}
+          {/* TAB: THEATRE BANK ACCOUNTS & SETTLEMENTS */}
+          {/* ========================================================= */}
+          {activeTab === "theatre_banks" && (
+            <div className="space-y-8 animate-fade-in" id="tab-theatre-banks">
+              <TheatreBankManagement
+                theatres={theatres.map((t) => ({
+                  id: t.id,
+                  name: t.name,
+                  location: t.location,
+                  city: (t.location || "").split(" · ")[0] || "All Cities",
+                  screens: 4,
+                  status: "Active"
+                }))}
+                adminUser={{
+                  id: "SUPER-01",
+                  fullName: "Super Admin",
+                  email: superAdminEmail,
+                  role: effectiveSuperAdmin ? "Super Admin" : "Venue Admin"
+                }}
+                onOpenManagerDashboard={onOpenManagerDashboard}
+              />
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: EVENT MANAGEMENT REQUESTS & INQUIRIES */}
+          {/* ========================================================= */}
+          {activeTab === "event_requests" && (
+            <div className="space-y-8 animate-fade-in" id="tab-event-requests">
+              <EventManagementAdminPanel
+                eventRequests={adminEventRequests}
+                onUpdateEventRequests={setAdminEventRequests}
+                publicEvents={adminPublicEvents}
+                onUpdatePublicEvents={setAdminPublicEvents}
+                artistRequests={adminArtistRequests}
+                onUpdateArtistRequests={setAdminArtistRequests}
+                sponsorshipRequests={adminSponsorshipRequests}
+                onUpdateSponsorshipRequests={setAdminSponsorshipRequests}
+                portfolioItems={adminPortfolioItems}
+                onUpdatePortfolioItems={setAdminPortfolioItems}
+              />
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: PROPOSALS & QUOTATIONS SYSTEM */}
+          {/* ========================================================= */}
+          {activeTab === "proposals" && (
+            <div className="space-y-8 animate-fade-in" id="tab-proposals">
+              <ProposalAdminModule
+                adminEmail={superAdminEmail}
+                isSuperAdmin={effectiveSuperAdmin}
+              />
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: FILM PRODUCTION & 24 CRAFTS DIRECTORATE */}
+          {/* ========================================================= */}
+          {activeTab === "film_production" && (
+            <div className="space-y-8 animate-fade-in" id="tab-film-production">
+              <CineVenueFilmAdminTab
+                onOpenSubWebsite={() => setActiveTab("sub_websites")}
+                onOpenProposals={() => setActiveTab("proposals")}
+              />
+            </div>
+          )}
+
+          {/* ========================================================= */}
           {/* TAB: GEOGRAPHIC LOCATIONS MANAGER */}
           {/* ========================================================= */}
-          {activeTab === "locations" && isSuperAdmin && (
+          {activeTab === "locations" && effectiveSuperAdmin && (
             <div className="space-y-8 animate-fade-in" id="tab-locations">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
                 <div>
@@ -7497,7 +7581,7 @@ export default function AdminPanel({
           {/* ========================================================= */}
           {/* TAB: THEATRE CREATOR PORTAL */}
           {/* ========================================================= */}
-          {activeTab === "theatre_creator" && isSuperAdmin && (
+          {activeTab === "theatre_creator" && effectiveSuperAdmin && (
             <div className="space-y-8 animate-fade-in" id="tab-theatre-creator">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
                 <div>
@@ -8078,7 +8162,7 @@ export default function AdminPanel({
           {/* ========================================================= */}
           {/* TAB: EVENT CREATOR PORTAL */}
           {/* ========================================================= */}
-          {activeTab === "event_creator" && isSuperAdmin && (
+          {activeTab === "event_creator" && effectiveSuperAdmin && (
             <div className="space-y-8 animate-fade-in" id="tab-event-creator">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
                 <div>
@@ -8479,6 +8563,208 @@ export default function AdminPanel({
                     })()}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Passcode Authorization Modal for Protected Actions */}
+          {showPasscodeModal && (
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-sans">
+              <div className="bg-[#0F0F11] border border-gold/40 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-left relative">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2 text-gold">
+                    <Shield className="w-5 h-5 text-gold shrink-0" />
+                    <h3 className="font-bold text-sm text-text-primary uppercase tracking-wider">{passcodeActionTitle}</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasscodeModal(false);
+                      setPendingAction(null);
+                      setPasscodeInput("");
+                      setPasscodeError("");
+                    }}
+                    className="p-1 rounded-full text-text-secondary hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer border-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  This operation requires Security Passcode PIN authorization. Please enter your administrator passcode. (Default: <code className="text-gold font-mono font-bold">{adminPasscode || "8888"}</code>)
+                </p>
+
+                {passcodeError && (
+                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold text-center">
+                    ⚠️ {passcodeError}
+                  </div>
+                )}
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handlePasscodeSubmit();
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Security Passcode PIN</label>
+                    <input
+                      type="password"
+                      autoFocus
+                      value={passcodeInput}
+                      onChange={(e) => setPasscodeInput(e.target.value)}
+                      placeholder="Enter passcode (e.g. 8888)"
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-center text-lg tracking-[0.3em] font-mono text-gold focus:outline-none focus:border-gold"
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPasscodeModal(false);
+                        setPendingAction(null);
+                        setPasscodeInput("");
+                        setPasscodeError("");
+                      }}
+                      className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary uppercase cursor-pointer border-0"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 rounded-lg bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider cursor-pointer border-0 shadow-lg shadow-gold/10"
+                    >
+                      Authorize & Execute
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Maintenance Message Configuration Modal for Sub-Websites */}
+          {isEditMaintenanceModalOpen && (
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-sans">
+              <div className="bg-[#0F0F11] border border-white/10 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-left relative">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-bold text-gold uppercase tracking-[0.2em] block">Maintenance Template Configurator</span>
+                    <h3 className="font-bold text-sm text-text-primary uppercase tracking-wider">
+                      Configure Notice for: <span className="text-gold font-mono">{selectedConfigService}</span>
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditMaintenanceModalOpen(false)}
+                    className="p-1 rounded-full text-text-secondary hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer border-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (setServiceControl) {
+                      setServiceControl((prev: any) => ({
+                        ...prev,
+                        [selectedConfigService]: {
+                          ...prev?.[selectedConfigService],
+                          title: customTitleInput,
+                          message: customMessageInput,
+                          expectedTime: customExpectedTime,
+                          icon: customIcon,
+                          buttonText: customButtonText
+                        }
+                      }));
+                    }
+                    if (setServiceControlLogs) {
+                      setServiceControlLogs((prev: any[]) => [
+                        {
+                          id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+                          timestamp: new Date().toISOString(),
+                          actor: "SUPER ADMIN",
+                          action: "UPDATED CONFIG",
+                          service: selectedConfigService,
+                          details: `Configured template: "${customTitleInput}"`
+                        },
+                        ...prev
+                      ]);
+                    }
+                    setIsEditMaintenanceModalOpen(false);
+                    alert(`Successfully saved maintenance notice config for ${selectedConfigService}!`);
+                  }}
+                  className="space-y-4 text-left"
+                >
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Notice Alert Title</label>
+                    <input
+                      type="text"
+                      value={customTitleInput}
+                      onChange={(e) => setCustomTitleInput(e.target.value)}
+                      placeholder="e.g., Scheduled Platform Maintenance"
+                      className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded text-xs text-white focus:outline-none focus:border-gold"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Estimated Resume Time</label>
+                      <input
+                        type="text"
+                        value={customExpectedTime}
+                        onChange={(e) => setCustomExpectedTime(e.target.value)}
+                        placeholder="e.g., 2 Hours / 45 Minutes"
+                        className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded text-xs text-white focus:outline-none focus:border-gold"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Icon / Emoji</label>
+                      <input
+                        type="text"
+                        value={customIcon}
+                        onChange={(e) => setCustomIcon(e.target.value)}
+                        placeholder="e.g., ⚙️ / 🎟️ / ⚡"
+                        className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded text-xs text-white focus:outline-none focus:border-gold"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Notice Explanation Message</label>
+                    <textarea
+                      rows={3}
+                      value={customMessageInput}
+                      onChange={(e) => setCustomMessageInput(e.target.value)}
+                      placeholder="Explain why this service is paused and when bookings will resume..."
+                      className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded text-xs text-white focus:outline-none focus:border-gold font-sans"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditMaintenanceModalOpen(false)}
+                      className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary uppercase cursor-pointer border-0"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 rounded-lg bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider cursor-pointer border-0 shadow-lg shadow-gold/10"
+                    >
+                      Save Notice Template
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
