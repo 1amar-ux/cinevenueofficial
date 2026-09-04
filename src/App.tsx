@@ -1358,9 +1358,9 @@ export default function App() {
         }
       />
 
-      {/* Standalone Separate Link to Superadmin Dashboard */}
+      {/* Admin Panel — secret URL, not linked publicly */}
       <Route
-        path="/admin-dashboard"
+        path="/adminpanel"
         element={
           <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
             <AdminPanel

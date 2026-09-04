@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Film, MapPin, User, LogOut, ChevronDown, Shield, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2 } from "lucide-react";
+import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2 } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 
 interface NavbarProps {
@@ -170,16 +170,7 @@ export default function Navbar({
           {/* User Member Actions */}
           {userEmail ? (
             <div className="flex items-center gap-3.5">
-              {isSuperAdmin && (
-                <button
-                  onClick={onOpenAdmin}
-                  className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded border border-gold/30 bg-gold-glow text-gold text-[10px] font-bold uppercase tracking-wider hover:bg-gold hover:text-black hover:border-transparent transition-all cursor-pointer shadow-lg shadow-gold/5"
-                  title="Super Admin Workspace"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Admin Panel</span>
-                </button>
-              )}
+
 
               {!isSuperAdmin && matchTheatreAdmin && (
                 <button
@@ -234,14 +225,6 @@ export default function Navbar({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <button
-                onClick={onOpenAdmin}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-[#161619] hover:bg-[#222228] text-gold border border-gold/30 text-[10px] font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
-                title="Access CineVenue Central Admin Console"
-              >
-                <Shield className="w-3.5 h-3.5 text-gold" />
-                <span>Admin Portal</span>
-              </button>
               <button
                 onClick={onOpenAuth}
                 className="flex items-center gap-1.5 px-4 py-2 bg-gold hover:bg-gold-light text-black text-[10px] font-bold uppercase tracking-[0.15em] rounded shadow-lg shadow-gold/15 transition-all cursor-pointer border-none"
