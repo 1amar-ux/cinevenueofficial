@@ -2710,22 +2710,6 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               <span>•</span>
               <a href="#inquiry" className="hover:text-[#D4AF37] text-[#D4AF37] transition-colors font-bold">Host Your Screen</a>
             </div>
-            
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => {
-                  if (onOpenAdmin) {
-                    onOpenAdmin();
-                  } else {
-                    navigate("/admin-dashboard");
-                  }
-                }}
-                className="text-white/60 hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 cursor-pointer uppercase font-semibold text-[11px]"
-              >
-                <Shield className="w-3.5 h-3.5 text-[#D4AF37]" />
-                Superadmin Control Terminal
-              </button>
-            </div>
           </div>
         </div>
       </footer>
