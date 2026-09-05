@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import apiClient from "../services/apiClient";
 
@@ -65,34 +65,12 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const cached = localStorage.getItem("cine_app_settings");
         if (cached) {
           const parsed = JSON.parse(cached);
-          // Strict server-authoritative rule: sub-websites are FALSE by default until verified fresh
           return {
             ...DEFAULT_SETTINGS,
             ...parsed,
-            globalSubwebsiteEnabled: false,
             serviceControls: {
               ...(DEFAULT_SETTINGS.serviceControls || {}),
-              ...(parsed.serviceControls || {}),
-              filmProduction: {
-                ...(DEFAULT_SETTINGS.serviceControls?.filmProduction || {}),
-                ...(parsed.serviceControls?.filmProduction || {}),
-                status: false
-              },
-              eventManagement: {
-                ...(DEFAULT_SETTINGS.serviceControls?.eventManagement || {}),
-                ...(parsed.serviceControls?.eventManagement || {}),
-                status: false
-              },
-              eventBooking: {
-                ...(DEFAULT_SETTINGS.serviceControls?.eventBooking || {}),
-                ...(parsed.serviceControls?.eventBooking || {}),
-                status: false
-              },
-              brandPromotion: {
-                ...(DEFAULT_SETTINGS.serviceControls?.brandPromotion || {}),
-                ...(parsed.serviceControls?.brandPromotion || {}),
-                status: false
-              }
+              ...(parsed.serviceControls || {})
             }
           };
         }
@@ -100,13 +78,16 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (e) {}
     return DEFAULT_SETTINGS;
   });
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const isMountedRef = useRef<boolean>(true);
+  const isFetchingRef = useRef<boolean>(false);
 
   const applySettingsRecord = useCallback((data: any) => {
     if (!data) return;
+    let hasChanged = false;
+
     setSettings((prev) => {
       const incomingControls = data.service_controls ?? data.serviceControls;
       const mergedControls = incomingControls
@@ -117,14 +98,28 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         : prev.serviceControls;
 
       const rawGlobalSubwebsite = data.global_subwebsite_enabled ?? data.globalSubwebsiteEnabled;
-      // Default to false unless explicitly boolean true
       const globalSubwebsiteEnabled = typeof rawGlobalSubwebsite === "boolean"
         ? rawGlobalSubwebsite
-        : false;
+        : (prev.globalSubwebsiteEnabled ?? false);
+
       const subwebsiteMaintenanceMessage = data.subwebsite_maintenance_message ?? data.subwebsiteMaintenanceMessage ?? prev.subwebsiteMaintenanceMessage ?? DEFAULT_SETTINGS.subwebsiteMaintenanceMessage;
 
+      const newMaintenanceMode = data.maintenance_mode ?? data.maintenanceMode ?? prev.maintenanceMode;
+
+      // Smart Equality check: if nothing changed, preserve object identity to avoid re-rendering entire app
+      const isControlsSame = JSON.stringify(prev.serviceControls) === JSON.stringify(mergedControls);
+      const isSubSame = prev.globalSubwebsiteEnabled === globalSubwebsiteEnabled;
+      const isMaintSame = prev.maintenanceMode === newMaintenanceMode;
+      const isMsgSame = prev.subwebsiteMaintenanceMessage === subwebsiteMaintenanceMessage;
+
+      if (isControlsSame && isSubSame && isMaintSame && isMsgSame) {
+        return prev;
+      }
+
+      hasChanged = true;
+
       const updated: GlobalAppSettings = {
-        maintenanceMode: data.maintenance_mode ?? data.maintenanceMode ?? prev.maintenanceMode,
+        maintenanceMode: newMaintenanceMode,
         maintenanceTitle: data.maintenance_title ?? data.maintenanceTitle ?? prev.maintenanceTitle,
         maintenanceMessage: data.maintenance_message ?? data.maintenanceMessage ?? prev.maintenanceMessage,
         maintenanceCountdownEnabled: data.maintenance_countdown_enabled ?? data.maintenanceCountdownEnabled ?? prev.maintenanceCountdownEnabled,
@@ -144,34 +139,43 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       return updated;
     });
-    setLastUpdated(new Date());
+
+    if (hasChanged) {
+      setLastUpdated(new Date());
+    }
   }, []);
 
-  // Authoritative Fetch: Attempts Supabase directly, with fallback to Canonical Server API
+  // Ultra-Fast Authoritative Fetch: Prioritizes fast Backend API (sub-300ms) with Supabase fallback
   const refreshSettings = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
+      // 1. Ultra-fast same-origin Backend API (responds in ~200-300ms, zero cold-start delay)
+      const res = await apiClient.get("/settings/app", { timeout: 3000 }).catch(() => null);
+      if (res?.data?.success && res.data?.data) {
+        applySettingsRecord(res.data.data);
+        return;
+      }
+
+      // 2. Fallback to Supabase with strict 1200ms timeout to avoid hanging
       if (isSupabaseConfigured) {
-        const { data, error } = await supabase
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("SB_TIMEOUT")), 1200));
+        const dbPromise = supabase
           .from("app_settings")
           .select("*")
           .eq("id", "global_default")
           .single();
 
-        if (!error && data) {
-          applySettingsRecord(data);
-          setIsLoading(false);
-          return;
+        const result: any = await Promise.race([dbPromise, timeoutPromise]).catch(() => null);
+        if (!result?.error && result?.data) {
+          applySettingsRecord(result.data);
         }
       }
-
-      // Authoritative Fallback: Fetch via Backend API
-      const res = await apiClient.get("/settings/app");
-      if (res.data?.success && res.data?.data) {
-        applySettingsRecord(res.data.data);
-      }
     } catch (err: any) {
-      console.warn("[AppSettings] Resilient fetch notice:", err.message);
+      console.warn("[AppSettings] Resilient fetch notice:", err?.message || err);
     } finally {
+      isFetchingRef.current = false;
       if (isMountedRef.current) {
         setIsLoading(false);
       }
@@ -330,7 +334,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     // 3. Fast Heartbeat polling interval (every 3 seconds) for instant cross-device synchronization
     const heartbeatInterval = setInterval(() => {
-      refreshSettings();
+      if (typeof document !== "undefined" && document.visibilityState !== "hidden") {
+        refreshSettings();
+      }
     }, 3000);
 
     return () => {
@@ -347,20 +353,30 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const isMaintenanceActive = settings.maintenanceMode === true;
   const isSubwebsiteEnabled = settings.globalSubwebsiteEnabled === true;
 
+  const contextValue = useMemo(() => ({
+    settings,
+    isMaintenanceActive,
+    isSubwebsiteEnabled,
+    isLoading,
+    isRealtimeConnected,
+    lastUpdated,
+    refreshSettings,
+    updateGlobalSettings,
+    setGlobalSubwebsiteEnabled
+  }), [
+    settings,
+    isMaintenanceActive,
+    isSubwebsiteEnabled,
+    isLoading,
+    isRealtimeConnected,
+    lastUpdated,
+    refreshSettings,
+    updateGlobalSettings,
+    setGlobalSubwebsiteEnabled
+  ]);
+
   return (
-    <AppSettingsContext.Provider
-      value={{
-        settings,
-        isMaintenanceActive,
-        isSubwebsiteEnabled,
-        isLoading,
-        isRealtimeConnected,
-        lastUpdated,
-        refreshSettings,
-        updateGlobalSettings,
-        setGlobalSubwebsiteEnabled
-      }}
-    >
+    <AppSettingsContext.Provider value={contextValue}>
       {children}
     </AppSettingsContext.Provider>
   );

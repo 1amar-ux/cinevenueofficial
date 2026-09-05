@@ -1,9 +1,9 @@
 
 window.addEventListener('error', (event) => {
-  document.body.innerHTML += '<div style="color: red; padding: 20px; z-index: 9999; position: fixed; top: 0; left: 0; background: white; white-space: pre-wrap; font-size: 14px;">' + event.message + '<br/>' + (event.error?.stack || '') + '</div>';
+  console.error('[Global Error]', event.message, event.error);
 });
 window.addEventListener('unhandledrejection', (event) => {
-  document.body.innerHTML += '<div style="color: red; padding: 20px; z-index: 9999; position: fixed; top: 0; left: 0; background: white; white-space: pre-wrap; font-size: 14px;">' + (event.reason?.stack || event.reason) + '</div>';
+  console.warn('[Global UnhandledRejection]', event.reason);
 });
 import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
