@@ -173,7 +173,7 @@ export default function App() {
   const serviceControl = useMemo(() => {
     const remote = globalAppSettings.serviceControls || {};
     const isMaintenance = globalAppSettings.maintenanceMode === true;
-    const isSubwebsiteEnabled = globalAppSettings.globalSubwebsiteEnabled !== false;
+    const isSubwebsiteEnabled = globalAppSettings.globalSubwebsiteEnabled === true;
     const subwebsiteNotice = globalAppSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.";
 
     return {
@@ -1787,57 +1787,79 @@ export default function App() {
       <Route 
         path="/proposals" 
         element={
-          <div className="min-h-screen bg-[#070709] text-text-primary p-4 md:p-10 font-sans">
-            <div className="max-w-6xl mx-auto space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => window.location.href = "/account"}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
-                  >
-                    My Account
-                  </button>
-                  <button
-                    onClick={() => window.location.href = "/"}
-                    className="px-4 py-2 bg-gold hover:bg-gold-light text-black rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                  >
-                    Home
-                  </button>
+          serviceControl?.brandPromotion?.status === false ? (
+            <MaintenancePage
+              serviceName="Brand Publicity & Proposals"
+              title={serviceControl?.brandPromotion?.title || "Brand Proposals Under Maintenance"}
+              message={serviceControl?.brandPromotion?.message || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."}
+              expectedTime={serviceControl?.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"}
+              icon="📢"
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <div className="min-h-screen bg-[#070709] text-text-primary p-4 md:p-10 font-sans">
+              <div className="max-w-6xl mx-auto space-y-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => window.location.href = "/account"}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+                    >
+                      My Account
+                    </button>
+                    <button
+                      onClick={() => window.location.href = "/"}
+                      className="px-4 py-2 bg-gold hover:bg-gold-light text-black rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      Home
+                    </button>
+                  </div>
                 </div>
+                <CustomerProposalsView 
+                  userEmail={userEmail || ""}
+                  userName={userEmail ? userEmail.split("@")[0] : ""}
+                />
               </div>
-              <CustomerProposalsView 
-                userEmail={userEmail || ""}
-                userName={userEmail ? userEmail.split("@")[0] : ""}
-              />
             </div>
-          </div>
+          )
         } 
       />
 
       <Route 
         path="/submit-proposal" 
         element={
-          <div className="min-h-screen bg-[#070709] text-text-primary p-4 md:p-10 font-sans">
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
-                <button
-                  onClick={() => window.location.href = "/proposals"}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
-                >
-                  ← Back to Proposals
-                </button>
+          serviceControl?.brandPromotion?.status === false ? (
+            <MaintenancePage
+              serviceName="Brand Publicity & Proposals"
+              title={serviceControl?.brandPromotion?.title || "Brand Proposals Under Maintenance"}
+              message={serviceControl?.brandPromotion?.message || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."}
+              expectedTime={serviceControl?.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"}
+              icon="📢"
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <div className="min-h-screen bg-[#070709] text-text-primary p-4 md:p-10 font-sans">
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
+                  <button
+                    onClick={() => window.location.href = "/proposals"}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+                  >
+                    ← Back to Proposals
+                  </button>
+                </div>
+                <ProposalSubmitForm 
+                  userEmail={userEmail || ""}
+                  userName={userEmail ? userEmail.split("@")[0] : ""}
+                  onSuccess={() => {
+                    window.location.href = "/proposals";
+                  }}
+                />
               </div>
-              <ProposalSubmitForm 
-                userEmail={userEmail || ""}
-                userName={userEmail ? userEmail.split("@")[0] : ""}
-                onSuccess={() => {
-                  window.location.href = "/proposals";
-                }}
-              />
             </div>
-          </div>
+          )
         } 
       />
 

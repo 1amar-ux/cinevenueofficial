@@ -65,12 +65,34 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const cached = localStorage.getItem("cine_app_settings");
         if (cached) {
           const parsed = JSON.parse(cached);
+          // Strict server-authoritative rule: sub-websites are FALSE by default until verified fresh
           return {
             ...DEFAULT_SETTINGS,
             ...parsed,
+            globalSubwebsiteEnabled: false,
             serviceControls: {
               ...(DEFAULT_SETTINGS.serviceControls || {}),
-              ...(parsed.serviceControls || {})
+              ...(parsed.serviceControls || {}),
+              filmProduction: {
+                ...(DEFAULT_SETTINGS.serviceControls?.filmProduction || {}),
+                ...(parsed.serviceControls?.filmProduction || {}),
+                status: false
+              },
+              eventManagement: {
+                ...(DEFAULT_SETTINGS.serviceControls?.eventManagement || {}),
+                ...(parsed.serviceControls?.eventManagement || {}),
+                status: false
+              },
+              eventBooking: {
+                ...(DEFAULT_SETTINGS.serviceControls?.eventBooking || {}),
+                ...(parsed.serviceControls?.eventBooking || {}),
+                status: false
+              },
+              brandPromotion: {
+                ...(DEFAULT_SETTINGS.serviceControls?.brandPromotion || {}),
+                ...(parsed.serviceControls?.brandPromotion || {}),
+                status: false
+              }
             }
           };
         }
@@ -95,9 +117,10 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         : prev.serviceControls;
 
       const rawGlobalSubwebsite = data.global_subwebsite_enabled ?? data.globalSubwebsiteEnabled;
+      // Default to false unless explicitly boolean true
       const globalSubwebsiteEnabled = typeof rawGlobalSubwebsite === "boolean"
         ? rawGlobalSubwebsite
-        : (prev.globalSubwebsiteEnabled ?? true);
+        : false;
       const subwebsiteMaintenanceMessage = data.subwebsite_maintenance_message ?? data.subwebsiteMaintenanceMessage ?? prev.subwebsiteMaintenanceMessage ?? DEFAULT_SETTINGS.subwebsiteMaintenanceMessage;
 
       const updated: GlobalAppSettings = {
@@ -322,7 +345,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [refreshSettings, applySettingsRecord]);
 
   const isMaintenanceActive = settings.maintenanceMode === true;
-  const isSubwebsiteEnabled = settings.globalSubwebsiteEnabled !== false;
+  const isSubwebsiteEnabled = settings.globalSubwebsiteEnabled === true;
 
   return (
     <AppSettingsContext.Provider

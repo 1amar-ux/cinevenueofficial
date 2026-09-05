@@ -17,30 +17,50 @@ export interface CachedMaintenanceState {
 }
 
 const CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
+const TMP_CONFIG_PATH = path.resolve("/tmp", "cine_global_settings.json");
+
+let inMemoryGlobalSettings: any = {
+  globalSubwebsiteEnabled: false,
+  subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
+};
 
 export function readPersistedFileSettings(): any {
   try {
     if (fs.existsSync(CONFIG_FILE_PATH)) {
       const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
+      return inMemoryGlobalSettings;
     }
   } catch (e) {}
-  return {
-    globalSubwebsiteEnabled: false,
-    subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
-  };
+
+  try {
+    if (fs.existsSync(TMP_CONFIG_PATH)) {
+      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
+      const parsed = JSON.parse(content);
+      inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
+      return inMemoryGlobalSettings;
+    }
+  } catch (e) {}
+
+  return inMemoryGlobalSettings;
 }
 
 export function writePersistedFileSettings(settings: any) {
+  inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...settings, updatedAt: new Date().toISOString() };
   try {
-    const existing = readPersistedFileSettings();
-    const merged = { ...existing, ...settings, updatedAt: new Date().toISOString() };
-    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(merged, null, 2), "utf-8");
+    const serialized = JSON.stringify(inMemoryGlobalSettings, null, 2);
+    try {
+      fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
+    } catch (e) {
+      // Read-only filesystem (e.g. Vercel Serverless) -> write to /tmp
+      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+    }
   } catch (e) {}
 }
 
 let cachedState: CachedMaintenanceState | null = null;
-const CACHE_TTL_MS = 2000; // 2-second short TTL to ensure maximum freshness while preventing DB thrashing
+const CACHE_TTL_MS = 2000;
 
 export function invalidateMaintenanceCache() {
   cachedState = null;
@@ -80,9 +100,11 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
   const fileSettings = readPersistedFileSettings();
 
   try {
-    const settings = await prisma.appSettings.findUnique({
+    const dbPromise = prisma.appSettings.findUnique({
       where: { id: "global_default" }
     });
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("DB timeout")), 400));
+    const settings: any = await Promise.race([dbPromise, timeoutPromise]);
 
     if (settings) {
       cachedState = {

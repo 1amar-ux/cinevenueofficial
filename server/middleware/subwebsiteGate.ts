@@ -8,13 +8,21 @@ import { logger } from "../shared/logger";
  * will be intercepted immediately at the server level and returned as an HTTP 503 page.
  */
 export const SUBWEBSITE_DIRECT_ROUTES = [
+  "/productions",
   "/production",
   "/events",
-  "/promotions",
-  "/film-production",
   "/event-management",
+  "/create-event",
+  "/promotions",
+  "/media-promotions",
   "/media-promotion",
   "/brand-promotion",
+  "/film-production",
+  "/filmproduction",
+  "/24crafts",
+  "/crafts",
+  "/proposals",
+  "/submit-proposal",
   "/services/film-production",
   "/services/event-management",
   "/services/media-promotion",

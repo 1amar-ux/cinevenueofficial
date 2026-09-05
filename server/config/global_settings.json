@@ -1,9 +1,4 @@
 {
   "globalSubwebsiteEnabled": false,
-  "maintenanceMode": false,
-  "maintenanceTitle": "Movie Booking Temporarily Unavailable",
-  "maintenanceMessage": "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
-  "updatedAt": "2026-09-04T17:49:40.623Z",
-  "updatedBy": "superadmin",
-  "subwebsiteMaintenanceMessage": "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
+  "updatedAt": "2026-09-05T02:37:45.709Z"
 }

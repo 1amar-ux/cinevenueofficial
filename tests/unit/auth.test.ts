@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export async function runAuthTests(): Promise<{ name: string; passed: boolean; error?: string }[]> {
