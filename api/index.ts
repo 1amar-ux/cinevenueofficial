@@ -240,6 +240,33 @@ export default async function handler(req: any, res: any) {
       invalidateMaintenanceCache();
     } catch (e) {}
 
+    // Direct DB update (awaited to prevent lambda termination before DB write completes)
+    try {
+      const { prisma } = await import("../server/config/database");
+      await Promise.race([
+        prisma.appSettings.upsert({
+          where: { id: "global_default" },
+          update: {
+            globalSubwebsiteEnabled: enabled,
+            ...(message !== undefined && { subwebsiteMaintenanceMessage: message }),
+            serviceControls: globalServerlessState.serviceControls,
+            updatedAt: new Date()
+          },
+          create: {
+            id: "global_default",
+            maintenanceMode: false,
+            globalSubwebsiteEnabled: enabled,
+            subwebsiteMaintenanceMessage: message || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+            serviceControls: globalServerlessState.serviceControls || {},
+            updatedBy: "admin"
+          }
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("DB timeout")), 2000))
+      ]).catch((dbErr: any) => {
+        console.warn("[API Serverless] Subwebsite DB upsert notice:", dbErr.message);
+      });
+    } catch (e) {}
+
     return res.status(200).json({
       success: true,
       message: `Global sub-website status successfully updated to ${enabled ? "ONLINE" : "OFFLINE"} across all servers.`,
