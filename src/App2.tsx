@@ -847,7 +847,9 @@ export default function App() {
   };
 
   // Render correct full-screen workspace or master landing layouts
-  if (!serviceControl.website.status && !adminOpen) {
+  // Admin panel must ALWAYS be accessible — even when the global website is switched off.
+  const isAdminPanelRoute = window.location.pathname.startsWith('/adminpanel');
+  if (!serviceControl.website.status && !adminOpen && !isAdminPanelRoute) {
     return (
       <MaintenancePage
         serviceName="CineVenue Global"
