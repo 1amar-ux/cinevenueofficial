@@ -358,10 +358,16 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
     urlPath = urlPath.slice(0, -1);
   }
 
+  // Explicitly allow the admin panel UI route (and any sub‑paths under it)
+  if (urlPath === '/adminpanel' || urlPath.startsWith('/adminpanel/')) {
+    return next();
+  }
+
   // 1. Unconditionally allow admin and other exempt routes, regardless of global flag
   if (isExemptRoute(urlPath)) {
     return next();
   }
+
 
   const isSubDirect = isSubwebsitePath(urlPath);
   const isSubApi = isSubwebsiteApiPath(urlPath);
