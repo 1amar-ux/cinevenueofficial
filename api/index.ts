@@ -69,14 +69,18 @@ function syncServerlessStateFromDisk() {
             ...data.serviceControls
           };
         }
+        if (data.updatedAt) {
+          globalServerlessState.updatedAt = data.updatedAt;
+        }
         return true;
       }
     } catch (e) {}
     return false;
   };
 
-  if (!readFromPath(CONFIG_FILE_PATH)) {
-    readFromPath(TMP_CONFIG_PATH);
+  // Check /tmp first (holds active runtime overrides written by Admin)
+  if (!readFromPath(TMP_CONFIG_PATH)) {
+    readFromPath(CONFIG_FILE_PATH);
   }
 }
 
@@ -149,6 +153,45 @@ export default async function handler(req: any, res: any) {
   // 3. High-Priority Direct Route: Public App Settings
   if (url === "/api/v1/settings/app" || url === "/api/settings/app" || url === "/settings/app") {
     syncServerlessStateFromDisk();
+
+    // Cross-lambda DB sync (if database is reachable)
+    try {
+      const { prisma } = await import("../server/config/database");
+      const dbSettings: any = await Promise.race([
+        prisma.appSettings.findUnique({ where: { id: "global_default" } }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 800))
+      ]).catch(() => null);
+
+      if (dbSettings) {
+        if (typeof dbSettings.maintenanceMode === "boolean") {
+          globalServerlessState.maintenanceMode = dbSettings.maintenanceMode;
+        }
+        if (dbSettings.maintenanceTitle) globalServerlessState.maintenanceTitle = dbSettings.maintenanceTitle;
+        if (dbSettings.maintenanceMessage) globalServerlessState.maintenanceMessage = dbSettings.maintenanceMessage;
+        if (typeof dbSettings.maintenanceCountdownEnabled === "boolean") {
+          globalServerlessState.maintenanceCountdownEnabled = dbSettings.maintenanceCountdownEnabled;
+        }
+        if (dbSettings.maintenanceEndTime !== undefined) {
+          globalServerlessState.maintenanceEndTime = dbSettings.maintenanceEndTime ? dbSettings.maintenanceEndTime.toISOString() : null;
+        }
+        if (typeof dbSettings.globalSubwebsiteEnabled === "boolean") {
+          globalServerlessState.globalSubwebsiteEnabled = dbSettings.globalSubwebsiteEnabled;
+        }
+        if (dbSettings.subwebsiteMaintenanceMessage) {
+          globalServerlessState.subwebsiteMaintenanceMessage = dbSettings.subwebsiteMaintenanceMessage;
+        }
+        if (dbSettings.serviceControls && typeof dbSettings.serviceControls === "object") {
+          globalServerlessState.serviceControls = {
+            ...globalServerlessState.serviceControls,
+            ...(dbSettings.serviceControls as any)
+          };
+        }
+        if (dbSettings.updatedAt) {
+          globalServerlessState.updatedAt = dbSettings.updatedAt.toISOString();
+        }
+      }
+    } catch (e) {}
+
     return res.status(200).json({
       success: true,
       data: {
@@ -251,29 +294,40 @@ export default async function handler(req: any, res: any) {
       invalidateMaintenanceCache();
     } catch (e) {}
 
-    // Resilient async DB update if available
+    // Direct DB update (awaited to prevent lambda termination before DB write completes)
     try {
       const { prisma } = await import("../server/config/database");
-      prisma.appSettings.upsert({
-        where: { id: "global_default" },
-        update: {
-          ...(typeof body.maintenanceMode === "boolean" && { maintenanceMode: body.maintenanceMode }),
-          ...(body.maintenanceTitle !== undefined && { maintenanceTitle: body.maintenanceTitle }),
-          ...(body.maintenanceMessage !== undefined && { maintenanceMessage: body.maintenanceMessage }),
-          ...(typeof body.maintenanceCountdownEnabled === "boolean" && { maintenanceCountdownEnabled: body.maintenanceCountdownEnabled }),
-          ...(typeof body.globalSubwebsiteEnabled === "boolean" && { globalSubwebsiteEnabled: body.globalSubwebsiteEnabled }),
-          ...(body.subwebsiteMaintenanceMessage !== undefined && { subwebsiteMaintenanceMessage: body.subwebsiteMaintenanceMessage }),
-          ...(body.serviceControls !== undefined && { serviceControls: body.serviceControls }),
-          updatedAt: new Date()
-        },
-        create: {
-          id: "global_default",
-          maintenanceMode: !!body.maintenanceMode,
-          globalSubwebsiteEnabled: body.globalSubwebsiteEnabled !== false,
-          serviceControls: body.serviceControls || {},
-          updatedBy: "admin"
-        }
-      }).catch(() => {});
+      await Promise.race([
+        prisma.appSettings.upsert({
+          where: { id: "global_default" },
+          update: {
+            ...(typeof body.maintenanceMode === "boolean" && { maintenanceMode: body.maintenanceMode }),
+            ...(body.maintenanceTitle !== undefined && { maintenanceTitle: body.maintenanceTitle }),
+            ...(body.maintenanceMessage !== undefined && { maintenanceMessage: body.maintenanceMessage }),
+            ...(typeof body.maintenanceCountdownEnabled === "boolean" && { maintenanceCountdownEnabled: body.maintenanceCountdownEnabled }),
+            ...(body.maintenanceEndTime !== undefined && { maintenanceEndTime: body.maintenanceEndTime ? new Date(body.maintenanceEndTime) : null }),
+            ...(typeof body.globalSubwebsiteEnabled === "boolean" && { globalSubwebsiteEnabled: body.globalSubwebsiteEnabled }),
+            ...(body.subwebsiteMaintenanceMessage !== undefined && { subwebsiteMaintenanceMessage: body.subwebsiteMaintenanceMessage }),
+            ...(body.serviceControls !== undefined && { serviceControls: body.serviceControls }),
+            updatedAt: new Date()
+          },
+          create: {
+            id: "global_default",
+            maintenanceMode: !!body.maintenanceMode,
+            maintenanceTitle: body.maintenanceTitle || "Maintenance Mode Active",
+            maintenanceMessage: body.maintenanceMessage || "Platform undergoing maintenance.",
+            maintenanceCountdownEnabled: !!body.maintenanceCountdownEnabled,
+            maintenanceEndTime: body.maintenanceEndTime ? new Date(body.maintenanceEndTime) : null,
+            globalSubwebsiteEnabled: body.globalSubwebsiteEnabled !== false,
+            subwebsiteMaintenanceMessage: body.subwebsiteMaintenanceMessage || "Sub-websites temporarily unavailable.",
+            serviceControls: body.serviceControls || {},
+            updatedBy: "admin"
+          }
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("DB timeout")), 2000))
+      ]).catch((dbErr: any) => {
+        console.warn("[API Serverless] DB upsert notice:", dbErr.message);
+      });
     } catch (e) {}
 
     return res.status(200).json({

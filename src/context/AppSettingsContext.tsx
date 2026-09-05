@@ -106,6 +106,16 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       const newMaintenanceMode = data.maintenance_mode ?? data.maintenanceMode ?? prev.maintenanceMode;
 
+      // Timestamp Freshness Guard: If incoming data is older than current state, discard it
+      const incomingUpdatedAt = data.updated_at ?? data.updatedAt;
+      if (incomingUpdatedAt && prev.updatedAt) {
+        const incomingTime = new Date(incomingUpdatedAt).getTime();
+        const prevTime = new Date(prev.updatedAt).getTime();
+        if (!isNaN(incomingTime) && !isNaN(prevTime) && incomingTime < prevTime - 500) {
+          return prev;
+        }
+      }
+
       // Smart Equality check: if nothing changed, preserve object identity to avoid re-rendering entire app
       const isControlsSame = JSON.stringify(prev.serviceControls) === JSON.stringify(mergedControls);
       const isSubSame = prev.globalSubwebsiteEnabled === globalSubwebsiteEnabled;
@@ -184,58 +194,69 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Dedicated Global Sub-Website ON/OFF Switch (Admin Operation)
   const setGlobalSubwebsiteEnabled = useCallback(async (enabled: boolean, message?: string): Promise<boolean> => {
+    const nowIso = new Date().toISOString();
     // 1. Instant Optimistic Local Update
     applySettingsRecord({
       globalSubwebsiteEnabled: enabled,
-      ...(message && { subwebsiteMaintenanceMessage: message })
+      ...(message && { subwebsiteMaintenanceMessage: message }),
+      updatedAt: nowIso
     });
 
     try {
       const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "8888") : "8888";
-      const res = await apiClient.post("/admin/settings/subwebsite", {
+      const backendPromise = apiClient.post("/admin/settings/subwebsite", {
         enabled,
-        message
+        message,
+        updatedAt: nowIso
       }, {
         headers: {
           "x-admin-passcode": adminPasscode
         }
+      }).catch((err) => {
+        console.warn("[AppSettings] Backend update notice for sub-website switch:", err?.message || err);
+        return null;
       });
 
-      if (res.data?.success) {
-        refreshSettings();
-        return true;
-      }
-    } catch (err: any) {
-      console.warn("[AppSettings] Backend update notice for sub-website switch:", err?.message || err);
-    }
-
-    // Direct fallback to Supabase if configured
-    if (isSupabaseConfigured) {
-      try {
-        await supabase
-          .from("app_settings")
-          .update({
-            global_subwebsite_enabled: enabled,
-            ...(message && { subwebsite_maintenance_message: message }),
-            updated_at: new Date().toISOString()
+      // Dual-layer persistence: also update Supabase directly if configured
+      const sbPromise = isSupabaseConfigured
+        ? Promise.resolve(
+            supabase
+              .from("app_settings")
+              .upsert({
+                id: "global_default",
+                global_subwebsite_enabled: enabled,
+                ...(message && { subwebsite_maintenance_message: message }),
+                updated_at: nowIso
+              })
+          ).catch((sbErr: any) => {
+            console.warn("[AppSettings] Supabase direct sync notice:", sbErr);
+            return null;
           })
-          .eq("id", "global_default");
-      } catch (sbErr) {
-        console.warn("[AppSettings] Supabase direct fallback error:", sbErr);
-      }
-    }
+        : Promise.resolve(null);
 
-    return true;
+      await Promise.all([backendPromise, sbPromise]);
+      refreshSettings();
+      return true;
+    } catch (err: any) {
+      console.warn("[AppSettings] Subwebsite toggle notice:", err?.message || err);
+      return true;
+    }
   }, [applySettingsRecord, refreshSettings]);
 
   // Update Global Settings (Admin Operation)
   const updateGlobalSettings = useCallback(async (newSettings: Partial<GlobalAppSettings>): Promise<boolean> => {
+    const nowIso = new Date().toISOString();
     // 1. Instant Optimistic Update to UI and LocalStorage
-    applySettingsRecord(newSettings);
+    applySettingsRecord({
+      ...newSettings,
+      updatedAt: nowIso
+    });
 
     try {
-      // 2. Send authoritative update to backend admin route (persists to Supabase DB & writes audit logs)
-      const payload: any = {};
+      // 2. Send authoritative update to backend admin route (persists to DB & writes audit logs)
+      const payload: any = {
+        updatedAt: nowIso
+      };
       if (newSettings.maintenanceMode !== undefined) payload.maintenanceMode = newSettings.maintenanceMode;
       if (newSettings.maintenanceTitle !== undefined) payload.maintenanceTitle = newSettings.maintenanceTitle;
       if (newSettings.maintenanceMessage !== undefined) payload.maintenanceMessage = newSettings.maintenanceMessage;
@@ -246,43 +267,48 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (newSettings.serviceControls !== undefined) payload.serviceControls = newSettings.serviceControls;
 
       const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "8888") : "8888";
-      const res = await apiClient.post("/admin/settings/global", payload, {
+      
+      const backendPromise = apiClient.post("/admin/settings/global", payload, {
         headers: {
           "x-admin-passcode": adminPasscode
         }
+      }).catch((err) => {
+        console.warn("[AppSettings] Backend update notice:", err?.message || err);
+        return null;
       });
 
-      if (res.data?.success && res.data?.data?.settings) {
-        applySettingsRecord(res.data.data.settings);
-        return true;
-      }
-
-      // 3. Fallback: Supabase direct client if configured
-      if (isSupabaseConfigured) {
-        const { error } = await supabase
-          .from("app_settings")
-          .update({
-            ...(newSettings.maintenanceMode !== undefined && { maintenance_mode: newSettings.maintenanceMode }),
-            ...(newSettings.maintenanceTitle !== undefined && { maintenance_title: newSettings.maintenanceTitle }),
-            ...(newSettings.maintenanceMessage !== undefined && { maintenance_message: newSettings.maintenanceMessage }),
-            ...(newSettings.maintenanceCountdownEnabled !== undefined && { maintenance_countdown_enabled: newSettings.maintenanceCountdownEnabled }),
-            ...(newSettings.maintenanceEndTime !== undefined && { maintenance_end_time: newSettings.maintenanceEndTime }),
-            ...(newSettings.globalSubwebsiteEnabled !== undefined && { global_subwebsite_enabled: newSettings.globalSubwebsiteEnabled }),
-            ...(newSettings.subwebsiteMaintenanceMessage !== undefined && { subwebsite_maintenance_message: newSettings.subwebsiteMaintenanceMessage }),
-            ...(newSettings.serviceControls !== undefined && { service_controls: newSettings.serviceControls }),
-            updated_at: new Date().toISOString()
+      // 3. Dual-layer persistence: also update Supabase directly in parallel
+      const sbPromise = isSupabaseConfigured
+        ? Promise.resolve(
+            supabase
+              .from("app_settings")
+              .upsert({
+                id: "global_default",
+                ...(newSettings.maintenanceMode !== undefined && { maintenance_mode: newSettings.maintenanceMode }),
+                ...(newSettings.maintenanceTitle !== undefined && { maintenance_title: newSettings.maintenanceTitle }),
+                ...(newSettings.maintenanceMessage !== undefined && { maintenance_message: newSettings.maintenanceMessage }),
+                ...(newSettings.maintenanceCountdownEnabled !== undefined && { maintenance_countdown_enabled: newSettings.maintenanceCountdownEnabled }),
+                ...(newSettings.maintenanceEndTime !== undefined && { maintenance_end_time: newSettings.maintenanceEndTime }),
+                ...(newSettings.globalSubwebsiteEnabled !== undefined && { global_subwebsite_enabled: newSettings.globalSubwebsiteEnabled }),
+                ...(newSettings.subwebsiteMaintenanceMessage !== undefined && { subwebsite_maintenance_message: newSettings.subwebsiteMaintenanceMessage }),
+                ...(newSettings.serviceControls !== undefined && { service_controls: newSettings.serviceControls }),
+                updated_at: nowIso
+              })
+          ).catch((sbErr: any) => {
+            console.warn("[AppSettings] Supabase direct update notice:", sbErr);
+            return null;
           })
-          .eq("id", "global_default");
+        : Promise.resolve(null);
 
-        if (!error) {
-          return true;
-        }
+      const [res] = await Promise.all([backendPromise, sbPromise]);
+
+      if (res?.data?.success && res.data?.data?.settings) {
+        applySettingsRecord(res.data.data.settings);
       }
 
       return true;
     } catch (err: any) {
       console.warn("[AppSettings] Backend update notice (local optimistic state active):", err?.message || err);
-      // Optimistic update succeeded locally, return true so UI reflects change seamlessly
       return true;
     }
   }, [applySettingsRecord]);
