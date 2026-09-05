@@ -362,7 +362,7 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
     const settings = await getGlobalAppSettings();
 
     // 3. If sub-websites are enabled, proceed normally
-    if (settings.globalSubwebsiteEnabled !== false) {
+    if (settings.globalSubwebsiteEnabled === true) {
       return next();
     }
 

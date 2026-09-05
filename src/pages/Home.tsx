@@ -677,7 +677,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               </div>
             )}
 
-            {activeDivision === "live_booking" && (serviceControl?.eventBooking?.status !== false) && (
+            {activeDivision === "live_booking" && (serviceControl?.eventBooking?.status === true) && (
               <div className="space-y-12 text-left">
                 {/* CURATED GENRES & BROWSE LIVE CATEGORIES (TOP FILTER SECTION) */}
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-white/5">

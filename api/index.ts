@@ -345,7 +345,7 @@ export default async function handler(req: any, res: any) {
             maintenanceMessage: body.maintenanceMessage || "Platform undergoing maintenance.",
             maintenanceCountdownEnabled: !!body.maintenanceCountdownEnabled,
             maintenanceEndTime: body.maintenanceEndTime ? new Date(body.maintenanceEndTime) : null,
-            globalSubwebsiteEnabled: body.globalSubwebsiteEnabled !== false,
+            globalSubwebsiteEnabled: body.globalSubwebsiteEnabled === true,
             subwebsiteMaintenanceMessage: body.subwebsiteMaintenanceMessage || "Sub-websites temporarily unavailable.",
             serviceControls: body.serviceControls || {},
             updatedBy: "admin"

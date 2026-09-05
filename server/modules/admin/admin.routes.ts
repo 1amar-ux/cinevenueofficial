@@ -251,7 +251,7 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
           maintenanceMessage: maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
           maintenanceCountdownEnabled: !!maintenanceCountdownEnabled,
           maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null,
-          globalSubwebsiteEnabled: globalSubwebsiteEnabled !== false,
+          globalSubwebsiteEnabled: globalSubwebsiteEnabled === true,
           subwebsiteMaintenanceMessage: subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
           serviceControls: serviceControls || {},
           updatedBy: req.user?.email || "admin"

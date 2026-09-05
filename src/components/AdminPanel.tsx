@@ -5271,11 +5271,11 @@ export default function AdminPanel({
                         GLOBAL CONTROLS — SUB-WEBSITE SYSTEM
                       </h3>
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider ${
-                        globalAppSettings.globalSubwebsiteEnabled !== false
+                        globalAppSettings.globalSubwebsiteEnabled === true
                           ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
                           : "bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse"
                       }`}>
-                        {globalAppSettings.globalSubwebsiteEnabled !== false ? "● ONLINE (ENABLED)" : "● OFFLINE (DISABLED GLOBALLY)"}
+                        {globalAppSettings.globalSubwebsiteEnabled === true ? "● ONLINE (ENABLED)" : "● OFFLINE (DISABLED GLOBALLY)"}
                       </span>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed font-sans">
@@ -5288,9 +5288,9 @@ export default function AdminPanel({
                     <div className="text-left sm:text-right">
                       <span className="text-[10px] text-text-muted font-bold block uppercase tracking-wider">GLOBAL ACCESS</span>
                       <span className={`text-sm font-black font-mono ${
-                        globalAppSettings.globalSubwebsiteEnabled !== false ? "text-emerald-400" : "text-rose-400"
+                        globalAppSettings.globalSubwebsiteEnabled === true ? "text-emerald-400" : "text-rose-400"
                       }`}>
-                        {globalAppSettings.globalSubwebsiteEnabled !== false ? "ALL SUB-WEBSITES ACTIVE" : "ALL SUB-WEBSITES DISABLED"}
+                        {globalAppSettings.globalSubwebsiteEnabled === true ? "ALL SUB-WEBSITES ACTIVE" : "ALL SUB-WEBSITES DISABLED"}
                       </span>
                     </div>
 
@@ -5298,17 +5298,17 @@ export default function AdminPanel({
                       type="button"
                       id="btn-global-subwebsite-toggle-settings"
                       onClick={() => {
-                        const current = globalAppSettings.globalSubwebsiteEnabled !== false;
+                        const current = globalAppSettings.globalSubwebsiteEnabled === true;
                         setSubwebsitePendingAction(current ? "disable" : "enable");
                         setSubwebsiteConfirmModalOpen(true);
                       }}
                       className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        globalAppSettings.globalSubwebsiteEnabled !== false ? "bg-emerald-500 shadow-lg shadow-emerald-500/40" : "bg-rose-600 shadow-lg shadow-rose-600/40"
+                        globalAppSettings.globalSubwebsiteEnabled === true ? "bg-emerald-500 shadow-lg shadow-emerald-500/40" : "bg-rose-600 shadow-lg shadow-rose-600/40"
                       }`}
                     >
                       <span
                         className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                          globalAppSettings.globalSubwebsiteEnabled !== false ? "translate-x-8" : "translate-x-0"
+                          globalAppSettings.globalSubwebsiteEnabled === true ? "translate-x-8" : "translate-x-0"
                         }`}
                       />
                     </button>
@@ -7061,11 +7061,11 @@ export default function AdminPanel({
                       Master Global Sub-Website Kill Switch
                     </h4>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase ${
-                      globalAppSettings.globalSubwebsiteEnabled !== false
+                      globalAppSettings.globalSubwebsiteEnabled === true
                         ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
                         : "bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse"
                     }`}>
-                      {globalAppSettings.globalSubwebsiteEnabled !== false ? "ALL SUB-WEBSITES ONLINE" : "ALL SUB-WEBSITES DISABLED GLOBALLY"}
+                      {globalAppSettings.globalSubwebsiteEnabled === true ? "ALL SUB-WEBSITES ONLINE" : "ALL SUB-WEBSITES DISABLED GLOBALLY"}
                     </span>
                   </div>
                   <p className="text-xs text-text-secondary">
@@ -7078,17 +7078,17 @@ export default function AdminPanel({
                     type="button"
                     id="btn-global-subwebsite-toggle-subwebsites"
                     onClick={() => {
-                      const current = globalAppSettings.globalSubwebsiteEnabled !== false;
+                      const current = globalAppSettings.globalSubwebsiteEnabled === true;
                       setSubwebsitePendingAction(current ? "disable" : "enable");
                       setSubwebsiteConfirmModalOpen(true);
                     }}
                     className={`px-4 py-2 rounded-xl text-xs font-bold font-mono tracking-wider text-white transition-all cursor-pointer shadow-lg flex items-center gap-2 ${
-                      globalAppSettings.globalSubwebsiteEnabled !== false
+                      globalAppSettings.globalSubwebsiteEnabled === true
                         ? "bg-rose-600 hover:bg-rose-500 border border-rose-400/50 shadow-rose-950/50"
                         : "bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/50 shadow-emerald-950/50"
                     }`}
                   >
-                    <span>{globalAppSettings.globalSubwebsiteEnabled !== false ? "🛑 DISABLE ALL SUB-WEBSITES" : "⚡ ENABLE ALL SUB-WEBSITES"}</span>
+                    <span>{globalAppSettings.globalSubwebsiteEnabled === true ? "🛑 DISABLE ALL SUB-WEBSITES" : "⚡ ENABLE ALL SUB-WEBSITES"}</span>
                   </button>
                 </div>
               </div>
