@@ -123,14 +123,14 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
 
     // Fallback if singleton record hasn't been seeded yet
     cachedState = {
-      maintenanceMode: false,
-      maintenanceTitle: "Movie Booking Temporarily Unavailable",
-      maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
-      maintenanceCountdownEnabled: false,
-      maintenanceEndTime: null,
+      maintenanceMode: typeof fileSettings.maintenanceMode === "boolean" ? fileSettings.maintenanceMode : false,
+      maintenanceTitle: fileSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
+      maintenanceMessage: fileSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+      maintenanceCountdownEnabled: !!fileSettings.maintenanceCountdownEnabled,
+      maintenanceEndTime: fileSettings.maintenanceEndTime || null,
       globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== undefined ? fileSettings.globalSubwebsiteEnabled : false,
       subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
-      serviceControls: {},
+      serviceControls: fileSettings.serviceControls || {},
       cachedAt: now
     };
     return cachedState;
@@ -142,14 +142,14 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
     }
     // Resilient fallback: uses persistent server configuration file
     cachedState = {
-      maintenanceMode: false,
-      maintenanceTitle: "Movie Booking Temporarily Unavailable",
-      maintenanceMessage: "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
-      maintenanceCountdownEnabled: false,
-      maintenanceEndTime: null,
+      maintenanceMode: typeof fileSettings.maintenanceMode === "boolean" ? fileSettings.maintenanceMode : false,
+      maintenanceTitle: fileSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
+      maintenanceMessage: fileSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+      maintenanceCountdownEnabled: !!fileSettings.maintenanceCountdownEnabled,
+      maintenanceEndTime: fileSettings.maintenanceEndTime || null,
       globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== undefined ? fileSettings.globalSubwebsiteEnabled : false,
       subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
-      serviceControls: {},
+      serviceControls: fileSettings.serviceControls || {},
       cachedAt: now
     };
     return cachedState;

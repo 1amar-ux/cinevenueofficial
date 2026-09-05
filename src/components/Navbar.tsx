@@ -49,7 +49,10 @@ export default function Navbar({
 }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isSubwebsiteEnabled } = useAppSettings();
+  const { isSubwebsiteEnabled, settings } = useAppSettings();
+
+  const isMovieBookingLive = (settings.serviceControls?.movieBooking?.status !== false) && !settings.maintenanceMode;
+  const isCineCoinsLive = (settings.serviceControls?.cinecoins?.status !== false) && (settings.serviceControls?.cineCoinsLoyalty?.status !== false);
 
   // Determine user role
   const isSuperAdmin = userEmail?.toLowerCase() === superAdminEmail.toLowerCase();
@@ -100,8 +103,16 @@ export default function Navbar({
         
         {/* Center: Navigation Links */}
         <div className="hidden lg:flex items-center gap-6 text-[11px] uppercase tracking-[0.2em] font-medium text-text-secondary">
-          <button onClick={() => window.location.href = "/#services"} className="hover:text-gold transition-colors cursor-pointer bg-transparent border-none">
-            Booking
+          <button 
+            onClick={() => window.location.href = "/#services"} 
+            className={`transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
+              isMovieBookingLive ? "hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
+          >
+            <span>Booking</span>
+            {!isMovieBookingLive && (
+              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+            )}
           </button>
           <button 
             onClick={() => window.location.href = "/productions"} 
@@ -125,6 +136,22 @@ export default function Navbar({
           >
             <span>Events</span>
             {!isSubwebsiteEnabled && (
+              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+            )}
+          </button>
+          <button 
+            onClick={() => {
+              if (onOpenCineCoins) onOpenCineCoins();
+              else window.location.href = "/cinecoins";
+            }} 
+            className={`font-bold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
+              isCineCoinsLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
+            title={!isCineCoinsLive ? "CineCoins Rewards Vault is offline" : "CineCoins Loyalty"}
+          >
+            <Coins className="w-3.5 h-3.5" />
+            <span>CineCoins</span>
+            {!isCineCoinsLive && (
               <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
             )}
           </button>
@@ -265,10 +292,17 @@ export default function Navbar({
         <div className="lg:hidden mt-4 pt-4 border-t border-white/10 flex flex-col gap-2.5 pb-2 animate-fade-in">
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/#services"; }} 
-            className="text-left px-3 py-2 text-xs uppercase font-semibold text-white/80 hover:text-gold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center gap-2"
+            className={`text-left px-3 py-2 text-xs uppercase font-semibold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isMovieBookingLive ? "text-white/80 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
           >
-            <Ticket className="w-4 h-4 text-gold" />
-            <span>Movie Ticket Booking</span>
+            <div className="flex items-center gap-2">
+              <Ticket className="w-4 h-4 text-gold" />
+              <span>Movie Ticket Booking</span>
+            </div>
+            {!isMovieBookingLive && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+            )}
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/productions"; }} 
@@ -295,6 +329,24 @@ export default function Navbar({
               <span>Events & Organization</span>
             </div>
             {!isSubwebsiteEnabled && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+            )}
+          </button>
+          <button 
+            onClick={() => { 
+              setMobileMenuOpen(false); 
+              if (onOpenCineCoins) onOpenCineCoins(); 
+              else window.location.href = "/cinecoins"; 
+            }} 
+            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isCineCoinsLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Coins className="w-4 h-4 text-amber-400" />
+              <span>CineCoins Loyalty & Rewards</span>
+            </div>
+            {!isCineCoinsLive && (
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
             )}
           </button>

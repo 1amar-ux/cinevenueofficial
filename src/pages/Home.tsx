@@ -599,7 +599,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 </div>
                 
                 {/* Live Status Badge */}
-                {(serviceControl?.cineCoinsLoyalty?.status ?? true) ? (
+                {(serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20 uppercase tracking-widest font-mono">
                     LIVE
                   </span>
@@ -621,9 +621,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6">
               <button
                 onClick={() => navigate("/cinecoins")}
-                className="w-full py-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none"
+                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
+                  (serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true)
+                    ? "bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
+                }`}
               >
-                <span>🪙 Launch CineCoins Portal</span>
+                <span>{(serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true) ? "🪙 Launch CineCoins Portal" : "Under Maintenance"}</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>

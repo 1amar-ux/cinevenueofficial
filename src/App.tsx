@@ -217,10 +217,16 @@ export default function App() {
         expectedTime: remote.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"
       },
       cinecoins: {
-        status: remote.cinecoins?.status !== false,
-        title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
-        message: remote.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
-        expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
+        status: remote.cinecoins?.status !== false && remote.cineCoinsLoyalty?.status !== false,
+        title: remote.cinecoins?.title || remote.cineCoinsLoyalty?.title || "CineCoins Rewards Vault Under Maintenance",
+        message: remote.cinecoins?.message || remote.cineCoinsLoyalty?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
+        expectedTime: remote.cinecoins?.expectedTime || remote.cineCoinsLoyalty?.expectedTime || "31 July 2026, 06:00 PM"
+      },
+      cineCoinsLoyalty: {
+        status: remote.cinecoins?.status !== false && remote.cineCoinsLoyalty?.status !== false,
+        title: remote.cinecoins?.title || remote.cineCoinsLoyalty?.title || "CineCoins Rewards Vault Under Maintenance",
+        message: remote.cinecoins?.message || remote.cineCoinsLoyalty?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
+        expectedTime: remote.cinecoins?.expectedTime || remote.cineCoinsLoyalty?.expectedTime || "31 July 2026, 06:00 PM"
       }
     };
   }, [globalAppSettings]);
@@ -267,6 +273,14 @@ export default function App() {
   const setServiceControl = async (updater: any) => {
     const updated = typeof updater === "function" ? updater(serviceControl) : updater;
     const isMaintenance = updated.movieBooking?.status === false || updated.website?.status === false || updated.globalWebsite?.status === false;
+    
+    // Keep cinecoins and cineCoinsLoyalty in sync
+    if (updated.cinecoins && !updated.cineCoinsLoyalty) {
+      updated.cineCoinsLoyalty = { ...updated.cinecoins };
+    } else if (updated.cineCoinsLoyalty && !updated.cinecoins) {
+      updated.cinecoins = { ...updated.cineCoinsLoyalty };
+    }
+
     await updateGlobalSettings({
       maintenanceMode: isMaintenance,
       maintenanceTitle: updated.movieBooking?.title || updated.website?.title || globalAppSettings.maintenanceTitle,
