@@ -855,9 +855,6 @@ export default function App() {
         message={serviceControl.website.message}
         expectedTime={serviceControl.website.expectedTime}
         icon="🌐"
-        onBackToHome={() => {
-          setAdminOpen(true);
-        }}
       />
     );
   }
