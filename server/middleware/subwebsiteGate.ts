@@ -110,7 +110,11 @@ export function isSubwebsiteApiPath(pathname: string): boolean {
  */
 export function isExemptRoute(pathname: string): boolean {
   if (!pathname) return false;
-  const normalized = pathname.toLowerCase().split("?")[0];
+  // Remove query string and trailing slash for robust matching
+  let normalized = pathname.toLowerCase().split("?")[0];
+  if (normalized.endsWith('/') && normalized !== '/') {
+    normalized = normalized.slice(0, -1);
+  }
 
   // Static assets and Vite internal scripts
   if (
@@ -125,7 +129,13 @@ export function isExemptRoute(pathname: string): boolean {
 
   // Explicit exemptions (Admin, Auth, Movie Booking APIs)
   for (const prefix of EXEMPT_ROUTE_PREFIXES) {
-    if (normalized === prefix || normalized.startsWith(prefix + "/") || normalized.startsWith(prefix + "?")) {
+    // Normalise prefix once (no trailing slash)
+    const cleanPrefix = prefix.endsWith('/') && prefix !== '/' ? prefix.slice(0, -1) : prefix;
+    if (
+      normalized === cleanPrefix ||
+      normalized.startsWith(cleanPrefix + "/") ||
+      normalized.startsWith(cleanPrefix + "?")
+    ) {
       return true;
     }
   }
@@ -343,9 +353,12 @@ export function renderSubwebsiteUnavailableHtml(customMessage?: string): string 
  * Evaluates both direct browser URLs and internal API calls.
  */
 export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Response, next: NextFunction) {
-  const urlPath = req.originalUrl || req.url || req.path;
+  let urlPath = req.originalUrl || req.url || req.path;
+  if (urlPath.length > 1 && urlPath.endsWith('/')) {
+    urlPath = urlPath.slice(0, -1);
+  }
 
-  // 1. Never block exempt routes (Admin, Auth, Movie booking, Static files)
+  // 1. Unconditionally allow admin and other exempt routes, regardless of global flag
   if (isExemptRoute(urlPath)) {
     return next();
   }
@@ -353,20 +366,20 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
   const isSubDirect = isSubwebsitePath(urlPath);
   const isSubApi = isSubwebsiteApiPath(urlPath);
 
-  // 2. If it's not targeting any sub-website, pass through immediately
-  if (!isSubDirect && !isSubApi) {
-    return next();
-  }
-
   try {
     const settings = await getGlobalAppSettings();
 
-    // 3. If sub-websites are enabled, proceed normally
+    // Global switch ON → allow everything (already passed exempt check)
     if (settings.globalSubwebsiteEnabled === true) {
       return next();
     }
 
-    // 4. Sub-websites are GLOBALLY DISABLED:
+    // If the request isn’t for a sub‑website, let it through
+    if (!isSubDirect && !isSubApi) {
+      return next();
+    }
+
+    // ----- Global sub‑website DISABLED -----
     logger.warn(`[SUBWEBSITE GATE] Intercepted disabled subwebsite request: ${req.method} ${urlPath}`);
 
     // Case A: API requests or explicit JSON accept headers

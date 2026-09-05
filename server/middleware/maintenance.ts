@@ -86,7 +86,7 @@ export function setTestMaintenanceState(state: Partial<CachedMaintenanceState> |
       globalSubwebsiteEnabled: state.globalSubwebsiteEnabled ?? false,
       subwebsiteMaintenanceMessage: state.subwebsiteMaintenanceMessage ?? "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: state.serviceControls ?? {},
-      cachedAt: Date.now() + 100000
+      cachedAt: Date.now()
     };
   }
 }
@@ -113,7 +113,7 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
         maintenanceMessage: settings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
         maintenanceCountdownEnabled: settings.maintenanceCountdownEnabled,
         maintenanceEndTime: settings.maintenanceEndTime,
-        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled === true && fileSettings.globalSubwebsiteEnabled === true,
+        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled === true,
         subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage || fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
         serviceControls: settings.serviceControls || {},
         cachedAt: now
