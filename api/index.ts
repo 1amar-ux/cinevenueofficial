@@ -8,6 +8,9 @@
  */
 import fs from "fs";
 import path from "path";
+import { createApp } from "../server/app";
+import { prisma } from "../server/config/database";
+import { writePersistedFileSettings, invalidateMaintenanceCache } from "../server/middleware/maintenance";
 
 // 1. Persistent fallback store for serverless lambdas
 const CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
@@ -120,10 +123,13 @@ syncServerlessStateFromDisk();
 
 let expressApp: any = null;
 
-async function getExpressApp() {
+function getExpressApp() {
   if (!expressApp) {
-    const { createApp } = await import("../server/app");
-    expressApp = createApp();
+    try {
+      expressApp = createApp();
+    } catch (err: any) {
+      console.error("[Vercel Gateway] Express initialization error:", err);
+    }
   }
   return expressApp;
 }
@@ -156,7 +162,6 @@ export default async function handler(req: any, res: any) {
 
     // Cross-lambda DB sync (if database is reachable)
     try {
-      const { prisma } = await import("../server/config/database");
       const dbSettings: any = await Promise.race([
         prisma.appSettings.findUnique({ where: { id: "global_default" } }),
         new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 800))
@@ -235,14 +240,12 @@ export default async function handler(req: any, res: any) {
     persistServerlessState(enabled, message);
 
     try {
-      const { writePersistedFileSettings, invalidateMaintenanceCache } = await import("../server/middleware/maintenance");
       writePersistedFileSettings(globalServerlessState);
       invalidateMaintenanceCache();
     } catch (e) {}
 
     // Direct DB update (awaited to prevent lambda termination before DB write completes)
     try {
-      const { prisma } = await import("../server/config/database");
       await Promise.race([
         prisma.appSettings.upsert({
           where: { id: "global_default" },
@@ -316,14 +319,12 @@ export default async function handler(req: any, res: any) {
     try { fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8"); } catch (e) {}
 
     try {
-      const { writePersistedFileSettings, invalidateMaintenanceCache } = await import("../server/middleware/maintenance");
       writePersistedFileSettings(globalServerlessState);
       invalidateMaintenanceCache();
     } catch (e) {}
 
     // Direct DB update (awaited to prevent lambda termination before DB write completes)
     try {
-      const { prisma } = await import("../server/config/database");
       await Promise.race([
         prisma.appSettings.upsert({
           where: { id: "global_default" },
@@ -400,7 +401,13 @@ export default async function handler(req: any, res: any) {
 
   // 7. Delegate all standard full-stack routes to Express
   try {
-    const app = await getExpressApp();
+    const app = getExpressApp();
+    if (!app) {
+      return res.status(500).json({
+        success: false,
+        error: { code: "EXPRESS_INIT_FAILED", message: "Failed to initialize server application" }
+      });
+    }
     return new Promise((resolve, reject) => {
       app(req, res, (err: any) => {
         if (err) return reject(err);

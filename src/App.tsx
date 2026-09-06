@@ -275,11 +275,11 @@ export default function App() {
     const updated = typeof updater === "function" ? updater(serviceControl) : updater;
     const isMaintenance = updated.movieBooking?.status === false || updated.website?.status === false || updated.globalWebsite?.status === false;
     
-    // Keep cinecoins and cineCoinsLoyalty in sync
-    if (updated.cinecoins && !updated.cineCoinsLoyalty) {
-      updated.cineCoinsLoyalty = { ...updated.cinecoins };
-    } else if (updated.cineCoinsLoyalty && !updated.cinecoins) {
-      updated.cinecoins = { ...updated.cineCoinsLoyalty };
+    // Keep cinecoins and cineCoinsLoyalty strictly in sync
+    if (updated.cinecoins || updated.cineCoinsLoyalty) {
+      const activeState = updated.cinecoins || updated.cineCoinsLoyalty;
+      updated.cinecoins = { ...activeState };
+      updated.cineCoinsLoyalty = { ...activeState };
     }
 
     await updateGlobalSettings({
