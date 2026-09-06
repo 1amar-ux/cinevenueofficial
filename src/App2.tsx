@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useAppSettings } from "./context/AppSettingsContext";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -158,56 +159,93 @@ export default function App() {
     ];
   });
 
-  // Master ON/OFF Toggle States for Content Management Systems and Service Control Center
-  const [serviceControl, setServiceControl] = useState(() => {
-    const saved = localStorage.getItem("cine_service_control");
-    return saved ? JSON.parse(saved) : {
-      website: { status: true, title: "CineVenue Under Maintenance", message: "Our platform is currently undergoing scheduled updates. We'll be back online shortly.", expectedTime: "30 July 2026, 06:00 PM" },
-      movieBooking: { status: true, title: "Movie Booking Temporarily Unavailable", message: "We're upgrading our ticket booking experience.\n\nMovie booking will be available shortly.", expectedTime: "30 July 2026, 06:00 PM", visitors: 1240 },
-      eventBooking: { status: true, title: "Event Booking Temporarily Unavailable", message: "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.", expectedTime: "31 July 2026, 10:00 AM", visitors: 327 },
-      filmProduction: { status: true, title: "Film Production Division Under Maintenance", message: "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com", expectedTime: "30 July 2026, 12:00 PM" },
-      eventManagement: { status: true, title: "Event Management Under Maintenance", message: "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon.", expectedTime: "31 July 2026, 02:00 PM" },
-      brandPromotion: { status: true, title: "Brand Promotion Under Maintenance", message: "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.", expectedTime: "31 July 2026, 05:00 PM" }
-    };
-  });
+  // Centralized Global Server-Side Application Settings via Supabase
+  const {
+    settings: globalAppSettings,
+    updateGlobalSettings
+  } = useAppSettings();
 
-  const [serviceControlLogs, setServiceControlLogs] = useState(() => {
-    const saved = localStorage.getItem("cine_service_control_logs");
-    return saved ? JSON.parse(saved) : [
-      {
-        id: "LOG-1",
-        serviceKey: "movieBooking",
-        changedBy: "superadmin@cinevenue.com",
-        action: "EDIT",
-        timestamp: "2026-08-04, 10:15 AM",
-        reason: "Initial setup of maintenance schedules"
+  // Authoritative serviceControl derived from global Supabase settings (same as App.tsx)
+  const serviceControl = useMemo(() => {
+    const remote = globalAppSettings.serviceControls || {};
+    const isMaintenance = globalAppSettings.maintenanceMode === true;
+    return {
+      website: {
+        status: remote.website?.status !== false,
+        title: remote.website?.title || "CineVenue Under Maintenance",
+        message: remote.website?.message || "Our platform is currently undergoing scheduled updates. We'll be back online shortly.",
+        expectedTime: remote.website?.expectedTime || "30 July 2026, 06:00 PM"
+      },
+      movieBooking: {
+        status: !isMaintenance && (remote.movieBooking?.status !== false),
+        title: globalAppSettings.maintenanceTitle || remote.movieBooking?.title || "Movie Booking Temporarily Unavailable",
+        message: globalAppSettings.maintenanceMessage || remote.movieBooking?.message || "We're upgrading our ticket booking experience.\n\nMovie booking will be available shortly.",
+        expectedTime: (typeof globalAppSettings.maintenanceEndTime === "string" ? globalAppSettings.maintenanceEndTime : null) || remote.movieBooking?.expectedTime || "30 July 2026, 06:00 PM",
+        visitors: remote.movieBooking?.visitors || 1240
+      },
+      eventBooking: {
+        status: remote.eventBooking?.status !== false,
+        title: remote.eventBooking?.title || "Event Booking Temporarily Unavailable",
+        message: remote.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.",
+        expectedTime: remote.eventBooking?.expectedTime || "31 July 2026, 10:00 AM",
+        visitors: remote.eventBooking?.visitors || 327
+      },
+      filmProduction: {
+        status: remote.filmProduction?.status !== false,
+        title: remote.filmProduction?.title || "Film Production Division Under Maintenance",
+        message: remote.filmProduction?.message || "We're updating our production portfolio and services.",
+        expectedTime: remote.filmProduction?.expectedTime || "30 July 2026, 12:00 PM"
+      },
+      eventManagement: {
+        status: remote.eventManagement?.status !== false,
+        title: remote.eventManagement?.title || "Event Management Under Maintenance",
+        message: remote.eventManagement?.message || "Event management services are temporarily unavailable.",
+        expectedTime: remote.eventManagement?.expectedTime || "31 July 2026, 02:00 PM"
+      },
+      brandPromotion: {
+        status: remote.brandPromotion?.status !== false,
+        title: remote.brandPromotion?.title || "Brand Promotion Under Maintenance",
+        message: remote.brandPromotion?.message || "Brand Promotion services are under maintenance.",
+        expectedTime: remote.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"
+      },
+      cinecoins: {
+        status: remote.cinecoins?.status !== false,
+        title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+        message: remote.cinecoins?.message || "CineCoins operations are undergoing updates.",
+        expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
       }
-    ];
-  });
+    };
+  }, [globalAppSettings]);
 
-  useEffect(() => {
-    localStorage.setItem("cine_service_control", JSON.stringify(serviceControl));
-  }, [serviceControl]);
+  const [serviceControlLogs, setServiceControlLogs] = useState<any[]>([]);
 
-  useEffect(() => {
-    localStorage.setItem("cine_service_control_logs", JSON.stringify(serviceControlLogs));
-  }, [serviceControlLogs]);
-
-  const isMovieBookingSystemActive = serviceControl.movieBooking.status;
-  const isEventBookingSystemActive = serviceControl.eventBooking.status;
-
-  const setIsMovieBookingSystemActive = (active: boolean) => {
-    setServiceControl((prev: any) => ({
-      ...prev,
-      movieBooking: { ...prev.movieBooking, status: active }
-    }));
+  // Persist to server — propagates to all devices
+  const setServiceControl = async (updater: any) => {
+    const current = globalAppSettings.serviceControls || {};
+    const updated = typeof updater === "function" ? updater(current) : updater;
+    const isMaintenance = updated.movieBooking?.status === false || updated.website?.status === false;
+    await updateGlobalSettings({
+      maintenanceMode: isMaintenance,
+      serviceControls: updated
+    });
   };
 
-  const setIsEventBookingSystemActive = (active: boolean) => {
-    setServiceControl((prev: any) => ({
-      ...prev,
-      eventBooking: { ...prev.eventBooking, status: active }
-    }));
+  const isMovieBookingSystemActive = serviceControl.movieBooking?.status !== false;
+  const isEventBookingSystemActive = serviceControl.eventBooking?.status !== false;
+
+  const setIsMovieBookingSystemActive = async (active: boolean) => {
+    const current = globalAppSettings.serviceControls || {};
+    await updateGlobalSettings({
+      maintenanceMode: !active,
+      serviceControls: { ...current, movieBooking: { ...(current.movieBooking || {}), status: active } }
+    });
+  };
+
+  const setIsEventBookingSystemActive = async (active: boolean) => {
+    const current = globalAppSettings.serviceControls || {};
+    await updateGlobalSettings({
+      serviceControls: { ...current, eventBooking: { ...(current.eventBooking || {}), status: active } }
+    });
   };
 
   // UPI Gateway & Ads State

@@ -433,12 +433,19 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6">
               <button
                 onClick={() => {
-                  setActiveDivision("live_booking");
-                  setTimeout(() => document.getElementById("active-showcase")?.scrollIntoView({ behavior: "smooth" }), 100);
+                  if ((serviceControl?.eventBooking?.status ?? true)) {
+                    navigate("/events");
+                  } else {
+                    navigate("/events");
+                  }
                 }}
-                className="w-full py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all border border-white/10 flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer font-bold ${
+                  (serviceControl?.eventBooking?.status ?? true)
+                    ? "bg-white/5 hover:bg-white/10 text-white border border-white/10"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white border-none"
+                }`}
               >
-                <span>Explore Live Events</span>
+                <span>{(serviceControl?.eventBooking?.status ?? true) ? "Explore Live Events" : "Under Maintenance"}</span>
                 <ChevronRight className="w-3 h-3 text-[#D4AF37]" />
               </button>
             </div>
@@ -479,17 +486,25 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-4 space-y-2">
               <button
                 onClick={() => navigate("/productions")}
-                className="w-full py-2.5 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-gold/20 flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-95"
+                className={`w-full py-2.5 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-95 ${
+                  (serviceControl?.filmProduction?.status ?? true)
+                    ? "bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black shadow-gold/20"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
+                }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Open 24 Crafts Marketplace</span>
+                <span>{(serviceControl?.filmProduction?.status ?? true) ? "Open 24 Crafts Marketplace" : "Under Maintenance"}</span>
                 <ChevronRight className="w-3.5 h-3.5 text-black" />
               </button>
               <button
                 onClick={() => {
-                  setActiveDivision("production");
-                  setFilmStudioTab("marketplace");
-                  setTimeout(() => document.getElementById("active-showcase")?.scrollIntoView({ behavior: "smooth" }), 100);
+                  if ((serviceControl?.filmProduction?.status ?? true)) {
+                    setActiveDivision("production");
+                    setFilmStudioTab("marketplace");
+                    setTimeout(() => document.getElementById("active-showcase")?.scrollIntoView({ behavior: "smooth" }), 100);
+                  } else {
+                    navigate("/productions");
+                  }
                 }}
                 className="w-full py-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
               >
@@ -529,17 +544,25 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6 grid grid-cols-2 gap-2">
               <button
                 onClick={() => navigate("/events")}
-                className="py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md border-none"
+                className={`py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md border-none font-bold ${
+                  (serviceControl?.eventManagement?.status ?? true)
+                    ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
+                }`}
               >
-                <span>Events Hub</span>
+                <span>{(serviceControl?.eventManagement?.status ?? true) ? "Events Hub" : "Maintenance"}</span>
                 <ChevronRight className="w-3 h-3 text-black" />
               </button>
               <button
                 onClick={() => navigate("/create-event")}
-                className="py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer hover:border-amber-400/50"
+                className={`py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer font-bold ${
+                  (serviceControl?.eventManagement?.status ?? true)
+                    ? "bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-amber-400/50"
+                    : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40"
+                }`}
               >
                 <PlusCircle className="w-3 h-3 text-amber-400" />
-                <span>Create Event</span>
+                <span>{(serviceControl?.eventManagement?.status ?? true) ? "Create Event" : "Offline"}</span>
               </button>
             </div>
           </div>
@@ -579,12 +602,20 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6">
               <button
                 onClick={() => {
-                  setActiveDivision("promotions");
-                  setTimeout(() => document.getElementById("active-showcase")?.scrollIntoView({ behavior: "smooth" }), 100);
+                  if ((serviceControl?.brandPromotion?.status ?? true)) {
+                    setActiveDivision("promotions");
+                    setTimeout(() => document.getElementById("active-showcase")?.scrollIntoView({ behavior: "smooth" }), 100);
+                  } else {
+                    navigate("/proposals");
+                  }
                 }}
-                className="w-full py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all border border-white/10 flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer font-bold ${
+                  (serviceControl?.brandPromotion?.status ?? true)
+                    ? "bg-white/5 hover:bg-white/10 text-white border border-white/10"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white border-none"
+                }`}
               >
-                <span>Explore Publicity Division</span>
+                <span>{(serviceControl?.brandPromotion?.status ?? true) ? "Explore Publicity Division" : "Under Maintenance"}</span>
                 <ChevronRight className="w-3 h-3 text-[#D4AF37]" />
               </button>
             </div>

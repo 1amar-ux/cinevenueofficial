@@ -326,33 +326,32 @@ export default function AdminPanel({
       return;
     }
 
-    if (!setServiceControl) return;
-
     const isRestore = emergencyActionType === "restore";
     const newStatus = isRestore ? true : false;
 
+    // Build new serviceControls from the authoritative DB snapshot (not derived local state)
+    const current = globalAppSettings.serviceControls || {};
+    let newControls: any;
+
     if (emergencyTargetKey === "all") {
-      const allKeys = ["website", "globalWebsite", "movieBooking", "eventBooking", "filmProduction", "eventManagement", "brandPromotion", "cinecoins"];
-      setServiceControl((prev: any) => {
-        const next = { ...prev };
-        allKeys.forEach((k) => {
-          next[k] = {
-            ...(prev[k] || {}),
-            status: newStatus,
-            ...(!isRestore && {
-              title: emergencyNoticeTitle,
-              message: emergencyNoticeMsg,
-              expectedTime: emergencyNoticeTime
-            })
-          };
-        });
-        return next;
+      const allKeys = ["website", "globalWebsite", "movieBooking", "eventBooking", "filmProduction", "eventManagement", "brandPromotion", "cinecoins", "cineCoinsLoyalty"];
+      newControls = { ...current };
+      allKeys.forEach((k) => {
+        newControls[k] = {
+          ...(current[k] || {}),
+          status: newStatus,
+          ...(!isRestore && {
+            title: emergencyNoticeTitle,
+            message: emergencyNoticeMsg,
+            expectedTime: emergencyNoticeTime
+          })
+        };
       });
     } else {
-      setServiceControl((prev: any) => ({
-        ...prev,
+      newControls = {
+        ...current,
         [emergencyTargetKey]: {
-          ...(prev[emergencyTargetKey] || {}),
+          ...(current[emergencyTargetKey] || {}),
           status: newStatus,
           ...(!isRestore && {
             title: emergencyNoticeTitle,
@@ -362,7 +361,19 @@ export default function AdminPanel({
         },
         ...(emergencyTargetKey === "website" && {
           globalWebsite: {
-            ...(prev.globalWebsite || {}),
+            ...(current.globalWebsite || {}),
+            status: newStatus,
+            ...(!isRestore && {
+              title: emergencyNoticeTitle,
+              message: emergencyNoticeMsg,
+              expectedTime: emergencyNoticeTime
+            })
+          }
+        }),
+        // Keep cinecoins + cineCoinsLoyalty in sync
+        ...(emergencyTargetKey === "cinecoins" && {
+          cineCoinsLoyalty: {
+            ...(current.cineCoinsLoyalty || {}),
             status: newStatus,
             ...(!isRestore && {
               title: emergencyNoticeTitle,
@@ -371,8 +382,25 @@ export default function AdminPanel({
             })
           }
         })
-      }));
+      };
     }
+
+    // Persist to database — propagates globally to all devices, incognito tabs, other apps
+    updateGlobalSettings({
+      serviceControls: newControls,
+      // movieBooking off = global maintenanceMode on
+      ...((emergencyTargetKey === "movieBooking" || emergencyTargetKey === "all" || emergencyTargetKey === "website") && {
+        maintenanceMode: !isRestore,
+        ...(!isRestore && {
+          maintenanceTitle: emergencyNoticeTitle,
+          maintenanceMessage: emergencyNoticeMsg
+        })
+      }),
+      // global website or all = toggle globalSubwebsiteEnabled
+      ...((emergencyTargetKey === "all" || emergencyTargetKey === "website") && {
+        globalSubwebsiteEnabled: isRestore
+      })
+    });
 
     if (setServiceControlLogs) {
       setServiceControlLogs((prevLogs: any[]) => [
@@ -6555,14 +6583,18 @@ export default function AdminPanel({
                           </button>
                           <button
                             onClick={() => {
-                              if (!setServiceControl || !serviceControl) return;
-                              const current = serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true;
-                              const newStatus = !current;
-                              setServiceControl((prev: any) => ({
-                                ...prev,
-                                website: { ...prev.website, status: newStatus },
-                                globalWebsite: { ...prev.globalWebsite, status: newStatus }
-                              }));
+                              const currentStatus = serviceControl?.website?.status ?? serviceControl?.globalWebsite?.status ?? true;
+                              const newStatus = !currentStatus;
+                              const current = globalAppSettings.serviceControls || {};
+                              updateGlobalSettings({
+                                serviceControls: {
+                                  ...current,
+                                  website: { ...(current.website || {}), status: newStatus },
+                                  globalWebsite: { ...(current.globalWebsite || {}), status: newStatus }
+                                },
+                                maintenanceMode: !newStatus,
+                                globalSubwebsiteEnabled: newStatus
+                              });
                               if (setServiceControlLogs) {
                                 setServiceControlLogs((prevLogs: any[]) => [
                                   {
@@ -6668,14 +6700,20 @@ export default function AdminPanel({
                                   {isLive ? "🚨 Kill Switch" : "⚡ Restore"}
                                 </button>
 
-                                {/* Fast 1-Click Quick Toggles */}
+                                {/* Fast 1-Click Quick Toggles — persists globally to all devices */}
                                 <button
                                   onClick={() => {
-                                    if (!setServiceControl) return;
-                                    setServiceControl((prev: any) => ({
-                                      ...prev,
-                                      [pillar.key]: { ...prev[pillar.key], status: true }
-                                    }));
+                                    const current = globalAppSettings.serviceControls || {};
+                                    updateGlobalSettings({
+                                      serviceControls: {
+                                        ...current,
+                                        [pillar.key]: { ...(current[pillar.key] || {}), status: true },
+                                        // keep cineCoinsLoyalty in sync
+                                        ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: true } })
+                                      },
+                                      // turning movieBooking ON clears global maintenance mode
+                                      ...(pillar.key === "movieBooking" && { maintenanceMode: false })
+                                    });
                                     if (setServiceControlLogs) {
                                       setServiceControlLogs((prevLogs: any[]) => [
                                         {
@@ -6698,11 +6736,17 @@ export default function AdminPanel({
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (!setServiceControl) return;
-                                    setServiceControl((prev: any) => ({
-                                      ...prev,
-                                      [pillar.key]: { ...prev[pillar.key], status: false }
-                                    }));
+                                    const current = globalAppSettings.serviceControls || {};
+                                    updateGlobalSettings({
+                                      serviceControls: {
+                                        ...current,
+                                        [pillar.key]: { ...(current[pillar.key] || {}), status: false },
+                                        // keep cineCoinsLoyalty in sync
+                                        ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: false } })
+                                      },
+                                      // turning movieBooking OFF triggers global maintenance mode
+                                      ...(pillar.key === "movieBooking" && { maintenanceMode: true })
+                                    });
                                     if (setServiceControlLogs) {
                                       setServiceControlLogs((prevLogs: any[]) => [
                                         {
@@ -6850,17 +6894,28 @@ export default function AdminPanel({
                     <form 
                       onSubmit={(e) => {
                         e.preventDefault();
-                        if (!setServiceControl) return;
-                        setServiceControl((prev: any) => ({
-                          ...prev,
+                        const current = globalAppSettings.serviceControls || {};
+                        const updatedControls = {
+                          ...current,
                           [selectedConfigService]: {
-                            ...prev[selectedConfigService],
+                            ...(current[selectedConfigService] || {}),
                             title: customTitleInput,
                             message: customMessageInput,
                             expectedTime: customExpectedTime,
                             icon: customIcon
                           }
-                        }));
+                        };
+                        updateGlobalSettings({
+                          serviceControls: updatedControls,
+                          ...(selectedConfigService === "movieBooking" && {
+                            maintenanceTitle: customTitleInput,
+                            maintenanceMessage: customMessageInput,
+                            maintenanceEndTime: customExpectedTime
+                          })
+                        });
+                        if (setServiceControl) {
+                          setServiceControl(updatedControls);
+                        }
                         if (setServiceControlLogs) {
                           setServiceControlLogs((prev: any[]) => [
                             {

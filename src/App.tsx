@@ -192,41 +192,42 @@ export default function App() {
         visitors: remote.movieBooking?.visitors || 1240
       },
       eventBooking: {
-        status: isSubwebsiteEnabled && (remote.eventBooking?.status !== false),
-        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.eventBooking?.title || "Event Booking Temporarily Unavailable"),
-        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon."),
+        // Individual toggle — independent of global subwebsite flag
+        status: remote.eventBooking?.status !== false,
+        title: remote.eventBooking?.title || "Event Booking Temporarily Unavailable",
+        message: remote.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.",
         expectedTime: remote.eventBooking?.expectedTime || "31 July 2026, 10:00 AM",
         visitors: remote.eventBooking?.visitors || 327
       },
       filmProduction: {
-        status: isSubwebsiteEnabled && (remote.filmProduction?.status !== false),
-        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.filmProduction?.title || "Film Production Division Under Maintenance"),
-        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com"),
+        status: remote.filmProduction?.status !== false,
+        title: remote.filmProduction?.title || "Film Production Division Under Maintenance",
+        message: remote.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com",
         expectedTime: remote.filmProduction?.expectedTime || "30 July 2026, 12:00 PM"
       },
       eventManagement: {
-        status: isSubwebsiteEnabled && (remote.eventManagement?.status !== false),
-        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.eventManagement?.title || "Event Management Under Maintenance"),
-        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.eventManagement?.message || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon."),
+        status: remote.eventManagement?.status !== false,
+        title: remote.eventManagement?.title || "Event Management Under Maintenance",
+        message: remote.eventManagement?.message || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon.",
         expectedTime: remote.eventManagement?.expectedTime || "31 July 2026, 02:00 PM"
       },
       brandPromotion: {
-        status: isSubwebsiteEnabled && (remote.brandPromotion?.status !== false),
-        title: !isSubwebsiteEnabled ? "SUB-WEBSITE TEMPORARILY UNAVAILABLE" : (remote.brandPromotion?.title || "Brand Promotion Under Maintenance"),
-        message: !isSubwebsiteEnabled ? subwebsiteNotice : (remote.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly."),
+        status: remote.brandPromotion?.status !== false,
+        title: remote.brandPromotion?.title || "Brand Promotion Under Maintenance",
+        message: remote.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.",
         expectedTime: remote.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"
       },
       cinecoins: {
-        status: remote.cinecoins?.status !== false && remote.cineCoinsLoyalty?.status !== false,
-        title: remote.cinecoins?.title || remote.cineCoinsLoyalty?.title || "CineCoins Rewards Vault Under Maintenance",
-        message: remote.cinecoins?.message || remote.cineCoinsLoyalty?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
-        expectedTime: remote.cinecoins?.expectedTime || remote.cineCoinsLoyalty?.expectedTime || "31 July 2026, 06:00 PM"
+        status: remote.cinecoins?.status !== false,
+        title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+        message: remote.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
+        expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
       },
       cineCoinsLoyalty: {
-        status: remote.cinecoins?.status !== false && remote.cineCoinsLoyalty?.status !== false,
-        title: remote.cinecoins?.title || remote.cineCoinsLoyalty?.title || "CineCoins Rewards Vault Under Maintenance",
-        message: remote.cinecoins?.message || remote.cineCoinsLoyalty?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
-        expectedTime: remote.cinecoins?.expectedTime || remote.cineCoinsLoyalty?.expectedTime || "31 July 2026, 06:00 PM"
+        status: remote.cinecoins?.status !== false,
+        title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+        message: remote.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
+        expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
       }
     };
   }, [globalAppSettings]);
