@@ -415,7 +415,8 @@ router.post("/settings/subwebsite", async (req: Request, res: Response, next: Ne
       };
     }
 
-    const { setTestMaintenanceState } = await import("../../middleware/maintenance");
+    const { setTestMaintenanceState, invalidateMaintenanceCache } = await import("../../middleware/maintenance");
+    invalidateMaintenanceCache();
     setTestMaintenanceState({
       globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
       subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage
@@ -433,5 +434,150 @@ router.post("/settings/subwebsite", async (req: Request, res: Response, next: Ne
     next(error);
   }
 });
+
+// 8. Canonical Module & Global Maintenance Toggle Route (PUT & POST /admin/settings/maintenance)
+const handleMaintenanceToggle = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
+    const { module, enabled, maintenance, message, title, endTime } = req.body;
+    const isMaintenance = typeof maintenance === "boolean" ? maintenance : (typeof enabled === "boolean" ? !enabled : false);
+
+    const existing = await prisma.appSettings.findUnique({
+      where: { id: "global_default" }
+    }).catch(() => null);
+
+    const currentControls: any = (existing?.serviceControls as any) || {};
+
+    let updatedMaintenanceMode = existing?.maintenanceMode ?? false;
+    let updatedGlobalSubwebsite = existing?.globalSubwebsiteEnabled ?? true;
+
+    if (!module || module === "global" || module === "website" || module === "all") {
+      updatedMaintenanceMode = isMaintenance;
+      currentControls.website = {
+        ...(currentControls.website || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+      currentControls.movieBooking = {
+        ...(currentControls.movieBooking || {}),
+        status: !isMaintenance
+      };
+    } else if (module === "movieBooking" || module === "movies") {
+      currentControls.movieBooking = {
+        ...(currentControls.movieBooking || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+      updatedMaintenanceMode = isMaintenance;
+    } else if (module === "cineCoins" || module === "cinecoins" || module === "cineCoinsLoyalty") {
+      currentControls.cinecoins = {
+        ...(currentControls.cinecoins || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+      currentControls.cineCoinsLoyalty = { ...currentControls.cinecoins };
+    } else if (module === "events" || module === "eventBooking") {
+      currentControls.eventBooking = {
+        ...(currentControls.eventBooking || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+    } else if (module === "filmProduction" || module === "productions") {
+      currentControls.filmProduction = {
+        ...(currentControls.filmProduction || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+    } else if (module === "eventManagement") {
+      currentControls.eventManagement = {
+        ...(currentControls.eventManagement || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+    } else if (module === "brandPromotion" || module === "mediaPromotions") {
+      currentControls.brandPromotion = {
+        ...(currentControls.brandPromotion || {}),
+        status: !isMaintenance,
+        ...(title && { title }),
+        ...(message && { message })
+      };
+    } else if (module === "subwebsites" || module === "subwebsite") {
+      updatedGlobalSubwebsite = !isMaintenance;
+    }
+
+    const updated = await prisma.appSettings.upsert({
+      where: { id: "global_default" },
+      update: {
+        maintenanceMode: updatedMaintenanceMode,
+        globalSubwebsiteEnabled: updatedGlobalSubwebsite,
+        serviceControls: currentControls,
+        ...(title && { maintenanceTitle: title }),
+        ...(message && { maintenanceMessage: message }),
+        ...(endTime && { maintenanceEndTime: new Date(endTime) }),
+        updatedBy: req.user?.email || "admin",
+        updatedAt: new Date()
+      },
+      create: {
+        id: "global_default",
+        maintenanceMode: updatedMaintenanceMode,
+        globalSubwebsiteEnabled: updatedGlobalSubwebsite,
+        serviceControls: currentControls,
+        maintenanceTitle: title || "Maintenance Mode Active",
+        maintenanceMessage: message || "Service temporarily unavailable.",
+        updatedBy: req.user?.email || "admin"
+      }
+    });
+
+    // Invalidate server cache
+    const { setTestMaintenanceState, invalidateMaintenanceCache } = await import("../../middleware/maintenance");
+    invalidateMaintenanceCache();
+    setTestMaintenanceState({
+      maintenanceMode: updated.maintenanceMode,
+      globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+      serviceControls: updated.serviceControls
+    });
+
+    // Financial / Security Audit Log
+    await prisma.financialAuditLog.create({
+      data: {
+        eventType: "MODULE_MAINTENANCE_TOGGLED",
+        actorEmail: req.user?.email || "admin",
+        description: `Admin toggled maintenance for [${module || "global"}]: ${isMaintenance ? "MAINTENANCE (OFFLINE)" : "LIVE (ONLINE)"}`,
+        metadata: {
+          module: module || "global",
+          maintenance: isMaintenance,
+          timestamp: new Date().toISOString()
+        }
+      }
+    }).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Maintenance state for module '${module || "global"}' updated to ${isMaintenance ? "MAINTENANCE" : "LIVE"}.`,
+      data: {
+        module: module || "global",
+        maintenance: isMaintenance,
+        updatedAt: updated.updatedAt.toISOString(),
+        settings: updated
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.put("/settings/maintenance", handleMaintenanceToggle);
+router.post("/settings/maintenance", handleMaintenanceToggle);
 
 export default router;

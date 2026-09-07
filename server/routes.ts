@@ -55,8 +55,64 @@ router.use("/marketplace", marketplaceRoutes);
 router.use("/admin", adminRoutes);
 
 // ==========================================
-// 3. PUBLIC APP SETTINGS ROUTE (/api/v1/settings/app)
+// 3. PUBLIC APP SETTINGS & CANONICAL PLATFORM CONFIG ROUTES
 // ==========================================
+router.get(["/public/platform-config", "/public/maintenance-status"], async (req, res, next) => {
+  try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
+    const { getGlobalAppSettings } = await import("./middleware/maintenance");
+    const settings = await getGlobalAppSettings();
+    const sc = (settings.serviceControls as any) || {};
+
+    const isGlobalMaint = settings.maintenanceMode === true || sc.website?.status === false;
+
+    return res.json({
+      success: true,
+      globalMaintenance: isGlobalMaint,
+      modules: {
+        movieBooking: {
+          maintenance: isGlobalMaint || sc.movieBooking?.status === false || settings.maintenanceMode === true,
+          title: sc.movieBooking?.title || settings.maintenanceTitle,
+          message: sc.movieBooking?.message || settings.maintenanceMessage
+        },
+        cineCoins: {
+          maintenance: isGlobalMaint || sc.cinecoins?.status === false || sc.cineCoinsLoyalty?.status === false,
+          title: sc.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+          message: sc.cinecoins?.message || "CineCoins operations are undergoing scheduled updates."
+        },
+        events: {
+          maintenance: isGlobalMaint || sc.eventBooking?.status === false,
+          title: sc.eventBooking?.title || "Event Booking Temporarily Unavailable",
+          message: sc.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable."
+        },
+        filmProduction: {
+          maintenance: isGlobalMaint || sc.filmProduction?.status === false || settings.globalSubwebsiteEnabled === false,
+          title: sc.filmProduction?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.filmProduction?.message || settings.subwebsiteMaintenanceMessage
+        },
+        eventManagement: {
+          maintenance: isGlobalMaint || sc.eventManagement?.status === false || settings.globalSubwebsiteEnabled === false,
+          title: sc.eventManagement?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.eventManagement?.message || settings.subwebsiteMaintenanceMessage
+        },
+        brandPromotion: {
+          maintenance: isGlobalMaint || sc.brandPromotion?.status === false || settings.globalSubwebsiteEnabled === false,
+          title: sc.brandPromotion?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.brandPromotion?.message || settings.subwebsiteMaintenanceMessage
+        }
+      },
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/settings/app", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");

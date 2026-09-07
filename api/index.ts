@@ -160,6 +160,74 @@ export default async function handler(req: any, res: any) {
     });
   }
 
+  // 2B. High-Priority Direct Route: Public Platform Config & Maintenance Status
+  if (
+    url === "/api/v1/public/platform-config" ||
+    url === "/api/public/platform-config" ||
+    url === "/public/platform-config" ||
+    url === "/api/v1/public/maintenance-status" ||
+    url === "/api/public/maintenance-status" ||
+    url === "/public/maintenance-status"
+  ) {
+    syncServerlessStateFromDisk();
+
+    try {
+      const dbSettings: any = await Promise.race([
+        prisma.appSettings.findUnique({ where: { id: "global_default" } }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 800))
+      ]).catch(() => null);
+
+      if (dbSettings) {
+        if (typeof dbSettings.maintenanceMode === "boolean") globalServerlessState.maintenanceMode = dbSettings.maintenanceMode;
+        if (typeof dbSettings.globalSubwebsiteEnabled === "boolean") globalServerlessState.globalSubwebsiteEnabled = dbSettings.globalSubwebsiteEnabled;
+        if (dbSettings.serviceControls && typeof dbSettings.serviceControls === "object") {
+          globalServerlessState.serviceControls = { ...globalServerlessState.serviceControls, ...(dbSettings.serviceControls as any) };
+        }
+      }
+    } catch (e) {}
+
+    const sc = globalServerlessState.serviceControls || {};
+    const isGlobalMaint = globalServerlessState.maintenanceMode === true || sc.website?.status === false;
+
+    return res.status(200).json({
+      success: true,
+      globalMaintenance: isGlobalMaint,
+      modules: {
+        movieBooking: {
+          maintenance: isGlobalMaint || sc.movieBooking?.status === false || globalServerlessState.maintenanceMode === true,
+          title: sc.movieBooking?.title || globalServerlessState.maintenanceTitle,
+          message: sc.movieBooking?.message || globalServerlessState.maintenanceMessage
+        },
+        cineCoins: {
+          maintenance: isGlobalMaint || sc.cinecoins?.status === false || sc.cineCoinsLoyalty?.status === false,
+          title: sc.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+          message: sc.cinecoins?.message || "CineCoins operations are undergoing scheduled updates."
+        },
+        events: {
+          maintenance: isGlobalMaint || sc.eventBooking?.status === false,
+          title: sc.eventBooking?.title || "Event Booking Temporarily Unavailable",
+          message: sc.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable."
+        },
+        filmProduction: {
+          maintenance: isGlobalMaint || sc.filmProduction?.status === false || globalServerlessState.globalSubwebsiteEnabled === false,
+          title: sc.filmProduction?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.filmProduction?.message || globalServerlessState.subwebsiteMaintenanceMessage
+        },
+        eventManagement: {
+          maintenance: isGlobalMaint || sc.eventManagement?.status === false || globalServerlessState.globalSubwebsiteEnabled === false,
+          title: sc.eventManagement?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.eventManagement?.message || globalServerlessState.subwebsiteMaintenanceMessage
+        },
+        brandPromotion: {
+          maintenance: isGlobalMaint || sc.brandPromotion?.status === false || globalServerlessState.globalSubwebsiteEnabled === false,
+          title: sc.brandPromotion?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.brandPromotion?.message || globalServerlessState.subwebsiteMaintenanceMessage
+        }
+      },
+      updatedAt: new Date().toISOString()
+    });
+  }
+
   // 3. High-Priority Direct Route: Public App Settings
   if (url === "/api/v1/settings/app" || url === "/api/settings/app" || url === "/settings/app") {
     syncServerlessStateFromDisk();
@@ -287,12 +355,44 @@ export default async function handler(req: any, res: any) {
 
   // 5B. High-Priority Direct Route: Admin Update Global Settings (Movie Booking, CineCoins, Platform controls)
   if (
-    (url === "/api/v1/admin/settings/global" || url === "/api/admin/settings/global" || url === "/admin/settings/global") &&
-    req.method === "POST"
+    (
+      url === "/api/v1/admin/settings/global" ||
+      url === "/api/admin/settings/global" ||
+      url === "/admin/settings/global" ||
+      url === "/api/v1/admin/settings/maintenance" ||
+      url === "/api/admin/settings/maintenance" ||
+      url === "/admin/settings/maintenance"
+    ) &&
+    (req.method === "POST" || req.method === "PUT")
   ) {
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch (e) { body = {}; }
+    }
+
+    if (body.module) {
+      const mod = body.module;
+      const isMaint = typeof body.maintenance === "boolean" ? body.maintenance : (typeof body.enabled === "boolean" ? !body.enabled : false);
+      if (!globalServerlessState.serviceControls) globalServerlessState.serviceControls = {};
+      if (mod === "global" || mod === "website" || mod === "all") {
+        globalServerlessState.maintenanceMode = isMaint;
+        globalServerlessState.serviceControls.website = { ...(globalServerlessState.serviceControls.website || {}), status: !isMaint };
+        globalServerlessState.serviceControls.movieBooking = { ...(globalServerlessState.serviceControls.movieBooking || {}), status: !isMaint };
+      } else if (mod === "movieBooking" || mod === "movies") {
+        globalServerlessState.maintenanceMode = isMaint;
+        globalServerlessState.serviceControls.movieBooking = { ...(globalServerlessState.serviceControls.movieBooking || {}), status: !isMaint };
+      } else if (mod === "cineCoins" || mod === "cinecoins" || mod === "cineCoinsLoyalty") {
+        globalServerlessState.serviceControls.cinecoins = { ...(globalServerlessState.serviceControls.cinecoins || {}), status: !isMaint };
+        globalServerlessState.serviceControls.cineCoinsLoyalty = { ...globalServerlessState.serviceControls.cinecoins };
+      } else if (mod === "events" || mod === "eventBooking") {
+        globalServerlessState.serviceControls.eventBooking = { ...(globalServerlessState.serviceControls.eventBooking || {}), status: !isMaint };
+      } else if (mod === "filmProduction" || mod === "productions") {
+        globalServerlessState.serviceControls.filmProduction = { ...(globalServerlessState.serviceControls.filmProduction || {}), status: !isMaint };
+      } else if (mod === "eventManagement") {
+        globalServerlessState.serviceControls.eventManagement = { ...(globalServerlessState.serviceControls.eventManagement || {}), status: !isMaint };
+      } else if (mod === "brandPromotion" || mod === "mediaPromotions") {
+        globalServerlessState.serviceControls.brandPromotion = { ...(globalServerlessState.serviceControls.brandPromotion || {}), status: !isMaint };
+      }
     }
 
     if (typeof body.maintenanceMode === "boolean") {
