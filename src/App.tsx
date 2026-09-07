@@ -172,19 +172,19 @@ export default function App() {
   // Authoritative serviceControl derived from global Supabase settings
   const serviceControl = useMemo(() => {
     const remote = globalAppSettings.serviceControls || {};
-    const isMaintenance = globalAppSettings.maintenanceMode === true;
-    const isSubwebsiteEnabled = globalAppSettings.globalSubwebsiteEnabled === true;
+    const isMaintenance = globalAppSettings.maintenanceMode === true || remote.website?.status === false || remote.globalWebsite?.status === false;
+    const isSubwebsiteEnabled = globalAppSettings.globalSubwebsiteEnabled !== false && !isMaintenance;
     const subwebsiteNotice = globalAppSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.";
 
     return {
       website: {
-        status: remote.website?.status !== false,
-        title: remote.website?.title || "CineVenue Under Maintenance",
-        message: remote.website?.message || "Our platform is currently undergoing scheduled updates. We'll be back online shortly.",
-        expectedTime: remote.website?.expectedTime || "30 July 2026, 06:00 PM"
+        status: !isMaintenance && (remote.website?.status !== false) && (remote.globalWebsite?.status !== false),
+        title: remote.website?.title || globalAppSettings.maintenanceTitle || "CineVenue Under Maintenance",
+        message: remote.website?.message || globalAppSettings.maintenanceMessage || "Our platform is currently undergoing scheduled updates. We'll be back online shortly.",
+        expectedTime: remote.website?.expectedTime || (typeof globalAppSettings.maintenanceEndTime === "string" ? globalAppSettings.maintenanceEndTime : "30 July 2026, 06:00 PM")
       },
       movieBooking: {
-        // Authoritative: if maintenanceMode is ON, movieBooking is globally disabled
+        // Authoritative: if maintenanceMode is ON or website is blocked, movieBooking is globally disabled
         status: !isMaintenance && (remote.movieBooking?.status !== false),
         title: globalAppSettings.maintenanceTitle || remote.movieBooking?.title || "Movie Booking Temporarily Unavailable",
         message: globalAppSettings.maintenanceMessage || remote.movieBooking?.message || "We're upgrading our ticket booking experience.\n\nMovie booking will be available shortly.",
@@ -192,39 +192,39 @@ export default function App() {
         visitors: remote.movieBooking?.visitors || 1240
       },
       eventBooking: {
-        // Individual toggle — independent of global subwebsite flag
-        status: remote.eventBooking?.status !== false,
+        // Subject to individual toggle, subwebsite toggle, and global maintenance
+        status: !isMaintenance && isSubwebsiteEnabled && (remote.eventBooking?.status !== false),
         title: remote.eventBooking?.title || "Event Booking Temporarily Unavailable",
-        message: remote.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.",
+        message: remote.eventBooking?.message || subwebsiteNotice || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.",
         expectedTime: remote.eventBooking?.expectedTime || "31 July 2026, 10:00 AM",
         visitors: remote.eventBooking?.visitors || 327
       },
       filmProduction: {
-        status: remote.filmProduction?.status !== false,
+        status: !isMaintenance && isSubwebsiteEnabled && (remote.filmProduction?.status !== false),
         title: remote.filmProduction?.title || "Film Production Division Under Maintenance",
-        message: remote.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com",
+        message: remote.filmProduction?.message || subwebsiteNotice || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com",
         expectedTime: remote.filmProduction?.expectedTime || "30 July 2026, 12:00 PM"
       },
       eventManagement: {
-        status: remote.eventManagement?.status !== false,
+        status: !isMaintenance && isSubwebsiteEnabled && (remote.eventManagement?.status !== false),
         title: remote.eventManagement?.title || "Event Management Under Maintenance",
-        message: remote.eventManagement?.message || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon.",
+        message: remote.eventManagement?.message || subwebsiteNotice || "Movie Promotions, Audio Launches, Celebrity Shows, and Corporate Events are temporarily unavailable.\n\nPlease visit again soon.",
         expectedTime: remote.eventManagement?.expectedTime || "31 July 2026, 02:00 PM"
       },
       brandPromotion: {
-        status: remote.brandPromotion?.status !== false,
+        status: !isMaintenance && isSubwebsiteEnabled && (remote.brandPromotion?.status !== false),
         title: remote.brandPromotion?.title || "Brand Promotion Under Maintenance",
-        message: remote.brandPromotion?.message || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.",
+        message: remote.brandPromotion?.message || subwebsiteNotice || "Brand Promotion and Media Campaign services are under maintenance.\n\nWe'll be back shortly.",
         expectedTime: remote.brandPromotion?.expectedTime || "31 July 2026, 05:00 PM"
       },
       cinecoins: {
-        status: remote.cinecoins?.status !== false,
+        status: !isMaintenance && (remote.cinecoins?.status !== false) && (remote.cineCoinsLoyalty?.status !== false),
         title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
         message: remote.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
         expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
       },
       cineCoinsLoyalty: {
-        status: remote.cinecoins?.status !== false,
+        status: !isMaintenance && (remote.cinecoins?.status !== false) && (remote.cineCoinsLoyalty?.status !== false),
         title: remote.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
         message: remote.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly.",
         expectedTime: remote.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"
@@ -935,15 +935,23 @@ export default function App() {
   };
 
   // Render correct full-screen workspace or master landing layouts
-  // Admin panel must ALWAYS be accessible — even when the global website is switched off.
-  const isAdminPanelRoute = window.location.pathname.startsWith('/adminpanel');
-  if (!serviceControl.website.status && !adminOpen && !isAdminPanelRoute) {
+  // Admin panel & authentication must ALWAYS be accessible — even when the global website is switched off.
+  const currentPath = typeof window !== "undefined" ? window.location.pathname.toLowerCase() : "";
+  const isAdminRoute = 
+    currentPath.startsWith('/adminpanel') || 
+    currentPath.startsWith('/admin') || 
+    currentPath.startsWith('/admin-login') || 
+    currentPath.startsWith('/auth') ||
+    currentPath === '/login' ||
+    currentPath === '/register';
+
+  if (!serviceControl.website.status && !adminOpen && !isAdminRoute) {
     return (
       <MaintenancePage
         serviceName="CineVenue Global"
-        title={serviceControl.website.title}
-        message={serviceControl.website.message}
-        expectedTime={serviceControl.website.expectedTime}
+        title={serviceControl.website.title || globalAppSettings.maintenanceTitle || "CineVenue Under Maintenance"}
+        message={serviceControl.website.message || globalAppSettings.maintenanceMessage || "Our platform is currently undergoing scheduled updates. We'll be back online shortly."}
+        expectedTime={serviceControl.website.expectedTime || (typeof globalAppSettings.maintenanceEndTime === "string" ? globalAppSettings.maintenanceEndTime : "30 July 2026, 06:00 PM")}
         icon="🌐"
       />
     );
@@ -1658,8 +1666,38 @@ export default function App() {
           )
         }
       />
-      <Route path="/ticket" element={<Ticket />} />
-      <Route path="/booking-history" element={<BookingHistory />} />
+      <Route
+        path="/ticket"
+        element={
+          !isMovieBookingSystemActive ? (
+            <MaintenancePage
+              serviceName="Movie Booking"
+              title={globalAppSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable"}
+              message={globalAppSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly."}
+              expectedTime={typeof globalAppSettings.maintenanceEndTime === "string" ? globalAppSettings.maintenanceEndTime : "30 July 2026 06:00 PM"}
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <Ticket />
+          )
+        }
+      />
+      <Route
+        path="/booking-history"
+        element={
+          !isMovieBookingSystemActive ? (
+            <MaintenancePage
+              serviceName="Movie Booking"
+              title={globalAppSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable"}
+              message={globalAppSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly."}
+              expectedTime={typeof globalAppSettings.maintenanceEndTime === "string" ? globalAppSettings.maintenanceEndTime : "30 July 2026 06:00 PM"}
+              onBackToHome={() => window.location.href = "/"}
+            />
+          ) : (
+            <BookingHistory />
+          )
+        }
+      />
       <Route path="/admin-login" element={<AdminLogin />} />
 
       {/* JWT-Protected Material UI Admin Routes */}

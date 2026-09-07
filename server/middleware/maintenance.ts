@@ -13,6 +13,7 @@ export interface CachedMaintenanceState {
   globalSubwebsiteEnabled: boolean;
   subwebsiteMaintenanceMessage: string;
   serviceControls: any;
+  updatedAt?: string;
   cachedAt: number;
 }
 
@@ -122,6 +123,7 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
         globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled !== false,
         subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage || fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
         serviceControls: settings.serviceControls || {},
+        updatedAt: settings.updatedAt ? settings.updatedAt.toISOString() : new Date().toISOString(),
         cachedAt: now
       };
       return cachedState;
@@ -137,6 +139,7 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
       globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== false,
       subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: fileSettings.serviceControls || {},
+      updatedAt: fileSettings.updatedAt || new Date().toISOString(),
       cachedAt: now
     };
     return cachedState;
@@ -155,6 +158,7 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
       globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== false,
       subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: fileSettings.serviceControls || {},
+      updatedAt: fileSettings.updatedAt || new Date().toISOString(),
       cachedAt: now
     };
     return cachedState;

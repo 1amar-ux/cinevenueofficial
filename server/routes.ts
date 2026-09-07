@@ -135,7 +135,8 @@ router.get("/settings/app", async (req, res, next) => {
         maintenanceEndTime: settings.maintenanceEndTime,
         globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled,
         subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage,
-        serviceControls: settings.serviceControls
+        serviceControls: settings.serviceControls,
+        updatedAt: (settings as any).updatedAt || new Date().toISOString()
       }
     });
   } catch (error) {

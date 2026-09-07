@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAppSettings } from "../context/AppSettingsContext";
 import {
   LayoutDashboard,
   ShieldAlert,
@@ -233,12 +234,18 @@ export default function AdminLayout() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState("");
 
+  const { settings: globalAppSettings, updateGlobalSettings } = useAppSettings();
+
   // Platform setting states
   const [platformName, setPlatformName] = useState("Cinevenue Premium Booking");
   const [platformTax, setPlatformTax] = useState("18");
   const [platformCommission, setPlatformCommission] = useState("12");
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(globalAppSettings.maintenanceMode);
   const [smtpServer, setSmtpServer] = useState("smtp.cinevenue-aws.com");
+
+  useEffect(() => {
+    setMaintenanceMode(globalAppSettings.maintenanceMode);
+  }, [globalAppSettings.maintenanceMode]);
 
   // Filter terms
   const [movieFilter, setMovieFilter] = useState("");
@@ -701,11 +708,12 @@ export default function AdminLayout() {
     ]);
   };
 
-  const handleUpdatePlatformSettings = (e: React.FormEvent) => {
+  const handleUpdatePlatformSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    await updateGlobalSettings({ maintenanceMode });
     showToast("Platform configurations saved successfully!");
     setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Updated global platform parameters (Tax: ${platformTax}%, Commission: ${platformCommission}%)` },
+      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Updated global platform parameters (Tax: ${platformTax}%, Commission: ${platformCommission}%, Maintenance: ${maintenanceMode ? "ON" : "OFF"})` },
       ...auditLogs
     ]);
   };
@@ -2399,8 +2407,13 @@ export default function AdminLayout() {
                       <input
                         type="checkbox"
                         checked={maintenanceMode}
-                        onChange={() => setMaintenanceMode(!maintenanceMode)}
-                        className="accent-gold w-4 h-4"
+                        onChange={async (e) => {
+                          const nextVal = e.target.checked;
+                          setMaintenanceMode(nextVal);
+                          await updateGlobalSettings({ maintenanceMode: nextVal });
+                          showToast(`Maintenance mode turned ${nextVal ? "ON" : "OFF"}`);
+                        }}
+                        className="accent-gold w-4 h-4 cursor-pointer"
                       />
                     </div>
                   </div>

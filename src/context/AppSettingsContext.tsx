@@ -80,7 +80,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (e) {}
     return DEFAULT_SETTINGS;
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const isMountedRef = useRef<boolean>(true);
@@ -111,23 +111,13 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         ? (data.maintenance_mode ?? data.maintenanceMode)
         : prev.maintenanceMode;
 
-      // Timestamp Freshness Guard: If incoming data is older than current state, discard it
-      const incomingUpdatedAt = data.updated_at ?? data.updatedAt;
-      if (incomingUpdatedAt && prev.updatedAt) {
-        const incomingTime = new Date(incomingUpdatedAt).getTime();
-        const prevTime = new Date(prev.updatedAt).getTime();
-        if (!isNaN(incomingTime) && !isNaN(prevTime) && incomingTime < prevTime - 500) {
-          return prev;
-        }
-      }
-
       // Smart Equality check: if nothing changed, preserve object identity to avoid re-rendering entire app
       const isControlsSame = JSON.stringify(prev.serviceControls) === JSON.stringify(mergedControls);
       const isSubSame = prev.globalSubwebsiteEnabled === globalSubwebsiteEnabled;
       const isMaintSame = prev.maintenanceMode === newMaintenanceMode;
       const isMsgSame = prev.subwebsiteMaintenanceMessage === subwebsiteMaintenanceMessage;
 
-      if (isControlsSame && isSubSame && isMaintSame && isMsgSame) {
+      if (isControlsSame && isSubSame && isMaintSame && isMsgSame && prev.updatedAt) {
         return prev;
       }
 
