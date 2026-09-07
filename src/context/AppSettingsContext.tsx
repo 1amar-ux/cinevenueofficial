@@ -165,9 +165,8 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isFetchingRef.current = true;
 
     try {
-      // 1. Cache-busted HTTP Request with strict no-cache headers
       const cacheBuster = Date.now();
-      const res = await apiClient.get(`/settings/app?_cb=${cacheBuster}`, {
+      const httpPromise = apiClient.get(`/settings/app?_cb=${cacheBuster}`, {
         timeout: 3000,
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
@@ -176,24 +175,22 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
       }).catch(() => null);
 
-      if (res?.data?.success && res.data?.data) {
-        applySettingsRecord(res.data.data, false);
-        return;
-      }
+      const sbPromise = isSupabaseConfigured
+        ? Promise.resolve(
+            supabase
+              .from("app_settings")
+              .select("*")
+              .eq("id", "global_default")
+              .single()
+          ).catch(() => null)
+        : Promise.resolve(null);
 
-      // 2. Direct Supabase Query as Database Source of Truth
-      if (isSupabaseConfigured) {
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("SB_TIMEOUT")), 1500));
-        const dbPromise = supabase
-          .from("app_settings")
-          .select("*")
-          .eq("id", "global_default")
-          .single();
+      const [httpRes, sbRes]: [any, any] = await Promise.all([httpPromise, sbPromise]);
 
-        const result: any = await Promise.race([dbPromise, timeoutPromise]).catch(() => null);
-        if (!result?.error && result?.data) {
-          applySettingsRecord(result.data, false);
-        }
+      if (sbRes && !sbRes.error && sbRes.data) {
+        applySettingsRecord(sbRes.data, false);
+      } else if (httpRes?.data?.success && httpRes.data?.data) {
+        applySettingsRecord(httpRes.data.data, false);
       }
     } catch (err: any) {
       console.warn("[AppSettings] Resilient fetch notice:", err?.message || err);
