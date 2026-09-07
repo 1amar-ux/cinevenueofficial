@@ -175,11 +175,13 @@ export async function checkMovieBookingMaintenance(req: Request, res: Response, 
 
     if (settings.maintenanceMode) {
       logger.warn(`[MAINTENANCE GATE] Blocked booking request to ${req.method} ${req.originalUrl}`);
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-      res.setHeader("Surrogate-Control", "no-store");
-      res.setHeader("X-Accel-Expires", "0");
+      if (typeof res.setHeader === "function") {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+        res.setHeader("Surrogate-Control", "no-store");
+        res.setHeader("X-Accel-Expires", "0");
+      }
       return res.status(503).json({
         success: false,
         code: "MOVIE_BOOKING_MAINTENANCE",
@@ -197,7 +199,9 @@ export async function checkMovieBookingMaintenance(req: Request, res: Response, 
     next();
   } catch (error: any) {
     logger.error(`Maintenance check failed for ${req.originalUrl}: ${error.message}`);
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    if (typeof res.setHeader === "function") {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    }
     return res.status(503).json({
       success: false,
       code: "BOOKING_VERIFICATION_UNAVAILABLE",
