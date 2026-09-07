@@ -220,25 +220,28 @@ model Movie {
 // ==========================================
 
 model Theatre {
-  id          String        @id @default(cuid())
-  name        String
-  address     String
-  city        String
-  state       String
-  phone       String?
-  status      TheatreStatus @default(ACTIVE)
+  id              String        @id @default(cuid())
+  name            String
+  address         String
+  city            String
+  state           String
+  phone           String?
+  status          TheatreStatus @default(ACTIVE)
+  integrationType String        @default("CINEVENUE_MANAGED") // CINEVENUE_MANAGED, EXTERNAL_API, POS_INTEGRATION, MANUAL
 
-  screens      Screen[]
-  shows        Show[]
-  bookings     Booking[]
-  settlements  Settlement[]
-  bankAccounts TheatreBankAccount[]
+  screens         Screen[]
+  shows           Show[]
+  bookings        Booking[]
+  settlements     Settlement[]
+  bankAccounts    TheatreBankAccount[]
+  posIntegration  TheatrePosIntegration?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([city])
   @@index([status])
+  @@index([integrationType])
 }
 
 model TheatreBankAccount {
@@ -381,6 +384,12 @@ model Booking {
   totalAmount     Decimal       @db.Decimal(12, 2)
 
   status          BookingStatus @default(PENDING)
+
+  // POS Integration Tracking
+  posBookingId       String?
+  posReferenceNumber String?
+  posStatus          String?
+  posHoldId          String?
 
   theatre         Theatre       @relation(fields: [theatreId], references: [id])
   show            Show          @relation(fields: [showId], references: [id])
@@ -670,5 +679,144 @@ model AppSettings {
   updatedBy                  String?   @map("updated_by")
 
   @@map("app_settings")
+}
+
+// ==========================================
+// 12. POS & EXTERNAL THEATRE INTEGRATION
+// ==========================================
+
+model TheatrePosIntegration {
+  id                      String    @id @default(cuid())
+  theatreId               String    @unique
+  theatreName             String
+  integrationType         String    @default("POS_INTEGRATION") // POS_INTEGRATION, EXTERNAL_API
+  providerName            String    // Vista, TicketNew, Other POS Provider
+  environment             String    @default("SANDBOX") // SANDBOX, PRODUCTION
+  baseApiUrl              String
+  venueId                 String?
+  terminalId              String?
+  
+  // Encrypted Sensitive Credentials (Never exposed to frontend)
+  encryptedApiKey         String
+  encryptedApiSecret      String
+  encryptedClientId       String?
+  encryptedClientSecret   String?
+  encryptedAccessToken    String?
+  merchantId              String?
+
+  // Webhook Configuration
+  webhookUrl              String
+  encryptedWebhookSecret  String
+  
+  // Status & Capabilities
+  connectionStatus        String    @default("TESTING") // CONNECTED, FAILED, TESTING, DISCONNECTED, SUSPENDED
+  capabilities            Json      @default("{}")
+  syncFrequency           String    @default("REALTIME") // REALTIME, 1MIN, 5MIN, 15MIN, MANUAL
+  lastSync                DateTime?
+  syncStatus              String    @default("IDLE") // IDLE, SYNCING, SUCCESS, ERROR
+  lastConnectionTest      DateTime?
+  lastSuccessfulBooking   DateTime?
+  lastError               String?
+
+  // Operational Controls
+  liveBookingEnabled      Boolean   @default(false)
+  seatHoldDurationMinutes Int       @default(10)
+  autoSyncEnabled         Boolean   @default(true)
+
+  theatre                 Theatre   @relation(fields: [theatreId], references: [id], onDelete: Cascade)
+  mappings                PosMapping[]
+  logs                    PosIntegrationLog[]
+  webhookEvents           PosWebhookEvent[]
+  reconciliations         PosReconciliationRecord[]
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([theatreId])
+  @@index([providerName])
+  @@index([connectionStatus])
+  @@index([liveBookingEnabled])
+}
+
+model PosMapping {
+  id              String                @id @default(cuid())
+  integrationId   String
+  mappingType     String                // VENUE, SCREEN, MOVIE, SHOW, SEAT
+  posId           String                // External ID from POS provider
+  posName         String?
+  cinevenueId     String                // Internal CineVenue Entity ID
+  cinevenueName   String?
+  status          String                @default("MAPPED") // MAPPED, UNMAPPED, CONFLICT
+  metadata        Json?
+
+  integration     TheatrePosIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@unique([integrationId, mappingType, posId])
+  @@index([integrationId, mappingType])
+  @@index([cinevenueId])
+}
+
+model PosIntegrationLog {
+  id              String                @id @default(cuid())
+  integrationId   String
+  event           String                // API_CONNECTION, SHOW_SYNC, SEAT_SYNC, SEAT_HOLD, SEAT_RELEASE, BOOKING, BOOKING_STATUS, CANCELLATION, REFUND, WEBHOOK
+  requestType     String                // GET, POST, PUT, DELETE
+  endpoint        String
+  statusCode      Int                   @default(200)
+  durationMs      Int                   @default(0)
+  status          String                @default("SUCCESS") // SUCCESS, ERROR, FAILED
+  bookingId       String?
+  posBookingId    String?
+  error           String?
+
+  integration     TheatrePosIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime              @default(now())
+
+  @@index([integrationId, event])
+  @@index([bookingId])
+  @@index([posBookingId])
+  @@index([createdAt])
+}
+
+model PosWebhookEvent {
+  id              String                @id @default(cuid())
+  integrationId   String
+  eventId         String                @unique // Idempotency Key
+  eventType       String
+  payload         Json
+  signatureValid  Boolean               @default(true)
+  processed       Boolean               @default(false)
+  status          String                @default("PROCESSED")
+  error           String?
+  receivedAt      DateTime              @default(now())
+  processedAt     DateTime?
+
+  integration     TheatrePosIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId, eventType])
+  @@index([eventId])
+}
+
+model PosReconciliationRecord {
+  id                      String                @id @default(cuid())
+  integrationId           String
+  totalCinevenueBookings  Int                   @default(0)
+  totalPosBookings        Int                   @default(0)
+  matchedCount            Int                   @default(0)
+  mismatchCount           Int                   @default(0)
+  discrepancies           Json                  @default("[]")
+  status                  String                @default("COMPLETED")
+  runBy                   String?
+
+  integration             TheatrePosIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  createdAt               DateTime              @default(now())
+
+  @@index([integrationId])
+  @@index([createdAt])
 }
 

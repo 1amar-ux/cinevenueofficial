@@ -79,7 +79,12 @@ export interface Booking {
   totalPrice: number;
   date: string;
   timeSlot: string;
-  status?: 'Pending' | 'Settled' | 'Cancelled' | 'Confirmed';
+  status?: 'Pending' | 'Settled' | 'Cancelled' | 'Confirmed' | 'Seat Held' | 'Booking Pending' | 'Payment Pending' | 'Refund Pending' | 'Refunded' | 'Failed' | 'Expired';
+  posBookingId?: string;
+  posReferenceNumber?: string;
+  posStatus?: string;
+  posHoldId?: string;
+  integrationType?: string;
   userEmail?: string;
   city?: string;
   userName?: string;

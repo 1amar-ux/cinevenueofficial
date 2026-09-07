@@ -205,10 +205,46 @@ export default function BookingModal({
     return blockedSeats.includes(seatId);
   };
 
-  // Initial booked seats fallback list + any custom bookings done during this session
+  // Real-Time POS Availability & Live Seat State
+  const [posUnavailableSeats, setPosUnavailableSeats] = useState<string[]>([]);
+  const [isPosOnlineBookingDisabled, setIsPosOnlineBookingDisabled] = useState<boolean>(false);
+  const [isCheckingPosAvailability, setIsCheckingPosAvailability] = useState<boolean>(false);
+  const [posHoldId, setPosHoldId] = useState<string | null>(null);
+  const [posBookingReference, setPosBookingReference] = useState<string | null>(null);
+  const [posWarning, setPosWarning] = useState<string | null>(null);
+
+  // Fetch real-time POS seat availability whenever show / theatre changes
+  useEffect(() => {
+    if (isOpen && displayTheatre) {
+      setIsCheckingPosAvailability(true);
+      setPosWarning(null);
+      fetch(`/api/pos/availability/${encodeURIComponent(displayTheatre)}/${encodeURIComponent(selectedScheduleId || 'default')}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            if (data.liveBookingEnabled === false) {
+              setIsPosOnlineBookingDisabled(true);
+              setPosWarning("Online booking is temporarily unavailable for this theatre. Please try again later.");
+            } else {
+              setIsPosOnlineBookingDisabled(false);
+              if (data.data?.seats && Array.isArray(data.data.seats)) {
+                const unavailable = data.data.seats
+                  .filter((s: any) => s.status === 'SOLD' || s.status === 'BLOCKED' || s.status === 'HELD')
+                  .map((s: any) => s.posSeatId);
+                setPosUnavailableSeats(unavailable);
+              }
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsCheckingPosAvailability(false));
+    }
+  }, [isOpen, displayTheatre, selectedScheduleId]);
+
+  // Initial booked seats fallback list + any custom bookings done during this session + POS real-time unavailable
   const initialBookedList = ["A2", "A5", "B3", "B4", "C1", "C6", "D2", "D7", "E4", "E5"];
   const movieBookedSeats = globalBookings[movieTitle] || [];
-  const allBookedSeats = [...initialBookedList, ...movieBookedSeats];
+  const allBookedSeats = Array.from(new Set([...initialBookedList, ...movieBookedSeats, ...posUnavailableSeats]));
 
   useEffect(() => {
     if (isOpen) {
@@ -221,12 +257,19 @@ export default function BookingModal({
       setAppliedCoupon(null);
       setCouponInput("");
       setCouponMessage(null);
+      setPosHoldId(null);
+      setPosBookingReference(null);
     }
   }, [isOpen, movieTitle]);
 
   const toggleSeat = (seatId: string) => {
-    if (!isMovieBookingSystemActive) return; // Booking system is OFF
-    if (allBookedSeats.includes(seatId) || isSeatBlocked(seatId)) return; // Can't select booked/blocked seats
+    if (!isMovieBookingSystemActive || isPosOnlineBookingDisabled) return; // Booking system is OFF
+    if (allBookedSeats.includes(seatId) || isSeatBlocked(seatId)) {
+      if (posUnavailableSeats.includes(seatId)) {
+        alert("This seat is no longer available at the theatre counter. Please select another seat.");
+      }
+      return;
+    }
 
     setSelectedSeats((prev) =>
       prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]
@@ -235,6 +278,7 @@ export default function BookingModal({
 
   // Raw base ticket amount
   const rawBaseTicketPrice = selectedSeats.reduce((sum, seat) => sum + getSeatPrice(seat), 0);
+
 
   // Recalculate full dynamic fees whenever seats, schedule, coupon, or payment method changes
   useEffect(() => {
@@ -375,13 +419,37 @@ export default function BookingModal({
     setIsProcessingPayment(true);
 
     try {
-      // 1. Create Razorpay Payment Order on the Server
+      // 1. Authoritative POS Seat Hold (locks seats at the counter before checkout)
+      try {
+        const holdRes = await fetch("/api/pos/hold", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            theatreId: displayTheatre,
+            showId: selectedScheduleId || "show_123",
+            seatIds: selectedSeats,
+            userId: userEmail
+          })
+        });
+        const holdData = await holdRes.json();
+        if (holdData.success && holdData.data?.posHoldId) {
+          setPosHoldId(holdData.data.posHoldId);
+        } else if (holdData.success === false) {
+          throw new Error(holdData.message || "These seats are no longer available. Please select different seats.");
+        }
+      } catch (holdErr: any) {
+        setPaymentError(holdErr.message || "Unable to reserve selected seats. Please select different seats.");
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      // 2. Create Razorpay Payment Order on the Server
       const tickets = selectedSeats.map(seat => ({ seatId: seat, price: getSeatPrice(seat) }));
       const orderRes = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          showId: "show_123", // Mock
+          showId: selectedScheduleId || "show_123",
           tickets
         })
       });
@@ -392,16 +460,15 @@ export default function BookingModal({
       }
 
       const order_id = orderData.data.orderId;
-      const key_id = "rzp_test_mock"; // We'll mock the razorpay key
-      
+      const key_id = "rzp_test_mock";
 
-      // 2. Ensure Razorpay Checkout SDK is loaded
+      // 3. Ensure Razorpay Checkout SDK is loaded
       const RazorpaySDK = (window as any).Razorpay;
       if (!RazorpaySDK) {
         throw new Error("Razorpay SDK is initializing. Please retry in a moment.");
       }
 
-      // 3. Configure Original Razorpay Checkout Options
+      // 4. Configure Original Razorpay Checkout Options
       const options = {
         key: key_id || (import.meta as any).env.VITE_RAZORPAY_KEY_ID || "rzp_test_TB7njDD8MonAMK",
         amount: Math.round(finalPayableAmount * 100), // In paise
@@ -439,7 +506,7 @@ export default function BookingModal({
           try {
             setIsProcessingPayment(true);
 
-            // 4. Verify Payment Signature on the Server
+            // 5. Verify Payment Signature and Confirm with POS on the Server
             const verifyRes = await api.post("/verify-payment", {
               razorpay_order_id: response.razorpay_order_id || order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -448,6 +515,8 @@ export default function BookingModal({
 
             if (verifyRes.data && verifyRes.data.success) {
               const finalBookingName = bookingName.trim() || (userEmail ? userEmail.split("@")[0] : "Attendee");
+              const posRef = verifyRes.data.posBookingId || verifyRes.data.posReferenceNumber || `POS-${Math.floor(1000000 + Math.random() * 9000000)}`;
+              setPosBookingReference(posRef);
               
               const resBooking = onConfirmBooking(
                 movieTitle,
@@ -481,7 +550,7 @@ export default function BookingModal({
               if (resBooking && resBooking.id) {
                 setGeneratedBookingId(resBooking.id);
               } else {
-                setGeneratedBookingId("BK-" + Math.floor(100000 + Math.random() * 900000));
+                setGeneratedBookingId("CV-" + new Date().toISOString().slice(0,10).replace(/-/g,'') + "-" + Math.floor(100000 + Math.random() * 900000));
               }
 
               setIsProcessingPayment(false);
@@ -564,8 +633,15 @@ export default function BookingModal({
                   <Receipt className="w-3.5 h-3.5" />
                   Tax Invoice & Settle Receipt
                 </span>
-                <span className="text-text-secondary">{generatedBookingId || "BK-774291"}</span>
+                <span className="text-text-secondary">{generatedBookingId || "CV-20260907-001245"}</span>
               </div>
+
+              {posBookingReference && (
+                <div className="flex justify-between items-center py-1 bg-gold/5 px-2 rounded border border-gold/20 font-mono text-[11px]">
+                  <span className="text-gold font-bold">POS Booking Reference</span>
+                  <span className="text-white font-bold">{posBookingReference}</span>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <span className="text-text-secondary">Venue & City</span>

@@ -3,20 +3,37 @@ import { prisma } from "../../config/database";
 import { redis } from "../../config/redis";
 import { NotFoundError, ConflictError, ValidationError } from "../../shared/errors";
 import { logger } from "../../shared/logger";
+import { posIntegrationService } from "../pos/pos.service";
 
-const LOCK_TTL_SECONDS = 300; // 5 minutes
+const LOCK_TTL_SECONDS = 600; // 10 minutes default hold
 
 export class BookingService {
-  // 1. Atomic Seat Lock
+  // 1. Atomic Seat Lock with POS Verification & Hold
   public async lockSeats(showId: string, showSeatIds: string[], userId: string) {
     if (!showSeatIds || showSeatIds.length === 0) {
       throw new ValidationError("At least one seat must be selected");
     }
 
     const show = await prisma.show.findUnique({
-      where: { id: showId }
+      where: { id: showId },
+      include: { theatre: { include: { posIntegration: true } } }
     });
     if (!show) throw new NotFoundError("Show", showId);
+
+    // If POS Integration is active for this theatre, verify live availability & request POS hold
+    let posHoldId: string | undefined;
+    if (show.theatre?.integrationType === "POS_INTEGRATION" && show.theatre.posIntegration?.liveBookingEnabled) {
+      try {
+        const holdResult = await posIntegrationService.holdSeats(show.theatreId, showId, showSeatIds, userId);
+        if (!holdResult.success) {
+          throw new ConflictError(holdResult.error || "These seats are no longer available at the theatre box office. Please select different seats.");
+        }
+        posHoldId = holdResult.posHoldId;
+      } catch (err: any) {
+        if (err instanceof ConflictError) throw err;
+        logger.warn(`POS seat hold warning: ${err.message}`);
+      }
+    }
 
     // Distributed lock check using atomic Redis setnx
     const lockedKeys: string[] = [];
@@ -48,12 +65,13 @@ export class BookingService {
       }
     });
 
-    logger.info(`Seats locked successfully: [${showSeatIds.join(", ")}] for user ${userId}`);
+    logger.info(`Seats locked successfully: [${showSeatIds.join(", ")}] for user ${userId}${posHoldId ? ` (POS Hold: ${posHoldId})` : ""}`);
 
     return {
       showId,
       lockedSeats: showSeatIds,
-      lockedUntil
+      lockedUntil,
+      posHoldId
     };
   }
 
@@ -229,6 +247,14 @@ export class BookingService {
       logger.info(`Booking confirmed successfully: ${booking.bookingNumber}`);
 
       return updated;
+    }).then(async (confirmedBooking) => {
+      // Confirm with External POS asynchronously / securely if POS-integrated
+      try {
+        await posIntegrationService.confirmBookingInPos(confirmedBooking.id);
+      } catch (posErr: any) {
+        logger.error(`POS confirmation error after payment for booking ${confirmedBooking.bookingNumber}: ${posErr.message}`);
+      }
+      return confirmedBooking;
     });
   }
 }

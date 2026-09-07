@@ -269,6 +269,11 @@ Please keep this copy secure and show it at the venue gates.
                               <span className="text-[10px] font-bold uppercase tracking-widest bg-gold/10 border border-gold/20 text-gold px-2.5 py-0.5 rounded">
                                 {booking.id}
                               </span>
+                              {booking.posBookingId && (
+                                <span className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 text-white px-2 py-0.5 rounded">
+                                  POS: {booking.posBookingId}
+                                </span>
+                              )}
                               <span className="text-[10px] text-text-secondary font-semibold uppercase tracking-wider">
                                 {booking.city || "All Locations"}
                               </span>
@@ -306,32 +311,9 @@ Please keep this copy secure and show it at the venue gates.
                               <p className="font-display text-xl font-bold text-gold mt-0.5">₹{booking.totalPrice}</p>
                             </div>
                             
-                            {/* Past Bookings column/indicator */}
-                            <div className="w-full my-2 text-right">
-                              {(() => {
-                                const priorCount = bookings.filter(ob => ob.userEmail?.toLowerCase() === userEmail?.toLowerCase() && ob.id !== booking.id).length;
-                                return (
-                                  <div className="flex items-center justify-between md:justify-end gap-2 text-xs">
-                                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Past Bookings</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => setViewingPastBookings(true)}
-                                      className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase cursor-pointer border transition-all ${
-                                        priorCount > 0
-                                          ? "bg-gold/10 text-gold border-gold/20 hover:bg-gold hover:text-black"
-                                          : "bg-white/5 text-text-secondary border-white/10"
-                                      }`}
-                                      title="Click to view full booking logs"
-                                    >
-                                      {priorCount} prior
-                                    </button>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            <div className="w-full flex items-center justify-end gap-2 mt-4 md:mt-0">
-                              {booking.status === "Settled" ? (
+                            {/* Status and Action Buttons */}
+                            <div className="w-full flex flex-col items-end gap-2 mt-3">
+                              {booking.status === "Settled" || booking.status === "Confirmed" ? (
                                 <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded">
                                   <CheckCircle2 className="w-3 h-3" /> Confirmed
                                 </span>
@@ -339,10 +321,48 @@ Please keep this copy secure and show it at the venue gates.
                                 <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded">
                                   <XCircle className="w-3 h-3" /> Cancelled
                                 </span>
+                              ) : booking.status === "Refunded" ? (
+                                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded">
+                                  <CheckCircle2 className="w-3 h-3" /> Refunded
+                                </span>
+                              ) : booking.status === "Booking Pending" ? (
+                                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded">
+                                  <AlertCircle className="w-3 h-3" /> Booking Pending
+                                </span>
                               ) : (
                                 <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gold bg-gold/10 border border-gold/20 px-2.5 py-1 rounded">
-                                  <AlertCircle className="w-3 h-3" /> Pending Confirmation
+                                  <AlertCircle className="w-3 h-3" /> {booking.status || "Pending"}
                                 </span>
+                              )}
+
+                              {/* Customer Cancellation Option */}
+                              {(booking.status === "Settled" || booking.status === "Confirmed" || !booking.status) && movieFilter === "upcoming" && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (window.confirm(`Are you sure you want to cancel this booking for ${booking.movieTitle} (${booking.seats.join(", ")})?\n\nEligible refund will be automatically processed through CineVenue payment gateway.`)) {
+                                      try {
+                                        const res = await fetch("/api/pos/cancel", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ bookingId: booking.id, reason: "Customer initiated online cancellation" })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                          booking.status = "Cancelled";
+                                          alert("Booking successfully cancelled. Refund has been initiated to your original payment method.");
+                                        } else {
+                                          alert(data.message || "Cancellation could not be completed. Please contact customer support.");
+                                        }
+                                      } catch (e: any) {
+                                        alert("Network error: " + e.message);
+                                      }
+                                    }
+                                  }}
+                                  className="text-[10px] text-text-muted hover:text-red-400 transition-colors underline cursor-pointer mt-1"
+                                >
+                                  Cancel Ticket & Refund
+                                </button>
                               )}
                             </div>
                           </div>

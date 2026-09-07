@@ -66,9 +66,15 @@ export default function Ticket() {
               <Typography sx={{ fontWeight: "medium" }} color="#2e7d32">{seats}</Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-              <Typography color="text.secondary">Booking ID:</Typography>
+              <Typography color="text.secondary">CineVenue ID:</Typography>
               <Typography sx={{ fontWeight: "bold" }} color="primary">{bookingId}</Typography>
             </Box>
+            {(booking as any).posBookingId && (
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography color="text.secondary">POS Reference:</Typography>
+                <Typography sx={{ fontWeight: "bold", fontFamily: "monospace" }} color="secondary">{(booking as any).posBookingId}</Typography>
+              </Box>
+            )}
           </Box>
 
           <Divider sx={{ my: 3 }} />
