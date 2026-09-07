@@ -31,7 +31,26 @@ export function createApp(): Express {
 
   // 4. Root Health Route
   app.get("/health", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.json({ status: "ok", service: "CineVenue Full Stack Unified Server" });
+  });
+
+  // 4B. Strict No-Cache Middleware for settings, health, and admin routes to guarantee global real-time synchronization
+  app.use((req, res, next) => {
+    const p = req.path.toLowerCase();
+    if (
+      p.includes("/settings") ||
+      p.includes("/admin/settings") ||
+      p.includes("/health") ||
+      p.includes("/ready")
+    ) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("Surrogate-Control", "no-store");
+      res.setHeader("X-Accel-Expires", "0");
+    }
+    next();
   });
 
   // 5. Authoritative Global Sub-Website Gatekeeper

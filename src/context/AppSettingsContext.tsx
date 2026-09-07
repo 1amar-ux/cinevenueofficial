@@ -33,23 +33,25 @@ const DEFAULT_SETTINGS: GlobalAppSettings = {
   maintenanceMessage: "We're upgrading our ticket booking experience. Movie booking will be available shortly.",
   maintenanceCountdownEnabled: false,
   maintenanceEndTime: "30 July 2026 06:00 PM",
-  globalSubwebsiteEnabled: false,
+  globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
   serviceControls: {
     website: { status: true, title: "CineVenue Under Maintenance", message: "Our platform is currently undergoing scheduled updates. We'll be back online shortly.", expectedTime: "30 July 2026, 06:00 PM" },
     movieBooking: { status: true, title: "Movie Booking Temporarily Unavailable", message: "We're upgrading our ticket booking experience.\n\nMovie booking will be available shortly.", expectedTime: "30 July 2026, 06:00 PM", visitors: 1240 },
-    eventBooking: { status: false, title: "Event Booking Temporarily Unavailable", message: "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.", expectedTime: "31 July 2026, 10:00 AM", visitors: 327 },
-    filmProduction: { status: false, title: "SUB-WEBSITE TEMPORARILY UNAVAILABLE", message: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.", expectedTime: "30 July 2026, 12:00 PM" },
-    eventManagement: { status: false, title: "SUB-WEBSITE TEMPORARILY UNAVAILABLE", message: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.", expectedTime: "31 July 2026, 02:00 PM" },
-    brandPromotion: { status: false, title: "SUB-WEBSITE TEMPORARILY UNAVAILABLE", message: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.", expectedTime: "31 July 2026, 05:00 PM" },
+    eventBooking: { status: true, title: "Event Booking Temporarily Unavailable", message: "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon.", expectedTime: "31 July 2026, 10:00 AM", visitors: 327 },
+    filmProduction: { status: true, title: "SUB-WEBSITE TEMPORARILY UNAVAILABLE", message: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.", expectedTime: "30 July 2026, 12:00 PM" },
+    eventManagement: { status: true, title: "SUB-WEBSITE TEMPORARILY UNAVAILABLE", message: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.", expectedTime: "31 July 2026, 02:00 PM" },
+    brandPromotion: { status: true, title: "SUB-WEBSITE TEMPORARILY UNAVAILABLE", message: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.", expectedTime: "31 July 2026, 05:00 PM" },
     cinecoins: { status: true, title: "CineCoins Rewards Vault Under Maintenance", message: "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back shortly.", expectedTime: "31 July 2026, 06:00 PM" }
   }
 };
 
+const BROADCAST_CHANNEL_NAME = "cinevenue_global_settings_bus";
+
 const AppSettingsContext = createContext<AppSettingsContextType>({
   settings: DEFAULT_SETTINGS,
   isMaintenanceActive: false,
-  isSubwebsiteEnabled: false,
+  isSubwebsiteEnabled: true,
   isLoading: true,
   isRealtimeConnected: false,
   lastUpdated: null,
@@ -83,8 +85,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const isMountedRef = useRef<boolean>(true);
   const isFetchingRef = useRef<boolean>(false);
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 
-  const applySettingsRecord = useCallback((data: any) => {
+  const applySettingsRecord = useCallback((data: any, shouldBroadcast: boolean = false) => {
     if (!data) return;
     let hasChanged = false;
 
@@ -100,11 +103,13 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const rawGlobalSubwebsite = data.global_subwebsite_enabled ?? data.globalSubwebsiteEnabled;
       const globalSubwebsiteEnabled = typeof rawGlobalSubwebsite === "boolean"
         ? rawGlobalSubwebsite
-        : (prev.globalSubwebsiteEnabled ?? false);
+        : (prev.globalSubwebsiteEnabled !== undefined ? prev.globalSubwebsiteEnabled : true);
 
       const subwebsiteMaintenanceMessage = data.subwebsite_maintenance_message ?? data.subwebsiteMaintenanceMessage ?? prev.subwebsiteMaintenanceMessage ?? DEFAULT_SETTINGS.subwebsiteMaintenanceMessage;
 
-      const newMaintenanceMode = data.maintenance_mode ?? data.maintenanceMode ?? prev.maintenanceMode;
+      const newMaintenanceMode = typeof (data.maintenance_mode ?? data.maintenanceMode) === "boolean"
+        ? (data.maintenance_mode ?? data.maintenanceMode)
+        : prev.maintenanceMode;
 
       // Timestamp Freshness Guard: If incoming data is older than current state, discard it
       const incomingUpdatedAt = data.updated_at ?? data.updatedAt;
@@ -147,6 +152,15 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
       } catch (e) {}
 
+      if (shouldBroadcast && typeof window !== "undefined" && broadcastChannelRef.current) {
+        try {
+          broadcastChannelRef.current.postMessage({
+            type: "SETTINGS_SYNC",
+            payload: updated
+          });
+        } catch (e) {}
+      }
+
       return updated;
     });
 
@@ -155,22 +169,31 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
-  // Ultra-Fast Authoritative Fetch: Prioritizes fast Backend API (sub-300ms) with Supabase fallback
+  // Ultra-Fast Authoritative Fetch with Strict Cache-Busting
   const refreshSettings = useCallback(async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
     try {
-      // 1. Ultra-fast same-origin Backend API (responds in ~200-300ms, zero cold-start delay)
-      const res = await apiClient.get("/settings/app", { timeout: 3000 }).catch(() => null);
+      // 1. Cache-busted HTTP Request with strict no-cache headers
+      const cacheBuster = Date.now();
+      const res = await apiClient.get(`/settings/app?_cb=${cacheBuster}`, {
+        timeout: 3000,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
+      }).catch(() => null);
+
       if (res?.data?.success && res.data?.data) {
-        applySettingsRecord(res.data.data);
+        applySettingsRecord(res.data.data, false);
         return;
       }
 
-      // 2. Fallback to Supabase with strict 1200ms timeout to avoid hanging
+      // 2. Direct Supabase Query as Database Source of Truth
       if (isSupabaseConfigured) {
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("SB_TIMEOUT")), 1200));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("SB_TIMEOUT")), 1500));
         const dbPromise = supabase
           .from("app_settings")
           .select("*")
@@ -179,7 +202,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
         const result: any = await Promise.race([dbPromise, timeoutPromise]).catch(() => null);
         if (!result?.error && result?.data) {
-          applySettingsRecord(result.data);
+          applySettingsRecord(result.data, false);
         }
       }
     } catch (err: any) {
@@ -195,12 +218,12 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Dedicated Global Sub-Website ON/OFF Switch (Admin Operation)
   const setGlobalSubwebsiteEnabled = useCallback(async (enabled: boolean, message?: string): Promise<boolean> => {
     const nowIso = new Date().toISOString();
-    // 1. Instant Optimistic Local Update
+    // 1. Instant Optimistic Local & Inter-Tab Broadcast
     applySettingsRecord({
       globalSubwebsiteEnabled: enabled,
       ...(message && { subwebsiteMaintenanceMessage: message }),
       updatedAt: nowIso
-    });
+    }, true);
 
     try {
       const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "8888") : "8888";
@@ -210,7 +233,8 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         updatedAt: nowIso
       }, {
         headers: {
-          "x-admin-passcode": adminPasscode
+          "x-admin-passcode": adminPasscode,
+          "Cache-Control": "no-cache, no-store, must-revalidate"
         }
       }).catch((err) => {
         console.warn("[AppSettings] Backend update notice for sub-website switch:", err?.message || err);
@@ -246,11 +270,11 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Update Global Settings (Admin Operation)
   const updateGlobalSettings = useCallback(async (newSettings: Partial<GlobalAppSettings>): Promise<boolean> => {
     const nowIso = new Date().toISOString();
-    // 1. Instant Optimistic Update to UI and LocalStorage
+    // 1. Instant Optimistic Update to UI, LocalStorage, and Inter-Tab Broadcast
     applySettingsRecord({
       ...newSettings,
       updatedAt: nowIso
-    });
+    }, true);
 
     try {
       // 2. Send authoritative update to backend admin route (persists to DB & writes audit logs)
@@ -270,7 +294,8 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
       const backendPromise = apiClient.post("/admin/settings/global", payload, {
         headers: {
-          "x-admin-passcode": adminPasscode
+          "x-admin-passcode": adminPasscode,
+          "Cache-Control": "no-cache, no-store, must-revalidate"
         }
       }).catch((err) => {
         console.warn("[AppSettings] Backend update notice:", err?.message || err);
@@ -303,7 +328,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const [res] = await Promise.all([backendPromise, sbPromise]);
 
       if (res?.data?.success && res.data?.data?.settings) {
-        applySettingsRecord(res.data.data.settings);
+        applySettingsRecord(res.data.data.settings, true);
       }
 
       return true;
@@ -313,16 +338,43 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [applySettingsRecord]);
 
-  // Initial Authoritative Load + Supabase Realtime Subscription + Reconnect Handling
+  // Initial Authoritative Load + Supabase Realtime Subscription + Inter-Tab Broadcast + Heartbeat
   useEffect(() => {
     isMountedRef.current = true;
     refreshSettings();
 
-    // 1. Supabase Realtime Subscription
+    // 1. Inter-Tab & Inter-Window Broadcast Channel for 0ms same-browser sync
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+        bc.onmessage = (event) => {
+          if (event?.data?.type === "SETTINGS_SYNC" && event.data.payload) {
+            console.log("[AppSettings Bus] Synchronized state across tabs:", event.data.payload);
+            applySettingsRecord(event.data.payload, false);
+          }
+        };
+        broadcastChannelRef.current = bc;
+      }
+    } catch (bcErr) {
+      console.warn("[AppSettings] BroadcastChannel init notice:", bcErr);
+    }
+
+    // 2. Storage event listener (for older browser contexts or cross-tab fallback)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "cine_app_settings" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          applySettingsRecord(parsed, false);
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // 3. Supabase Realtime Subscription (PostgreSQL database push to all worldwide devices)
     let channel: any = null;
     try {
       channel = supabase
-        .channel("global-app-settings")
+        .channel("global-app-settings-realtime")
         .on(
           "postgres_changes",
           {
@@ -331,9 +383,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
             table: "app_settings"
           },
           (payload: any) => {
-            console.log("[AppSettings Realtime] Received global configuration update:", payload);
+            console.log("[AppSettings Realtime] Received database update event:", payload);
             if (payload.new) {
-              applySettingsRecord(payload.new);
+              applySettingsRecord(payload.new, true);
             } else {
               refreshSettings();
             }
@@ -348,7 +400,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.warn("[AppSettings] Realtime subscription init notice:", rtErr);
     }
 
-    // 2. Realtime Reconnect & Resilient Listeners
+    // 4. Focus & Network reconnection sync
     const handleVisibilityOrNetworkChange = () => {
       if (document.visibilityState === "visible" || navigator.onLine) {
         refreshSettings();
@@ -358,15 +410,19 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     window.addEventListener("online", handleVisibilityOrNetworkChange);
     document.addEventListener("visibilitychange", handleVisibilityOrNetworkChange);
 
-    // 3. Fast Heartbeat polling interval (every 3 seconds) for instant cross-device synchronization
+    // 5. Fast Heartbeat polling interval (every 2.5 seconds) for instant cross-device synchronization
     const heartbeatInterval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "hidden") {
         refreshSettings();
       }
-    }, 3000);
+    }, 2500);
 
     return () => {
       isMountedRef.current = false;
+      if (broadcastChannelRef.current) {
+        try { broadcastChannelRef.current.close(); } catch {}
+      }
+      window.removeEventListener("storage", handleStorageChange);
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -377,7 +433,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [refreshSettings, applySettingsRecord]);
 
   const isMaintenanceActive = settings.maintenanceMode === true;
-  const isSubwebsiteEnabled = settings.globalSubwebsiteEnabled === true;
+  const isSubwebsiteEnabled = settings.globalSubwebsiteEnabled !== false;
 
   const contextValue = useMemo(() => ({
     settings,

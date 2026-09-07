@@ -396,7 +396,12 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
       req.headers.accept?.includes("application/json");
 
     if (isJsonRequest) {
-      res.setHeader("Retry-After", "30");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("Surrogate-Control", "no-store");
+      res.setHeader("X-Accel-Expires", "0");
+      res.setHeader("Retry-After", "5");
       res.setHeader("X-Subwebsite-Disabled", "true");
       return res.status(503).json({
         success: false,
@@ -408,7 +413,12 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
 
     // Case B: Direct browser URLs (Android, iOS, Desktop browsers, direct bookmark navigation)
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Retry-After", "30");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+    res.setHeader("Retry-After", "5");
     res.setHeader("X-Subwebsite-Disabled", "true");
     return res.status(503).send(renderSubwebsiteUnavailableHtml(settings.subwebsiteMaintenanceMessage));
 

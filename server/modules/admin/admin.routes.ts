@@ -173,6 +173,12 @@ router.post("/settings", authorize("SUPER_ADMIN"), async (req: Request, res: Res
 // 6. Centralized Global App Settings & Maintenance Control (Supabase Singleton)
 router.get("/settings/global", async (req: Request, res: Response, next: NextFunction) => {
   try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
     let settings: any;
     try {
       settings = await prisma.appSettings.upsert({
@@ -205,6 +211,12 @@ router.get("/settings/global", async (req: Request, res: Response, next: NextFun
 
 router.post("/settings/global", async (req: Request, res: Response, next: NextFunction) => {
   try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
     const {
       maintenanceMode,
       maintenanceTitle,
@@ -251,7 +263,7 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
           maintenanceMessage: maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
           maintenanceCountdownEnabled: !!maintenanceCountdownEnabled,
           maintenanceEndTime: maintenanceEndTime ? new Date(maintenanceEndTime) : null,
-          globalSubwebsiteEnabled: globalSubwebsiteEnabled === true,
+          globalSubwebsiteEnabled: globalSubwebsiteEnabled !== false,
           subwebsiteMaintenanceMessage: subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
           serviceControls: serviceControls || {},
           updatedBy: req.user?.email || "admin"
@@ -318,7 +330,8 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
     }
 
     // Invalidate and set cache so next request reads the new state immediately
-    const { setTestMaintenanceState } = await import("../../middleware/maintenance");
+    const { setTestMaintenanceState, invalidateMaintenanceCache } = await import("../../middleware/maintenance");
+    invalidateMaintenanceCache();
     setTestMaintenanceState({
       maintenanceMode: updated.maintenanceMode,
       maintenanceTitle: updated.maintenanceTitle,

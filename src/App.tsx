@@ -273,21 +273,26 @@ export default function App() {
 
   const setServiceControl = async (updater: any) => {
     const updated = typeof updater === "function" ? updater(serviceControl) : updater;
-    const isMaintenance = updated.movieBooking?.status === false || updated.website?.status === false || updated.globalWebsite?.status === false;
+    const mergedControls = {
+      ...serviceControl,
+      ...updated
+    };
     
     // Keep cinecoins and cineCoinsLoyalty strictly in sync
-    if (updated.cinecoins || updated.cineCoinsLoyalty) {
-      const activeState = updated.cinecoins || updated.cineCoinsLoyalty;
-      updated.cinecoins = { ...activeState };
-      updated.cineCoinsLoyalty = { ...activeState };
+    if (mergedControls.cinecoins || mergedControls.cineCoinsLoyalty) {
+      const activeState = mergedControls.cinecoins || mergedControls.cineCoinsLoyalty;
+      mergedControls.cinecoins = { ...activeState };
+      mergedControls.cineCoinsLoyalty = { ...activeState };
     }
+
+    const isMaintenance = mergedControls.movieBooking?.status === false || mergedControls.website?.status === false || mergedControls.globalWebsite?.status === false;
 
     await updateGlobalSettings({
       maintenanceMode: isMaintenance,
-      maintenanceTitle: updated.movieBooking?.title || updated.website?.title || globalAppSettings.maintenanceTitle,
-      maintenanceMessage: updated.movieBooking?.message || updated.website?.message || globalAppSettings.maintenanceMessage,
-      maintenanceEndTime: updated.movieBooking?.expectedTime || updated.website?.expectedTime || globalAppSettings.maintenanceEndTime,
-      serviceControls: updated
+      maintenanceTitle: mergedControls.movieBooking?.title || mergedControls.website?.title || globalAppSettings.maintenanceTitle,
+      maintenanceMessage: mergedControls.movieBooking?.message || mergedControls.website?.message || globalAppSettings.maintenanceMessage,
+      maintenanceEndTime: mergedControls.movieBooking?.expectedTime || mergedControls.website?.expectedTime || globalAppSettings.maintenanceEndTime,
+      serviceControls: mergedControls
     });
   };
 

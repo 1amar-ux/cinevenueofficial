@@ -20,14 +20,14 @@ const CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_setti
 const TMP_CONFIG_PATH = path.resolve("/tmp", "cine_global_settings.json");
 
 let inMemoryGlobalSettings: any = {
-  globalSubwebsiteEnabled: false,
+  globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
 };
 
 export function readPersistedFileSettings(): any {
   try {
-    if (fs.existsSync(CONFIG_FILE_PATH)) {
-      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
+    if (fs.existsSync(TMP_CONFIG_PATH)) {
+      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -35,8 +35,8 @@ export function readPersistedFileSettings(): any {
   } catch (e) {}
 
   try {
-    if (fs.existsSync(TMP_CONFIG_PATH)) {
-      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
+    if (fs.existsSync(CONFIG_FILE_PATH)) {
+      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -54,13 +54,15 @@ export function writePersistedFileSettings(settings: any) {
       fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
     } catch (e) {
       // Read-only filesystem (e.g. Vercel Serverless) -> write to /tmp
-      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
     }
+    try {
+      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+    } catch (e) {}
   } catch (e) {}
 }
 
 let cachedState: CachedMaintenanceState | null = null;
-const CACHE_TTL_MS = 2000;
+const CACHE_TTL_MS = 500; // Ultra-short TTL (500ms) for high throughput while ensuring real-time DB synchronization
 
 export function invalidateMaintenanceCache() {
   cachedState = null;
@@ -70,10 +72,14 @@ export function setTestMaintenanceState(state: Partial<CachedMaintenanceState> |
   if (state === null) {
     cachedState = null;
   } else {
-    if (state.globalSubwebsiteEnabled !== undefined) {
+    if (state.globalSubwebsiteEnabled !== undefined || state.maintenanceMode !== undefined || state.serviceControls !== undefined) {
       writePersistedFileSettings({
         globalSubwebsiteEnabled: state.globalSubwebsiteEnabled,
-        subwebsiteMaintenanceMessage: state.subwebsiteMaintenanceMessage
+        subwebsiteMaintenanceMessage: state.subwebsiteMaintenanceMessage,
+        maintenanceMode: state.maintenanceMode,
+        maintenanceTitle: state.maintenanceTitle,
+        maintenanceMessage: state.maintenanceMessage,
+        serviceControls: state.serviceControls
       });
     }
 
@@ -83,7 +89,7 @@ export function setTestMaintenanceState(state: Partial<CachedMaintenanceState> |
       maintenanceMessage: state.maintenanceMessage ?? "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
       maintenanceCountdownEnabled: state.maintenanceCountdownEnabled ?? false,
       maintenanceEndTime: state.maintenanceEndTime ?? null,
-      globalSubwebsiteEnabled: state.globalSubwebsiteEnabled ?? false,
+      globalSubwebsiteEnabled: state.globalSubwebsiteEnabled ?? true,
       subwebsiteMaintenanceMessage: state.subwebsiteMaintenanceMessage ?? "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: state.serviceControls ?? {},
       cachedAt: Date.now()
@@ -103,17 +109,17 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
     const dbPromise = prisma.appSettings.findUnique({
       where: { id: "global_default" }
     });
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("DB timeout")), 400));
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("DB timeout")), 1500));
     const settings: any = await Promise.race([dbPromise, timeoutPromise]);
 
     if (settings) {
       cachedState = {
-        maintenanceMode: settings.maintenanceMode,
+        maintenanceMode: settings.maintenanceMode === true,
         maintenanceTitle: settings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
         maintenanceMessage: settings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
-        maintenanceCountdownEnabled: settings.maintenanceCountdownEnabled,
+        maintenanceCountdownEnabled: !!settings.maintenanceCountdownEnabled,
         maintenanceEndTime: settings.maintenanceEndTime,
-        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled === true,
+        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled !== false,
         subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage || fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
         serviceControls: settings.serviceControls || {},
         cachedAt: now
@@ -123,12 +129,12 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
 
     // Fallback if singleton record hasn't been seeded yet
     cachedState = {
-      maintenanceMode: typeof fileSettings.maintenanceMode === "boolean" ? fileSettings.maintenanceMode : false,
+      maintenanceMode: fileSettings.maintenanceMode === true,
       maintenanceTitle: fileSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
       maintenanceMessage: fileSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
       maintenanceCountdownEnabled: !!fileSettings.maintenanceCountdownEnabled,
       maintenanceEndTime: fileSettings.maintenanceEndTime || null,
-      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled === true ? true : false,
+      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== false,
       subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: fileSettings.serviceControls || {},
       cachedAt: now
@@ -136,18 +142,17 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
     return cachedState;
   } catch (error: any) {
     logger.warn(`Failed to fetch app_settings from database: ${error.message}`);
-    // If DB is unreachable and we have cached state, use it
     if (cachedState) {
       return cachedState;
     }
     // Resilient fallback: uses persistent server configuration file
     cachedState = {
-      maintenanceMode: typeof fileSettings.maintenanceMode === "boolean" ? fileSettings.maintenanceMode : false,
+      maintenanceMode: fileSettings.maintenanceMode === true,
       maintenanceTitle: fileSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
       maintenanceMessage: fileSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
       maintenanceCountdownEnabled: !!fileSettings.maintenanceCountdownEnabled,
       maintenanceEndTime: fileSettings.maintenanceEndTime || null,
-      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== undefined ? fileSettings.globalSubwebsiteEnabled : false,
+      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== false,
       subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
       serviceControls: fileSettings.serviceControls || {},
       cachedAt: now
@@ -166,6 +171,11 @@ export async function checkMovieBookingMaintenance(req: Request, res: Response, 
 
     if (settings.maintenanceMode) {
       logger.warn(`[MAINTENANCE GATE] Blocked booking request to ${req.method} ${req.originalUrl}`);
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("Surrogate-Control", "no-store");
+      res.setHeader("X-Accel-Expires", "0");
       return res.status(503).json({
         success: false,
         code: "MOVIE_BOOKING_MAINTENANCE",
@@ -183,7 +193,7 @@ export async function checkMovieBookingMaintenance(req: Request, res: Response, 
     next();
   } catch (error: any) {
     logger.error(`Maintenance check failed for ${req.originalUrl}: ${error.message}`);
-    // Requirement 18: If database is temporarily unavailable, fail safely for critical booking operations
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     return res.status(503).json({
       success: false,
       code: "BOOKING_VERIFICATION_UNAVAILABLE",

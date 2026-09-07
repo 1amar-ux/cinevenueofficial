@@ -59,6 +59,12 @@ router.use("/admin", adminRoutes);
 // ==========================================
 router.get("/settings/app", async (req, res, next) => {
   try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
     const { getGlobalAppSettings } = await import("./middleware/maintenance");
     const settings = await getGlobalAppSettings();
     return res.json({
@@ -81,6 +87,12 @@ router.get("/settings/app", async (req, res, next) => {
 
 router.get("/settings/subwebsite", async (req, res, next) => {
   try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
     const { getGlobalAppSettings } = await import("./middleware/maintenance");
     const settings = await getGlobalAppSettings();
     return res.json({

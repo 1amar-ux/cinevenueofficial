@@ -223,10 +223,16 @@ export default function App() {
   const setServiceControl = async (updater: any) => {
     const current = globalAppSettings.serviceControls || {};
     const updated = typeof updater === "function" ? updater(current) : updater;
-    const isMaintenance = updated.movieBooking?.status === false || updated.website?.status === false;
+    const merged = { ...current, ...updated };
+    if (merged.cinecoins || merged.cineCoinsLoyalty) {
+      const activeState = merged.cinecoins || merged.cineCoinsLoyalty;
+      merged.cinecoins = { ...activeState };
+      merged.cineCoinsLoyalty = { ...activeState };
+    }
+    const isMaintenance = merged.movieBooking?.status === false || merged.website?.status === false;
     await updateGlobalSettings({
       maintenanceMode: isMaintenance,
-      serviceControls: updated
+      serviceControls: merged
     });
   };
 
