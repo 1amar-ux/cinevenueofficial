@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppSettingsProvider } from './src/store/AppSettingsContext';
 import { AuthProvider } from './src/store/AuthContext';
 import { LocationProvider } from './src/store/LocationContext';
 import { BookingProvider } from './src/store/BookingContext';
@@ -11,13 +12,15 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
-      <AuthProvider>
-        <LocationProvider>
-          <BookingProvider>
-            <RootNavigator />
-          </BookingProvider>
-        </LocationProvider>
-      </AuthProvider>
+      <AppSettingsProvider>
+        <AuthProvider>
+          <LocationProvider>
+            <BookingProvider>
+              <RootNavigator />
+            </BookingProvider>
+          </LocationProvider>
+        </AuthProvider>
+      </AppSettingsProvider>
     </SafeAreaProvider>
   );
 }

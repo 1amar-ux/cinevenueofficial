@@ -15,11 +15,17 @@ import { Header } from '../../components/common/Header';
 import { Button } from '../../components/common/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/theme';
 import { useBooking } from '../../store/BookingContext';
+import { useAppSettings } from '../../store/AppSettingsContext';
+import { MaintenanceScreen } from '../maintenance/MaintenanceScreen';
 
 export const EventDetailsScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
 }) => {
+  const { settings } = useAppSettings();
+  const eventBookingControl = settings?.serviceControls?.eventBooking;
+  const isEventBookingDisabled = eventBookingControl && eventBookingControl.status === false;
+
   const insets = useSafeAreaInsets();
   const { eventId, title, banner, venue, date, time, price, description, organizer } =
     route.params || {};
@@ -56,6 +62,19 @@ export const EventDetailsScreen: React.FC<{ route: any; navigation: any }> = ({
       selectedSeats: [`Pass x${ticketCount}`],
     });
   };
+
+  if (isEventBookingDisabled) {
+    return (
+      <MaintenanceScreen
+        isSubService
+        serviceName="Event Booking"
+        title={eventBookingControl?.title || 'Event Booking Temporarily Unavailable'}
+        message={eventBookingControl?.message || 'Concerts and live events booking is currently offline for maintenance.'}
+        expectedTime={eventBookingControl?.expectedTime || 'Shortly'}
+        icon="calendar-outline"
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>

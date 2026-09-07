@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { Colors } from '../constants/theme';
 import { RootStackParamList } from '../types/navigation';
+import { useAppSettings } from '../store/AppSettingsContext';
 
 // Navigators & Screens
 import { MainTabNavigator } from './MainTabNavigator';
@@ -25,6 +26,7 @@ import { TicketViewScreen } from '../screens/account/TicketViewScreen';
 import { EditProfileScreen } from '../screens/account/EditProfileScreen';
 import { NotificationsScreen } from '../screens/account/NotificationsScreen';
 import { SupportPoliciesScreen } from '../screens/account/SupportPoliciesScreen';
+import { MaintenanceScreen } from '../screens/maintenance/MaintenanceScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -54,6 +56,20 @@ const linking = {
 };
 
 export const RootNavigator: React.FC = () => {
+  const { isMaintenanceActive, settings } = useAppSettings();
+
+  // Authoritative Global Maintenance Screen for Mobile Client
+  if (isMaintenanceActive) {
+    return (
+      <MaintenanceScreen
+        title={settings.maintenanceTitle || 'Platform Under Maintenance'}
+        message={settings.maintenanceMessage || "We're upgrading our servers. CineVenue will be back online shortly."}
+        expectedTime={settings.maintenanceEndTime || settings.serviceControls?.website?.expectedTime}
+        serviceName="CineVenue Platform"
+      />
+    );
+  }
+
   return (
     <NavigationContainer
       linking={linking}

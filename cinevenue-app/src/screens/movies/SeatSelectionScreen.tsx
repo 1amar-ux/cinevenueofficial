@@ -16,11 +16,16 @@ import { showApi } from '../../api/movieApi';
 import { bookingApi } from '../../api/bookingApi';
 import { SeatInfo } from '../../types/movie';
 import { useBooking } from '../../store/BookingContext';
+import { useAppSettings } from '../../store/AppSettingsContext';
+import { MaintenanceScreen } from '../maintenance/MaintenanceScreen';
 
 export const SeatSelectionScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
 }) => {
+  const { settings } = useAppSettings();
+  const movieBookingControl = settings?.serviceControls?.movieBooking;
+  const isMovieBookingDisabled = movieBookingControl && movieBookingControl.status === false;
   const {
     showId,
     movieTitle,
@@ -112,6 +117,19 @@ export const SeatSelectionScreen: React.FC<{ route: any; navigation: any }> = ({
       setLocking(false);
     }
   };
+
+  if (isMovieBookingDisabled) {
+    return (
+      <MaintenanceScreen
+        isSubService
+        serviceName="Movie Booking"
+        title={movieBookingControl?.title || 'Movie Booking Temporarily Unavailable'}
+        message={movieBookingControl?.message || 'We are currently upgrading our ticket booking servers.'}
+        expectedTime={movieBookingControl?.expectedTime || 'Shortly'}
+        icon="film-outline"
+      />
+    );
+  }
 
   if (loading) {
     return <LoadingSpinner message="Loading Real-Time Seat Layout..." />;

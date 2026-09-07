@@ -13,10 +13,16 @@ import { Header } from '../../components/common/Header';
 import { Button } from '../../components/common/Button';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/theme';
 import { cineCoinApi } from '../../api/services';
+import { useAppSettings } from '../../store/AppSettingsContext';
+import { MaintenanceScreen } from '../maintenance/MaintenanceScreen';
 
 const PRIZES = [10, 25, 5, 50, 15, 100, 20, 200];
 
 export const DailySpinScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { settings } = useAppSettings();
+  const cineCoinsControl = settings?.serviceControls?.cinecoins;
+  const isCineCoinsDisabled = cineCoinsControl && cineCoinsControl.status === false;
+
   const [spinning, setSpinning] = useState(false);
   const [wonAmount, setWonAmount] = useState<number | null>(null);
   const [spinAnim] = useState(new Animated.Value(0));
@@ -53,6 +59,19 @@ export const DailySpinScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
+
+  if (isCineCoinsDisabled) {
+    return (
+      <MaintenanceScreen
+        isSubService
+        serviceName="CineCoins Rewards"
+        title={cineCoinsControl?.title || 'CineCoins Rewards Under Maintenance'}
+        message={cineCoinsControl?.message || 'CineCoins spin and loyalty services are undergoing maintenance.'}
+        expectedTime={cineCoinsControl?.expectedTime || 'Shortly'}
+        icon="gift-outline"
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
