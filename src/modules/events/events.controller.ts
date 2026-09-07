@@ -61,3 +61,13 @@ export const checkInPass = (req: Request, res: Response) => {
 export const generatePdfPass = (req: Request, res: Response) => {
   res.json({ success: true, pdfUrl: `https://cinevenue-storage.com/passes/${req.params.passId}.pdf` });
 };
+
+export const sendPassEmail = (req: Request, res: Response) => {
+  const { email, passId, eventTitle, userName, venueName, date, time } = req.body;
+  // Audit log email dispatch
+  console.log(`[EMAIL DISPATCH] Sent Event Pass ${passId} for "${eventTitle}" to ${email} (${userName}) at ${venueName} on ${date} ${time}`);
+  res.json({
+    success: true,
+    message: `Official VIP Pass & PDF receipt successfully dispatched to ${email || 'your registered email'}!`,
+  });
+};

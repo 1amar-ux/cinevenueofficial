@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { QrCode, Download, Share2, MapPin, Calendar, CheckCircle2 } from "lucide-react";
+import { generateAndDownloadEventPassPdf } from "../../utils/eventPassPdf";
+import { EventRegistration } from "../../types";
 
 export default function PassView() {
   const { passId } = useParams();
@@ -75,10 +77,49 @@ export default function PassView() {
           </div>
           
           <div className="flex w-full gap-2">
-            <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-bold uppercase tracking-wider py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-              <Download className="w-4 h-4" /> PDF
+            <button
+              onClick={() => {
+                const samplePass: EventRegistration = {
+                  id: passId || "EV-REG-892147",
+                  eventId: "ev-1",
+                  eventTitle: "Pushpa 2 Pre-Release VIP Event",
+                  venueName: "Hyderabad Convention Centre, HITEC City",
+                  date: "15 October 2026",
+                  time: "5:00 PM",
+                  userName: "VIP Pass Holder",
+                  userEmail: "member@cinevenue.com",
+                  mobileNumber: "+91 98765 43210",
+                  categoryName: "VIP Gold Access",
+                  ticketPrice: 999,
+                  quantity: 1,
+                  totalPrice: 999,
+                  status: "Confirmed",
+                  paymentMethod: "Online Gateway",
+                  bookingDate: new Date().toLocaleDateString("en-IN"),
+                  organizerApproved: true,
+                  superadminApproved: true,
+                };
+                generateAndDownloadEventPassPdf(samplePass);
+              }}
+              className="flex-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider py-3 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg border-0"
+            >
+              <Download className="w-4 h-4" /> Download PDF
             </button>
-            <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-bold uppercase tracking-wider py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+            <button 
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: "CineVenue Event Pass",
+                    text: `CineVenue VIP Event Pass: ${passId}`,
+                    url: window.location.href,
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  alert("Link copied to clipboard!");
+                }
+              }}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-bold uppercase tracking-wider py-3 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
               <Share2 className="w-4 h-4" /> Share
             </button>
           </div>

@@ -6,6 +6,7 @@ import {
   Eye, RefreshCw, Upload, ShieldCheck, QrCode
 } from "lucide-react";
 import { Booking, EventRegistration } from "../types";
+import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
 
 interface UserDashboardModalProps {
   isOpen: boolean;
@@ -50,13 +51,16 @@ export default function UserDashboardModal({
   );
 
   const handleDownloadTicketTxt = (item: Booking | EventRegistration, isEvent: boolean) => {
-    const title = isEvent ? (item as EventRegistration).eventTitle : (item as Booking).movieTitle;
-    const venue = isEvent ? (item as EventRegistration).venueName : (item as Booking).theatreName;
+    if (isEvent) {
+      generateAndDownloadEventPassPdf(item as EventRegistration);
+      return;
+    }
+
+    const title = (item as Booking).movieTitle;
+    const venue = (item as Booking).theatreName;
     const date = item.date;
-    const time = isEvent ? (item as EventRegistration).time : (item as Booking).timeSlot;
-    const details = isEvent 
-      ? `Category: ${(item as EventRegistration).categoryName} (${(item as EventRegistration).quantity} Pass)` 
-      : `Seats: ${(item as Booking).seats.join(", ")}`;
+    const time = (item as Booking).timeSlot;
+    const details = `Seats: ${(item as Booking).seats.join(", ")}`;
 
     const text = `
 ==================================================

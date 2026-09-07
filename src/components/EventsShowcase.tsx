@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest } from "../types";
 import MaintenancePage from "./MaintenancePage";
+import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
 
 interface EventsShowcaseProps {
   events: Event[];
@@ -291,6 +292,10 @@ export default function EventsShowcase({
     onBookEvent(newRegistration);
     setBookingPass(newRegistration);
     
+    // Automatically generate and download PDF pass + dispatch to user email
+    generateAndDownloadEventPassPdf(newRegistration);
+    sendEventPassToEmail(newRegistration);
+    
     // Decrement capacity simulation (non-blocking visual aid)
     selectedCategory.availableSeats = Math.max(0, selectedCategory.availableSeats - finalQuantity);
   };
@@ -302,54 +307,20 @@ export default function EventsShowcase({
     if (!bookingPass) return;
     setDownloadingPass(true);
     setActionSuccessMessage(null);
+    generateAndDownloadEventPassPdf(bookingPass);
     setTimeout(() => {
       setDownloadingPass(false);
-      
-      const ticketContent = `
-==================================================
-              CINEVENUE EVENT PASS
-==================================================
-Pass Code  : ${bookingPass.id}
-Event      : ${bookingPass.eventTitle}
-Category   : ${bookingPass.categoryName} Class Pass
-Venue      : ${bookingPass.venueName}
-Date       : ${bookingPass.date}
-Time       : ${bookingPass.time}
-Holder     : ${bookingPass.userName}
-Email      : ${bookingPass.userEmail}
-Mobile     : ${bookingPass.mobileNumber}
-Qty        : ${bookingPass.quantity}x
-Total Price: ₹${bookingPass.totalPrice}
-Status     : ${bookingPass.status}
-Gateway    : ${bookingPass.paymentMethod}
-Booking DT : ${bookingPass.bookingDate}
-
-Thank you for choosing CineVenue Elite Concierge.
-Please keep this copy secure and show it at the venue gates.
-==================================================
-`;
-      const blob = new Blob([ticketContent.trim()], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `cinevenue-pass-${bookingPass.id}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      setActionSuccessMessage(`📥 Pass ${bookingPass.id} has been downloaded to your device as a text ticket!`);
-    }, 800);
+      setActionSuccessMessage(`📥 Official PDF pass ${bookingPass.id} has been generated and downloaded to your device!`);
+    }, 600);
   };
 
-  const handleEmailPass = () => {
+  const handleEmailPass = async () => {
     if (!bookingPass) return;
     setEmailingPass(true);
     setActionSuccessMessage(null);
-    setTimeout(() => {
-      setEmailingPass(false);
-      setActionSuccessMessage(`✉ VIP Ticket details have been officially dispatched to your email: ${bookingPass.userEmail}!`);
-    }, 800);
+    const res = await sendEventPassToEmail(bookingPass);
+    setEmailingPass(false);
+    setActionSuccessMessage(`✉ ${res.message}`);
   };
 
   const handleReviewSubmit = (e: React.FormEvent) => {
@@ -1732,7 +1703,7 @@ Please keep this copy secure and show it at the venue gates.
                                 className="px-3 py-2.5 bg-emerald-500/15 hover:bg-emerald-500 text-white hover:text-black rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-500/20 disabled:opacity-50 transition-all"
                               >
                                 <Download className="w-3.5 h-3.5" />
-                                <span>{downloadingPass ? "Downloading..." : "Download Pass"}</span>
+                                <span>{downloadingPass ? "Generating PDF..." : "Download PDF Pass"}</span>
                               </button>
                               <button
                                 type="button"
@@ -1741,7 +1712,7 @@ Please keep this copy secure and show it at the venue gates.
                                 className="px-3 py-2.5 bg-blue-500/15 hover:bg-blue-500 text-white hover:text-black rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer border border-blue-500/20 disabled:opacity-50 transition-all"
                               >
                                 <Mail className="w-3.5 h-3.5" />
-                                <span>{emailingPass ? "Sending Email..." : "Mail to Me"}</span>
+                                <span>{emailingPass ? "Dispatching..." : "Send to Email"}</span>
                               </button>
                             </div>
 

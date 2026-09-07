@@ -1,0 +1,97 @@
+{
+  "expo": {
+    "name": "CineVenue",
+    "slug": "cinevenue",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "cinevenue",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0B"
+    },
+    "android": {
+      "package": "com.cinevenue.app",
+      "versionCode": 1,
+      "allowBackup": false,
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A0B"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "cinevenue"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "cinevenue.in",
+              "pathPrefix": "/movie"
+            },
+            {
+              "scheme": "https",
+              "host": "cinevenue.in",
+              "pathPrefix": "/event"
+            },
+            {
+              "scheme": "https",
+              "host": "cinevenue.in",
+              "pathPrefix": "/ticket"
+            },
+            {
+              "scheme": "https",
+              "host": "cinevenue.in",
+              "pathPrefix": "/cinecoins"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cinevenue.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CineVenue uses your location to discover nearby cinemas, showtimes, and entertainment events."
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CineVenue to use your location to find nearby theatres and showtimes."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cinevenue-app-prod"
+      }
+    }
+  }
+}

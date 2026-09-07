@@ -12,5 +12,6 @@ router.post('/events/:id/passes/bulk', eventController.generateBulkPasses);
 router.get('/events/passes/:passId', eventController.getPassDetails);
 router.post('/events/passes/:passId/check-in', eventController.checkInPass);
 router.post('/events/passes/:passId/pdf', eventController.generatePdfPass);
+router.post('/events/send-pass-email', eventController.sendPassEmail);
 
 export default router;

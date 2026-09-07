@@ -84,13 +84,18 @@ export default function CineCoinsModule({
   const [newTxPin, setNewTxPin] = useState<string>("");
   const [pinUpdateSuccess, setPinUpdateSuccess] = useState<boolean>(false);
 
+  // Deduplicate all arrays to prevent any duplicate display
+  const uniqueRewards = Array.from(new Map((rewards || []).map(r => [r.id || r.title, r])).values());
+  const uniqueChallenges = Array.from(new Map((challenges || []).map(c => [c.id || c.title, c])).values());
+  const uniqueTransactions = Array.from(new Map((transactions || []).map(t => [t.id, t])).values());
+
   // Calculations
   const coinsPerUnit = settings?.coinsPerUnit || 1000;
   const currencyValue = settings?.currencyValue || 10;
   const coinValue = settings?.coinValueRupees || (currencyValue / coinsPerUnit) || 0.01;
   const currentCoins = userWallet?.balanceCoins ?? 0;
   const lockedCoins = userWallet?.lockedBalance ?? 0;
-  const availableBalance = currentCoins - lockedCoins;
+  const availableBalance = Math.max(0, currentCoins - lockedCoins);
   const walletValueRs = (currentCoins * coinValue).toFixed(2);
   const toggles = settings?.featureToggles || {
     wallet: true,
@@ -460,7 +465,7 @@ export default function CineCoinsModule({
                   {userWallet?.isFrozen && <span className="text-rose-400 font-extrabold">(FROZEN)</span>}
                 </div>
                 <div className="text-xs font-black text-gold font-mono flex items-center gap-1.5">
-                  <span>{(userWallet?.balanceCoins || 6915).toLocaleString()} {settings?.coinSymbol || "CC"}</span>
+                  <span>{(userWallet?.balanceCoins ?? 0).toLocaleString()} {settings?.coinSymbol || "CC"}</span>
                   <span className="text-[10px] text-emerald-400 font-semibold">(≈ ₹{walletValueRs})</span>
                 </div>
               </div>
@@ -474,7 +479,7 @@ export default function CineCoinsModule({
             >
               <Bell className="w-4 h-4" />
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-black font-black text-[9px] rounded-full flex items-center justify-center">
-                {userWallet.notifications?.filter(n => !n.read).length || 4}
+                {userWallet?.notifications?.filter(n => !n.read).length ?? 0}
               </span>
             </button>
 
@@ -611,42 +616,42 @@ export default function CineCoinsModule({
                 {/* 1. CURRENT BALANCE */}
                 <div className="bg-[#0E0E12] border border-amber-500/40 rounded-2xl p-4 space-y-1 shadow-lg relative overflow-hidden">
                   <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider">CURRENT BALANCE</div>
-                  <div className="text-2xl font-black text-gold font-mono">{(userWallet?.balanceCoins || 6915).toLocaleString()}</div>
+                  <div className="text-2xl font-black text-gold font-mono">{(userWallet?.balanceCoins ?? 0).toLocaleString()}</div>
                   <div className="text-[10px] text-emerald-400 font-semibold">≈ ₹{walletValueRs}</div>
                 </div>
 
                 {/* 2. AVAILABLE */}
                 <div className="bg-[#0E0E12] border border-white/10 rounded-2xl p-4 space-y-1">
                   <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider">AVAILABLE</div>
-                  <div className="text-2xl font-black text-emerald-400 font-mono">{(availableBalance || 6915).toLocaleString()}</div>
+                  <div className="text-2xl font-black text-emerald-400 font-mono">{(availableBalance ?? 0).toLocaleString()}</div>
                   <div className="text-[10px] text-text-muted">Usable now</div>
                 </div>
 
                 {/* 3. LOCKED */}
                 <div className="bg-[#0E0E12] border border-white/10 rounded-2xl p-4 space-y-1">
                   <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider">LOCKED</div>
-                  <div className="text-2xl font-black text-amber-400 font-mono">{userWallet?.lockedBalance || 0}</div>
+                  <div className="text-2xl font-black text-amber-400 font-mono">{userWallet?.lockedBalance ?? 0}</div>
                   <div className="text-[10px] text-text-muted">Pending review</div>
                 </div>
 
                 {/* 4. EXPIRING SOON */}
                 <div className="bg-[#0E0E12] border border-white/10 rounded-2xl p-4 space-y-1">
                   <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider">EXPIRING SOON</div>
-                  <div className="text-2xl font-black text-rose-400 font-mono">{userWallet?.expiringCoins || 50}</div>
+                  <div className="text-2xl font-black text-rose-400 font-mono">{userWallet?.expiringCoins ?? 0}</div>
                   <div className="text-[10px] text-text-muted">Expires in 30d</div>
                 </div>
 
                 {/* 5. TOTAL EARNED */}
                 <div className="bg-[#0E0E12] border border-white/10 rounded-2xl p-4 space-y-1">
                   <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider">TOTAL EARNED</div>
-                  <div className="text-2xl font-black text-white font-mono">{(userWallet?.lifetimeEarned || 7165).toLocaleString()}</div>
+                  <div className="text-2xl font-black text-white font-mono">{(userWallet?.lifetimeEarned ?? 0).toLocaleString()}</div>
                   <div className="text-[10px] text-text-muted">Lifetime</div>
                 </div>
 
                 {/* 6. TOTAL USED */}
                 <div className="bg-[#0E0E12] border border-white/10 rounded-2xl p-4 space-y-1">
                   <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider">TOTAL USED</div>
-                  <div className="text-2xl font-black text-sky-400 font-mono">{userWallet?.totalRedeemed || 250}</div>
+                  <div className="text-2xl font-black text-sky-400 font-mono">{userWallet?.totalRedeemed ?? 0}</div>
                   <div className="text-[10px] text-text-muted">Redeemed</div>
                 </div>
               </div>
@@ -1226,7 +1231,7 @@ export default function CineCoinsModule({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rewards
+              {uniqueRewards
                 .filter((r) => storeCategory === "All" || r.category === storeCategory)
                 .map((reward) => (
                   <div key={reward.id} className="bg-[#0F0F12] border border-white/10 rounded-2xl overflow-hidden hover:border-gold/50 transition-all flex flex-col justify-between shadow-xl">
@@ -1305,7 +1310,7 @@ export default function CineCoinsModule({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 font-mono">
-                    {transactions
+                    {uniqueTransactions
                       .filter((t) => txFilter === "All" || t.type === txFilter)
                       .map((tx) => (
                         <tr key={tx.id} className="hover:bg-white/[0.02]">

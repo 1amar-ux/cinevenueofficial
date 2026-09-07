@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native builds & cache
+android/.gradle
+android/build
+android/app/build
+android/.idea
+ios/Pods
+ios/build
+*.orig.*
+
+# Environment variables with private overrides
+.env.local
+.env.*.local
+
+# Keystores & certificates
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+google-service-account.json
+
+# Temporary / Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
