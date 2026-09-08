@@ -1104,3 +1104,385 @@ export const INITIAL_HIRES: HireRecord[] = [];
 export const INITIAL_AGREEMENTS: DigitalAgreement[] = [];
 
 export const INITIAL_REVIEWS: TalentReview[] = [];
+
+// ----------------------------------------------------
+// INITIAL INDIAN CASTING CALLS
+// ----------------------------------------------------
+import { IndianCastingCall, AuditionSubmission, Proposal } from "../types/filmProductionMarketplace";
+
+export const INITIAL_INDIAN_CASTING_CALLS: IndianCastingCall[] = [
+  {
+    id: "icc-1",
+    projectId: "proj-1",
+    projectTitle: "Kshatriya: Reign of Shadows",
+    projectBannerUrl: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&auto=format&fit=crop&q=80",
+    companyName: "Mythri Visuals & Cinema LLP",
+    directorName: "S. Gautham Varma",
+    industry: "Tollywood (Telugu)",
+    languages: ["Telugu", "Hindi"],
+    roleTitle: "Ruthless Provincial Commander (Antagonist)",
+    roleCategory: "Antagonist / Negative Role",
+    characterName: "Commander Bhairav Varma",
+    ageMin: 32,
+    ageMax: 45,
+    gender: "Male",
+    physicalAttributes: {
+      height: "5'10\" - 6'3\"",
+      bodyType: "Athletic / Heavy build",
+      lookAndStyle: "Intense commanding gaze, raw warrior rugged look",
+      distinctFeatures: "Capable of intense sword fight choreography"
+    },
+    characterBio: "A fierce commander driven by ancient blood feuds. Requires intense facial expression control, heavy baritone voice modulation, and warrior combat physicality.",
+    dialogueScriptSnippet: "\"ఈ రాజ్యం నా ఆజ్ఞల మీద నడుస్తుంది... ఎదురు తిరిగిన వాడు శ్వాస తీసుకోలేడు! (Deliver with controlled cold fury)\"",
+    auditionInstructions: "Please submit a 90-second self-tape monologue showing cold aggression transitioning into supreme authority. Stunt reel is a major plus.",
+    shootLocation: "Hyderabad (Ramoji Film City) & Hampi Outdoors",
+    shootingSchedule: "45 Days across 3 Schedules (Oct 2026 - Jan 2027)",
+    remuneration: "₹18,00,000 - ₹30,00,000 (Based on experience)",
+    openingsCount: 1,
+    hiredCount: 0,
+    requiresSelfTape: true,
+    requiresMonologue: true,
+    requiresMinorConsent: false,
+    deadline: "2026-10-15",
+    status: "Open",
+    featured: true,
+    postedDate: "2026-09-01",
+    submissionsCount: 14
+  },
+  {
+    id: "icc-2",
+    projectId: "proj-2",
+    projectTitle: "The Golden Veena (Swarna Mandiram)",
+    projectBannerUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80",
+    companyName: "Surya Dreamscapes Media",
+    directorName: "Meera Krishnan",
+    industry: "Kollywood (Tamil)",
+    languages: ["Tamil", "Telugu"],
+    roleTitle: "Classical Carnatic Prodigy (Parallel Lead)",
+    roleCategory: "Parallel Lead",
+    characterName: "Ananya Sundaram",
+    ageMin: 20,
+    ageMax: 29,
+    gender: "Female",
+    physicalAttributes: {
+      height: "5'2\" - 5'8\"",
+      lookAndStyle: "Traditional classical grace, expressive eyes",
+      distinctFeatures: "Basic knowledge of Carnatic music or Veena holding posture"
+    },
+    characterBio: "A rebellious daughter of a classical maestro who bridges centuries-old ragas with progressive electronic symphony. Needs expressive eyes and graceful screen presence.",
+    dialogueScriptSnippet: "\"சங்கீதம் என்பது வெறும் மரபு அல்ல... அது என் உயிர் துடிப்பு! (Speak with deep emotion and passion)\"",
+    auditionInstructions: "Submit a 1-minute intro video + 1-minute dramatic scene displaying conflict between parental duty and artistic freedom.",
+    shootLocation: "Chennai, Thanjavur & Pondicherry",
+    shootingSchedule: "30 Days (Nov - Dec 2026)",
+    remuneration: "₹12,00,000 - ₹20,00,000",
+    openingsCount: 1,
+    hiredCount: 0,
+    requiresSelfTape: true,
+    requiresMonologue: true,
+    requiresMinorConsent: false,
+    deadline: "2026-10-30",
+    status: "Open",
+    featured: true,
+    postedDate: "2026-09-02",
+    submissionsCount: 22
+  },
+  {
+    id: "icc-3",
+    projectId: "proj-3",
+    projectTitle: "Dharavi Beat 808",
+    projectBannerUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&auto=format&fit=crop&q=80",
+    companyName: "Bombay Indie Motion",
+    directorName: "Kabir Mehta",
+    industry: "Bollywood (Hindi)",
+    languages: ["Hindi", "Bambaiya Hindi / Marathi"],
+    roleTitle: "Street Rapper & Underground Lyricist (Lead)",
+    roleCategory: "Lead Protagonist (Male)",
+    characterName: "Zahid 'Z-Fire' Khan",
+    ageMin: 19,
+    ageMax: 26,
+    gender: "Male",
+    physicalAttributes: {
+      lookAndStyle: "Raw street charisma, authentic Mumbai slang fluency"
+    },
+    characterBio: "A fiery spoken-word artist from Dharavi fighting gentrification through hip-hop verses. Must deliver natural rhythmic cadences.",
+    dialogueScriptSnippet: "\"गली की आवाज़ को दबा नहीं पाओगे साहब... ये बीट अब पूरे देश में गूंजेगी!\"",
+    auditionInstructions: "Upload a 60-second freestyle rap video or monologue showcasing authentic Mumbai street cadence.",
+    shootLocation: "Mumbai (Dharavi, Bandra, Lower Parel)",
+    shootingSchedule: "25 Days (Dec 2026)",
+    remuneration: "₹8,00,000 - ₹15,00,000",
+    openingsCount: 1,
+    hiredCount: 0,
+    requiresSelfTape: true,
+    requiresMonologue: true,
+    requiresMinorConsent: false,
+    deadline: "2026-11-05",
+    status: "Open",
+    featured: false,
+    postedDate: "2026-09-04",
+    submissionsCount: 38
+  },
+  {
+    id: "icc-4",
+    projectId: "proj-1",
+    projectTitle: "Kshatriya: Reign of Shadows",
+    companyName: "Mythri Visuals & Cinema LLP",
+    directorName: "S. Gautham Varma",
+    industry: "Tollywood (Telugu)",
+    languages: ["Telugu"],
+    roleTitle: "Young Prince Vikram (Child Artist)",
+    roleCategory: "Child Artist / Minor",
+    characterName: "Prince Vikram (Age 9)",
+    ageMin: 7,
+    ageMax: 11,
+    gender: "Male",
+    characterBio: "The courageous young heir who witnesses royal treason. Requires sharp emotional reactions and fearless royal demeanor.",
+    auditionInstructions: "Parent / legal guardian must submit 1-minute intro and short emotional dialog test. Guardian consent form required.",
+    shootLocation: "Hyderabad Studios",
+    shootingSchedule: "12 Days with strict schooling hour compliance",
+    remuneration: "₹4,00,000 - ₹6,00,000",
+    openingsCount: 1,
+    hiredCount: 0,
+    requiresSelfTape: true,
+    requiresMonologue: false,
+    requiresMinorConsent: true,
+    deadline: "2026-10-20",
+    status: "Open",
+    featured: false,
+    postedDate: "2026-09-05",
+    submissionsCount: 9
+  }
+];
+
+// ----------------------------------------------------
+// INITIAL AUDITION SUBMISSIONS
+// ----------------------------------------------------
+export const INITIAL_AUDITIONS: AuditionSubmission[] = [
+  {
+    id: "aud-1",
+    castingCallId: "icc-1",
+    projectId: "proj-1",
+    projectTitle: "Kshatriya: Reign of Shadows",
+    characterName: "Commander Bhairav Varma",
+    roleType: "Antagonist / Negative Role",
+    applicantId: "user-actor-1",
+    applicantName: "Arjun Devaiah",
+    applicantEmail: "arjun.devaiah@cinevenue.com",
+    applicantPhone: "+91 98450 12345",
+    applicantAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80",
+    age: 36,
+    gender: "Male",
+    height: "6'1\"",
+    spokenLanguages: ["Telugu", "Hindi", "Kannada", "English"],
+    city: "Hyderabad",
+    state: "Telangana",
+    videoAuditionUrl: "https://vimeo.com/76979871",
+    headshots: [
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80"
+    ],
+    experienceSummary: "10 years theatre experience at Nishumbita & Samahaara. Featured in 3 Telugu feature films as key supporting antagonist.",
+    status: "Shortlisted",
+    callbackDate: "2026-10-05",
+    callbackTime: "11:00 AM",
+    callbackLocationOrLink: "Studio Floor 4, Annapurna Studios, Hyderabad",
+    directorNotes: "Excellent baritone and intense screen look. Recommended for in-person look test.",
+    rating: 5,
+    appliedAt: "2026-09-04",
+    updatedAt: "2026-09-06"
+  },
+  {
+    id: "aud-2",
+    castingCallId: "icc-2",
+    projectId: "proj-2",
+    projectTitle: "The Golden Veena (Swarna Mandiram)",
+    characterName: "Ananya Sundaram",
+    roleType: "Parallel Lead",
+    applicantId: "user-actor-2",
+    applicantName: "Pooja Radhakrishnan",
+    applicantEmail: "pooja.radha@cinevenue.com",
+    applicantPhone: "+91 97909 67890",
+    applicantAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+    age: 23,
+    gender: "Female",
+    height: "5'5\"",
+    spokenLanguages: ["Tamil", "Telugu", "English"],
+    city: "Chennai",
+    state: "Tamil Nadu",
+    videoAuditionUrl: "https://youtube.com/watch?v=sample-audition",
+    headshots: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80"
+    ],
+    experienceSummary: "Trained Carnatic vocalist (7 years) and Kalakshetra Bharatanatyam alumni. Acted in 2 Tamil short films.",
+    status: "Callback Scheduled",
+    callbackDate: "2026-10-12",
+    callbackTime: "02:30 PM",
+    callbackLocationOrLink: "Surya Dreamscapes Creative Room, T. Nagar, Chennai",
+    directorNotes: "Authentic Veena holding posture and natural dialogue fluency.",
+    rating: 5,
+    appliedAt: "2026-09-05",
+    updatedAt: "2026-09-07"
+  }
+];
+
+// ----------------------------------------------------
+// INITIAL PROPOSALS
+// ----------------------------------------------------
+export const INITIAL_PROPOSALS: Proposal[] = [
+  {
+    id: "prop-101",
+    projectId: "proj-1",
+    projectTitle: "Kshatriya: Reign of Shadows",
+    type: "VFX & CGI Services",
+    title: "Complete Creature CGI, War Simulation & Digital Set Extension Package",
+    senderId: "user-vfx-1",
+    senderName: "Firefly Cinematic VFX Studios",
+    senderEmail: "partnerships@fireflyvfx.in",
+    senderRole: "Vendor",
+    senderCompany: "Firefly Cinematic VFX Studios (Hyderabad)",
+    senderAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80",
+    recipientId: "user-prod-1",
+    recipientName: "S. Gautham Varma & Mythri Visuals",
+    recipientEmail: "producer@mythrivisuals.com",
+    recipientRole: "Producer",
+    recipientCompany: "Mythri Visuals & Cinema LLP",
+    introduction: "Firefly Studios is thrilled to present our comprehensive visual effects pipeline proposal for 'Kshatriya: Reign of Shadows'. With credits on 25+ major Indian period epics, our team will deliver Hollywood-caliber battle sequences, photorealistic mythical beasts, and seamless period environment matte extensions.",
+    projectDescription: "An end-to-end visual effects collaboration including on-set VFX supervision, photogrammetry scanning of heritage forts, 3D asset creation, massive crowd simulations (Houdini), and 4K Dolby Vision finishing.",
+    scopeOfWork: [
+      "On-set VFX Supervision across all 45 shoot days",
+      "Digital Fortress Environment & War Camp Matte Painting (40 Shots)",
+      "Massive Battle Crowd Simulation using Houdini (3 Sequences, 65 Shots)",
+      "Creature CGI: Sacred Royal War Elephant & Shadow Beast (18 High-Detail Hero Shots)",
+      "Pyrotechnics, Fire & Smoke Volumetric Simulations",
+      "Full ACES Color Managed Compositing & Final 4K Master Deliveries"
+    ],
+    deliverables: [
+      "VFX Pre-visualization / Tech-vis animatics for 3 war sequences",
+      "140 Approved Final 4K EXR Composited VFX Shots",
+      "On-Set Lidar Scans and Camera Tracking Data Archive",
+      "Dolby Vision HDR Grade Passes"
+    ],
+    timelineWeeks: 24,
+    proposedStartDate: "2026-10-01",
+    proposedCompletionDate: "2027-03-30",
+    budgetTotal: 18500000,
+    currency: "INR",
+    paymentMilestones: [
+      { title: "Project Inception & Asset Pre-Vis", percentage: 20, amount: 3700000, deliverable: "3D Asset Models & Pre-visualization Approval", estimatedDate: "2026-10-15" },
+      { title: "Principal Photography On-Set Wrap", percentage: 30, amount: 5550000, deliverable: "On-set Data, Camera Tracking & First Rough Cuts", estimatedDate: "2026-12-20" },
+      { title: "Midway 50% Shot Approvals", percentage: 25, amount: 4625000, deliverable: "70 Completed 4K Composite VFX Shots", estimatedDate: "2027-02-15" },
+      { title: "Final 100% Delivery & DI Handover", percentage: 25, amount: 4625000, deliverable: "All 140 EXR Final Master Deliveries signed off", estimatedDate: "2027-03-30" }
+    ],
+    termsAndConditions: "Includes up to 3 revision passes per shot within approved scope. Any script modifications exceeding 10% shot count will be estimated via change order memo. Escrow security via CineVenue Milestone Escrow.",
+    pitchDeckUrl: "https://cinevenue.com/proposals/firefly-kshatriya-deck.pdf",
+    status: "Under Review",
+    revisions: [],
+    currentRevisionNumber: 1,
+    createdAt: "2026-09-03",
+    updatedAt: "2026-09-06",
+    expiryDate: "2026-10-15"
+  },
+  {
+    id: "prop-102",
+    projectId: "proj-2",
+    projectTitle: "The Golden Veena",
+    type: "Music & Sound Design",
+    title: "Original Score, Classical Fusion Master & Dolby Atmos Sound Design",
+    senderId: "user-music-1",
+    senderName: "Anirudh Shanker Sound Labs",
+    senderEmail: "anirudh.sound@cinevenue.com",
+    senderRole: "HOD / Crew",
+    senderCompany: "Waveform Studios Chennai",
+    recipientId: "user-prod-2",
+    recipientName: "Meera Krishnan",
+    recipientEmail: "films@suryacreations.com",
+    recipientRole: "Director",
+    recipientCompany: "Surya Dreamscapes Media",
+    introduction: "We propose composing 5 original classical-fusion master songs and the entire background score featuring live orchestral strings from Budapest and authentic South Indian acoustic instruments recorded at 96kHz/24bit.",
+    projectDescription: "Original songs composition, background score orchestration, Foley, dialogue cleanup, and 7.1.4 Dolby Atmos final theatrical print master.",
+    scopeOfWork: [
+      "5 Original Songs (Composition, Lyric Coordination, Arrangement & Vocals)",
+      "Live Orchestra recording sessions for Background Score",
+      "Complete Foley & Sound Effects design",
+      "Dolby Atmos Theatrical Print Master at Certified Studio"
+    ],
+    deliverables: [
+      "5 Mastered Songs in Stereo and Dolby Atmos Stems",
+      "Full BGM Cue Sheet and Synchronized Audio Stems",
+      "Theatrical Dolby Atmos Print Master"
+    ],
+    timelineWeeks: 14,
+    proposedStartDate: "2026-10-15",
+    proposedCompletionDate: "2027-01-20",
+    budgetTotal: 4500000,
+    currency: "INR",
+    paymentMilestones: [
+      { title: "Song Scratches Approval", percentage: 30, amount: 1350000, deliverable: "5 Approved Rough Melodic Compositions" },
+      { title: "Live Recording & Final Song Masters", percentage: 40, amount: 1800000, deliverable: "5 Master Tracks delivered to edit room" },
+      { title: "Final BGM & Atmos Mix Sign-off", percentage: 30, amount: 1350000, deliverable: "Theatrical Atmos Audio Master signed off" }
+    ],
+    termsAndConditions: "Publishing rights shared as per standard Indian copyright compliance. Mechanical and streaming sync licenses included.",
+    status: "Accepted",
+    revisions: [],
+    currentRevisionNumber: 1,
+    acceptedAt: "2026-09-07",
+    acceptedBySignature: "Meera Krishnan (Director) & Surya Dreamscapes",
+    createdAt: "2026-09-02",
+    updatedAt: "2026-09-07"
+  },
+  {
+    id: "prop-103",
+    projectId: "proj-3",
+    projectTitle: "Dharavi Beat 808",
+    type: "Theatrical / OTT Distribution",
+    title: "Worldwide Digital OTT Co-Financing & Tier-1 Theatrical Release Pitch",
+    senderId: "user-dist-1",
+    senderName: "Apex Pan-India Film Distribution",
+    senderEmail: "distribution@apexfilms.in",
+    senderRole: "Studio",
+    senderCompany: "Apex Cinemas Group",
+    recipientId: "user-prod-3",
+    recipientName: "Kabir Mehta",
+    recipientEmail: "filmmaker@cinevenue.com",
+    recipientRole: "Producer",
+    introduction: "Apex Cinemas proposes minimum guarantee co-financing and pan-India theatrical release across 400+ screens followed by exclusive Tier-1 OTT licensing.",
+    projectDescription: "Strategic co-financing and distributor representation for festival circuit and commercial release.",
+    scopeOfWork: [
+      "Minimum Guarantee advance against OTT streaming license",
+      "Pan-India theatrical booking in 400 multiplex screens",
+      "Comprehensive Digital PR and Influencer Marketing campaign"
+    ],
+    deliverables: [
+      "Theatrical release commitment agreement",
+      "OTT co-licensing contract with leading streaming network",
+      "₹2.5 Cr Minimum Guarantee Advance Escrow"
+    ],
+    timelineWeeks: 20,
+    proposedStartDate: "2026-11-01",
+    proposedCompletionDate: "2027-04-15",
+    budgetTotal: 25000000,
+    currency: "INR",
+    paymentMilestones: [
+      { title: "Agreement Execution", percentage: 40, amount: 10000000, deliverable: "Signed Distribution Contract" },
+      { title: "Rough Cut Screening", percentage: 30, amount: 7500000, deliverable: "Producer screening sign-off" },
+      { title: "Censor Clearance & KDM Delivery", percentage: 30, amount: 7500000, deliverable: "CBFC Certificate & DCP Delivery" }
+    ],
+    termsAndConditions: "Standard distribution commission of 15% on box-office net share. Overseas rights retained by producer.",
+    status: "Changes Requested",
+    reviewNotes: "Producer requested adjustment to box-office commission from 15% down to 12% and release screen count increase to 500+.",
+    revisions: [
+      {
+        revisionNumber: 1,
+        revisedBy: "Kabir Mehta",
+        revisedAt: "2026-09-06",
+        changeSummary: "Requested 12% commission and 500 screens guarantee",
+        proposedBudget: "₹2.75 Cr MG",
+        notes: "Awaiting revised terms from Apex Cinemas"
+      }
+    ],
+    currentRevisionNumber: 2,
+    createdAt: "2026-09-04",
+    updatedAt: "2026-09-07",
+    expiryDate: "2026-10-30"
+  }
+];
+

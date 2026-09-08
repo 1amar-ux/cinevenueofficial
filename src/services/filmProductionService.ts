@@ -15,7 +15,11 @@ import {
   MarketplaceReport,
   ProjectCastMember,
   ProjectCrewMember,
-  ProjectActivityLog
+  ProjectActivityLog,
+  IndianCastingCall,
+  AuditionSubmission,
+  Proposal,
+  ProposalRevision
 } from "../types/filmProductionMarketplace";
 
 import {
@@ -27,7 +31,10 @@ import {
   INITIAL_NEGOTIATIONS,
   INITIAL_HIRES,
   INITIAL_AGREEMENTS,
-  INITIAL_REVIEWS
+  INITIAL_REVIEWS,
+  INITIAL_INDIAN_CASTING_CALLS,
+  INITIAL_AUDITIONS,
+  INITIAL_PROPOSALS
 } from "../data/filmProductionData";
 import { FilmProjectApplication } from "../types/productions";
 import { INITIAL_FILM_APPLICATIONS } from "../data/productionsData";
@@ -46,7 +53,10 @@ const STORAGE_KEYS = {
   COMPANIES: "cv_film_companies",
   REVIEWS: "cv_film_reviews",
   REPORTS: "cv_film_reports",
-  ACTIVITY_LOGS: "cv_film_activity_logs"
+  ACTIVITY_LOGS: "cv_film_activity_logs",
+  INDIAN_CASTING_CALLS: "cv_film_indian_casting_calls",
+  AUDITIONS: "cv_film_auditions",
+  PROPOSALS: "cv_film_proposals"
 };
 
 // Helper for Local Storage with defaults
@@ -1081,3 +1091,459 @@ export const updateReportStatus = (reportId: string, status: MarketplaceReport["
     setStored(STORAGE_KEYS.REPORTS, list);
   }
 };
+
+// ----------------------------------------------------
+// 13. INDIAN CASTING CALLS SERVICE
+// ----------------------------------------------------
+export const getIndianCastingCalls = (filters?: {
+  industry?: string;
+  language?: string;
+  roleCategory?: string;
+  gender?: string;
+  status?: string;
+  search?: string;
+  projectId?: string;
+}): IndianCastingCall[] => {
+  let list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS);
+
+  if (!filters) return list;
+
+  if (filters.projectId) {
+    list = list.filter(c => c.projectId === filters.projectId);
+  }
+
+  if (filters.industry && filters.industry !== "all") {
+    list = list.filter(c => c.industry.toLowerCase().includes(filters.industry!.toLowerCase()));
+  }
+
+  if (filters.language && filters.language !== "all") {
+    list = list.filter(c => c.languages.some(l => l.toLowerCase() === filters.language!.toLowerCase()));
+  }
+
+  if (filters.roleCategory && filters.roleCategory !== "all") {
+    list = list.filter(c => c.roleCategory === filters.roleCategory);
+  }
+
+  if (filters.gender && filters.gender !== "all") {
+    list = list.filter(c => c.gender === filters.gender || c.gender === "Any");
+  }
+
+  if (filters.status && filters.status !== "all") {
+    list = list.filter(c => c.status === filters.status);
+  }
+
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    list = list.filter(c =>
+      c.roleTitle.toLowerCase().includes(q) ||
+      c.characterName.toLowerCase().includes(q) ||
+      c.projectTitle.toLowerCase().includes(q) ||
+      c.companyName.toLowerCase().includes(q) ||
+      c.characterBio.toLowerCase().includes(q) ||
+      c.shootLocation.toLowerCase().includes(q)
+    );
+  }
+
+  return list;
+};
+
+export const getIndianCastingCallById = (id: string): IndianCastingCall | undefined => {
+  const list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS);
+  return list.find(c => c.id === id);
+};
+
+export const saveIndianCastingCall = (call: Partial<IndianCastingCall>): IndianCastingCall => {
+  const list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS);
+  
+  if (call.id) {
+    const index = list.findIndex(c => c.id === call.id);
+    if (index >= 0) {
+      list[index] = { ...list[index], ...call } as IndianCastingCall;
+      setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+      return list[index];
+    }
+  }
+
+  const newCall: IndianCastingCall = {
+    id: `icc-${Date.now()}`,
+    projectId: call.projectId || "proj-1",
+    projectTitle: call.projectTitle || "Untitled Cinema Project",
+    projectBannerUrl: call.projectBannerUrl || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&auto=format&fit=crop&q=80",
+    companyName: call.companyName || "CineVenue Studio Production",
+    directorName: call.directorName || "Director",
+    industry: call.industry || "Tollywood (Telugu)",
+    languages: call.languages || ["Telugu"],
+    roleTitle: call.roleTitle || "Featured Role",
+    roleCategory: call.roleCategory || "Lead Protagonist (Male)",
+    characterName: call.characterName || "Protagonist",
+    ageMin: call.ageMin || 20,
+    ageMax: call.ageMax || 35,
+    gender: call.gender || "Any",
+    physicalAttributes: call.physicalAttributes || {},
+    characterBio: call.characterBio || "",
+    dialogueScriptSnippet: call.dialogueScriptSnippet || "",
+    auditionInstructions: call.auditionInstructions || "Submit self-tape audition.",
+    shootLocation: call.shootLocation || "Hyderabad, India",
+    shootingSchedule: call.shootingSchedule || "30 Days Schedule",
+    remuneration: call.remuneration || "Negotiable as per union guidelines",
+    openingsCount: call.openingsCount || 1,
+    hiredCount: 0,
+    requiresSelfTape: call.requiresSelfTape !== undefined ? call.requiresSelfTape : true,
+    requiresMonologue: call.requiresMonologue !== undefined ? call.requiresMonologue : true,
+    requiresMinorConsent: call.requiresMinorConsent || false,
+    deadline: call.deadline || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+    status: "Open",
+    featured: call.featured || false,
+    postedDate: new Date().toISOString().split("T")[0],
+    submissionsCount: 0,
+    ...call
+  } as IndianCastingCall;
+
+  list.unshift(newCall);
+  setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-casting-calls-updated", { detail: list }));
+  }
+  return newCall;
+};
+
+export const deleteIndianCastingCall = (id: string): void => {
+  const list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS).filter(c => c.id !== id);
+  setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-casting-calls-updated", { detail: list }));
+  }
+};
+
+// ----------------------------------------------------
+// 14. AUDITIONS & SELF-TAPE SUBMISSIONS SERVICE
+// ----------------------------------------------------
+export const getAuditions = (filters?: {
+  castingCallId?: string;
+  applicantEmail?: string;
+  status?: string;
+  projectId?: string;
+}): AuditionSubmission[] => {
+  let list = getStored<AuditionSubmission[]>(STORAGE_KEYS.AUDITIONS, INITIAL_AUDITIONS);
+
+  if (!filters) return list;
+
+  if (filters.castingCallId) {
+    list = list.filter(a => a.castingCallId === filters.castingCallId);
+  }
+
+  if (filters.applicantEmail) {
+    list = list.filter(a => a.applicantEmail.toLowerCase() === filters.applicantEmail!.toLowerCase());
+  }
+
+  if (filters.projectId) {
+    list = list.filter(a => a.projectId === filters.projectId);
+  }
+
+  if (filters.status && filters.status !== "all") {
+    list = list.filter(a => a.status === filters.status);
+  }
+
+  return list;
+};
+
+export const getAuditionById = (id: string): AuditionSubmission | undefined => {
+  const list = getStored<AuditionSubmission[]>(STORAGE_KEYS.AUDITIONS, INITIAL_AUDITIONS);
+  return list.find(a => a.id === id);
+};
+
+export const submitAudition = (audition: Partial<AuditionSubmission>): AuditionSubmission => {
+  const list = getStored<AuditionSubmission[]>(STORAGE_KEYS.AUDITIONS, INITIAL_AUDITIONS);
+
+  const newAudition: AuditionSubmission = {
+    id: `aud-${Date.now()}`,
+    castingCallId: audition.castingCallId || "icc-1",
+    projectId: audition.projectId || "proj-1",
+    projectTitle: audition.projectTitle || "Film Project",
+    characterName: audition.characterName || "Character",
+    roleType: audition.roleType || "Casting Role",
+    applicantId: audition.applicantId || `user-${Date.now()}`,
+    applicantName: audition.applicantName || "Performer",
+    applicantEmail: audition.applicantEmail || "performer@cinevenue.com",
+    applicantPhone: audition.applicantPhone || "+91 99999 88888",
+    applicantAvatar: audition.applicantAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+    age: audition.age || 25,
+    gender: audition.gender || "Female",
+    height: audition.height || "5'6\"",
+    spokenLanguages: audition.spokenLanguages || ["Telugu", "Hindi"],
+    city: audition.city || "Hyderabad",
+    state: audition.state || "Telangana",
+    videoAuditionUrl: audition.videoAuditionUrl || "",
+    monologueScriptUrl: audition.monologueScriptUrl,
+    headshots: audition.headshots || ["https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80"],
+    portfolioLinks: audition.portfolioLinks || [],
+    introVideoUrl: audition.introVideoUrl,
+    experienceSummary: audition.experienceSummary || "Passionate performer with theatre and screen experience.",
+    agencyOrManager: audition.agencyOrManager,
+    hasMinorGuardianConsent: audition.hasMinorGuardianConsent || false,
+    guardianName: audition.guardianName,
+    guardianContact: audition.guardianContact,
+    status: "Submitted",
+    rating: 5,
+    appliedAt: new Date().toISOString().split("T")[0],
+    updatedAt: new Date().toISOString().split("T")[0],
+    ...audition
+  };
+
+  list.unshift(newAudition);
+  setStored(STORAGE_KEYS.AUDITIONS, list);
+
+  // Increment submissions count on casting call
+  const castingCalls = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS);
+  const callIdx = castingCalls.findIndex(c => c.id === newAudition.castingCallId);
+  if (callIdx >= 0) {
+    castingCalls[callIdx].submissionsCount = (castingCalls[callIdx].submissionsCount || 0) + 1;
+    setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, castingCalls);
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-auditions-updated", { detail: list }));
+  }
+  return newAudition;
+};
+
+export const updateAuditionStatus = (
+  id: string,
+  status: AuditionSubmission["status"],
+  details?: {
+    callbackDate?: string;
+    callbackTime?: string;
+    callbackLocationOrLink?: string;
+    directorNotes?: string;
+    rating?: number;
+  }
+): AuditionSubmission | undefined => {
+  const list = getStored<AuditionSubmission[]>(STORAGE_KEYS.AUDITIONS, INITIAL_AUDITIONS);
+  const index = list.findIndex(a => a.id === id);
+  if (index < 0) return undefined;
+
+  list[index].status = status;
+  list[index].updatedAt = new Date().toISOString().split("T")[0];
+  if (details) {
+    if (details.callbackDate !== undefined) list[index].callbackDate = details.callbackDate;
+    if (details.callbackTime !== undefined) list[index].callbackTime = details.callbackTime;
+    if (details.callbackLocationOrLink !== undefined) list[index].callbackLocationOrLink = details.callbackLocationOrLink;
+    if (details.directorNotes !== undefined) list[index].directorNotes = details.directorNotes;
+    if (details.rating !== undefined) list[index].rating = details.rating;
+  }
+
+  setStored(STORAGE_KEYS.AUDITIONS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-auditions-updated", { detail: list }));
+  }
+  return list[index];
+};
+
+export const deleteAudition = (id: string): void => {
+  const list = getStored<AuditionSubmission[]>(STORAGE_KEYS.AUDITIONS, INITIAL_AUDITIONS).filter(a => a.id !== id);
+  setStored(STORAGE_KEYS.AUDITIONS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-auditions-updated", { detail: list }));
+  }
+};
+
+// ----------------------------------------------------
+// 15. PROPOSALS MANAGEMENT SERVICE
+// ----------------------------------------------------
+export const getProposals = (filters?: {
+  userEmail?: string;
+  type?: string;
+  status?: string;
+  projectId?: string;
+  search?: string;
+}): Proposal[] => {
+  let list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+
+  if (!filters) return list;
+
+  if (filters.userEmail) {
+    const email = filters.userEmail.toLowerCase();
+    list = list.filter(p =>
+      p.senderEmail.toLowerCase() === email ||
+      p.recipientEmail.toLowerCase() === email
+    );
+  }
+
+  if (filters.projectId) {
+    list = list.filter(p => p.projectId === filters.projectId);
+  }
+
+  if (filters.type && filters.type !== "all") {
+    list = list.filter(p => p.type === filters.type);
+  }
+
+  if (filters.status && filters.status !== "all") {
+    list = list.filter(p => p.status === filters.status);
+  }
+
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    list = list.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      p.projectTitle.toLowerCase().includes(q) ||
+      p.senderName.toLowerCase().includes(q) ||
+      p.recipientName.toLowerCase().includes(q) ||
+      p.introduction.toLowerCase().includes(q)
+    );
+  }
+
+  return list;
+};
+
+export const getProposalById = (id: string): Proposal | undefined => {
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+  return list.find(p => p.id === id);
+};
+
+export const saveProposal = (proposal: Partial<Proposal>): Proposal => {
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+
+  if (proposal.id) {
+    const index = list.findIndex(p => p.id === proposal.id);
+    if (index >= 0) {
+      list[index] = {
+        ...list[index],
+        ...proposal,
+        updatedAt: new Date().toISOString().split("T")[0]
+      } as Proposal;
+      setStored(STORAGE_KEYS.PROPOSALS, list);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
+      }
+      return list[index];
+    }
+  }
+
+  const newProposal: Proposal = {
+    id: `prop-${Date.now()}`,
+    projectId: proposal.projectId || "proj-1",
+    projectTitle: proposal.projectTitle || "Cinema Project",
+    type: proposal.type || "Film Co-Production",
+    title: proposal.title || "Cinema Production Collaboration Proposal",
+    senderId: proposal.senderId || `user-${Date.now()}`,
+    senderName: proposal.senderName || "Filmmaker / Studio Lead",
+    senderEmail: proposal.senderEmail || "producer@cinevenue.com",
+    senderRole: proposal.senderRole || "Producer",
+    senderAvatar: proposal.senderAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80",
+    senderCompany: proposal.senderCompany || "Production Studio",
+    recipientId: proposal.recipientId,
+    recipientName: proposal.recipientName || "Prospective Partner / Studio",
+    recipientEmail: proposal.recipientEmail || "partner@cinevenue.com",
+    recipientRole: proposal.recipientRole || "Studio / Investor",
+    recipientCompany: proposal.recipientCompany,
+    introduction: proposal.introduction || "",
+    projectDescription: proposal.projectDescription || "",
+    scopeOfWork: proposal.scopeOfWork || [],
+    deliverables: proposal.deliverables || [],
+    timelineWeeks: proposal.timelineWeeks || 12,
+    proposedStartDate: proposal.proposedStartDate || new Date().toISOString().split("T")[0],
+    proposedCompletionDate: proposal.proposedCompletionDate || "",
+    budgetTotal: proposal.budgetTotal || 5000000,
+    currency: proposal.currency || "INR",
+    paymentMilestones: proposal.paymentMilestones || [],
+    termsAndConditions: proposal.termsAndConditions || "Standard film production contract and escrow milestone protection terms apply.",
+    pitchDeckUrl: proposal.pitchDeckUrl,
+    budgetBreakdownUrl: proposal.budgetBreakdownUrl,
+    attachments: proposal.attachments || [],
+    status: proposal.status || "Draft",
+    revisions: [],
+    currentRevisionNumber: 1,
+    createdAt: new Date().toISOString().split("T")[0],
+    updatedAt: new Date().toISOString().split("T")[0],
+    expiryDate: proposal.expiryDate || new Date(Date.now() + 45 * 86400000).toISOString().split("T")[0],
+    ...proposal
+  } as Proposal;
+
+  list.unshift(newProposal);
+  setStored(STORAGE_KEYS.PROPOSALS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
+  }
+  return newProposal;
+};
+
+export const updateProposalStatus = (
+  id: string,
+  status: Proposal["status"],
+  extra?: {
+    reviewNotes?: string;
+    signature?: string;
+    rejectedReason?: string;
+  }
+): Proposal | undefined => {
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+  const index = list.findIndex(p => p.id === id);
+  if (index < 0) return undefined;
+
+  list[index].status = status;
+  list[index].updatedAt = new Date().toISOString().split("T")[0];
+
+  if (extra?.reviewNotes) list[index].reviewNotes = extra.reviewNotes;
+  if (extra?.signature && status === "Accepted") {
+    list[index].acceptedAt = new Date().toISOString().split("T")[0];
+    list[index].acceptedBySignature = extra.signature;
+  }
+  if (extra?.rejectedReason && status === "Rejected") {
+    list[index].rejectedReason = extra.rejectedReason;
+  }
+
+  setStored(STORAGE_KEYS.PROPOSALS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
+  }
+  return list[index];
+};
+
+export const addProposalRevision = (
+  proposalId: string,
+  revision: {
+    revisedBy: string;
+    changeSummary: string;
+    proposedBudget?: string;
+    notes?: string;
+    updatedData?: Partial<Proposal>;
+  }
+): Proposal | undefined => {
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+  const index = list.findIndex(p => p.id === proposalId);
+  if (index < 0) return undefined;
+
+  const currentRevNum = (list[index].currentRevisionNumber || 1) + 1;
+  const newRev: ProposalRevision = {
+    revisionNumber: currentRevNum,
+    revisedBy: revision.revisedBy,
+    revisedAt: new Date().toISOString().split("T")[0],
+    changeSummary: revision.changeSummary,
+    proposedBudget: revision.proposedBudget,
+    notes: revision.notes
+  };
+
+  list[index].revisions = [...(list[index].revisions || []), newRev];
+  list[index].currentRevisionNumber = currentRevNum;
+  list[index].status = "Changes Requested";
+  list[index].updatedAt = new Date().toISOString().split("T")[0];
+
+  if (revision.updatedData) {
+    list[index] = { ...list[index], ...revision.updatedData };
+  }
+
+  setStored(STORAGE_KEYS.PROPOSALS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
+  }
+  return list[index];
+};
+
+export const deleteProposal = (id: string): void => {
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS).filter(p => p.id !== id);
+  setStored(STORAGE_KEYS.PROPOSALS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
+  }
+};
+

@@ -489,3 +489,195 @@ export interface MarketplaceNotification {
   isRead: boolean;
   createdAt: string;
 }
+
+// ----------------------------------------------------
+// 13. INDIAN CASTING CALLS & AUDITIONS SYSTEM
+// ----------------------------------------------------
+export type IndianFilmIndustry =
+  | "Tollywood (Telugu)"
+  | "Bollywood (Hindi)"
+  | "Kollywood (Tamil)"
+  | "Mollywood (Malayalam)"
+  | "Sandalwood (Kannada)"
+  | "Punjabi Cinema"
+  | "Bengali Cinema"
+  | "Marathi Cinema"
+  | "Bhojpuri Cinema"
+  | "Gujarati Cinema"
+  | "Pan-India"
+  | "Independent / OTT";
+
+export type CastingRoleCategory =
+  | "Lead Protagonist (Male)"
+  | "Lead Protagonist (Female)"
+  | "Antagonist / Negative Role"
+  | "Parallel Lead"
+  | "Supporting Character"
+  | "Character Artist"
+  | "Child Artist / Minor"
+  | "Comedian"
+  | "Cameo / Special Appearance"
+  | "Voice / Dubbing Talent"
+  | "Action / Stunt Double"
+  | "Background / Junior Artist";
+
+export interface AuditionSubmission {
+  id: string;
+  castingCallId: string;
+  projectId: string;
+  projectTitle: string;
+  characterName: string;
+  roleType: string;
+  applicantId: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantAvatar?: string;
+  applicantPhone?: string;
+  age: number;
+  gender: "Male" | "Female" | "Non-Binary" | "Other";
+  height?: string;
+  spokenLanguages: string[];
+  city: string;
+  state?: string;
+  videoAuditionUrl?: string; // YouTube/Vimeo/Cloudinary link
+  monologueScriptUrl?: string;
+  headshots: string[];
+  portfolioLinks?: string[];
+  introVideoUrl?: string;
+  experienceSummary: string;
+  agencyOrManager?: string;
+  hasMinorGuardianConsent?: boolean;
+  guardianName?: string;
+  guardianContact?: string;
+  status: "Submitted" | "Screened" | "Shortlisted" | "Callback Scheduled" | "Selected" | "Rejected";
+  callbackDate?: string;
+  callbackTime?: string;
+  callbackLocationOrLink?: string;
+  directorNotes?: string;
+  rating?: number; // 1-5 stars
+  appliedAt: string;
+  updatedAt: string;
+}
+
+export interface IndianCastingCall {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  projectBannerUrl?: string;
+  companyName: string;
+  directorName: string;
+  industry: IndianFilmIndustry;
+  languages: string[];
+  roleTitle: string;
+  roleCategory: CastingRoleCategory;
+  characterName: string;
+  ageMin: number;
+  ageMax: number;
+  gender: "Male" | "Female" | "Any";
+  physicalAttributes?: {
+    height?: string;
+    bodyType?: string;
+    lookAndStyle?: string;
+    distinctFeatures?: string;
+  };
+  characterBio: string;
+  dialogueScriptSnippet?: string;
+  auditionInstructions: string;
+  shootLocation: string;
+  shootingSchedule: string;
+  remuneration: string;
+  openingsCount: number;
+  hiredCount: number;
+  requiresSelfTape: boolean;
+  requiresMonologue: boolean;
+  requiresMinorConsent: boolean;
+  deadline: string;
+  status: "Open" | "Reviewing" | "Callbacks" | "Closed";
+  featured: boolean;
+  postedDate: string;
+  submissionsCount?: number;
+}
+
+// ----------------------------------------------------
+// 14. PROPOSALS MANAGEMENT SYSTEM
+// ----------------------------------------------------
+export type ProposalType =
+  | "Film Co-Production"
+  | "Investor & Financing Pitch"
+  | "HOD Crew Services"
+  | "VFX & CGI Services"
+  | "Music & Sound Design"
+  | "Camera & Equipment Rental"
+  | "Post-Production Suite"
+  | "Theatrical / OTT Distribution"
+  | "Brand Placement / In-Film";
+
+export type ProposalStatus =
+  | "Draft"
+  | "Sent"
+  | "Under Review"
+  | "Changes Requested"
+  | "Accepted"
+  | "Rejected"
+  | "Withdrawn";
+
+export interface ProposalRevision {
+  revisionNumber: number;
+  revisedBy: string;
+  revisedAt: string;
+  changeSummary: string;
+  proposedBudget?: string;
+  notes?: string;
+}
+
+export interface ProposalMilestone {
+  title: string;
+  percentage: number;
+  amount: number;
+  deliverable: string;
+  estimatedDate?: string;
+}
+
+export interface Proposal {
+  id: string;
+  projectId?: string;
+  projectTitle: string;
+  type: ProposalType;
+  title: string;
+  senderId: string;
+  senderName: string;
+  senderEmail: string;
+  senderRole: "Producer" | "Director" | "HOD / Crew" | "Studio" | "Investor" | "Vendor";
+  senderAvatar?: string;
+  senderCompany?: string;
+  recipientId?: string;
+  recipientName: string;
+  recipientEmail: string;
+  recipientRole?: string;
+  recipientCompany?: string;
+  introduction: string;
+  projectDescription: string;
+  scopeOfWork: string[];
+  deliverables: string[];
+  timelineWeeks: number;
+  proposedStartDate: string;
+  proposedCompletionDate: string;
+  budgetTotal: number;
+  currency: "INR" | "USD";
+  paymentMilestones: ProposalMilestone[];
+  termsAndConditions: string;
+  pitchDeckUrl?: string;
+  budgetBreakdownUrl?: string;
+  attachments?: { name: string; url: string; size?: string }[];
+  status: ProposalStatus;
+  revisions: ProposalRevision[];
+  currentRevisionNumber: number;
+  reviewNotes?: string;
+  acceptedAt?: string;
+  acceptedBySignature?: string;
+  rejectedReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  expiryDate?: string;
+}
+

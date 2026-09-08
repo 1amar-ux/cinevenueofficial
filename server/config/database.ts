@@ -48,13 +48,21 @@ function initPrismaClient(): PrismaClient {
 
 export const prisma = initPrismaClient();
 
+let dbConnectedState = false;
+
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
     // Perform a lightweight query to verify connectivity
     await prisma.$queryRaw`SELECT 1`;
+    dbConnectedState = true;
     return true;
   } catch (error: any) {
     logger.warn(`Database connection check returned an alert: ${error.message}`);
+    dbConnectedState = false;
     return false;
   }
+}
+
+export function isDatabaseConnected(): boolean {
+  return dbConnectedState;
 }

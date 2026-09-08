@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../config/database";
+import { prisma, isDatabaseConnected } from "../config/database";
 import { logger } from "../shared/logger";
 
 export interface CachedMaintenanceState {
@@ -105,6 +105,22 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
   }
 
   const fileSettings = readPersistedFileSettings();
+
+  if (!isDatabaseConnected()) {
+    cachedState = {
+      maintenanceMode: fileSettings.maintenanceMode === true,
+      maintenanceTitle: fileSettings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
+      maintenanceMessage: fileSettings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+      maintenanceCountdownEnabled: !!fileSettings.maintenanceCountdownEnabled,
+      maintenanceEndTime: fileSettings.maintenanceEndTime || null,
+      globalSubwebsiteEnabled: fileSettings.globalSubwebsiteEnabled !== false,
+      subwebsiteMaintenanceMessage: fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+      serviceControls: fileSettings.serviceControls || {},
+      updatedAt: fileSettings.updatedAt || new Date().toISOString(),
+      cachedAt: now
+    };
+    return cachedState;
+  }
 
   try {
     const dbPromise = prisma.appSettings.findUnique({

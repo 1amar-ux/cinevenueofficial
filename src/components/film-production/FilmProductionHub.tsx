@@ -7,7 +7,10 @@ import {
   JobApplication, 
   ProjectNegotiation, 
   DigitalAgreement, 
-  ProductionCompany 
+  ProductionCompany,
+  IndianCastingCall,
+  AuditionSubmission,
+  Proposal
 } from "../../types/filmProductionMarketplace";
 
 import { 
@@ -20,7 +23,11 @@ import {
   getOrCreateNegotiation, 
   getProfessionalById,
   getProfessionalByEmail,
-  getAgreements
+  getAgreements,
+  getIndianCastingCalls,
+  getAuditions,
+  getProposals,
+  getApplications
 } from "../../services/filmProductionService";
 
 import FilmProductionSidebar from "./FilmProductionSidebar";
@@ -32,6 +39,14 @@ import BrowseProjectsView from "./BrowseProjectsView";
 import ProjectDetailsModal from "./ProjectDetailsModal";
 import JobApplicationModal from "./JobApplicationModal";
 import CastingCallsView from "./CastingCallsView";
+import IndianCastingCallsView from "./IndianCastingCallsView";
+import AuditionsView from "./AuditionsView";
+import ProposalsView from "./ProposalsView";
+import MyApplicationsView from "./MyApplicationsView";
+import AuditionSubmissionModal from "./AuditionSubmissionModal";
+import CreateCastingCallModal from "./CreateCastingCallModal";
+import CreateProposalModal from "./CreateProposalModal";
+import ProposalDetailsModal from "./ProposalDetailsModal";
 import CrewJobsView from "./CrewJobsView";
 import MyProjectsDashboardView from "./MyProjectsDashboardView";
 import InviteProfessionalModal from "./InviteProfessionalModal";
@@ -69,6 +84,10 @@ export default function FilmProductionHub({
   const [companies, setCompanies] = useState<ProductionCompany[]>(() => getCompanies());
   const [negotiations, setNegotiations] = useState<ProjectNegotiation[]>(() => getNegotiations(userEmail || undefined));
   const [agreements, setAgreements] = useState<DigitalAgreement[]>(() => getAgreements(userEmail || undefined));
+  const [indianCastingCalls, setIndianCastingCalls] = useState<IndianCastingCall[]>(() => getIndianCastingCalls());
+  const [auditions, setAuditions] = useState<AuditionSubmission[]>(() => getAuditions());
+  const [proposals, setProposals] = useState<Proposal[]>(() => getProposals());
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>(() => getApplications());
 
   // Selected filters across views
   const [selectedCraftId, setSelectedCraftId] = useState<string>("all");
@@ -95,6 +114,16 @@ export default function FilmProductionHub({
 
   const [isMyProfileEditorOpen, setIsMyProfileEditorOpen] = useState(false);
 
+  // Casting & Auditions modal state
+  const [selectedCallForAudition, setSelectedCallForAudition] = useState<IndianCastingCall | null>(null);
+  const [isSubmitAuditionModalOpen, setIsSubmitAuditionModalOpen] = useState(false);
+  const [isCreateCastingCallModalOpen, setIsCreateCastingCallModalOpen] = useState(false);
+
+  // Proposal modal state
+  const [isCreateProposalModalOpen, setIsCreateProposalModalOpen] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [isProposalDetailsModalOpen, setIsProposalDetailsModalOpen] = useState(false);
+
   const refreshAllData = () => {
     setCrafts(getCrafts());
     setProfessionals(getProfessionals());
@@ -103,6 +132,10 @@ export default function FilmProductionHub({
     setCompanies(getCompanies());
     setNegotiations(getNegotiations(userEmail || undefined));
     setAgreements(getAgreements(userEmail || undefined));
+    setIndianCastingCalls(getIndianCastingCalls());
+    setAuditions(getAuditions());
+    setProposals(getProposals());
+    setJobApplications(getApplications());
   };
 
   // Logged-in user's profile
@@ -160,15 +193,19 @@ export default function FilmProductionHub({
   // Get active tab title helper
   const getTabTitle = () => {
     switch (activeTab) {
-      case "overview": return "Overview & Highlights";
-      case "professionals": return "Talent Hub (24 Crafts Directory)";
+      case "overview": return "Production Home & 24 Crafts Hub";
+      case "professionals": return "Talent & Professionals (24 Crafts)";
       case "projects": return "Film Projects & Slate";
-      case "casting": return "Casting Calls & Auditions";
-      case "jobs": return "Crew & Department Openings";
-      case "companies": return "Studios & Production Houses";
-      case "my-projects": return "Filmmaker Studio & ATS";
+      case "casting": return "Indian Casting Calls & Screen Tests";
+      case "auditions": return "Auditions Desk & Callbacks";
+      case "jobs": return "Jobs & Crew Openings";
+      case "companies": return "Studios & Production Companies";
+      case "my-projects": return "My Projects (ATS & Slates)";
+      case "proposals": return "Production Proposals & Deal Memos";
       case "agreements": return "Digital Agreements & Milestone Escrow";
-      case "messages": return "Negotiations & Offers Inbox";
+      case "messages": return "Messages & Negotiations";
+      case "my-applications": return "My Applications & Auditions";
+      case "my-profile": return "My Professional Profile";
       case "admin": return "24 Crafts Admin Control Center";
       default: return "Film Production Hub";
     }
@@ -191,6 +228,15 @@ export default function FilmProductionHub({
         negotiationsCount={negotiations.length}
         myProjectsCount={projects.length}
         agreementsCount={agreements.length}
+        castingCallsCount={indianCastingCalls.length}
+        auditionsCount={auditions.length}
+        proposalsCount={proposals.length}
+        myApplicationsCount={
+          userEmail 
+            ? auditions.filter(a => a.applicantEmail.toLowerCase() === userEmail.toLowerCase()).length +
+              jobApplications.filter(j => j.applicantEmail.toLowerCase() === userEmail.toLowerCase()).length
+            : auditions.length + jobApplications.length
+        }
         isOpenMobile={isMobileSidebarOpen}
         setIsOpenMobile={setIsMobileSidebarOpen}
       />
@@ -439,14 +485,32 @@ export default function FilmProductionHub({
           )}
 
           {/* ======================================================== */}
-          {/* 4. CASTING CALLS BOARD */}
+          {/* 4. INDIAN CASTING CALLS & SCREEN TESTS */}
           {/* ======================================================== */}
           {activeTab === "casting" && (
             <div className="max-w-7xl mx-auto">
-              <CastingCallsView
-                requirements={requirements}
+              <IndianCastingCallsView
+                castingCalls={indianCastingCalls}
                 projects={projects}
-                onApply={handleApplyToRequirement}
+                onOpenSubmitAudition={(call) => {
+                  setSelectedCallForAudition(call);
+                  setIsSubmitAuditionModalOpen(true);
+                }}
+                onOpenCreateCall={() => setIsCreateCastingCallModalOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 4B. AUDITION SCREENING & REVIEW DESK */}
+          {/* ======================================================== */}
+          {activeTab === "auditions" && (
+            <div className="max-w-7xl mx-auto">
+              <AuditionsView
+                auditions={auditions}
+                castingCalls={indianCastingCalls}
+                userEmail={userEmail}
+                onAuditionsUpdated={refreshAllData}
               />
             </div>
           )}
@@ -493,6 +557,23 @@ export default function FilmProductionHub({
                 onRefreshProjects={refreshAllData}
                 onOpenNegotiation={handleOpenNegotiationById}
                 onOpenProfessionalProfile={handleOpenProfessionalProfile}
+              />
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 7B. PRODUCTION PROPOSALS & DEAL MEMOS */}
+          {/* ======================================================== */}
+          {activeTab === "proposals" && (
+            <div className="max-w-7xl mx-auto">
+              <ProposalsView
+                proposals={proposals}
+                userEmail={userEmail}
+                onOpenCreateProposal={() => setIsCreateProposalModalOpen(true)}
+                onSelectProposal={(prop) => {
+                  setSelectedProposal(prop);
+                  setIsProposalDetailsModalOpen(true);
+                }}
               />
             </div>
           )}
@@ -657,6 +738,21 @@ export default function FilmProductionHub({
           )}
 
           {/* ======================================================== */}
+          {/* 9B. MY APPLICATIONS & AUDITIONS TRACKER */}
+          {/* ======================================================== */}
+          {activeTab === "my-applications" && (
+            <div className="max-w-7xl mx-auto">
+              <MyApplicationsView
+                auditions={auditions}
+                jobApplications={jobApplications}
+                userEmail={userEmail}
+                onSelectAudition={() => setActiveTab("auditions")}
+                onSelectJobApp={() => setActiveTab("jobs")}
+              />
+            </div>
+          )}
+
+          {/* ======================================================== */}
           {/* 10. 24 CRAFTS ADMIN CONTROL CENTER */}
           {/* ======================================================== */}
           {activeTab === "admin" && (
@@ -672,6 +768,50 @@ export default function FilmProductionHub({
       {/* ======================================================== */}
       {/* MODALS */}
       {/* ======================================================== */}
+
+      {/* Indian Casting Call Audition Submission Modal */}
+      <AuditionSubmissionModal
+        isOpen={isSubmitAuditionModalOpen}
+        onClose={() => setIsSubmitAuditionModalOpen(false)}
+        castingCall={selectedCallForAudition}
+        userEmail={userEmail}
+        onAuditionSubmitted={() => {
+          refreshAllData();
+        }}
+      />
+
+      {/* Post Indian Casting Call Modal */}
+      <CreateCastingCallModal
+        isOpen={isCreateCastingCallModalOpen}
+        onClose={() => setIsCreateCastingCallModalOpen(false)}
+        projects={projects}
+        userEmail={userEmail}
+        onCastingCallCreated={() => {
+          refreshAllData();
+        }}
+      />
+
+      {/* Create Production Proposal Modal */}
+      <CreateProposalModal
+        isOpen={isCreateProposalModalOpen}
+        onClose={() => setIsCreateProposalModalOpen(false)}
+        projects={projects}
+        userEmail={userEmail}
+        onProposalCreated={() => {
+          refreshAllData();
+        }}
+      />
+
+      {/* Proposal Details & Execution Modal */}
+      <ProposalDetailsModal
+        isOpen={isProposalDetailsModalOpen}
+        onClose={() => setIsProposalDetailsModalOpen(false)}
+        proposal={selectedProposal}
+        userEmail={userEmail}
+        onProposalUpdated={() => {
+          refreshAllData();
+        }}
+      />
 
       {/* Professional Profile Deep-Dive Modal */}
       <ProfessionalProfileModal

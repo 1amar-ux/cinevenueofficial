@@ -4,7 +4,7 @@ import {
   User, Building2, Briefcase, Users, Clapperboard, Award,
   CheckCircle2, ArrowRight, ShieldCheck, ChevronRight,
   LayoutDashboard, FileText, FolderKanban, UserCheck, 
-  ArrowLeft, X, Menu, Shield, ExternalLink
+  ArrowLeft, X, Menu, Shield, ExternalLink, Video
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
 
@@ -19,6 +19,10 @@ interface FilmProductionSidebarProps {
   negotiationsCount?: number;
   myProjectsCount?: number;
   agreementsCount?: number;
+  castingCallsCount?: number;
+  auditionsCount?: number;
+  proposalsCount?: number;
+  myApplicationsCount?: number;
   isOpenMobile: boolean;
   setIsOpenMobile: (open: boolean) => void;
 }
@@ -34,6 +38,10 @@ export default function FilmProductionSidebar({
   negotiationsCount = 0,
   myProjectsCount = 0,
   agreementsCount = 0,
+  castingCallsCount = 0,
+  auditionsCount = 0,
+  proposalsCount = 0,
+  myApplicationsCount = 0,
   isOpenMobile,
   setIsOpenMobile
 }: FilmProductionSidebarProps) {
@@ -55,12 +63,26 @@ export default function FilmProductionSidebar({
     {
       title: "PRODUCTION & TALENT HUB",
       items: [
-        { id: "overview", label: "Overview", icon: LayoutDashboard, desc: "Highlights & 24 Crafts" },
-        { id: "professionals", label: "Talent Hub (24 Crafts)", icon: Users, desc: "Actors & Crew Directory", highlight: true },
-        { id: "projects", label: "Film Projects & Slate", icon: Film, desc: "Active Feature & Short Films" },
-        { id: "casting", label: "Casting Calls", icon: Award, desc: "Lead, Character & Auditions" },
-        { id: "jobs", label: "Crew Openings", icon: Briefcase, desc: "Technical & Craft Jobs" },
-        { id: "companies", label: "Studios & Banners", icon: Building2, desc: "Production Houses" },
+        { id: "overview", label: "Production Home", icon: LayoutDashboard, desc: "Highlights & 24 Crafts Hub" },
+        { id: "projects", label: "Projects", icon: Film, desc: "Active Feature & Short Films" },
+        { id: "professionals", label: "Talent & Professionals", icon: Users, desc: "Actors, HODs & 24 Crafts", highlight: true },
+        { 
+          id: "casting", 
+          label: "Indian Casting Calls", 
+          icon: Award, 
+          desc: "Lead, Character & Auditions",
+          badge: castingCallsCount > 0 ? castingCallsCount : undefined,
+          highlight: true 
+        },
+        { 
+          id: "auditions", 
+          label: "Auditions", 
+          icon: Video, 
+          desc: "Self-tapes & Screen Tests",
+          badge: auditionsCount > 0 ? auditionsCount : undefined
+        },
+        { id: "jobs", label: "Jobs & Crew", icon: Briefcase, desc: "Technical & Craft Openings" },
+        { id: "companies", label: "Production Companies", icon: Building2, desc: "Studios & Production Banners" },
       ]
     },
     {
@@ -68,39 +90,54 @@ export default function FilmProductionSidebar({
       items: [
         { 
           id: "my-projects", 
-          label: "My Projects & ATS", 
+          label: "My Projects", 
           icon: FolderKanban, 
           badge: myProjectsCount > 0 ? myProjectsCount : undefined,
-          desc: "Applicant Tracking System"
+          desc: "Applicant Tracking System (ATS)"
         },
         { 
           id: "create-project", 
-          label: "Create Film Project", 
+          label: "Create Project", 
           icon: PlusCircle, 
           desc: "Post Auditions & Crew Needs",
           actionBtn: true
         },
         { 
+          id: "proposals", 
+          label: "Proposals", 
+          icon: FileText, 
+          badge: proposalsCount > 0 ? proposalsCount : undefined,
+          desc: "Pitches, VFX, Music & Deals",
+          highlight: true
+        },
+        { 
           id: "agreements", 
           label: "Digital Agreements", 
-          icon: FileText, 
+          icon: ShieldCheck, 
           badge: agreementsCount > 0 ? agreementsCount : undefined,
           desc: "Deal Memos & Milestone Escrow"
         },
         { 
           id: "messages", 
-          label: "Offers & Negotiations", 
+          label: "Messages", 
           icon: MessageSquare, 
           badge: negotiationsCount > 0 ? negotiationsCount : undefined,
-          desc: "Contract Rooms & Chat"
+          desc: "Contract Rooms & Live Negotiations"
         },
       ]
     },
     {
       title: "TALENT & ACCESS",
       items: [
-        { id: "my-profile", label: "Talent Portfolio", icon: UserCheck, desc: "Manage Crafts, Reels & Rates" },
-        { id: "admin", label: "24 Crafts Admin", icon: ShieldCheck, desc: "Studio & Crafts Management" },
+        { 
+          id: "my-applications", 
+          label: "My Applications", 
+          icon: Clapperboard, 
+          badge: myApplicationsCount > 0 ? myApplicationsCount : undefined,
+          desc: "Auditions & Applied Roles" 
+        },
+        { id: "my-profile", label: "My Professional Profile", icon: UserCheck, desc: "Manage Crafts, Reels & Rates" },
+        { id: "admin", label: "24 Crafts Admin", icon: Shield, desc: "Studio & Crafts Management" },
       ]
     }
   ];

@@ -5,7 +5,9 @@ import {
   ProfessionalProfile, 
   JobApplication, 
   DigitalAgreement, 
-  MarketplaceReport 
+  MarketplaceReport,
+  IndianCastingCall,
+  Proposal
 } from "../../types/filmProductionMarketplace";
 import { 
   Layers, Film, Users, ShieldCheck, FileText, 
@@ -27,7 +29,11 @@ import {
   updateApplicationStatus,
   getAgreements, 
   getReports, 
-  updateReportStatus 
+  updateReportStatus,
+  getIndianCastingCalls,
+  deleteIndianCastingCall,
+  getProposals,
+  deleteProposal
 } from "../../services/filmProductionService";
 
 interface CineVenueFilmAdminTabProps {
@@ -39,7 +45,9 @@ export default function CineVenueFilmAdminTab({
   onOpenSubWebsite,
   onOpenProposals
 }: CineVenueFilmAdminTabProps) {
-  const [adminSubTab, setAdminSubTab] = useState<"crafts" | "projects" | "professionals" | "applications" | "contracts" | "reports" | "analytics">("crafts");
+  const [adminSubTab, setAdminSubTab] = useState<
+    "crafts" | "projects" | "professionals" | "applications" | "casting-calls" | "proposals" | "contracts" | "reports" | "analytics"
+  >("applications");
 
   // State
   const [craftsList, setCraftsList] = useState<FilmCraft[]>(() => getCrafts());
@@ -48,6 +56,8 @@ export default function CineVenueFilmAdminTab({
   const [applicationsList, setApplicationsList] = useState<JobApplication[]>(() => getApplications());
   const [agreementsList, setAgreementsList] = useState<DigitalAgreement[]>(() => getAgreements());
   const [reportsList, setReportsList] = useState<MarketplaceReport[]>(() => getReports());
+  const [castingCallsList, setCastingCallsList] = useState<IndianCastingCall[]>(() => getIndianCastingCalls());
+  const [proposalsList, setProposalsList] = useState<Proposal[]>(() => getProposals());
 
   const [searchQuery, setSearchQuery] = useState("");
   const [appStatusFilter, setAppStatusFilter] = useState<string>("ALL");
@@ -68,6 +78,8 @@ export default function CineVenueFilmAdminTab({
     setApplicationsList(getApplications());
     setAgreementsList(getAgreements());
     setReportsList(getReports());
+    setCastingCallsList(getIndianCastingCalls());
+    setProposalsList(getProposals());
   };
 
   useEffect(() => {
@@ -240,6 +252,8 @@ export default function CineVenueFilmAdminTab({
       <div className="flex items-center gap-2 border-b border-white/10 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
         {[
           { id: "applications", label: `Applications & Auditions ATS (${applicationsList.length})`, icon: FileText, badge: "Live" },
+          { id: "casting-calls", label: `Indian Casting Calls (${castingCallsList.length})`, icon: Award },
+          { id: "proposals", label: `Proposals Ledger (${proposalsList.length})`, icon: FileCheck },
           { id: "crafts", label: `24 Crafts System (${craftsList.length})`, icon: Layers },
           { id: "projects", label: `Film Slate Moderation (${projectsList.length})`, icon: Film },
           { id: "professionals", label: `Talent Verification (${professionalsList.length})`, icon: Users },
