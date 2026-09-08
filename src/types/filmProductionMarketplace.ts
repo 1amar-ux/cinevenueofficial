@@ -105,11 +105,28 @@ export interface ProfessionalProfile {
 }
 
 export type ProductionStage = 
+  | "Idea"
   | "Development" 
-  | "Pre-production" 
+  | "Pre-Production" 
   | "Production" 
-  | "Post-production" 
-  | "Completed";
+  | "Post-Production" 
+  | "Completed"
+  | "Released"
+  | "Pre-production" 
+  | "Post-production";
+
+export type ProjectStatus = 
+  | "Idea" 
+  | "Development" 
+  | "Pre-Production" 
+  | "Production" 
+  | "Post-Production" 
+  | "Completed" 
+  | "Released"
+  | "Active" 
+  | "Draft" 
+  | "In Production" 
+  | "Archived";
 
 export type ProjectType = 
   | "Feature Film" 
@@ -182,7 +199,8 @@ export interface FilmProject {
   bannerUrl: string;
   description: string;
   synopsis: string;
-  status: "Active" | "Draft" | "In Production" | "Completed" | "Archived";
+  status: ProjectStatus;
+  projectDocuments?: string[];
   isFeatured?: boolean;
   requirements: FilmProjectRequirement[];
   castMembers: ProjectCastMember[];
@@ -507,7 +525,55 @@ export type IndianFilmIndustry =
   | "Pan-India"
   | "Independent / OTT";
 
+export const REQUIRED_ACTOR_ROLES = [
+  "Lead Actor",
+  "Lead Actress",
+  "Supporting Actor",
+  "Supporting Actress",
+  "Character Artist",
+  "Child Artist",
+  "Senior Artist",
+  "Voice Artist",
+  "Dancer",
+  "Model",
+  "Other Performer"
+] as const;
+
+export type RequiredActorRole = typeof REQUIRED_ACTOR_ROLES[number];
+
+export const REQUIRED_CREW_ROLES = [
+  "Director",
+  "Assistant Director",
+  "Writer",
+  "DOP/Cinematographer",
+  "Editor",
+  "Music Director",
+  "Lyricist",
+  "Singer",
+  "Choreographer",
+  "Art Director",
+  "Production Designer",
+  "Costume Designer",
+  "Makeup Artist",
+  "Hair & Styling",
+  "Sound Engineer",
+  "Sound Designer",
+  "VFX Artist",
+  "DI/Colorist",
+  "Stunt/Action",
+  "Poster/Graphic Designer",
+  "Photographer",
+  "Production Manager",
+  "Production Assistant",
+  "Other Crew"
+] as const;
+
+export type RequiredCrewRole = typeof REQUIRED_CREW_ROLES[number];
+
 export type CastingRoleCategory =
+  | RequiredActorRole
+  | RequiredCrewRole
+  | "Other Required Professional"
   | "Lead Protagonist (Male)"
   | "Lead Protagonist (Female)"
   | "Antagonist / Negative Role"
@@ -520,6 +586,14 @@ export type CastingRoleCategory =
   | "Voice / Dubbing Talent"
   | "Action / Stunt Double"
   | "Background / Junior Artist";
+
+export type AuditionStatus =
+  | "Submitted"
+  | "Screened"
+  | "Shortlisted"
+  | "Callback Scheduled"
+  | "Selected"
+  | "Rejected";
 
 export interface AuditionSubmission {
   id: string;
@@ -549,7 +623,7 @@ export interface AuditionSubmission {
   hasMinorGuardianConsent?: boolean;
   guardianName?: string;
   guardianContact?: string;
-  status: "Submitted" | "Screened" | "Shortlisted" | "Callback Scheduled" | "Selected" | "Rejected";
+  status: AuditionStatus;
   callbackDate?: string;
   callbackTime?: string;
   callbackLocationOrLink?: string;
@@ -592,16 +666,28 @@ export interface IndianCastingCall {
   requiresMonologue: boolean;
   requiresMinorConsent: boolean;
   deadline: string;
-  status: "Open" | "Reviewing" | "Callbacks" | "Closed";
+  status: "Draft" | "Open" | "Published" | "Reviewing" | "Callbacks" | "Paused" | "Closed" | "Archived";
   featured: boolean;
   postedDate: string;
   submissionsCount?: number;
+  ownerEmail?: string;
 }
 
 // ----------------------------------------------------
 // 14. PROPOSALS MANAGEMENT SYSTEM
 // ----------------------------------------------------
 export type ProposalType =
+  | "Acting Proposal"
+  | "Crew Proposal"
+  | "Production Proposal"
+  | "Direction Proposal"
+  | "Cinematography Proposal"
+  | "Editing Proposal"
+  | "Music Proposal"
+  | "VFX Proposal"
+  | "Service Proposal"
+  | "Collaboration Proposal"
+  | "Other"
   | "Film Co-Production"
   | "Investor & Financing Pitch"
   | "HOD Crew Services"
@@ -614,11 +700,14 @@ export type ProposalType =
 
 export type ProposalStatus =
   | "Draft"
+  | "Drafts"
   | "Sent"
+  | "Received"
   | "Under Review"
   | "Changes Requested"
   | "Accepted"
   | "Rejected"
+  | "Expired"
   | "Withdrawn";
 
 export interface ProposalRevision {

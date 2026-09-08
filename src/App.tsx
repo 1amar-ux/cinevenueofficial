@@ -1748,7 +1748,7 @@ export default function App() {
 
       {/* CineVenue Productions Sub-website */}
       {(() => {
-        const renderFilmProduction = (initialMod?: any) => {
+        const renderFilmProduction = (initialMod?: any, initialTab: string = "overview") => {
           if (serviceControl?.filmProduction?.status === false) {
             return (
               <MaintenancePage
@@ -1765,6 +1765,7 @@ export default function App() {
             <FilmProductionSubWebsite 
               userEmail={userEmail}
               initialModule={initialMod}
+              initialTab={initialTab}
               onOpenAuth={() => setAuthOpen(true)}
               onBookTickets={(title) => {
                 setBookingMovieTitle(title);
@@ -1779,7 +1780,13 @@ export default function App() {
           <>
             <Route path="/productions" element={renderFilmProduction()} />
             <Route path="/media-promotions" element={renderFilmProduction("media")} />
-            <Route path="/film-production" element={renderFilmProduction()} />
+            <Route path="/film-production" element={renderFilmProduction("film", "overview")} />
+            <Route path="/film-production/my-projects" element={renderFilmProduction("film", "my-projects")} />
+            <Route path="/film-production/casting-calls" element={renderFilmProduction("film", "casting")} />
+            <Route path="/film-production/my-auditions" element={renderFilmProduction("film", "auditions")} />
+            <Route path="/film-production/proposals" element={renderFilmProduction("film", "proposals")} />
+            <Route path="/film-production/proposals/create" element={renderFilmProduction("film", "proposals")} />
+            <Route path="/film-production/my-profile" element={renderFilmProduction("film", "my-profile")} />
             <Route path="/filmproduction" element={renderFilmProduction()} />
             <Route path="/24crafts" element={renderFilmProduction()} />
             <Route path="/crafts" element={renderFilmProduction()} />

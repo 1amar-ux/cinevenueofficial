@@ -61,83 +61,48 @@ export default function FilmProductionSidebar({
 
   const navSections = [
     {
-      title: "PRODUCTION & TALENT HUB",
+      title: "FILM PRODUCTION",
       items: [
-        { id: "overview", label: "Production Home", icon: LayoutDashboard, desc: "Highlights & 24 Crafts Hub" },
-        { id: "projects", label: "Projects", icon: Film, desc: "Active Feature & Short Films" },
-        { id: "professionals", label: "Talent & Professionals", icon: Users, desc: "Actors, HODs & 24 Crafts", highlight: true },
+        { 
+          id: "overview", 
+          label: "Production Home", 
+          icon: LayoutDashboard, 
+          desc: "Main Production Dashboard" 
+        },
+        { 
+          id: "my-projects", 
+          label: "My Film Projects", 
+          icon: Film, 
+          badge: myProjectsCount > 0 ? myProjectsCount : undefined,
+          desc: "Slates, Pre-Prod & Releases" 
+        },
         { 
           id: "casting", 
-          label: "Indian Casting Calls", 
+          label: "Casting Calls", 
           icon: Award, 
-          desc: "Lead, Character & Auditions",
           badge: castingCallsCount > 0 ? castingCallsCount : undefined,
-          highlight: true 
+          desc: "Actors, Crew & Other Roles" 
         },
         { 
           id: "auditions", 
-          label: "Auditions", 
+          label: "My Auditions", 
           icon: Video, 
-          desc: "Self-tapes & Screen Tests",
-          badge: auditionsCount > 0 ? auditionsCount : undefined
-        },
-        { id: "jobs", label: "Jobs & Crew", icon: Briefcase, desc: "Technical & Craft Openings" },
-        { id: "companies", label: "Production Companies", icon: Building2, desc: "Studios & Production Banners" },
-      ]
-    },
-    {
-      title: "STUDIO & ATS WORKSPACE",
-      items: [
-        { 
-          id: "my-projects", 
-          label: "My Projects", 
-          icon: FolderKanban, 
-          badge: myProjectsCount > 0 ? myProjectsCount : undefined,
-          desc: "Applicant Tracking System (ATS)"
-        },
-        { 
-          id: "create-project", 
-          label: "Create Project", 
-          icon: PlusCircle, 
-          desc: "Post Auditions & Crew Needs",
-          actionBtn: true
+          badge: auditionsCount > 0 ? auditionsCount : undefined,
+          desc: "Screen Tests & Review Desk" 
         },
         { 
           id: "proposals", 
-          label: "Proposals", 
+          label: "Proposal Form", 
           icon: FileText, 
           badge: proposalsCount > 0 ? proposalsCount : undefined,
-          desc: "Pitches, VFX, Music & Deals",
-          highlight: true
+          desc: "Proposals & Commercial Terms" 
         },
         { 
-          id: "agreements", 
-          label: "Digital Agreements", 
-          icon: ShieldCheck, 
-          badge: agreementsCount > 0 ? agreementsCount : undefined,
-          desc: "Deal Memos & Milestone Escrow"
-        },
-        { 
-          id: "messages", 
-          label: "Messages", 
-          icon: MessageSquare, 
-          badge: negotiationsCount > 0 ? negotiationsCount : undefined,
-          desc: "Contract Rooms & Live Negotiations"
-        },
-      ]
-    },
-    {
-      title: "TALENT & ACCESS",
-      items: [
-        { 
-          id: "my-applications", 
-          label: "My Applications", 
-          icon: Clapperboard, 
-          badge: myApplicationsCount > 0 ? myApplicationsCount : undefined,
-          desc: "Auditions & Applied Roles" 
-        },
-        { id: "my-profile", label: "My Professional Profile", icon: UserCheck, desc: "Manage Crafts, Reels & Rates" },
-        { id: "admin", label: "24 Crafts Admin", icon: Shield, desc: "Studio & Crafts Management" },
+          id: "my-profile", 
+          label: "My Profile", 
+          icon: UserCheck, 
+          desc: "Multi-Craft Film Profile" 
+        }
       ]
     }
   ];

@@ -1207,6 +1207,22 @@ export const saveIndianCastingCall = (call: Partial<IndianCastingCall>): IndianC
   return newCall;
 };
 
+export const updateCastingCallStatus = (
+  id: string,
+  status: IndianCastingCall["status"]
+): IndianCastingCall | undefined => {
+  const list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS);
+  const index = list.findIndex(c => c.id === id);
+  if (index < 0) return undefined;
+
+  list[index].status = status;
+  setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-casting-calls-updated", { detail: list }));
+  }
+  return list[index];
+};
+
 export const deleteIndianCastingCall = (id: string): void => {
   const list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS).filter(c => c.id !== id);
   setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);

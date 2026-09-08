@@ -60,6 +60,7 @@ import CineVenueFilmAdminTab from "../film-production/CineVenueFilmAdminTab";
 interface FilmProductionSubWebsiteProps {
   userEmail?: string | null;
   initialModule?: "film" | "events" | "media";
+  initialTab?: string;
   onOpenAuth?: () => void;
   onBookTickets?: (movieTitle: string) => void;
   castingApplications?: any[];
@@ -69,6 +70,7 @@ interface FilmProductionSubWebsiteProps {
 export default function FilmProductionSubWebsite({
   userEmail,
   initialModule = "film",
+  initialTab = "overview",
   onOpenAuth,
   onBookTickets,
   castingApplications = [],
@@ -433,6 +435,7 @@ export default function FilmProductionSubWebsite({
           {filmViewMode === "marketplace" ? (
             <FilmProductionHub
               userEmail={userEmail}
+              initialTab={initialTab}
               onOpenAuth={onOpenAuth}
             />
           ) : (

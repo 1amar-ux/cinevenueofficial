@@ -1,957 +1,762 @@
 import React, { useState } from "react";
 import { 
   FilmProject, 
-  FilmProjectRequirement, 
-  JobApplication, 
-  ProfessionalProfile, 
-  FilmCraft, 
-  DigitalAgreement, 
-  HireRecord, 
-  ProjectActivityLog 
+  ProductionStage,
+  ProjectStatus,
+  ProjectType
 } from "../../types/filmProductionMarketplace";
 import { 
-  PlusCircle, Film, Users, Briefcase, Award, CheckCircle2, 
-  X, MessageSquare, Send, Eye, ShieldCheck, DollarSign, Calendar, 
-  Clock, Filter, Trash2, Edit3, UserCheck, FileText, ChevronRight,
-  TrendingUp, Download, Check, RefreshCw
+  PlusCircle, Film, Calendar, MapPin, Building2, User, 
+  Trash2, Edit3, CheckCircle2, ChevronRight, FileText, 
+  Clock, X, Search, Filter, AlertCircle, Sparkles, ExternalLink
 } from "lucide-react";
 import { 
   saveProject, 
-  addRequirementToProject, 
-  updateApplicationStatus, 
-  hireProfessional, 
-  getApplications, 
-  getAgreements, 
-  getActivityLogs 
+  deleteProject,
+  getProjects 
 } from "../../services/filmProductionService";
 
 interface MyProjectsDashboardViewProps {
   projects: FilmProject[];
   userEmail: string;
-  crafts: FilmCraft[];
   onRefreshProjects: () => void;
-  onOpenNegotiation: (projectId: string, professionalId: string) => void;
-  onOpenProfessionalProfile: (profId: string) => void;
+  onSelectProjectForCasting?: (project: FilmProject) => void;
 }
+
+const PROJECT_STATUSES: ProjectStatus[] = [
+  "Idea",
+  "Development",
+  "Pre-Production",
+  "Production",
+  "Post-Production",
+  "Completed",
+  "Released"
+];
+
+const PROJECT_TYPES: ProjectType[] = [
+  "Feature Film",
+  "Short Film",
+  "Web Series",
+  "OTT",
+  "Documentary",
+  "Music Video",
+  "Advertisement",
+  "Television",
+  "Other"
+];
 
 export default function MyProjectsDashboardView({
   projects,
   userEmail,
-  crafts,
   onRefreshProjects,
-  onOpenNegotiation,
-  onOpenProfessionalProfile
+  onSelectProjectForCasting
 }: MyProjectsDashboardViewProps) {
-  // My projects (owned by logged-in user or showing all if testing)
+  const normEmail = (userEmail || "").toLowerCase();
+
+  // Filter for projects owned by the user (or seeded test projects if none yet)
   const myProjects = projects.filter(p => 
-    p.ownerEmail?.toLowerCase() === userEmail?.toLowerCase() ||
-    !p.ownerEmail // fallback to display seed projects for demonstration
+    !p.ownerEmail || p.ownerEmail.toLowerCase() === normEmail
   );
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(myProjects[0]?.id || "");
-  const selectedProject = myProjects.find(p => p.id === selectedProjectId) || myProjects[0];
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const [activeTab, setActiveTab] = useState<"ats" | "requirements" | "roster" | "contracts" | "logs">("ats");
-  const [atsStatusFilter, setAtsStatusFilter] = useState<string>("all");
+  // Modal State for Create / Edit Film Project
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
-  // Create Project Wizard Modal
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newTagline, setNewTagline] = useState("");
-  const [newCompany, setNewCompany] = useState("CineVenue Studio");
-  const [newDirector, setNewDirector] = useState(userEmail?.split("@")[0] || "Director");
-  const [newStage, setNewStage] = useState<any>("Pre-production");
-  const [newType, setNewType] = useState<any>("Feature Film");
-  const [newLang, setNewLang] = useState("Telugu");
-  const [newBudget, setNewBudget] = useState("₹10 Cr – ₹20 Cr");
-  const [newLocation, setNewLocation] = useState("Hyderabad");
-  const [newSynopsis, setNewSynopsis] = useState("");
-  const [newPoster, setNewPoster] = useState("https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800");
+  // Form Fields
+  const [formTitle, setFormTitle] = useState("");
+  const [formType, setFormType] = useState<ProjectType>("Feature Film");
+  const [formGenre, setFormGenre] = useState("Action, Drama");
+  const [formLanguage, setFormLanguage] = useState("Telugu");
+  const [formSynopsis, setFormSynopsis] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formStage, setFormStage] = useState<ProductionStage>("Pre-Production");
+  const [formStartDate, setFormStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formCompletionDate, setFormCompletionDate] = useState("");
+  const [formLocation, setFormLocation] = useState("Hyderabad, Telangana");
+  const [formProducer, setFormProducer] = useState(userEmail ? userEmail.split("@")[0] : "Producer");
+  const [formDirector, setFormDirector] = useState("Director");
+  const [formCompany, setFormCompany] = useState("CineVenue Productions");
+  const [formPoster, setFormPoster] = useState("https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80");
+  const [formDocUrl, setFormDocUrl] = useState("");
+  const [formStatus, setFormStatus] = useState<ProjectStatus>("Development");
 
-  // Add Requirement Modal
-  const [showAddReqModal, setShowAddReqModal] = useState(false);
-  const [reqCraftId, setReqCraftId] = useState(crafts[0]?.id || "craft-1");
-  const [reqPosition, setReqPosition] = useState("");
-  const [reqIsCasting, setReqIsCasting] = useState(false);
-  const [reqBudget, setReqBudget] = useState("₹5,00,000 – ₹10,00,000");
-  const [reqDesc, setReqDesc] = useState("");
-  const [reqExp, setReqExp] = useState(2);
-  const [reqSkills, setReqSkills] = useState("");
-  const [reqCharGender, setReqCharGender] = useState("Any");
-  const [reqCharAge, setReqCharAge] = useState("22-30");
-  const [reqCharBio, setReqCharBio] = useState("");
+  // Selected project details modal
+  const [viewingProject, setViewingProject] = useState<FilmProject | null>(null);
 
-  // Hire Confirmation Modal
-  const [hireTargetApp, setHireTargetApp] = useState<JobApplication | null>(null);
-  const [hireRemuneration, setHireRemuneration] = useState("");
-  const [hireStartDate, setHireStartDate] = useState(new Date().toISOString().split("T")[0]);
-  const [hireEndDate, setHireEndDate] = useState("");
+  const handleOpenCreateModal = () => {
+    setEditingProjectId(null);
+    setFormTitle("");
+    setFormType("Feature Film");
+    setFormGenre("Action, Thriller");
+    setFormLanguage("Telugu");
+    setFormSynopsis("");
+    setFormDescription("");
+    setFormStage("Pre-Production");
+    setFormStartDate(new Date().toISOString().split("T")[0]);
+    setFormCompletionDate("");
+    setFormLocation("Hyderabad, Telangana");
+    setFormProducer(userEmail ? userEmail.split("@")[0] : "Lead Producer");
+    setFormDirector("Director");
+    setFormCompany("CineVenue Productions");
+    setFormPoster("https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80");
+    setFormDocUrl("");
+    setFormStatus("Development");
+    setIsModalOpen(true);
+  };
 
-  // Applications list for selected project
-  const projectApplications = selectedProject 
-    ? getApplications({ projectId: selectedProject.id }) 
-    : [];
+  const handleOpenEditModal = (proj: FilmProject) => {
+    // Ownership check
+    const isOwner = !proj.ownerEmail || proj.ownerEmail.toLowerCase() === normEmail;
+    if (!isOwner) {
+      alert("You can only edit projects you own or are authorized to manage.");
+      return;
+    }
 
-  const filteredApplications = projectApplications.filter(a => {
-    if (atsStatusFilter === "all") return true;
-    return a.status === atsStatusFilter;
-  });
+    setEditingProjectId(proj.id);
+    setFormTitle(proj.title);
+    setFormType(proj.type);
+    setFormGenre(Array.isArray(proj.genre) ? proj.genre.join(", ") : proj.genre || "");
+    setFormLanguage(proj.language);
+    setFormSynopsis(proj.synopsis || "");
+    setFormDescription(proj.description || "");
+    setFormStage(proj.productionStage as any);
+    setFormStartDate(proj.expectedStartDate || "");
+    setFormCompletionDate(proj.expectedCompletionDate || "");
+    setFormLocation(proj.location || "");
+    setFormProducer(proj.producerName || "");
+    setFormDirector(proj.directorName || "");
+    setFormCompany(proj.companyName || "");
+    setFormPoster(proj.posterUrl || "");
+    setFormDocUrl(proj.projectDocuments?.[0] || "");
+    setFormStatus((proj.status as ProjectStatus) || "Development");
+    setIsModalOpen(true);
+  };
 
-  const projectAgreements = selectedProject ? getAgreements().filter(a => a.projectId === selectedProject.id) : [];
-  const projectLogs = selectedProject ? getActivityLogs(selectedProject.id) : [];
+  const handleDeleteProject = (proj: FilmProject) => {
+    // Ownership check
+    const isOwner = !proj.ownerEmail || proj.ownerEmail.toLowerCase() === normEmail;
+    if (!isOwner) {
+      alert("You can only delete projects you own or are explicitly authorized to manage.");
+      return;
+    }
 
-  // Metrics
-  const openReqCount = selectedProject?.requirements?.filter(r => r.status === "Open").length || 0;
-  const appliedCount = projectApplications.length;
-  const shortlistedCount = projectApplications.filter(a => a.status === "Shortlisted").length;
-  const inNegotiationCount = projectApplications.filter(a => a.status === "Negotiating").length;
-  const hiredCount = projectApplications.filter(a => a.status === "Hired").length;
+    if (confirm(`Are you sure you want to delete film project "${proj.title}"? This cannot be undone.`)) {
+      deleteProject(proj.id);
+      onRefreshProjects();
+      if (viewingProject?.id === proj.id) {
+        setViewingProject(null);
+      }
+    }
+  };
 
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleSaveProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!formTitle.trim()) return;
 
-    const created = saveProject({
+    const genreArray = formGenre.split(",").map(g => g.trim()).filter(Boolean);
+
+    saveProject({
+      ...(editingProjectId ? { id: editingProjectId } : {}),
       ownerEmail: userEmail || "filmmaker@cinevenue.com",
       ownerName: userEmail ? userEmail.split("@")[0] : "Filmmaker",
-      companyName: newCompany.trim(),
-      directorName: newDirector.trim(),
-      title: newTitle.trim(),
-      tagline: newTagline.trim(),
-      productionStage: newStage,
-      type: newType,
-      language: newLang,
-      location: newLocation,
-      budgetRange: newBudget,
-      synopsis: newSynopsis.trim(),
-      posterUrl: newPoster.trim(),
-      bannerUrl: newPoster.trim()
+      title: formTitle.trim(),
+      type: formType,
+      genre: genreArray,
+      language: formLanguage.trim(),
+      synopsis: formSynopsis.trim(),
+      description: formDescription.trim(),
+      productionStage: formStage,
+      expectedStartDate: formStartDate,
+      expectedCompletionDate: formCompletionDate,
+      location: formLocation.trim(),
+      producerName: formProducer.trim(),
+      directorName: formDirector.trim(),
+      companyName: formCompany.trim(),
+      posterUrl: formPoster.trim(),
+      bannerUrl: formPoster.trim(),
+      projectDocuments: formDocUrl ? [formDocUrl.trim()] : [],
+      status: formStatus
     });
 
-    onRefreshProjects();
-    setSelectedProjectId(created.id);
-    setShowCreateModal(false);
-    setNewTitle("");
-    setNewSynopsis("");
-  };
-
-  const handleAddRequirement = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProject || !reqPosition.trim()) return;
-
-    const craftObj = crafts.find(c => c.id === reqCraftId);
-
-    addRequirementToProject(selectedProject.id, {
-      craftId: reqCraftId,
-      craftName: craftObj?.name || "Craft",
-      position: reqPosition.trim(),
-      isCastingCall: reqIsCasting,
-      budgetRange: reqBudget.trim(),
-      description: reqDesc.trim(),
-      minExperienceYears: Number(reqExp),
-      skillsRequired: reqSkills.split(",").map(s => s.trim()).filter(Boolean),
-      characterDetails: reqIsCasting ? {
-        name: reqPosition.trim(),
-        roleType: "Lead",
-        ageRange: reqCharAge,
-        gender: reqCharGender as any,
-        characterDescription: reqCharBio.trim(),
-        characterBio: reqCharBio.trim()
-      } : undefined
-    });
-
-    onRefreshProjects();
-    setShowAddReqModal(false);
-    setReqPosition("");
-    setReqDesc("");
-  };
-
-  const handleStatusChange = (appId: string, status: JobApplication["status"]) => {
-    updateApplicationStatus(appId, status);
+    setIsModalOpen(false);
     onRefreshProjects();
   };
 
-  const handleConfirmHire = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hireTargetApp || !selectedProject) return;
+  const filteredProjects = myProjects.filter(p => {
+    const matchesStatus = selectedStatusFilter === "All" || p.status === selectedStatusFilter;
+    const matchesSearch = !searchQuery || 
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.directorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.language.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
-    hireProfessional({
-      projectId: selectedProject.id,
-      requirementId: hireTargetApp.requirementId,
-      professionalId: hireTargetApp.applicantId,
-      agreedRemuneration: hireRemuneration || hireTargetApp.expectedPay || "₹10,00,000",
-      startDate: hireStartDate,
-      endDate: hireEndDate
-    });
-
-    updateApplicationStatus(hireTargetApp.id, "Hired");
-    setHireTargetApp(null);
-    onRefreshProjects();
+  const getStatusBadgeClass = (status: ProjectStatus) => {
+    switch (status) {
+      case "Idea": return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+      case "Development": return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+      case "Pre-Production": return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+      case "Production": return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+      case "Post-Production": return "bg-cyan-500/20 text-cyan-300 border-cyan-500/30";
+      case "Completed": return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+      case "Released": return "bg-gold/20 text-gold border-gold/40";
+      default: return "bg-white/10 text-white border-white/20";
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Header & Project Selector */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <div>
-          <div className="flex items-center gap-2 text-amber-400 text-xs font-black uppercase tracking-widest mb-1">
-            <Film className="w-3.5 h-3.5" />
-            <span>Filmmaker Production Studio</span>
+    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-12">
+      
+      {/* Header Banner */}
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#14121E] via-[#10121C] to-black border border-white/10 p-6 sm:p-8 md:p-10 shadow-2xl">
+        <div className="absolute right-0 top-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-3 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-widest">
+              <Film className="w-3.5 h-3.5" />
+              <span>Project Studio & ATS</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+              My Film Projects
+            </h1>
+
+            <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
+              Create and manage your own cinema projects across all stages of production. Add crew requisitions, connect casting calls, and retain complete owner control over your creative intellectual property.
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-white">
-            Project Dashboard & Applicant Tracking (ATS)
-          </h1>
-          <p className="text-white/60 text-xs md:text-sm mt-1">
-            Manage requirements, track auditions, review portfolios, negotiate deals, and execute digital contracts.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          {/* Project Switcher */}
-          {myProjects.length > 0 && (
-            <select
-              value={selectedProject?.id || ""}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-amber-500/50 cursor-pointer"
+          <div className="shrink-0">
+            <button
+              onClick={handleOpenCreateModal}
+              className="px-6 py-3.5 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-xl shadow-gold/20 flex items-center gap-2 cursor-pointer"
             >
-              {myProjects.map(p => (
-                <option key={p.id} value={p.id} className="bg-[#111218] text-white">
-                  🎬 {p.title} ({p.productionStage})
-                </option>
-              ))}
-            </select>
-          )}
-
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/20 cursor-pointer shrink-0"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>New Film Project</span>
-          </button>
+              <PlusCircle className="w-4 h-4 text-black" />
+              <span>+ Create Film Project</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {!selectedProject ? (
-        <div className="text-center py-20 rounded-3xl bg-[#111218] border border-white/10 space-y-4">
-          <Film className="w-12 h-12 text-amber-400 mx-auto" />
-          <h3 className="text-lg font-black text-white">No film project registered yet</h3>
-          <p className="text-xs text-white/50 max-w-md mx-auto">
-            Create your first film project to post casting calls, hire crew leads across 24 crafts, and manage contracts.
-          </p>
+      {/* Filter & Search Bar */}
+      <div className="bg-[#0D0E15] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-lg">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          {["All", ...PROJECT_STATUSES].map(st => (
+            <button
+              key={st}
+              onClick={() => setSelectedStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                selectedStatusFilter === st
+                  ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
+                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/5"
+              }`}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500"
+          />
+        </div>
+      </div>
+
+      {/* Projects Grid */}
+      {filteredProjects.length === 0 ? (
+        <div className="p-12 text-center rounded-3xl bg-[#0D0E15] border border-white/10 space-y-4">
+          <Film className="w-12 h-12 text-white/20 mx-auto" />
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-white">No film projects found</h3>
+            <p className="text-xs text-white/50 max-w-sm mx-auto">
+              You haven't created any projects matching this filter. Start by creating your first film project.
+            </p>
+          </div>
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-2.5 bg-amber-500 text-black font-black uppercase text-xs rounded-xl shadow-lg cursor-pointer"
+            onClick={handleOpenCreateModal}
+            className="px-5 py-2.5 bg-amber-500 text-black font-black text-xs uppercase tracking-wider rounded-xl cursor-pointer"
           >
-            Register Film Project Now
+            + Create Film Project
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          
-          {/* Active Project Banner & KPI Metrics */}
-          <div className="p-6 rounded-3xl bg-[#111218] border border-white/10 space-y-5">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <img
-                  src={selectedProject.posterUrl}
-                  alt={selectedProject.title}
-                  className="w-16 h-20 rounded-2xl object-cover border border-white/10 shrink-0"
-                />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map(proj => {
+            const isOwner = !proj.ownerEmail || proj.ownerEmail.toLowerCase() === normEmail;
+
+            return (
+              <div 
+                key={proj.id}
+                className="group rounded-2xl bg-[#0E0F17] border border-white/10 overflow-hidden hover:border-amber-500/50 transition-all flex flex-col justify-between shadow-xl"
+              >
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-xl font-black text-white">{selectedProject.title}</h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/30">
-                      {selectedProject.productionStage}
-                    </span>
-                    <span className="text-xs text-white/50">
-                      • {selectedProject.type} • {selectedProject.language}
-                    </span>
+                  {/* Poster Banner */}
+                  <div className="relative h-44 w-full bg-black/50 overflow-hidden">
+                    <img 
+                      src={proj.posterUrl || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800"} 
+                      alt={proj.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0E0F17] via-[#0E0F17]/30 to-transparent" />
+                    
+                    {/* Status badge */}
+                    <div className="absolute top-3 left-3">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border backdrop-blur-md ${getStatusBadgeClass(proj.status as ProjectStatus)}`}>
+                        {proj.status}
+                      </span>
+                    </div>
+
+                    {/* Stage indicator */}
+                    <div className="absolute top-3 right-3">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/60 text-white/80 border border-white/20 backdrop-blur-md">
+                        {proj.productionStage}
+                      </span>
+                    </div>
+
+                    {/* Language & Type */}
+                    <div className="absolute bottom-2 left-3 flex items-center gap-2 text-[11px] text-white/90">
+                      <span className="font-bold text-amber-400">{proj.language}</span>
+                      <span>•</span>
+                      <span>{proj.type}</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-white/60 mt-1">
-                    Studio: <strong className="text-white">{selectedProject.companyName}</strong> | Director: <strong className="text-white">{selectedProject.directorName}</strong>
-                  </p>
-                  <p className="text-xs text-amber-300/80 mt-0.5">
-                    Budget: {selectedProject.budgetRange} | Shoot Base: {selectedProject.location}
-                  </p>
+
+                  {/* Body Content */}
+                  <div className="p-5 space-y-3">
+                    <h3 className="text-lg font-black text-white group-hover:text-amber-400 transition-colors line-clamp-1">
+                      {proj.title}
+                    </h3>
+
+                    <p className="text-xs text-white/60 line-clamp-2 leading-relaxed">
+                      {proj.synopsis || proj.description || "No synopsis provided."}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-white/70 pt-2 border-t border-white/5">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="truncate">Dir: {proj.directorName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Building2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        <span className="truncate">Prod: {proj.producerName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                        <span className="truncate">{proj.location || "India"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span className="truncate">{proj.expectedStartDate || "TBD"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Actions */}
+                <div className="p-4 bg-white/[0.02] border-t border-white/10 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => setViewingProject(proj)}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    View Details
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    {isOwner ? (
+                      <>
+                        <button
+                          onClick={() => handleOpenEditModal(proj)}
+                          title="Edit Project"
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-amber-400 transition-all cursor-pointer"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(proj)}
+                          title="Delete Project"
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-rose-400 transition-all cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-white/40 italic">View Only</span>
+                    )}
+                  </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
+      )}
 
+      {/* CREATE / EDIT FILM PROJECT MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0F1018] border border-white/15 rounded-3xl overflow-hidden shadow-2xl my-auto flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#13141E]">
+              <div className="flex items-center gap-2.5">
+                <Film className="w-5 h-5 text-amber-400" />
+                <h2 className="text-base font-black text-white">
+                  {editingProjectId ? "Edit Film Project" : "Create New Film Project"}
+                </h2>
+              </div>
               <button
-                onClick={() => setShowAddReqModal(true)}
-                className="px-4 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setIsModalOpen(false)}
+                className="text-white/60 hover:text-white p-1 rounded-lg cursor-pointer"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>+ Add Requirement / Casting Call</span>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* KPI Metric Counters */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-white/5">
-              <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-xl font-black text-amber-400">{openReqCount}</div>
-                <div className="text-[10px] uppercase font-bold text-white/40 mt-0.5">Open Positions</div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-xl font-black text-white">{appliedCount}</div>
-                <div className="text-[10px] uppercase font-bold text-white/40 mt-0.5">Total Applicants</div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-xl font-black text-cyan-400">{shortlistedCount}</div>
-                <div className="text-[10px] uppercase font-bold text-white/40 mt-0.5">Shortlisted</div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
-                <div className="text-xl font-black text-purple-400">{inNegotiationCount}</div>
-                <div className="text-[10px] uppercase font-bold text-white/40 mt-0.5">In Negotiation</div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center col-span-2 sm:col-span-1">
-                <div className="text-xl font-black text-emerald-400">{hiredCount}</div>
-                <div className="text-[10px] uppercase font-bold text-white/40 mt-0.5">Hired Cast & Crew</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sub-Navigation Tabs */}
-          <div className="flex items-center gap-2 border-b border-white/10 overflow-x-auto scrollbar-none text-xs font-bold">
-            {[
-              { id: "ats", label: `Applicant Tracking System (${projectApplications.length})` },
-              { id: "requirements", label: `Job Requirements & Casting (${selectedProject.requirements?.length || 0})` },
-              { id: "roster", label: `Confirmed Cast & Crew (${(selectedProject.castMembers?.length || 0) + (selectedProject.crewMembers?.length || 0)})` },
-              { id: "contracts", label: `Digital Agreements (${projectAgreements.length})` },
-              { id: "logs", label: `Audit Log (${projectLogs.length})` }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 px-4 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
-                  activeTab === tab.id
-                    ? "border-amber-400 text-amber-400 font-black"
-                    : "border-transparent text-white/60 hover:text-white"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* TAB 1: ATS APPLICANT TRACKER */}
-          {activeTab === "ats" && (
-            <div className="space-y-4">
-              {/* ATS Status Filter Pills */}
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-semibold">
-                  {[
-                    "all", "Applied", "Under Review", "Shortlisted", 
-                    "Audition / Demo", "Negotiating", "Selected", "Hired", "Rejected"
-                  ].map(st => (
-                    <button
-                      key={st}
-                      onClick={() => setAtsStatusFilter(st)}
-                      className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                        atsStatusFilter === st
-                          ? "bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20"
-                          : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10"
-                      }`}
-                    >
-                      {st === "all" ? "All Applicants" : st}
-                    </button>
-                  ))}
+            {/* Modal Form Body */}
+            <form onSubmit={handleSaveProjectSubmit} className="p-6 space-y-4 overflow-y-auto text-xs">
+              
+              {/* Title & Type */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Project Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Project Vayu – The Legend"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
                 </div>
 
-                <span className="text-xs text-white/50">
-                  Showing {filteredApplications.length} applicants
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Project Type *</label>
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value as ProjectType)}
+                    className="w-full bg-[#1A1B26] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    {PROJECT_TYPES.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Genre & Language */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Genre(s) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Action, Period Drama, Thriller"
+                    value={formGenre}
+                    onChange={(e) => setFormGenre(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Primary Language *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Telugu, Pan-India"
+                    value={formLanguage}
+                    onChange={(e) => setFormLanguage(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Stage & Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Production Stage *</label>
+                  <select
+                    value={formStage}
+                    onChange={(e) => setFormStage(e.target.value as ProductionStage)}
+                    className="w-full bg-[#1A1B26] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    {PROJECT_STATUSES.map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Project Status *</label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as ProjectStatus)}
+                    className="w-full bg-[#1A1B26] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    {PROJECT_STATUSES.map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dates & Location */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Start / Shoot Date</label>
+                  <input
+                    type="date"
+                    value={formStartDate}
+                    onChange={(e) => setFormStartDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Target Wrap Date</label>
+                  <input
+                    type="date"
+                    value={formCompletionDate}
+                    onChange={(e) => setFormCompletionDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Shooting Location *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Hyderabad & RFC"
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Producer, Director & Company */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Producer *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formProducer}
+                    onChange={(e) => setFormProducer(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Director *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formDirector}
+                    onChange={(e) => setFormDirector(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Production Company</label>
+                  <input
+                    type="text"
+                    value={formCompany}
+                    onChange={(e) => setFormCompany(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Poster URL & Documents Link */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Project Poster / Logo URL</label>
+                  <input
+                    type="url"
+                    value={formPoster}
+                    onChange={(e) => setFormPoster(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                    placeholder="https://images.unsplash.com/..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-bold mb-1">Project Document / Script URL</label>
+                  <input
+                    type="url"
+                    value={formDocUrl}
+                    onChange={(e) => setFormDocUrl(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                    placeholder="https://drive.google.com/... or pitch deck link"
+                  />
+                </div>
+              </div>
+
+              {/* Synopsis */}
+              <div>
+                <label className="block text-white/70 font-bold mb-1">One-Line Synopsis *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Short logline or hook for the film"
+                  value={formSynopsis}
+                  onChange={(e) => setFormSynopsis(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-white/70 font-bold mb-1">Full Project Description & Story Outline</label>
+                <textarea
+                  rows={3}
+                  placeholder="Provide comprehensive creative details, visual tone, casting needs, and production timeline..."
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                <span className="text-[11px] text-white/40">
+                  Only you will have authorization to edit or remove this project.
+                </span>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black uppercase tracking-wider cursor-pointer shadow-lg shadow-gold/20"
+                  >
+                    {editingProjectId ? "Save Changes" : "Publish Project"}
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW PROJECT DETAILS MODAL */}
+      {viewingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0F1018] border border-white/15 rounded-3xl overflow-hidden shadow-2xl my-auto flex flex-col">
+            
+            <div className="relative h-48 bg-black">
+              <img 
+                src={viewingProject.posterUrl || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800"} 
+                alt={viewingProject.title}
+                className="w-full h-full object-cover opacity-80"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0F1018] via-transparent to-transparent" />
+              <button 
+                onClick={() => setViewingProject(null)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${getStatusBadgeClass(viewingProject.status as ProjectStatus)}`}>
+                    {viewingProject.status}
+                  </span>
+                  <h2 className="text-xl font-black text-white mt-1">{viewingProject.title}</h2>
+                </div>
+
+                <span className="text-xs text-amber-400 font-bold">
+                  {viewingProject.language} • {viewingProject.type}
                 </span>
               </div>
 
-              {/* Applicants Table / Cards */}
-              {filteredApplications.length === 0 ? (
-                <div className="text-center py-16 rounded-2xl bg-[#111218] border border-white/10 space-y-2">
-                  <UserCheck className="w-8 h-8 text-white/30 mx-auto" />
-                  <p className="text-xs text-white/50">No applicants in this stage.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredApplications.map(app => (
-                    <div
-                      key={app.id}
-                      className="p-5 rounded-2xl bg-[#111218] border border-white/10 hover:border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all"
-                    >
-                      {/* Talent Info */}
-                      <div className="flex items-start gap-3.5 min-w-0">
-                        <img
-                          src={app.applicantAvatar}
-                          alt={app.applicantName}
-                          className="w-12 h-12 rounded-2xl object-cover border border-white/10 shrink-0"
-                        />
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-base font-bold text-white">{app.applicantName}</h4>
-                            <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-bold border border-amber-500/30">
-                              {app.requirementPosition} ({app.craftName})
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-white/10 text-white/80 text-[10px] font-bold">
-                              Status: {app.status}
-                            </span>
-                          </div>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-white/40 tracking-wider">Logline / Synopsis</span>
+                <p className="text-white/80 leading-relaxed">{viewingProject.synopsis || "No synopsis recorded."}</p>
+              </div>
 
-                          <p className="text-xs text-white/60">
-                            {app.applicantHeadline} • {app.applicantLocation} • {app.applicantExperienceYears}+ Yrs Exp
-                          </p>
-
-                          <p className="text-xs text-white/80 line-clamp-2 italic pt-0.5">
-                            "{app.coverMessage}"
-                          </p>
-
-                          <div className="flex items-center gap-3 text-[11px] text-amber-400 font-semibold pt-0.5">
-                            <span>Quote: {app.expectedPay}</span>
-                            <span>•</span>
-                            <span>Availability: {app.availabilityNotes}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto justify-end pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
-                        <button
-                          onClick={() => onOpenProfessionalProfile(app.applicantId)}
-                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold border border-white/10 cursor-pointer flex items-center gap-1"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Profile</span>
-                        </button>
-
-                        <button
-                          onClick={() => onOpenNegotiation(app.projectId, app.applicantId)}
-                          className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold border border-purple-500/40 cursor-pointer flex items-center gap-1"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>Negotiate</span>
-                        </button>
-
-                        {/* Status dropdown */}
-                        <select
-                          value={app.status}
-                          onChange={(e) => handleStatusChange(app.id, e.target.value as any)}
-                          className="bg-white/10 text-white text-xs font-bold rounded-xl px-2.5 py-1.5 border border-white/15 focus:outline-none cursor-pointer"
-                        >
-                          <option value="Applied" className="bg-[#111218]">Applied</option>
-                          <option value="Under Review" className="bg-[#111218]">Under Review</option>
-                          <option value="Shortlisted" className="bg-[#111218]">Shortlisted</option>
-                          <option value="Audition / Demo" className="bg-[#111218]">Audition / Demo</option>
-                          <option value="Negotiating" className="bg-[#111218]">Negotiating</option>
-                          <option value="Selected" className="bg-[#111218]">Selected</option>
-                          <option value="Rejected" className="bg-[#111218]">Rejected</option>
-                        </select>
-
-                        {app.status !== "Hired" && (
-                          <button
-                            onClick={() => {
-                              setHireTargetApp(app);
-                              setHireRemuneration(app.expectedPay);
-                            }}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-md cursor-pointer flex items-center gap-1"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Hire & Contract</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              {viewingProject.description && (
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-white/40 tracking-wider">Description</span>
+                  <p className="text-white/70 leading-relaxed whitespace-pre-line">{viewingProject.description}</p>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* TAB 2: REQUIREMENTS MANAGER */}
-          {activeTab === "requirements" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-white/50">
-                  Project Craft Openings ({selectedProject.requirements?.length || 0})
-                </h3>
-                <button
-                  onClick={() => setShowAddReqModal(true)}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold text-xs cursor-pointer flex items-center gap-1"
-                >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span>Add Role</span>
-                </button>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                <div>
+                  <span className="text-[10px] text-white/40 block font-bold">Producer</span>
+                  <span className="text-white font-medium">{viewingProject.producerName}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-white/40 block font-bold">Director</span>
+                  <span className="text-white font-medium">{viewingProject.directorName}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-white/40 block font-bold">Production House</span>
+                  <span className="text-white font-medium">{viewingProject.companyName || "Independent"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-white/40 block font-bold">Shooting Location</span>
+                  <span className="text-white font-medium">{viewingProject.location || "TBD"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-white/40 block font-bold">Production Stage</span>
+                  <span className="text-white font-medium">{viewingProject.productionStage}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-white/40 block font-bold">Start Date</span>
+                  <span className="text-white font-medium">{viewingProject.expectedStartDate || "TBD"}</span>
+                </div>
               </div>
 
-              {selectedProject.requirements?.map(req => (
-                <div key={req.id} className="p-4 rounded-2xl bg-[#111218] border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-bold text-white">{req.position}</h4>
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-xs font-semibold">
-                        {req.craftName}
-                      </span>
-                      {req.isCastingCall && (
-                        <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-xs font-semibold">
-                          Casting Call
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-bold text-amber-400">{req.budgetRange}</span>
+              {viewingProject.projectDocuments && viewingProject.projectDocuments.length > 0 && (
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-blue-300">
+                    <FileText className="w-4 h-4" />
+                    <span>Project Document / Pitch Deck Available</span>
                   </div>
-                  <p className="text-xs text-white/70">{req.description}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* TAB 3: CONFIRMED CAST & CREW ROSTER */}
-          {activeTab === "roster" && (
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400">Confirmed Cast Roster</h3>
-                {selectedProject.castMembers?.length === 0 ? (
-                  <p className="text-xs text-white/40 italic">No confirmed cast yet.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedProject.castMembers?.map(cast => (
-                      <div key={cast.id} className="p-3.5 rounded-2xl bg-[#111218] border border-white/10 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={cast.photoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"} alt={cast.actorName} className="w-10 h-10 rounded-full object-cover" />
-                          <div>
-                            <h4 className="text-xs font-bold text-white">{cast.actorName}</h4>
-                            <p className="text-[11px] text-amber-400">Role: {cast.characterName} ({cast.roleType})</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                          Contract: {cast.contractStatus}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400">Confirmed Technical Crew Leads</h3>
-                {selectedProject.crewMembers?.length === 0 ? (
-                  <p className="text-xs text-white/40 italic">No confirmed crew leads yet.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedProject.crewMembers?.map(crew => (
-                      <div key={crew.id} className="p-3.5 rounded-2xl bg-[#111218] border border-white/10 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={crew.photoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"} alt={crew.name} className="w-10 h-10 rounded-full object-cover" />
-                          <div>
-                            <h4 className="text-xs font-bold text-white">{crew.name}</h4>
-                            <p className="text-[11px] text-purple-300">{crew.craftName} ({crew.position})</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                          Contract: {crew.contractStatus}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: DIGITAL CONTRACTS */}
-          {activeTab === "contracts" && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white/50">Digital Agreements & NDA Registry</h3>
-              {projectAgreements.length === 0 ? (
-                <p className="text-xs text-white/40 italic">No formal digital contracts generated yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {projectAgreements.map(agr => (
-                    <div key={agr.id} className="p-4 rounded-2xl bg-[#111218] border border-white/10 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-white">{agr.professionalName}</h4>
-                          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
-                            {agr.position}
-                          </span>
-                          <span className="text-xs text-white/50">Contract #{agr.id}</span>
-                        </div>
-                        <p className="text-xs text-white/70 mt-1">Remuneration: {agr.remuneration}</p>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${agr.status === "Accepted" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
-                        {agr.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 5: AUDIT LOG */}
-          {activeTab === "logs" && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white/50">Project Audit Trail</h3>
-              {projectLogs.length === 0 ? (
-                <p className="text-xs text-white/40 italic">No logs recorded yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {projectLogs.map(log => (
-                    <div key={log.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-xs flex items-center justify-between">
-                      <div>
-                        <strong className="text-white">{log.user}</strong>: <span className="text-amber-400">{log.action}</span> — {log.details}
-                      </div>
-                      <span className="text-[10px] text-white/40">{log.timestamp}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-        </div>
-      )}
-
-      {/* CREATE PROJECT MODAL */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-[#0D0E15] border border-white/15 rounded-3xl overflow-hidden shadow-2xl my-auto max-h-[90vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#111218]">
-              <h2 className="text-base font-black text-white">Create New Film Production</h2>
-              <button onClick={() => setShowCreateModal(false)} className="text-white/60 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProject} className="p-6 overflow-y-auto flex-1 space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Film Title *</label>
-                  <input
-                    type="text"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                    placeholder="e.g. Mahasenani"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Tagline</label>
-                  <input
-                    type="text"
-                    value={newTagline}
-                    onChange={(e) => setNewTagline(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                    placeholder="e.g. The Untold Sovereign Legend"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Production Studio / Banner</label>
-                  <input
-                    type="text"
-                    value={newCompany}
-                    onChange={(e) => setNewCompany(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Director Name</label>
-                  <input
-                    type="text"
-                    value={newDirector}
-                    onChange={(e) => setNewDirector(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Stage</label>
-                  <select
-                    value={newStage}
-                    onChange={(e) => setNewStage(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white cursor-pointer"
+                  <a
+                    href={viewingProject.projectDocuments[0]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1 bg-blue-500 text-black font-bold rounded-lg text-[10px] hover:bg-blue-400"
                   >
-                    <option value="Development">Development</option>
-                    <option value="Pre-production">Pre-production</option>
-                    <option value="Production">Production</option>
-                    <option value="Post-production">Post-production</option>
-                  </select>
+                    Open Document
+                  </a>
                 </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Project Format</label>
-                  <select
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white cursor-pointer"
-                  >
-                    <option value="Feature Film">Feature Film</option>
-                    <option value="Web Series">Web Series</option>
-                    <option value="OTT Film">OTT Film</option>
-                    <option value="Short Film">Short Film</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Language</label>
-                  <input
-                    type="text"
-                    value={newLang}
-                    onChange={(e) => setNewLang(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Budget Range</label>
-                  <input
-                    type="text"
-                    value={newBudget}
-                    onChange={(e) => setNewBudget(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-white/60 font-bold mb-1">Story Synopsis & Vision</label>
-                <textarea
-                  rows={3}
-                  value={newSynopsis}
-                  onChange={(e) => setNewSynopsis(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  placeholder="Outline the core plot, themes, and creative direction..."
-                  required
-                />
-              </div>
-
-              <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
+              <div className="pt-4 border-t border-white/10 flex justify-end gap-2">
                 <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => setViewingProject(null)}
                   className="px-4 py-2 rounded-xl bg-white/10 text-white font-bold cursor-pointer"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-amber-500 text-black font-black uppercase rounded-xl cursor-pointer"
-                >
-                  Create & Launch Project
+                  Close
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ADD REQUIREMENT MODAL */}
-      {showAddReqModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-[#0D0E15] border border-white/15 rounded-3xl overflow-hidden shadow-2xl my-auto max-h-[90vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#111218]">
-              <h2 className="text-base font-black text-white">Add Requirement / Casting Call</h2>
-              <button onClick={() => setShowAddReqModal(false)} className="text-white/60 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            <form onSubmit={handleAddRequirement} className="p-6 overflow-y-auto flex-1 space-y-4 text-xs">
-              <div className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/10">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={!reqIsCasting}
-                    onChange={() => setReqIsCasting(false)}
-                    className="text-amber-500"
-                  />
-                  <span className="font-bold text-white">Technical Crew Role</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={reqIsCasting}
-                    onChange={() => setReqIsCasting(true)}
-                    className="text-purple-500"
-                  />
-                  <span className="font-bold text-purple-300">Actor Audition / Casting Call</span>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Film Craft Department *</label>
-                  <select
-                    value={reqCraftId}
-                    onChange={(e) => setReqCraftId(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white cursor-pointer font-bold"
-                  >
-                    {crafts.map(c => (
-                      <option key={c.id} value={c.id} className="bg-[#111218]">
-                        Craft #{c.order}: {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Role / Position Title *</label>
-                  <input
-                    type="text"
-                    value={reqPosition}
-                    onChange={(e) => setReqPosition(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                    placeholder={reqIsCasting ? "e.g. Lead Antagonist (Vikram)" : "e.g. Associate Cinematographer"}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-white/60 font-bold mb-1">Budget / Compensation *</label>
-                <input
-                  type="text"
-                  value={reqBudget}
-                  onChange={(e) => setReqBudget(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  placeholder="e.g. ₹10,00,000 per project"
-                  required
-                />
-              </div>
-
-              {reqIsCasting && (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-purple-300 font-bold mb-1">Character Gender</label>
-                      <select
-                        value={reqCharGender}
-                        onChange={(e) => setReqCharGender(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl p-2 text-white"
-                      >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Any">Any Gender</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-purple-300 font-bold mb-1">Character Age Range</label>
-                      <input
-                        type="text"
-                        value={reqCharAge}
-                        onChange={(e) => setReqCharAge(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl p-2 text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-white/60 font-bold mb-1">Detailed Description & Responsibilities</label>
-                <textarea
-                  rows={3}
-                  value={reqDesc}
-                  onChange={(e) => setReqDesc(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  placeholder="Detail the shoot schedule, aesthetic references, and technical deliverables..."
-                  required
-                />
-              </div>
-
-              <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddReqModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-white font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-amber-500 text-black font-black uppercase rounded-xl cursor-pointer"
-                >
-                  Post Requirement
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* HIRE PROFESSIONAL MODAL */}
-      {hireTargetApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-[#0D0E15] border border-white/15 rounded-3xl overflow-hidden shadow-2xl my-auto flex flex-col">
-            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#111218]">
-              <h2 className="text-base font-black text-white">Formal Hire & Generate Agreement</h2>
-              <button onClick={() => setHireTargetApp(null)} className="text-white/60 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmHire} className="p-6 space-y-4 text-xs">
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-white/90 space-y-1">
-                <div className="font-bold text-amber-400">{hireTargetApp.applicantName}</div>
-                <div className="text-white/60">Position: {hireTargetApp.requirementPosition} ({hireTargetApp.craftName})</div>
-              </div>
-
-              <div>
-                <label className="block text-white/60 font-bold mb-1">Agreed Remuneration *</label>
-                <input
-                  type="text"
-                  value={hireRemuneration}
-                  onChange={(e) => setHireRemuneration(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={hireStartDate}
-                    onChange={(e) => setHireStartDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/60 font-bold mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={hireEndDate}
-                    onChange={(e) => setHireEndDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white"
-                  />
-                </div>
-              </div>
-
-              <p className="text-[11px] text-white/50">
-                This will automatically add the talent to your live Cast & Crew Roster and generate a CineVenue Digital Production Contract.
-              </p>
-
-              <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setHireTargetApp(null)}
-                  className="px-4 py-2 rounded-xl bg-white/10 text-white font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-emerald-500 text-black font-black uppercase rounded-xl cursor-pointer"
-                >
-                  Confirm Hire & Agreement
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

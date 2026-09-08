@@ -68,24 +68,12 @@ export default function FilmProductionNavbar({
         {/* Navigation Tabs */}
         <nav className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none text-xs font-semibold">
           {[
-            { id: "overview", label: "Overview", icon: Clapperboard },
-            { id: "projects", label: "Film Projects", icon: Film },
-            { id: "professionals", label: "24 Crafts Talent", icon: Users },
+            { id: "overview", label: "Production Home", icon: Clapperboard },
+            { id: "my-projects", label: "My Film Projects", icon: Film, badge: myProjectsCount > 0 ? myProjectsCount : undefined },
             { id: "casting", label: "Casting Calls", icon: Award },
-            { id: "jobs", label: "Crew Openings", icon: Briefcase },
-            { id: "companies", label: "Studios", icon: Building2 },
-            { 
-              id: "my-projects", 
-              label: "Filmmaker Studio", 
-              icon: PlusCircle, 
-              badge: myProjectsCount > 0 ? myProjectsCount : undefined 
-            },
-            { 
-              id: "messages", 
-              label: "Offers & Chat", 
-              icon: MessageSquare, 
-              badge: negotiationsCount > 0 ? negotiationsCount : undefined 
-            }
+            { id: "auditions", label: "My Auditions", icon: Film },
+            { id: "proposals", label: "Proposal Form", icon: Clapperboard },
+            { id: "my-profile", label: "My Profile", icon: User }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
