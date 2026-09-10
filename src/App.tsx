@@ -60,6 +60,7 @@ import EventManagementHub from "./components/events/EventManagementHub";
 import CreateEvent from "./pages/CreateEvent";
 import { ProposalSubmitForm } from "./components/proposals/ProposalSubmitForm";
 import { CustomerProposalsView } from "./components/proposals/CustomerProposalsView";
+import AdvertiseWithCineVenuePage from "./pages/AdvertiseWithCineVenuePage";
 import CineVenueLogo from "./components/CineVenueLogo";
 import LocationSelector from "./components/location/LocationSelector";
 import { calculateDistance, getCoordinates } from "./lib/location";
@@ -1787,6 +1788,8 @@ export default function App() {
             <Route path="/film-production/proposals" element={renderFilmProduction("film", "proposals")} />
             <Route path="/film-production/proposals/create" element={renderFilmProduction("film", "proposals")} />
             <Route path="/film-production/my-profile" element={renderFilmProduction("film", "my-profile")} />
+            <Route path="/film-production/professionals" element={renderFilmProduction("film", "professionals")} />
+            <Route path="/film-production/professionals/:username" element={renderFilmProduction("film", "professionals")} />
             <Route path="/filmproduction" element={renderFilmProduction()} />
             <Route path="/24crafts" element={renderFilmProduction()} />
             <Route path="/crafts" element={renderFilmProduction()} />
@@ -1926,6 +1929,10 @@ export default function App() {
           )
         } 
       />
+
+      {/* Advertising & Monetization Routes */}
+      <Route path="/advertise" element={<AdvertiseWithCineVenuePage />} />
+      <Route path="/advertise-with-cinevenue" element={<AdvertiseWithCineVenuePage />} />
 
       {/* Official Legal & Compliance Routes */}
       <Route path="/legal" element={<LegalPolicies />} />

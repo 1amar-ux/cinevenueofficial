@@ -3,18 +3,23 @@ import {
   FilmProject, 
   ProductionStage,
   ProjectStatus,
-  ProjectType
+  ProjectType,
+  ProfessionalProfile
 } from "../../types/filmProductionMarketplace";
 import { 
   PlusCircle, Film, Calendar, MapPin, Building2, User, 
   Trash2, Edit3, CheckCircle2, ChevronRight, FileText, 
-  Clock, X, Search, Filter, AlertCircle, Sparkles, ExternalLink
+  Clock, X, Search, Filter, AlertCircle, Sparkles, ExternalLink,
+  Users
 } from "lucide-react";
 import { 
   saveProject, 
   deleteProject,
-  getProjects 
+  getProjects,
+  getProfessionalById,
+  getProfessionals
 } from "../../services/filmProductionService";
+import ProfessionalProfileModal from "./ProfessionalProfileModal";
 
 interface MyProjectsDashboardViewProps {
   projects: FilmProject[];
@@ -85,6 +90,59 @@ export default function MyProjectsDashboardView({
 
   // Selected project details modal
   const [viewingProject, setViewingProject] = useState<FilmProject | null>(null);
+
+  // Professional profile preview for Cast & Crew
+  const [selectedMemberProfile, setSelectedMemberProfile] = useState<ProfessionalProfile | null>(null);
+
+  const handleOpenMemberProfile = (member: { professionalId?: string; name?: string; actorName?: string; role?: string }) => {
+    const profs = getProfessionals();
+    let found: ProfessionalProfile | undefined;
+    if (member.professionalId) {
+      found = getProfessionalById(member.professionalId);
+    }
+    const nameToMatch = member.name || member.actorName;
+    if (!found && nameToMatch) {
+      found = profs.find(p => p.fullName.toLowerCase() === nameToMatch.toLowerCase());
+    }
+    if (found) {
+      setSelectedMemberProfile(found);
+    } else if (nameToMatch) {
+      setSelectedMemberProfile({
+        id: member.professionalId || `member-${Date.now()}`,
+        userId: `usr-${Date.now()}`,
+        userEmail: "cast@cinevenue.com",
+        fullName: nameToMatch,
+        handle: `@${nameToMatch.replace(/\s+/g, "_").toLowerCase()}`,
+        professionalHeadline: member.role || "Cast & Crew Specialist",
+        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+        location: "Hyderabad",
+        country: "India",
+        preferredLocations: ["Hyderabad", "Mumbai"],
+        languages: ["Telugu", "Hindi"],
+        bio: `${nameToMatch} is an attached specialist on this CineVenue film project.`,
+        experienceYears: 4,
+        primaryCraftId: "craft-1",
+        primaryCraftName: member.role || "Acting",
+        secondaryCraftIds: [],
+        secondaryCraftNames: [],
+        roles: [member.role || "Film Specialist"],
+        specializations: ["Feature Film", "Cinema"],
+        skills: ["Performance", "Production"],
+        projectTypes: ["Feature Film"],
+        preferredIndustries: ["Tollywood", "Pan-India"],
+        remunerationRange: { min: 300000, max: 1500000, currency: "INR", unit: "per project" },
+        availability: { status: "Available", notes: "Attached to project" },
+        contactPreferences: { allowDirectInvites: true, allowNegotiations: true, preferredContactMode: "Platform Chat" },
+        portfolio: [],
+        filmography: [],
+        verificationLevel: "Profile Verified",
+        rating: 5.0,
+        reviewsCount: 1,
+        completedProjectsCount: 1,
+        joinedDate: "2025"
+      });
+    }
+  };
 
   const handleOpenCreateModal = () => {
     setEditingProjectId(null);
@@ -704,13 +762,27 @@ export default function MyProjectsDashboardView({
               )}
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                <div>
-                  <span className="text-[10px] text-white/40 block font-bold">Producer</span>
-                  <span className="text-white font-medium">{viewingProject.producerName}</span>
+                <div 
+                  onClick={() => handleOpenMemberProfile({ name: viewingProject.producerName, role: "Producer" })}
+                  className="cursor-pointer hover:bg-white/5 p-1.5 -m-1.5 rounded-lg transition-all"
+                  title="Click to view Producer profile"
+                >
+                  <span className="text-[10px] text-white/40 block font-bold">Producer (Click to view)</span>
+                  <span className="text-amber-400 font-medium hover:underline flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    <span>{viewingProject.producerName}</span>
+                  </span>
                 </div>
-                <div>
-                  <span className="text-[10px] text-white/40 block font-bold">Director</span>
-                  <span className="text-white font-medium">{viewingProject.directorName}</span>
+                <div 
+                  onClick={() => handleOpenMemberProfile({ name: viewingProject.directorName, role: "Director" })}
+                  className="cursor-pointer hover:bg-white/5 p-1.5 -m-1.5 rounded-lg transition-all"
+                  title="Click to view Director profile"
+                >
+                  <span className="text-[10px] text-white/40 block font-bold">Director (Click to view)</span>
+                  <span className="text-amber-400 font-medium hover:underline flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    <span>{viewingProject.directorName}</span>
+                  </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-white/40 block font-bold">Production House</span>
@@ -729,6 +801,94 @@ export default function MyProjectsDashboardView({
                   <span className="text-white font-medium">{viewingProject.expectedStartDate || "TBD"}</span>
                 </div>
               </div>
+
+              {/* Attached Cast Members */}
+              {viewingProject.castMembers && viewingProject.castMembers.length > 0 && (
+                <div className="space-y-2 p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Attached Cast ({viewingProject.castMembers.length})</span>
+                    </span>
+                    <span className="text-[10px] text-white/40">Click any member to inspect visual profile</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {viewingProject.castMembers.map(cast => (
+                      <div
+                        key={cast.id}
+                        onClick={() => handleOpenMemberProfile({ 
+                          professionalId: cast.professionalId, 
+                          actorName: cast.actorName, 
+                          role: `${cast.characterName} (${cast.roleType})` 
+                        })}
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/30 flex items-center justify-between gap-2 transition-all cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={cast.photoUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200"}
+                            alt={cast.actorName}
+                            className="w-8 h-8 rounded-lg object-cover"
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>{cast.actorName}</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-white/40" />
+                            </div>
+                            <div className="text-[10px] text-white/60">as {cast.characterName} • {cast.roleType}</div>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-400/20 text-amber-300">
+                          {cast.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attached Crew Members */}
+              {viewingProject.crewMembers && viewingProject.crewMembers.length > 0 && (
+                <div className="space-y-2 p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-purple-400 tracking-wider flex items-center gap-1.5">
+                      <Film className="w-3.5 h-3.5" />
+                      <span>Key Technical Crew ({viewingProject.crewMembers.length})</span>
+                    </span>
+                    <span className="text-[10px] text-white/40">Click any crew member to view credentials</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {viewingProject.crewMembers.map(crew => (
+                      <div
+                        key={crew.id}
+                        onClick={() => handleOpenMemberProfile({ 
+                          professionalId: crew.professionalId, 
+                          name: crew.name, 
+                          role: `${crew.position} (${crew.craftName})` 
+                        })}
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 flex items-center justify-between gap-2 transition-all cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={crew.photoUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200"}
+                            alt={crew.name}
+                            className="w-8 h-8 rounded-lg object-cover"
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>{crew.name}</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-white/40" />
+                            </div>
+                            <div className="text-[10px] text-white/60">{crew.position} • {crew.department}</div>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-purple-400/20 text-purple-300">
+                          {crew.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {viewingProject.projectDocuments && viewingProject.projectDocuments.length > 0 && (
                 <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
@@ -760,6 +920,16 @@ export default function MyProjectsDashboardView({
           </div>
         </div>
       )}
+
+      {/* CAST & CREW PROFESSIONAL PROFILE MODAL */}
+      <ProfessionalProfileModal
+        isOpen={!!selectedMemberProfile}
+        onClose={() => setSelectedMemberProfile(null)}
+        profile={selectedMemberProfile}
+        onInviteToProject={() => {}}
+        onStartNegotiation={() => {}}
+        currentUserEmail={userEmail}
+      />
 
     </div>
   );

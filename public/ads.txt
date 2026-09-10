@@ -1,0 +1,6 @@
+# CineVenue Authoritative ads.txt
+# Authorized Digital Sellers file for CineVenue Entertainment Portal
+# https://iabtechlab.com/ads-txt/
+
+# Google AdSense / Google Ad Manager
+google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

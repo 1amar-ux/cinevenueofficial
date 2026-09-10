@@ -121,6 +121,11 @@ export default function ProfessionalProfileModal({
                   <h1 className="text-xl md:text-2xl font-black text-white">
                     {profile.fullName}
                   </h1>
+                  {profile.handle && (
+                    <span className="text-xs font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
+                      {profile.handle}
+                    </span>
+                  )}
                   {profile.verificationLevel !== "None" && (
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/40">
                       <ShieldCheck className="w-3.5 h-3.5" />
@@ -129,16 +134,26 @@ export default function ProfessionalProfileModal({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
-                  <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                    {profile.primaryCraftName}
-                  </span>
-                  {profile.secondaryCraftNames?.map((sec, idx) => (
-                    <span key={idx} className="px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/10 hidden sm:inline-block">
-                      {sec}
+                {profile.roles && profile.roles.length > 0 ? (
+                  <div className="flex items-center gap-1.5 flex-wrap text-xs font-bold">
+                    {profile.roles.map((r, idx) => (
+                      <span key={idx} className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                      {profile.primaryCraftName}
                     </span>
-                  ))}
-                </div>
+                    {profile.secondaryCraftNames?.map((sec, idx) => (
+                      <span key={idx} className="px-2 py-0.5 rounded-md bg-white/5 text-white/70 border border-white/10 hidden sm:inline-block">
+                        {sec}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-4 text-xs text-white/50 pt-0.5">
                   <span className="flex items-center gap-1">
@@ -256,6 +271,85 @@ export default function ProfessionalProfileModal({
                   <span className="text-white font-bold">{profile.projectTypes?.join(", ")}</span>
                 </div>
               </div>
+
+              {/* Formal Training / Institutes */}
+              {profile.training && profile.training.length > 0 && (
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Formal Training & Institutes</h4>
+                  <ul className="space-y-1 text-xs text-white/80">
+                    {profile.training.map((t, idx) => (
+                      <li key={idx} className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                        <span>{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Professional Work Links */}
+              {profile.professionalLinks && Object.values(profile.professionalLinks).some(Boolean) && (
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">External Work & Verified Portals</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.professionalLinks.imdb && (
+                      <a
+                        href={profile.professionalLinks.imdb}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-bold text-xs flex items-center gap-1.5 border border-amber-500/30"
+                      >
+                        <span>IMDb Profile</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {profile.professionalLinks.youtube && (
+                      <a
+                        href={profile.professionalLinks.youtube}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 font-bold text-xs flex items-center gap-1.5 border border-red-500/30"
+                      >
+                        <span>YouTube Reel</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {profile.professionalLinks.vimeo && (
+                      <a
+                        href={profile.professionalLinks.vimeo}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 font-bold text-xs flex items-center gap-1.5 border border-blue-500/30"
+                      >
+                        <span>Vimeo Showcase</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {profile.professionalLinks.website && (
+                      <a
+                        href={profile.professionalLinks.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 border border-white/20"
+                      >
+                        <span>Portfolio Website</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {profile.professionalLinks.linkedin && (
+                      <a
+                        href={profile.professionalLinks.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-bold text-xs flex items-center gap-1.5 border border-blue-500/30"
+                      >
+                        <span>LinkedIn</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

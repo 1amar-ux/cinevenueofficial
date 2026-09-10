@@ -35,6 +35,16 @@ export function createApp(): Express {
     res.json({ status: "ok", service: "CineVenue Full Stack Unified Server" });
   });
 
+  // 4A. IAB Authoritative ads.txt Route
+  app.get("/ads.txt", (req, res) => {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(
+      `# CineVenue Authoritative ads.txt\n` +
+      `# Authorized Digital Sellers file for CineVenue Entertainment Portal\n` +
+      `google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0\n`
+    );
+  });
+
   // 4B. Strict No-Cache Middleware for settings, health, and admin routes to guarantee global real-time synchronization
   app.use((req, res, next) => {
     const p = req.path.toLowerCase();

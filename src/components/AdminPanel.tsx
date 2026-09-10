@@ -25,6 +25,7 @@ import FeeManagementAdmin from "./admin/FeeManagementAdmin";
 import TheatreBankManagement from "./TheatreBankManagement";
 import EventManagementAdminPanel from "./productions/EventManagementAdminPanel";
 import CineVenueFilmAdminTab from "./film-production/CineVenueFilmAdminTab";
+import AdvertisingAdminModule from "./admin/AdvertisingAdminModule";
 import { getEventRequests, submitEventRequest } from "../services/eventService";
 import { EventManagementRequest, PublicEvent, ArtistRequest, SponsorshipRequest, EventPortfolioItem } from "../types/productions";
 import { INITIAL_EVENT_PORTFOLIO, INITIAL_ARTIST_REQUESTS, INITIAL_SPONSORSHIP_REQUESTS, INITIAL_EVENT_MANAGEMENT_REQUESTS } from "../data/productionsData";
@@ -2222,7 +2223,7 @@ export default function AdminPanel({
                   </span>
                 </button>
 
-                {/* Tab Item - Advertisement Console */}
+                {/* Tab Item - Advertising & Monetization */}
                 <button
                   onClick={() => { setActiveTab("ads_console"); setIsMobileMenuOpen(false); }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -2233,11 +2234,11 @@ export default function AdminPanel({
                   id="tab-btn-ads-console"
                 >
                   <div className="flex items-center gap-3">
-                    <Bell className="w-4 h-4 text-gold shrink-0" />
-                    <span>Ad Console & CTR</span>
+                    <Layers className="w-4 h-4 text-gold shrink-0" />
+                    <span>Advertising</span>
                   </div>
                   <span className="text-[9px] font-bold bg-gold/15 text-gold border border-gold/30 px-1.5 py-0.5 rounded">
-                    {advertisements.length}
+                    MONETIZE
                   </span>
                 </button>
 
@@ -6111,220 +6112,7 @@ export default function AdminPanel({
           )}
 
           {activeTab === "ads_console" && (
-            <div className="space-y-8 animate-fade-in" id="tab-ads-console">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
-                <div>
-                  <h2 className="text-2xl font-bold text-text-primary tracking-wide flex items-center gap-2">
-                    <Bell className="w-6 h-6 text-gold" />
-                    📢 Advertisement Console & Click Analytics
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-1">
-                    Publish hero sliders, homepage banners, and sponsored cards with real-time impression, click, and CTR tracking.
-                  </p>
-                </div>
-              </div>
-
-              {/* KPI Analytics */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="bg-[#0F0F11] border border-white/5 p-4 rounded-xl">
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Total Impressions</span>
-                  <div className="text-2xl font-bold text-gold mt-1 font-mono">
-                    {advertisements.reduce((acc, ad) => acc + ad.impressions, 0).toLocaleString()}
-                  </div>
-                </div>
-                <div className="bg-[#0F0F11] border border-white/5 p-4 rounded-xl">
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Total User Clicks</span>
-                  <div className="text-2xl font-bold text-cyan-400 mt-1 font-mono">
-                    {advertisements.reduce((acc, ad) => acc + ad.clicks, 0).toLocaleString()}
-                  </div>
-                </div>
-                <div className="bg-[#0F0F11] border border-white/5 p-4 rounded-xl">
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Average CTR %</span>
-                  <div className="text-2xl font-bold text-emerald-400 mt-1 font-mono">
-                    {(() => {
-                      const totalImp = advertisements.reduce((acc, ad) => acc + ad.impressions, 0);
-                      const totalClk = advertisements.reduce((acc, ad) => acc + ad.clicks, 0);
-                      return totalImp > 0 ? ((totalClk / totalImp) * 100).toFixed(2) + "%" : "0.00%";
-                    })()}
-                  </div>
-                </div>
-                <div className="bg-[#0F0F11] border border-white/5 p-4 rounded-xl">
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Active Campaigns</span>
-                  <div className="text-2xl font-bold text-text-primary mt-1 font-mono">
-                    {advertisements.filter(ad => ad.status === "Active").length}
-                  </div>
-                </div>
-              </div>
-
-              {/* Create New Ad Form */}
-              <div className="bg-[#0F0F11] border border-white/10 rounded-xl p-6 text-left space-y-4">
-                <h3 className="text-sm font-bold text-gold uppercase tracking-wider">🚀 Publish New Advertisement Campaign</h3>
-                {adSuccessMsg && (
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-lg font-semibold">
-                    {adSuccessMsg}
-                  </div>
-                )}
-                <form onSubmit={handleCreateAdSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">Campaign Title</label>
-                    <input
-                      type="text"
-                      value={adTitle}
-                      onChange={e => setAdTitle(e.target.value)}
-                      placeholder="e.g. IMAX Laser 3D Gala Festival"
-                      className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">Placement Location</label>
-                    <select
-                      value={adType}
-                      onChange={e => setAdType(e.target.value as any)}
-                      className="w-full bg-[#121215] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
-                    >
-                      <option value="hero_slider">Hero Slider Banner</option>
-                      <option value="homepage_banner">Homepage Middle Banner</option>
-                      <option value="sponsored_card">Sponsored Feature Card</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">Banner Image URL</label>
-                    <input
-                      type="text"
-                      value={adImage}
-                      onChange={e => setAdImage(e.target.value)}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">Destination Target Link</label>
-                    <input
-                      type="text"
-                      value={adTargetUrl}
-                      onChange={e => setAdTargetUrl(e.target.value)}
-                      placeholder="e.g. #exclusive-events or #movies"
-                      className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">Start Date</label>
-                    <input
-                      type="date"
-                      value={adStartDate}
-                      onChange={e => setAdStartDate(e.target.value)}
-                      className="w-full bg-[#121215] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">End Date</label>
-                    <input
-                      type="date"
-                      value={adEndDate}
-                      onChange={e => setAdEndDate(e.target.value)}
-                      className="w-full bg-[#121215] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 flex justify-end pt-2">
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider rounded cursor-pointer transition-all shadow-lg shadow-gold/10"
-                    >
-                      Publish Campaign Live
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Advertisements List */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Active & Historical Campaigns</h3>
-                  <div className="flex items-center gap-2">
-                    {(["all", "hero_slider", "homepage_banner", "sponsored_card"] as const).map(t => (
-                      <button
-                        key={t}
-                        onClick={() => setAdFilter(t)}
-                        className={`px-3 py-1 rounded text-[10px] font-bold uppercase cursor-pointer transition-all ${
-                          adFilter === t ? "bg-gold text-black" : "bg-white/5 text-text-secondary hover:bg-white/10"
-                        }`}
-                      >
-                        {t === "all" ? "All" : t.replace("_", " ")}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {advertisements
-                    .filter(ad => adFilter === "all" || ad.type === adFilter)
-                    .map(ad => {
-                      const ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : "0.00";
-                      return (
-                        <div key={ad.id} className="bg-[#0F0F11] border border-white/10 rounded-xl overflow-hidden flex flex-col justify-between p-4 space-y-3">
-                          <div className="flex gap-4 items-start">
-                            <img src={ad.imageUrl} alt={ad.title} className="w-24 h-16 object-cover rounded-lg border border-white/10 shrink-0" />
-                            <div className="space-y-1 flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[9px] font-bold uppercase bg-gold/15 text-gold border border-gold/30 px-1.5 py-0.5 rounded">
-                                  {ad.type.replace("_", " ")}
-                                </span>
-                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                                  ad.status === "Active" ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-text-muted"
-                                }`}>
-                                  {ad.status}
-                                </span>
-                              </div>
-                              <h4 className="text-sm font-bold text-text-primary truncate">{ad.title}</h4>
-                              <p className="text-[10px] text-text-muted font-mono truncate">{ad.targetUrl}</p>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-2 bg-black/40 p-2.5 rounded-lg border border-white/5 text-center font-mono">
-                            <div>
-                              <span className="text-[8px] text-text-muted uppercase block">Impressions</span>
-                              <span className="text-xs font-bold text-text-primary">{ad.impressions}</span>
-                            </div>
-                            <div>
-                              <span className="text-[8px] text-text-muted uppercase block">Clicks</span>
-                              <span className="text-xs font-bold text-cyan-400">{ad.clicks}</span>
-                            </div>
-                            <div>
-                              <span className="text-[8px] text-text-muted uppercase block">CTR %</span>
-                              <span className="text-xs font-bold text-emerald-400">{ctr}%</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1 text-xs">
-                            <span className="text-[10px] text-text-muted font-mono">{ad.startDate} ~ {ad.endDate}</span>
-                            <div className="flex items-center gap-2">
-                              {onToggleAdStatus && (
-                                <button
-                                  onClick={() => onToggleAdStatus(ad.id)}
-                                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-gold rounded text-[10px] font-bold uppercase cursor-pointer"
-                                >
-                                  {ad.status === "Active" ? "Pause" : "Activate"}
-                                </button>
-                              )}
-                              {onDeleteAd && (
-                                <button
-                                  onClick={() => onDeleteAd(ad.id)}
-                                  className="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 rounded text-[10px] font-bold uppercase cursor-pointer"
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </div>
+            <AdvertisingAdminModule />
           )}
 
           {/* ========================================================= */}

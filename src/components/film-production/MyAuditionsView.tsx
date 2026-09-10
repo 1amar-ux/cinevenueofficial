@@ -3,7 +3,8 @@ import {
   AuditionSubmission, 
   IndianCastingCall, 
   FilmProject,
-  AuditionStatus 
+  AuditionStatus,
+  ProfessionalProfile
 } from "../../types/filmProductionMarketplace";
 import { 
   Video, Calendar, Clock, MapPin, ExternalLink, 
@@ -11,7 +12,13 @@ import {
   AlertCircle, ChevronRight, Star, ShieldCheck, Mail, Phone,
   X, Check, Send, Award, Film
 } from "lucide-react";
-import { updateAuditionStatus } from "../../services/filmProductionService";
+import { 
+  updateAuditionStatus, 
+  getProfessionalById, 
+  getProfessionalByEmail, 
+  getProfessionals 
+} from "../../services/filmProductionService";
+import ProfessionalProfileModal from "./ProfessionalProfileModal";
 
 interface MyAuditionsViewProps {
   auditions: AuditionSubmission[];
@@ -57,6 +64,85 @@ export default function MyAuditionsView({
 
   // Selected Submission Detail Modal
   const [viewingAudition, setViewingAudition] = useState<AuditionSubmission | null>(null);
+
+  // Professional Profile Modal Target
+  const [profileModalTarget, setProfileModalTarget] = useState<ProfessionalProfile | null>(null);
+
+  const handleOpenApplicantProfile = (aud: AuditionSubmission) => {
+    let prof: ProfessionalProfile | undefined;
+    if (aud.applicantProfileId) {
+      prof = getProfessionalById(aud.applicantProfileId);
+    }
+    if (!prof && aud.applicantEmail) {
+      prof = getProfessionalByEmail(aud.applicantEmail);
+    }
+    if (!prof) {
+      const all = getProfessionals();
+      prof = all.find(p => 
+        (aud.applicantHandle && p.handle === aud.applicantHandle) ||
+        p.fullName.toLowerCase() === aud.applicantName.toLowerCase()
+      );
+    }
+
+    if (prof) {
+      setProfileModalTarget(prof);
+    } else {
+      // Synthesize clean preview profile from submission data
+      setProfileModalTarget({
+        id: aud.applicantProfileId || `cand-${aud.id}`,
+        userId: aud.applicantId,
+        userEmail: aud.applicantEmail,
+        fullName: aud.applicantName,
+        handle: aud.applicantHandle || `@${aud.applicantName.replace(/\s+/g, "_").toLowerCase()}`,
+        professionalHeadline: `${aud.roleType} Performer • ${aud.characterName} Applicant`,
+        avatarUrl: aud.applicantAvatar || (aud.headshots && aud.headshots[0]) || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80",
+        location: aud.city,
+        country: "India",
+        preferredLocations: [aud.city],
+        languages: aud.spokenLanguages,
+        bio: aud.experienceSummary,
+        experienceYears: 2,
+        primaryCraftId: "craft-acting",
+        primaryCraftName: "Actor / Performer",
+        secondaryCraftIds: [],
+        secondaryCraftNames: [],
+        roles: ["Actor", "Audition Candidate"],
+        specializations: [aud.roleType],
+        skills: ["Screen Presence", "Dialogue Delivery", ...aud.spokenLanguages],
+        projectTypes: ["Feature Film", "Digital Series"],
+        preferredIndustries: ["Tollywood", "Bollywood", "Pan-India"],
+        remunerationRange: { min: 200000, max: 1000000, currency: "INR", unit: "per project" },
+        availability: { status: "Available", notes: "Applied for casting call" },
+        contactPreferences: { allowDirectInvites: true, allowNegotiations: true, preferredContactMode: "Platform Chat" },
+        portfolio: [
+          ...(aud.videoAuditionUrl ? [{
+            id: `port-reel-${aud.id}`,
+            title: `Audition Self-Tape / Reel (${aud.characterName})`,
+            type: "Showreel" as any,
+            mediaUrl: aud.videoAuditionUrl,
+            role: aud.characterName,
+            year: new Date().getFullYear(),
+            projectType: "Feature Film"
+          }] : []),
+          ...(aud.headshots?.map((h, i) => ({
+            id: `port-photo-${aud.id}-${i}`,
+            title: `Candidate Headshot #${i+1}`,
+            type: "Image" as any,
+            mediaUrl: h,
+            role: aud.characterName,
+            year: new Date().getFullYear(),
+            projectType: "Feature Film"
+          })) || [])
+        ],
+        filmography: [],
+        verificationLevel: "Profile Verified",
+        rating: 5.0,
+        reviewsCount: 1,
+        completedProjectsCount: 1,
+        joinedDate: "2025"
+      });
+    }
+  };
 
   // 1. My submitted auditions as candidate
   const mySubmissions = auditions.filter(a =>
@@ -308,12 +394,21 @@ export default function MyAuditionsView({
 
               {/* Action Toolbar */}
               <div className="p-4 bg-white/[0.02] border-t border-white/10 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => setViewingAudition(aud)}
-                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all cursor-pointer"
-                >
-                  View Details
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setViewingAudition(aud)}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => handleOpenApplicantProfile(aud)}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-amber-500/25"
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>View Profile</span>
+                  </button>
+                </div>
 
                 {/* Owner Review Controls */}
                 {activeMode === "reviewer" && (
@@ -538,10 +633,22 @@ export default function MyAuditionsView({
               )}
             </div>
 
-            <div className="pt-4 border-t border-white/10 flex justify-end">
+            <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = viewingAudition;
+                  setViewingAudition(null);
+                  handleOpenApplicantProfile(target);
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>View Full Profile & Showreels</span>
+              </button>
               <button
                 onClick={() => setViewingAudition(null)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-white font-bold"
+                className="px-4 py-2 rounded-xl bg-white/10 text-white font-bold cursor-pointer"
               >
                 Close
               </button>
@@ -549,6 +656,16 @@ export default function MyAuditionsView({
           </div>
         </div>
       )}
+
+      {/* CANDIDATE FULL PROFESSIONAL PROFILE MODAL */}
+      <ProfessionalProfileModal
+        isOpen={!!profileModalTarget}
+        onClose={() => setProfileModalTarget(null)}
+        profile={profileModalTarget}
+        onInviteToProject={() => {}}
+        onStartNegotiation={() => {}}
+        currentUserEmail={userEmail}
+      />
 
     </div>
   );

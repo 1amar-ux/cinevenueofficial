@@ -37,6 +37,8 @@ import IndianCastingCallsView from "./IndianCastingCallsView";
 import MyAuditionsView from "./MyAuditionsView";
 import ProposalsView from "./ProposalsView";
 import MyProfileView from "./MyProfileView";
+import DiscoverProfessionalsView from "./DiscoverProfessionalsView";
+import PublicProfessionalProfileView from "./PublicProfessionalProfileView";
 import AuditionSubmissionModal from "./AuditionSubmissionModal";
 import CreateCastingCallModal from "./CreateCastingCallModal";
 import CreateProposalModal from "./CreateProposalModal";
@@ -64,7 +66,23 @@ export default function FilmProductionHub({
   onOpenAuth,
   onNavigateHome
 }: FilmProductionHubProps) {
-  const [activeTab, setActiveTab] = useState<string>(initialTab);
+  const getInitialUsernameFromUrl = () => {
+    if (typeof window === "undefined") return null;
+    const match = window.location.pathname.match(/\/film-production\/professionals\/([^/?#]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  };
+
+  const getInitialActiveTab = () => {
+    if (typeof window !== "undefined") {
+      if (window.location.pathname.startsWith("/film-production/professionals")) {
+        return "professionals";
+      }
+    }
+    return initialTab;
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getInitialActiveTab);
+  const [selectedUsername, setSelectedUsername] = useState<string | null>(getInitialUsernameFromUrl);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   // Data state
@@ -109,6 +127,30 @@ export default function FilmProductionHub({
   // Logged-in user's profile
   const myProfile = userEmail ? getProfessionalByEmail(userEmail) : undefined;
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const user = getInitialUsernameFromUrl();
+      setSelectedUsername(user);
+      if (window.location.pathname.startsWith("/film-production/professionals")) {
+        setActiveTab("professionals");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleSelectProfessional = (username: string) => {
+    setSelectedUsername(username);
+    setActiveTab("professionals");
+    window.history.pushState(null, "", `/film-production/professionals/${username}`);
+  };
+
+  const handleBackToDirectory = () => {
+    setSelectedUsername(null);
+    setActiveTab("professionals");
+    window.history.pushState(null, "", "/film-production/professionals");
+  };
+
   const handleCreateProjectClick = () => {
     setActiveTab("my-projects");
   };
@@ -122,6 +164,8 @@ export default function FilmProductionHub({
       case "auditions": return "My Auditions";
       case "proposals": return "Proposal Form";
       case "my-profile": return "My Profile";
+      case "professionals": 
+        return selectedUsername ? `${selectedUsername} | Film Profile` : "Discover Film Professionals";
       case "admin": return "Film Production Admin Console";
       default: return "Film Production";
     }
@@ -328,12 +372,43 @@ export default function FilmProductionHub({
                 profile={myProfile}
                 userEmail={userEmail}
                 onOpenEditModal={() => setIsMyProfileEditorOpen(true)}
+                onDiscoverProfessionals={() => {
+                  setSelectedUsername(null);
+                  setActiveTab("professionals");
+                  window.history.pushState(null, "", "/film-production/professionals");
+                }}
               />
             </div>
           )}
 
           {/* ======================================================== */}
-          {/* 7. ADMIN MANAGEMENT (Restricted) */}
+          {/* 7. DISCOVER PROFESSIONALS / PUBLIC TALENT PROFILE */}
+          {/* ======================================================== */}
+          {activeTab === "professionals" && (
+            <div className="max-w-7xl mx-auto">
+              {selectedUsername ? (
+                <PublicProfessionalProfileView
+                  username={selectedUsername}
+                  userEmail={userEmail}
+                  onBackToDirectory={handleBackToDirectory}
+                  onNavigateToProposal={() => {
+                    setActiveTab("proposals");
+                  }}
+                />
+              ) : (
+                <DiscoverProfessionalsView
+                  userEmail={userEmail}
+                  onSelectProfessional={handleSelectProfessional}
+                  onNavigateTab={(tab) => {
+                    setActiveTab(tab);
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 8. ADMIN MANAGEMENT (Restricted) */}
           {/* ======================================================== */}
           {activeTab === "admin" && (
             <div className="max-w-7xl mx-auto">

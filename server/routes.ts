@@ -8,6 +8,7 @@ import paymentRoutes from "./modules/payments/payment.routes";
 import cinecoinsRoutes from "./modules/cinecoins/cinecoins.routes";
 import eventRoutes from "./modules/events/event.routes";
 import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
+import filmProductionRoutes from "./modules/marketplace/filmProduction.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import posRoutes from "./modules/pos/pos.routes";
 import { checkDatabaseConnection } from "./config/database";
@@ -53,6 +54,8 @@ router.use("/payments", paymentRoutes);
 router.use("/cinecoins", cinecoinsRoutes);
 router.use("/events", eventRoutes);
 router.use("/marketplace", marketplaceRoutes);
+router.use("/film-production", filmProductionRoutes);
+router.use("/marketplace", filmProductionRoutes);
 router.use("/admin", adminRoutes);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 

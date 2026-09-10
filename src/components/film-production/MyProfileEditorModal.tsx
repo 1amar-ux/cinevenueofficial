@@ -31,10 +31,11 @@ export default function MyProfileEditorModal({
 }: MyProfileEditorModalProps) {
   if (!isOpen) return null;
 
-  const [activeSection, setActiveSection] = useState<"basic" | "crafts" | "portfolio" | "filmography" | "availability">("basic");
+  const [activeSection, setActiveSection] = useState<"basic" | "crafts" | "training_links" | "portfolio" | "filmography" | "availability">("basic");
 
   // Basic Info Form State
   const [fullName, setFullName] = useState(existingProfile?.fullName || userEmail.split("@")[0]);
+  const [handle, setHandle] = useState(existingProfile?.handle || `@${userEmail.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase()}`);
   const [headline, setHeadline] = useState(existingProfile?.professionalHeadline || "Director & Filmmaker");
   const [avatarUrl, setAvatarUrl] = useState(existingProfile?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80");
   const [coverImageUrl, setCoverImageUrl] = useState(existingProfile?.coverImageUrl || "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=1200&auto=format&fit=crop&q=80");
@@ -42,6 +43,55 @@ export default function MyProfileEditorModal({
   const [languages, setLanguages] = useState<string>(existingProfile?.languages?.join(", ") || "Telugu, English, Hindi");
   const [bio, setBio] = useState(existingProfile?.bio || "Experienced film professional dedicated to high-quality cinema production.");
   const [experienceYears, setExperienceYears] = useState(existingProfile?.experienceYears || 5);
+
+  // Multi-Roles
+  const COMMON_ROLES = [
+    "Actor", "Model", "Dancer", "Director", "Writer / Screenwriter",
+    "Producer", "Cinematographer (DoP)", "Music Director / Composer", 
+    "Playback Singer", "Editor", "Action Choreographer / Stunts",
+    "Art Director / Production Designer", "Costume Designer", 
+    "Sound Designer", "Colorist / DI", "VFX Artist", "Voice Artist / Dubbing"
+  ];
+  const [roles, setRoles] = useState<string[]>(
+    existingProfile?.roles && existingProfile.roles.length > 0 
+      ? existingProfile.roles 
+      : ["Director", "Writer"]
+  );
+  const [customRoleInput, setCustomRoleInput] = useState("");
+
+  const toggleRole = (r: string) => {
+    if (roles.includes(r)) {
+      setRoles(roles.filter(item => item !== r));
+    } else {
+      setRoles([...roles, r]);
+    }
+  };
+
+  const handleAddCustomRole = () => {
+    const trimmed = customRoleInput.trim();
+    if (trimmed && !roles.includes(trimmed)) {
+      setRoles([...roles, trimmed]);
+      setCustomRoleInput("");
+    }
+  };
+
+  // Formal Training & Professional Links
+  const [training, setTraining] = useState<string[]>(existingProfile?.training || []);
+  const [newTrainingInput, setNewTrainingInput] = useState("");
+
+  const handleAddTraining = () => {
+    const trimmed = newTrainingInput.trim();
+    if (trimmed && !training.includes(trimmed)) {
+      setTraining([...training, trimmed]);
+      setNewTrainingInput("");
+    }
+  };
+
+  const [imdbLink, setImdbLink] = useState(existingProfile?.professionalLinks?.imdb || "");
+  const [youtubeLink, setYoutubeLink] = useState(existingProfile?.professionalLinks?.youtube || "");
+  const [vimeoLink, setVimeoLink] = useState(existingProfile?.professionalLinks?.vimeo || "");
+  const [websiteLink, setWebsiteLink] = useState(existingProfile?.professionalLinks?.website || "");
+  const [linkedinLink, setLinkedinLink] = useState(existingProfile?.professionalLinks?.linkedin || "");
 
   // Crafts Form State
   const [primaryCraftId, setPrimaryCraftId] = useState(existingProfile?.primaryCraftId || (crafts[0]?.id || "craft-1"));
@@ -114,10 +164,16 @@ export default function MyProfileEditorModal({
     const primaryCraftObj = crafts.find(c => c.id === primaryCraftId);
     const secondaryCraftNames = secondaryCraftIds.map(id => crafts.find(c => c.id === id)?.name).filter(Boolean) as string[];
 
+    const formattedHandle = handle.trim() 
+      ? (handle.trim().startsWith("@") ? handle.trim() : `@${handle.trim()}`)
+      : `@${userEmail.split("@")[0]}`;
+
     const updated = saveProfessionalProfile({
       id: existingProfile?.id,
       userEmail,
       fullName: fullName.trim(),
+      handle: formattedHandle,
+      roles: roles.length > 0 ? roles : ["Film Professional"],
       professionalHeadline: headline.trim(),
       avatarUrl: avatarUrl.trim(),
       coverImageUrl: coverImageUrl.trim(),
@@ -126,6 +182,14 @@ export default function MyProfileEditorModal({
       languages: languages.split(",").map(s => s.trim()).filter(Boolean),
       bio: bio.trim(),
       experienceYears: Number(experienceYears),
+      training: training.filter(t => t.trim().length > 0),
+      professionalLinks: {
+        imdb: imdbLink.trim() || undefined,
+        youtube: youtubeLink.trim() || undefined,
+        vimeo: vimeoLink.trim() || undefined,
+        website: websiteLink.trim() || undefined,
+        linkedin: linkedinLink.trim() || undefined,
+      },
       primaryCraftId,
       primaryCraftName: primaryCraftObj?.name || "Direction",
       secondaryCraftIds,
@@ -145,7 +209,8 @@ export default function MyProfileEditorModal({
       },
       portfolio,
       filmography,
-      verificationLevel: existingProfile?.verificationLevel || "Profile Verified"
+      verificationLevel: existingProfile?.verificationLevel || "Profile Verified",
+      privacySettings: existingProfile?.privacySettings
     });
 
     onProfileUpdated(updated);
@@ -180,11 +245,12 @@ export default function MyProfileEditorModal({
         {/* Sub-Tabs */}
         <div className="px-6 border-b border-white/10 flex items-center gap-2 overflow-x-auto bg-[#090A0F] text-xs font-bold shrink-0">
           {[
-            { id: "basic", label: "1. Basic Info" },
+            { id: "basic", label: "1. Identity & Roles" },
             { id: "crafts", label: "2. 24 Crafts & Skills" },
-            { id: "portfolio", label: `3. Portfolio (${portfolio.length})` },
-            { id: "filmography", label: `4. Filmography (${filmography.length})` },
-            { id: "availability", label: "5. Availability & Pay" }
+            { id: "training_links", label: `3. Training & Links (${training.length})` },
+            { id: "portfolio", label: `4. Portfolio (${portfolio.length})` },
+            { id: "filmography", label: `5. Filmography (${filmography.length})` },
+            { id: "availability", label: "6. Availability & Pay" }
           ].map(tab => (
             <button
               key={tab.id}
@@ -203,7 +269,7 @@ export default function MyProfileEditorModal({
         {/* Scrollable Form Body */}
         <form onSubmit={handleSaveProfile} className="p-6 overflow-y-auto flex-1 space-y-5 text-xs">
           
-          {/* SECTION 1: BASIC INFO */}
+          {/* SECTION 1: IDENTITY & MULTI-ROLES */}
           {activeSection === "basic" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -219,16 +285,90 @@ export default function MyProfileEditorModal({
                 </div>
 
                 <div>
-                  <label className="block text-white/60 font-bold mb-1">Professional Headline *</label>
+                  <label className="block text-white/60 font-bold mb-1">Username / Professional Handle *</label>
                   <input
                     type="text"
-                    placeholder="e.g. Award-Winning Cinematographer | Period Epics"
-                    value={headline}
-                    onChange={(e) => setHeadline(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500/60"
+                    placeholder="e.g. @siddharth_roy"
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500/60 font-mono"
                     required
                   />
                 </div>
+              </div>
+
+              {/* Multi-Role Selector */}
+              <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-amber-400 font-black uppercase text-[11px] tracking-wider">
+                      Professional Role(s) (Select multiple)
+                    </label>
+                    <p className="text-[11px] text-white/50">
+                      e.g. <span className="text-white font-medium">Actor • Model • Dancer</span> or <span className="text-white font-medium">Director • Writer • Producer</span>
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-full">
+                    {roles.length} selected
+                  </span>
+                </div>
+
+                {/* Role Chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {COMMON_ROLES.map(role => {
+                    const isSelected = roles.includes(role);
+                    return (
+                      <button
+                        type="button"
+                        key={role}
+                        onClick={() => toggleRole(role)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
+                            : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10"
+                        }`}
+                      >
+                        {role} {isSelected && "✓"}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Role Input */}
+                <div className="flex gap-2 pt-2 border-t border-white/10">
+                  <input
+                    type="text"
+                    placeholder="Add other role (e.g. Dialogue Writer, Steadycam Op)..."
+                    value={customRoleInput}
+                    onChange={(e) => setCustomRoleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddCustomRole();
+                      }
+                    }}
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-white text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomRole}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-white/60 font-bold mb-1">Professional Headline *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Award-Winning Cinematographer | Period Epics"
+                  value={headline}
+                  onChange={(e) => setHeadline(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-amber-500/60"
+                  required
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -372,7 +512,133 @@ export default function MyProfileEditorModal({
             </div>
           )}
 
-          {/* SECTION 3: PORTFOLIO & MEDIA */}
+          {/* SECTION 3: FORMAL TRAINING & PROFESSIONAL LINKS */}
+          {activeSection === "training_links" && (
+            <div className="space-y-5">
+              {/* Formal Training / Institutes */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase text-amber-400">Formal Training & Film Institutes</h4>
+                    <p className="text-[11px] text-white/50">
+                      Film schools, acting workshops, choreography diplomas, technical masterclasses.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                    {training.length} accredited
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. FTII Pune - Post Graduate Diploma in Direction & Screenwriting"
+                    value={newTrainingInput}
+                    onChange={(e) => setNewTrainingInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTraining();
+                      }
+                    }}
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl p-2.5 text-white text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTraining}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add</span>
+                  </button>
+                </div>
+
+                {training.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    {training.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/10">
+                        <span className="text-white/90 text-xs font-medium">{item}</span>
+                        <button
+                          type="button"
+                          onClick={() => setTraining(training.filter((_, i) => i !== idx))}
+                          className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Professional Links */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                <h4 className="text-xs font-bold uppercase text-amber-400">Industry Portals & Work Links</h4>
+                <p className="text-[11px] text-white/50">
+                  Direct links allow casting directors and producers to verify your official credits and high-res reels.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-white/60 font-semibold mb-1">IMDb Profile URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://www.imdb.com/name/nm..."
+                      value={imdbLink}
+                      onChange={(e) => setImdbLink(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 font-semibold mb-1">YouTube Channel / Primary Reel</label>
+                    <input
+                      type="url"
+                      placeholder="https://youtube.com/@..."
+                      value={youtubeLink}
+                      onChange={(e) => setYoutubeLink(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 font-semibold mb-1">Vimeo Showreel</label>
+                    <input
+                      type="url"
+                      placeholder="https://vimeo.com/..."
+                      value={vimeoLink}
+                      onChange={(e) => setVimeoLink(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/60 font-semibold mb-1">Personal Portfolio Website</label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={websiteLink}
+                      onChange={(e) => setWebsiteLink(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-white/60 font-semibold mb-1">LinkedIn Profile</label>
+                    <input
+                      type="url"
+                      placeholder="https://linkedin.com/in/..."
+                      value={linkedinLink}
+                      onChange={(e) => setLinkedinLink(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 4: PORTFOLIO & MEDIA */}
           {activeSection === "portfolio" && (
             <div className="space-y-4">
               {/* Add New Portfolio Item */}
@@ -450,7 +716,7 @@ export default function MyProfileEditorModal({
             </div>
           )}
 
-          {/* SECTION 4: FILMOGRAPHY CREDITS */}
+          {/* SECTION 5: FILMOGRAPHY CREDITS */}
           {activeSection === "filmography" && (
             <div className="space-y-4">
               {/* Add Film Credit */}
@@ -533,7 +799,7 @@ export default function MyProfileEditorModal({
             </div>
           )}
 
-          {/* SECTION 5: AVAILABILITY & REMUNERATION */}
+          {/* SECTION 6: AVAILABILITY & REMUNERATION */}
           {activeSection === "availability" && (
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">

@@ -98,6 +98,13 @@ export default function ProductionHomeView({
           {/* Quick Action Badges */}
           <div className="flex flex-wrap gap-2 shrink-0">
             <button
+              onClick={() => onNavigateTab("professionals")}
+              className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>🔍 Discover Professionals</span>
+            </button>
+            <button
               onClick={onCreateProject}
               className="px-4 py-2.5 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center gap-2 cursor-pointer"
             >
@@ -113,6 +120,34 @@ export default function ProductionHomeView({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* DISCOVER PROFESSIONALS HIGHLIGHT BANNER */}
+      <div className="rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#121320] to-[#0A0B12] border border-purple-500/30 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-white">Discover Verified Film Professionals</h2>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase">
+                24 Crafts Directory
+              </span>
+            </div>
+            <p className="text-xs text-white/70 mt-1 max-w-2xl leading-relaxed">
+              Find actors, directors, cinematographers, screenwriters, music directors, and technical crew with verified showreels and authentic portfolios.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigateTab("professionals")}
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-purple-600/20 cursor-pointer shrink-0 transition-all"
+        >
+          <span>Explore Directory</span>
+          <ArrowRight className="w-4 h-4 text-amber-400" />
+        </button>
       </div>
 
       {/* 2. THE 5 CORE PRODUCTION MODULES */}

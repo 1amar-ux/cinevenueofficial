@@ -7,7 +7,7 @@ import {
   X, Video, Upload, CheckCircle2, AlertCircle, 
   User, Phone, Mail, MapPin, Languages, Sparkles, ShieldCheck
 } from "lucide-react";
-import { submitAudition } from "../../services/filmProductionService";
+import { submitAudition, getProfessionalByEmail } from "../../services/filmProductionService";
 
 interface AuditionSubmissionModalProps {
   isOpen: boolean;
@@ -26,22 +26,48 @@ export default function AuditionSubmissionModal({
 }: AuditionSubmissionModalProps) {
   if (!isOpen || !castingCall) return null;
 
-  const [applicantName, setApplicantName] = useState("");
-  const [applicantPhone, setApplicantPhone] = useState("");
+  const userProfile = userEmail ? getProfessionalByEmail(userEmail) : undefined;
+
+  const [applicantName, setApplicantName] = useState(userProfile?.fullName || "");
+  const [applicantPhone, setApplicantPhone] = useState("+91 ");
   const [age, setAge] = useState(castingCall.ageMin || 24);
   const [gender, setGender] = useState<"Male" | "Female" | "Non-Binary" | "Other">(
     castingCall.gender === "Female" ? "Female" : "Male"
   );
   const [height, setHeight] = useState("5'8\"");
-  const [city, setCity] = useState("Hyderabad");
-  const [state, setState] = useState("Telangana");
-  const [spokenLanguages, setSpokenLanguages] = useState<string[]>(castingCall.languages || ["Telugu", "Hindi"]);
+  const [city, setCity] = useState(userProfile?.location || "Hyderabad");
+  const [state, setState] = useState(userProfile?.state || "Telangana");
+  const [spokenLanguages, setSpokenLanguages] = useState<string[]>(
+    userProfile?.languages?.length ? userProfile.languages : (castingCall.languages || ["Telugu", "Hindi"])
+  );
   const [newLanguage, setNewLanguage] = useState("");
   
-  const [videoAuditionUrl, setVideoAuditionUrl] = useState("");
-  const [introVideoUrl, setIntroVideoUrl] = useState("");
-  const [headshotUrl, setHeadshotUrl] = useState("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80");
-  const [experienceSummary, setExperienceSummary] = useState("");
+  // Find showreel / video audition from profile if available
+  const defaultReel = userProfile?.portfolio?.find(p => p.type === "Showreel" || p.category === "Showreel")?.mediaUrl 
+    || userProfile?.professionalLinks?.showreel 
+    || userProfile?.professionalLinks?.youtube 
+    || "";
+
+  const [videoAuditionUrl, setVideoAuditionUrl] = useState(defaultReel);
+  const [introVideoUrl, setIntroVideoUrl] = useState(userProfile?.portfolio?.find(p => p.category === "Introduction Video")?.mediaUrl || "");
+  const [headshotUrl, setHeadshotUrl] = useState(userProfile?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80");
+  const [experienceSummary, setExperienceSummary] = useState(
+    userProfile 
+      ? `${(userProfile.roles || [userProfile.primaryCraftName]).join(" • ")} | ${userProfile.experienceYears} Years Exp: ${userProfile.bio}`
+      : ""
+  );
+
+  const handleAutoFillFromProfile = () => {
+    if (!userProfile) return;
+    setApplicantName(userProfile.fullName);
+    setCity(userProfile.location);
+    if (userProfile.state) setState(userProfile.state);
+    if (userProfile.languages?.length) setSpokenLanguages(userProfile.languages);
+    if (userProfile.avatarUrl) setHeadshotUrl(userProfile.avatarUrl);
+    if (defaultReel) setVideoAuditionUrl(defaultReel);
+    const summary = `${(userProfile.roles || [userProfile.primaryCraftName]).join(" • ")} | ${userProfile.experienceYears} Years Exp: ${userProfile.bio}`;
+    setExperienceSummary(summary);
+  };
   
   // Minor Consent
   const [hasMinorGuardianConsent, setHasMinorGuardianConsent] = useState(false);
@@ -96,8 +122,11 @@ export default function AuditionSubmissionModal({
         projectTitle: castingCall.projectTitle,
         characterName: castingCall.characterName,
         roleType: castingCall.roleCategory,
+        applicantProfileId: userProfile?.id,
+        applicantHandle: userProfile?.handle,
         applicantName,
         applicantEmail: userEmail || "actor@cinevenue.com",
+        applicantAvatar: userProfile?.avatarUrl || headshotUrl,
         applicantPhone,
         age: Number(age),
         gender: gender as any,
@@ -108,6 +137,7 @@ export default function AuditionSubmissionModal({
         videoAuditionUrl,
         introVideoUrl: introVideoUrl || undefined,
         headshots: [headshotUrl],
+        portfolioLinks: userProfile?.portfolio?.map(p => p.mediaUrl) || [],
         experienceSummary,
         hasMinorGuardianConsent,
         guardianName: guardianName || undefined,
@@ -177,6 +207,41 @@ export default function AuditionSubmissionModal({
               <div className="text-[10px] text-white/40">Location: {castingCall.shootLocation}</div>
             </div>
           </div>
+
+          {/* Connected CineVenue Professional Profile Auto-Fill Card */}
+          {userProfile && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={userProfile.avatarUrl}
+                  alt={userProfile.fullName}
+                  className="w-10 h-10 rounded-xl object-cover border border-amber-500/40"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-white">{userProfile.fullName}</span>
+                    {userProfile.handle && (
+                      <span className="text-[10px] font-mono text-amber-400">{userProfile.handle}</span>
+                    )}
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-400/20 text-amber-300">
+                      Profile Linked
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/60">
+                    {(userProfile.roles || [userProfile.primaryCraftName]).join(" • ")} • {userProfile.location}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleAutoFillFromProfile}
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 self-end sm:self-center"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Re-sync From Profile</span>
+              </button>
+            </div>
+          )}
 
           {/* Dialog snippet preview */}
           {castingCall.dialogueScriptSnippet && (

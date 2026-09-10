@@ -19,7 +19,10 @@ import {
   IndianCastingCall,
   AuditionSubmission,
   Proposal,
-  ProposalRevision
+  ProposalRevision,
+  DiscoverProfessionalsFilterState,
+  CastingConsideration,
+  ProfileReport
 } from "../types/filmProductionMarketplace";
 
 import {
@@ -56,7 +59,8 @@ const STORAGE_KEYS = {
   ACTIVITY_LOGS: "cv_film_activity_logs",
   INDIAN_CASTING_CALLS: "cv_film_indian_casting_calls",
   AUDITIONS: "cv_film_auditions",
-  PROPOSALS: "cv_film_proposals"
+  PROPOSALS: "cv_film_proposals",
+  CONSIDERATIONS: "cv_film_considerations"
 };
 
 // Helper for Local Storage with defaults
@@ -195,6 +199,20 @@ export const getProfessionalByEmail = (email: string): ProfessionalProfile | und
   if (!email) return undefined;
   const list = getStored<ProfessionalProfile[]>(STORAGE_KEYS.PROFESSIONALS, INITIAL_PROFESSIONALS);
   return list.find(p => p.userEmail.toLowerCase() === email.toLowerCase());
+};
+
+export const getProfessionalByUsername = (username: string): ProfessionalProfile | undefined => {
+  if (!username) return undefined;
+  const list = getStored<ProfessionalProfile[]>(STORAGE_KEYS.PROFESSIONALS, INITIAL_PROFESSIONALS);
+  const clean = username.trim().toLowerCase();
+  const handleFormatted = clean.startsWith("@") ? clean : `@${clean}`;
+  return list.find(p => 
+    (p.handle && p.handle.toLowerCase() === handleFormatted) ||
+    (p.handle && p.handle.toLowerCase() === clean) ||
+    p.id === username ||
+    p.userId === username ||
+    p.fullName.toLowerCase().replace(/\s+/g, "_") === clean.replace(/^@/, "")
+  );
 };
 
 export const saveProfessionalProfile = (profile: Partial<ProfessionalProfile>): ProfessionalProfile => {
@@ -1562,4 +1580,324 @@ export const deleteProposal = (id: string): void => {
     window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
   }
 };
+
+// ----------------------------------------------------
+// 9. DISCOVER PROFESSIONALS & PUBLIC PROFILES
+// ----------------------------------------------------
+
+export interface DiscoverResult {
+  professionals: ProfessionalProfile[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const discoverProfessionals = async (
+  filters?: DiscoverProfessionalsFilterState,
+  page = 1,
+  limit = 9
+): Promise<DiscoverResult> => {
+  const activePage = page || 1;
+  const activeLimit = limit || 9;
+
+  try {
+    const params = new URLSearchParams();
+    const searchVal = filters?.searchQuery || filters?.search;
+    if (searchVal) params.append("search", searchVal);
+    if (filters?.role && filters.role !== "all") params.append("role", filters.role);
+    if (filters?.roles && filters.roles.length > 0) params.append("roles", filters.roles.join(","));
+    if (filters?.language && filters.language !== "all") params.append("language", filters.language);
+    if (filters?.languages && filters.languages.length > 0) params.append("languages", filters.languages.join(","));
+    if (filters?.state && filters.state !== "all") params.append("state", filters.state);
+    if (filters?.city && filters.city !== "all") params.append("city", filters.city);
+    if (filters?.location && filters.location !== "all") params.append("location", filters.location);
+    const exp = filters?.experienceYears !== undefined ? filters.experienceYears : filters?.experienceMin;
+    if (exp !== undefined) params.append("experienceMin", String(exp));
+    if (filters?.availability && filters.availability !== "all") params.append("availability", filters.availability);
+    if (filters?.projectType && filters.projectType !== "all") params.append("projectType", filters.projectType);
+    if (filters?.verifiedOnly) params.append("verifiedOnly", "true");
+    params.append("page", String(activePage));
+    params.append("limit", String(activeLimit));
+
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`/api/film-production/professionals?${params.toString()}`, {
+      headers: {
+        "Accept": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      }
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        return json.data;
+      }
+    }
+  } catch (err) {
+    console.warn("Backend /api/film-production/professionals unreachable, utilizing resilient client store:", err);
+  }
+
+  // Resilient fallback to local storage query
+  let list = getStored<ProfessionalProfile[]>(STORAGE_KEYS.PROFESSIONALS, INITIAL_PROFESSIONALS);
+  
+  // Filter active only
+  list = list.filter(p => p.status !== "Suspended");
+
+  // Privacy: exclude private profiles from public discovery
+  list = list.filter(p => p.privacySettings?.profileVisibility !== "Private");
+
+  // Normalize handles and roles
+  list = list.map(p => ({
+    ...p,
+    handle: p.handle || `@${p.fullName.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
+    roles: p.roles && p.roles.length > 0 ? p.roles : [p.primaryCraftName, ...(p.secondaryCraftNames || [])].filter(Boolean)
+  }));
+
+  const q = (filters?.searchQuery || filters?.search || "").toLowerCase().trim();
+  if (q) {
+    list = list.filter(p =>
+      p.fullName.toLowerCase().includes(q) ||
+      (p.handle && p.handle.toLowerCase().includes(q)) ||
+      p.professionalHeadline.toLowerCase().includes(q) ||
+      p.primaryCraftName.toLowerCase().includes(q) ||
+      p.roles?.some(r => r.toLowerCase().includes(q)) ||
+      p.skills.some(s => s.toLowerCase().includes(q)) ||
+      p.location.toLowerCase().includes(q) ||
+      (p.state && p.state.toLowerCase().includes(q)) ||
+      p.languages.some(l => l.toLowerCase().includes(q)) ||
+      p.filmography.some(f => f.projectTitle.toLowerCase().includes(q) || f.role.toLowerCase().includes(q))
+    );
+  }
+
+  const matchRole = (craftOrRole: string, targetQuery: string) => {
+    const c = craftOrRole.toLowerCase();
+    const r = targetQuery.toLowerCase();
+    if (c.includes(r) || r.includes(c)) return true;
+    if (r.startsWith("direct") && c.startsWith("direct")) return true;
+    if (r.startsWith("act") && (c.startsWith("act") || c.includes("cast"))) return true;
+    if ((r.includes("dop") || r.includes("cine")) && (c.includes("cine") || c.includes("dop") || c.includes("camera"))) return true;
+    if (r.includes("writ") && (c.includes("writ") || c.includes("script") || c.includes("screenplay"))) return true;
+    if (r.includes("music") && (c.includes("music") || c.includes("compos") || c.includes("score"))) return true;
+    return false;
+  };
+
+  if (filters?.roles && filters.roles.length > 0) {
+    list = list.filter(p =>
+      filters.roles!.some(rf => {
+        return (
+          p.roles?.some(r => matchRole(r, rf)) ||
+          matchRole(p.primaryCraftName, rf) ||
+          p.secondaryCraftNames?.some(s => matchRole(s, rf))
+        );
+      })
+    );
+  } else if (filters?.role && filters.role !== "all") {
+    list = list.filter(p =>
+      p.roles?.some(r => matchRole(r, filters.role!)) ||
+      matchRole(p.primaryCraftName, filters.role!) ||
+      p.secondaryCraftNames?.some(s => matchRole(s, filters.role!))
+    );
+  }
+
+  if (filters?.languages && filters.languages.length > 0) {
+    list = list.filter(p =>
+      filters.languages!.some(lf =>
+        p.languages.some(l => l.toLowerCase() === lf.toLowerCase())
+      )
+    );
+  } else if (filters?.language && filters.language !== "all") {
+    list = list.filter(p =>
+      p.languages.some(l => l.toLowerCase() === filters.language!.toLowerCase())
+    );
+  }
+
+  if (filters?.state && filters.state !== "all") {
+    list = list.filter(p => p.state && p.state.toLowerCase().includes(filters.state!.toLowerCase()));
+  }
+
+  if (filters?.city && filters.city !== "all") {
+    list = list.filter(p =>
+      p.location.toLowerCase().includes(filters.city!.toLowerCase()) ||
+      p.preferredLocations.some(loc => loc.toLowerCase().includes(filters.city!.toLowerCase()))
+    );
+  } else if (filters?.location && filters.location !== "all") {
+    list = list.filter(p =>
+      p.location.toLowerCase().includes(filters.location!.toLowerCase()) ||
+      p.preferredLocations.some(loc => loc.toLowerCase().includes(filters.location!.toLowerCase()))
+    );
+  }
+
+  const expMin = filters?.experienceYears !== undefined ? filters.experienceYears : filters?.experienceMin;
+  if (expMin !== undefined) {
+    list = list.filter(p => p.experienceYears >= expMin);
+  }
+
+  if (filters?.availability && filters.availability !== "all") {
+    list = list.filter(p => p.availability.status === filters.availability);
+  }
+
+  if (filters?.projectType && filters.projectType !== "all") {
+    list = list.filter(p => p.projectTypes?.some(pt => pt.toLowerCase().includes(filters.projectType!.toLowerCase())));
+  }
+
+  if (filters?.verifiedOnly) {
+    list = list.filter(p => p.verificationLevel && p.verificationLevel !== "None");
+  }
+
+  const total = list.length;
+  const totalPages = Math.ceil(total / activeLimit) || 1;
+  const paginated = list.slice((activePage - 1) * activeLimit, activePage * activeLimit);
+
+  return {
+    professionals: paginated,
+    total,
+    page: activePage,
+    limit: activeLimit,
+    totalPages
+  };
+};
+
+export const fetchProfessionalPublicProfile = async (username: string): Promise<ProfessionalProfile | undefined> => {
+  try {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`/api/film-production/professionals/${encodeURIComponent(username)}`, {
+      headers: {
+        "Accept": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      }
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data?.profile) {
+        return json.data.profile;
+      }
+    }
+  } catch (err) {
+    console.warn("Backend /api/film-production/professionals/:username unreachable, searching local store:", err);
+  }
+
+  return getProfessionalByUsername(username);
+};
+
+export const considerForCastingCall = async (data: Partial<CastingConsideration>): Promise<any> => {
+  try {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch("/api/film-production/professionals/consider", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json.data?.consideration;
+    }
+  } catch (err) {
+    console.warn("Backend consider API unreachable, writing to local considerations:", err);
+  }
+
+  const list = getStored<any[]>(STORAGE_KEYS.CONSIDERATIONS, []);
+  const newCons = {
+    id: `cons-${Date.now()}`,
+    ...data,
+    senderEmail: data.senderEmail || data.recruiterEmail || "director@cinevenue.com",
+    status: data.status || "Considered",
+    createdAt: new Date().toISOString()
+  };
+  list.unshift(newCons);
+  setStored(STORAGE_KEYS.CONSIDERATIONS, list);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-notification", {
+      detail: {
+        title: "Candidate Shortlisted",
+        message: `Candidate ${data.candidateName || data.recipientName || "Talent"} shortlisted for ${data.characterRole || data.characterName || "Casting Call"}.`
+      }
+    }));
+  }
+
+  return newCons;
+};
+
+export const submitProfileReport = async (
+  data: Partial<ProfileReport> & { reportedProfileId?: string; reportedUsername?: string; reportedName?: string }
+): Promise<any> => {
+  const payload = {
+    targetProfileId: data.targetProfileId || data.reportedProfileId || "",
+    targetUsername: data.targetUsername || data.reportedUsername || "",
+    targetFullName: data.targetFullName || data.reportedName || "",
+    reportedProfileId: data.targetProfileId || data.reportedProfileId || "",
+    reportedUsername: data.targetUsername || data.reportedUsername || "",
+    reportedName: data.targetFullName || data.reportedName || "",
+    reason: data.reason || "Other",
+    details: data.details || "",
+    reporterEmail: data.reporterEmail || "user@cinevenue.com"
+  };
+
+  try {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch("/api/film-production/professionals/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json.data?.report;
+    }
+  } catch (err) {
+    console.warn("Backend report API unreachable, saving locally:", err);
+  }
+
+  const list = getStored<any[]>(STORAGE_KEYS.REPORTS, []);
+  const newRep = {
+    id: `rep-${Date.now()}`,
+    ...payload,
+    status: "Pending",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  list.unshift(newRep);
+  setStored(STORAGE_KEYS.REPORTS, list);
+
+  return newRep;
+};
+
+export const getProfileReports = (): ProfileReport[] => {
+  return getStored<ProfileReport[]>(STORAGE_KEYS.REPORTS, []);
+};
+
+export const updateProfileVerificationAdmin = (id: string, verificationLevel: string): ProfessionalProfile | undefined => {
+  const list = getStored<ProfessionalProfile[]>(STORAGE_KEYS.PROFESSIONALS, INITIAL_PROFESSIONALS);
+  const index = list.findIndex(p => p.id === id);
+  if (index !== -1) {
+    list[index].verificationLevel = verificationLevel as any;
+    list[index].lastActive = "Just now";
+    setStored(STORAGE_KEYS.PROFESSIONALS, list);
+    return list[index];
+  }
+  return undefined;
+};
+
+export const updateProfileStatusAdmin = (id: string, status: "Active" | "Suspended"): ProfessionalProfile | undefined => {
+  const list = getStored<ProfessionalProfile[]>(STORAGE_KEYS.PROFESSIONALS, INITIAL_PROFESSIONALS);
+  const index = list.findIndex(p => p.id === id);
+  if (index !== -1) {
+    list[index].status = status;
+    list[index].lastActive = "Just now";
+    setStored(STORAGE_KEYS.PROFESSIONALS, list);
+    return list[index];
+  }
+  return undefined;
+};
+
 

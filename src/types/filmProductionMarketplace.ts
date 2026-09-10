@@ -21,16 +21,39 @@ export interface AvailabilityCalendarEntry {
   city?: string;
 }
 
+export type PortfolioMediaCategory = 
+  | "Profile Photo"
+  | "Professional Photo"
+  | "Character Look"
+  | "Costume Reference"
+  | "Behind The Scenes"
+  | "Previous Project Photo"
+  | "Showreel"
+  | "Acting Clip"
+  | "Audition Clip"
+  | "Dance/Performance"
+  | "Previous Work"
+  | "Introduction Video"
+  | "Other";
+
+export type ProfileVisibilityOption = "Public" | "CineVenue Users" | "Private";
+
 export interface PortfolioItem {
   id: string;
   title: string;
   type: "Image" | "Video" | "Showreel" | "Audio" | "Poster" | "Document" | "Link";
+  category?: PortfolioMediaCategory;
   mediaUrl: string;
   thumbnailUrl?: string;
   role: string;
   year: number;
   projectType: string;
+  projectName?: string;
   description?: string;
+  duration?: string; // e.g. "02:15"
+  credits?: string;
+  visibility?: ProfileVisibilityOption;
+  additionalInfo?: string;
 }
 
 export interface FilmographyCredit {
@@ -48,11 +71,21 @@ export interface FilmographyCredit {
 
 export type VerificationBadge = "None" | "Profile Verified" | "Professional Verified" | "Company Verified";
 
+export interface ProfilePrivacySettings {
+  profileVisibility: ProfileVisibilityOption;
+  portfolioVisibility: ProfileVisibilityOption;
+  videosVisibility: ProfileVisibilityOption;
+  filmographyVisibility: ProfileVisibilityOption;
+  contactVisibility: ProfileVisibilityOption;
+  availabilityVisibility: ProfileVisibilityOption;
+}
+
 export interface ProfessionalProfile {
   id: string;
   userId: string;
   userEmail: string;
   fullName: string;
+  handle?: string; // e.g. "@siddharth_roy"
   professionalHeadline: string;
   avatarUrl: string;
   coverImageUrl?: string;
@@ -67,10 +100,24 @@ export interface ProfessionalProfile {
   primaryCraftName: string;
   secondaryCraftIds: string[];
   secondaryCraftNames: string[];
+  roles?: string[]; // e.g. ["Actor", "Model", "Dancer"]
+  training?: string[]; // Formal acting/cinema training
   specializations: string[];
   skills: string[];
   projectTypes: string[];
   preferredIndustries: string[];
+  showreelUrl?: string;
+  showreel?: string;
+  professionalLinks?: {
+    imdb?: string;
+    showreel?: string;
+    youtube?: string;
+    vimeo?: string;
+    website?: string;
+    linkedin?: string;
+    instagram?: string;
+  };
+  privacySettings?: ProfilePrivacySettings;
   remunerationRange: {
     min: number;
     max: number;
@@ -100,8 +147,9 @@ export interface ProfessionalProfile {
   completedProjectsCount: number;
   isFeatured?: boolean;
   isAvailableForUrgentCalls?: boolean;
+  status?: "Active" | "Suspended";
   joinedDate: string;
-  lastActive: string;
+  lastActive?: string;
 }
 
 export type ProductionStage = 
@@ -603,6 +651,8 @@ export interface AuditionSubmission {
   characterName: string;
   roleType: string;
   applicantId: string;
+  applicantProfileId?: string;
+  applicantHandle?: string;
   applicantName: string;
   applicantEmail: string;
   applicantAvatar?: string;
@@ -769,4 +819,60 @@ export interface Proposal {
   updatedAt: string;
   expiryDate?: string;
 }
+
+export interface ProfileReport {
+  id: string;
+  targetProfileId: string;
+  targetUsername: string;
+  targetFullName: string;
+  reportedProfileId?: string;
+  reportedUsername?: string;
+  reportedName?: string;
+  reporterEmail: string;
+  reason: string;
+  details: string;
+  status: "Pending" | "Reviewed" | "Dismissed" | "Action Taken";
+  adminNotes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CastingConsideration {
+  id: string;
+  castingCallId: string;
+  projectTitle: string;
+  characterName: string;
+  characterRole?: string;
+  candidateUsername?: string;
+  candidateName?: string;
+  candidateEmail?: string;
+  recruiterEmail?: string;
+  recruiterName?: string;
+  senderEmail?: string;
+  recipientProfileId?: string;
+  recipientEmail?: string;
+  recipientName?: string;
+  notes?: string;
+  stage?: string;
+  status?: "Considered" | "Audition Requested" | "Archived" | "Shortlisted";
+  createdAt: string;
+}
+
+export interface DiscoverProfessionalsFilterState {
+  search?: string;
+  searchQuery?: string;
+  role?: string;
+  roles?: string[];
+  language?: string;
+  languages?: string[];
+  location?: string;
+  state?: string;
+  city?: string;
+  experienceYears?: number;
+  experienceMin?: number;
+  availability?: string;
+  projectType?: string;
+  verifiedOnly?: boolean;
+}
+
 

@@ -7,14 +7,16 @@ import {
   DigitalAgreement, 
   MarketplaceReport,
   IndianCastingCall,
-  Proposal
+  Proposal,
+  ProfileReport
 } from "../../types/filmProductionMarketplace";
 import { 
   Layers, Film, Users, ShieldCheck, FileText, 
   AlertTriangle, TrendingUp, Plus, Edit2, Trash2, 
   CheckCircle2, XCircle, Search, RefreshCw, Eye, Star, Lock,
   ExternalLink, Video, Mail, Phone, MapPin, Calendar, DollarSign,
-  MessageSquare, UserCheck, Award, FileCheck, Filter, ArrowUpRight
+  MessageSquare, UserCheck, Award, FileCheck, Filter, ArrowUpRight,
+  ShieldAlert, Ban
 } from "lucide-react";
 import { 
   getCrafts, 
@@ -33,7 +35,8 @@ import {
   getIndianCastingCalls,
   deleteIndianCastingCall,
   getProposals,
-  deleteProposal
+  deleteProposal,
+  getProfileReports
 } from "../../services/filmProductionService";
 
 interface CineVenueFilmAdminTabProps {
@@ -58,6 +61,7 @@ export default function CineVenueFilmAdminTab({
   const [reportsList, setReportsList] = useState<MarketplaceReport[]>(() => getReports());
   const [castingCallsList, setCastingCallsList] = useState<IndianCastingCall[]>(() => getIndianCastingCalls());
   const [proposalsList, setProposalsList] = useState<Proposal[]>(() => getProposals());
+  const [profileReportsList, setProfileReportsList] = useState<ProfileReport[]>(() => getProfileReports());
 
   const [searchQuery, setSearchQuery] = useState("");
   const [appStatusFilter, setAppStatusFilter] = useState<string>("ALL");
@@ -80,6 +84,7 @@ export default function CineVenueFilmAdminTab({
     setReportsList(getReports());
     setCastingCallsList(getIndianCastingCalls());
     setProposalsList(getProposals());
+    setProfileReportsList(getProfileReports());
   };
 
   useEffect(() => {
@@ -129,6 +134,16 @@ export default function CineVenueFilmAdminTab({
     saveProfessionalProfile({
       ...prof,
       verificationLevel: level
+    });
+    handleRefresh();
+  };
+
+  // Toggle Suspended / Active status
+  const handleToggleProfessionalStatus = (prof: ProfessionalProfile) => {
+    const newStatus = prof.status === "Suspended" ? "Active" : "Suspended";
+    saveProfessionalProfile({
+      ...prof,
+      status: newStatus
     });
     handleRefresh();
   };
@@ -536,43 +551,89 @@ export default function CineVenueFilmAdminTab({
         </div>
       )}
 
-      {/* TAB 3: PROFESSIONALS VERIFICATION */}
+      {/* TAB 3: PROFESSIONALS VERIFICATION & MODERATION */}
       {adminSubTab === "professionals" && (
         <div className="space-y-4">
-          <h3 className="text-sm font-bold uppercase text-white/50">Industry Talent & Guild Verification ({professionalsList.length})</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase text-white/50">Industry Talent & Guild Verification ({professionalsList.length})</h3>
+            <span className="text-xs text-white/40">Manage identity badges, suspension status, and credentials</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {professionalsList.map(prof => (
-              <div key={prof.id} className="p-4 rounded-2xl bg-[#111218] border border-white/10 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <img src={prof.avatarUrl} alt={prof.fullName} className="w-12 h-12 rounded-2xl object-cover border border-white/10" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-white">{prof.fullName}</h4>
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
-                        {prof.primaryCraftName}
-                      </span>
+            {professionalsList.map(prof => {
+              const isSuspended = prof.status === "Suspended";
+              return (
+                <div key={prof.id} className={`p-4 rounded-2xl border flex flex-col justify-between gap-3 text-xs transition-all ${
+                  isSuspended ? "bg-red-950/20 border-red-500/30" : "bg-[#111218] border-white/10"
+                }`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img src={prof.avatarUrl} alt={prof.fullName} className="w-12 h-12 rounded-2xl object-cover border border-white/10" />
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm font-bold text-white">{prof.fullName}</h4>
+                          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                            {prof.primaryCraftName}
+                          </span>
+                          {isSuspended && (
+                            <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30">
+                              SUSPENDED
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-amber-400/80 font-mono font-bold mt-0.5">{prof.handle}</p>
+                        <p className="text-xs text-white/60">{prof.location} • {prof.experienceYears}+ Yrs Exp • {prof.userEmail}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-white/60">{prof.location} • {prof.experienceYears}+ Yrs Exp • {prof.userEmail}</p>
-                    <p className="text-[11px] text-amber-300">Status: {prof.verificationLevel}</p>
+
+                    <a
+                      href={`/film-production/professionals/${prof.handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors"
+                      title="Inspect Public Profile"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5 gap-2 flex-wrap">
+                    <div className="text-[11px] text-white/50">
+                      Verification: <span className="text-amber-300 font-bold">{prof.verificationLevel}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {prof.verificationLevel !== "Professional Verified" ? (
+                        <button
+                          onClick={() => handleVerifyProfessional(prof, "Professional Verified")}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs cursor-pointer transition-all"
+                        >
+                          Verify Talent
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleVerifyProfessional(prof, "None")}
+                          className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer transition-all"
+                        >
+                          Revoke Badge
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleToggleProfessionalStatus(prof)}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-all ${
+                          isSuspended 
+                            ? "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40" 
+                            : "bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40"
+                        }`}
+                      >
+                        {isSuspended ? "Reactivate" : "Suspend"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleVerifyProfessional(prof, "Professional Verified")}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 text-black font-extrabold text-xs cursor-pointer"
-                  >
-                    Grant Verified
-                  </button>
-                  <button
-                    onClick={() => handleVerifyProfessional(prof, "None")}
-                    className="px-2 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold cursor-pointer"
-                  >
-                    Revoke
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -605,31 +666,88 @@ export default function CineVenueFilmAdminTab({
 
       {/* TAB 6: REPORTS & DISPUTES */}
       {adminSubTab === "reports" && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold uppercase text-white/50">Trust & Safety Moderation Queue</h3>
-          {reportsList.length === 0 ? (
-            <p className="text-xs text-white/40 py-8 text-center">No open moderation reports or disputes!</p>
-          ) : (
-            <div className="space-y-3">
-              {reportsList.map(rep => (
-                <div key={rep.id} className="p-4 rounded-2xl bg-[#111218] border border-white/10 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-red-400 font-bold">[{rep.reason}]</span> Reported: {rep.targetTitle}
-                    <p className="text-white/60 mt-1">{rep.details}</p>
+        <div className="space-y-6">
+          {/* Profile Safety Reports */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold uppercase text-white/50 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-red-400" />
+              <span>Professional Profile Reports & Authenticity Queue ({profileReportsList.length})</span>
+            </h3>
+
+            {profileReportsList.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-[#111218] border border-white/10 text-center text-xs text-white/40">
+                No user profile complaints or authenticity reports pending review.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {profileReportsList.map(report => (
+                  <div key={report.id} className="p-4 rounded-2xl bg-[#141118] border border-red-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold border border-red-500/30">
+                          {report.reason}
+                        </span>
+                        <span className="text-white font-bold">Reported: {report.reportedName} ({report.reportedUsername})</span>
+                        <span className="text-white/40">• Reported by: {report.reporterEmail}</span>
+                      </div>
+                      <p className="text-white/70 leading-relaxed">{report.details}</p>
+                      <span className="text-[10px] text-white/40">{new Date(report.createdAt).toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href={`/film-production/professionals/${report.reportedUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs"
+                      >
+                        Inspect Profile
+                      </a>
+                      <button
+                        onClick={() => {
+                          const prof = professionalsList.find(p => p.id === report.reportedProfileId || p.handle === report.reportedUsername);
+                          if (prof) {
+                            handleToggleProfessionalStatus(prof);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-bold text-xs cursor-pointer"
+                      >
+                        Suspend Profile
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      updateReportStatus(rep.id, "Action Taken", "Handled by admin");
-                      handleRefresh();
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-bold cursor-pointer"
-                  >
-                    Mark Resolved
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* General Marketplace Reports */}
+          <div className="space-y-3 pt-4 border-t border-white/10">
+            <h3 className="text-sm font-bold uppercase text-white/50">Marketplace & Proposal Disputes ({reportsList.length})</h3>
+            {reportsList.length === 0 ? (
+              <p className="text-xs text-white/40 py-6 text-center">No open dispute reports.</p>
+            ) : (
+              <div className="space-y-3">
+                {reportsList.map(rep => (
+                  <div key={rep.id} className="p-4 rounded-2xl bg-[#111218] border border-white/10 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-red-400 font-bold">[{rep.reason}]</span> Reported: {rep.targetTitle}
+                      <p className="text-white/60 mt-1">{rep.details}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        updateReportStatus(rep.id, "Action Taken", "Handled by admin");
+                        handleRefresh();
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-bold cursor-pointer"
+                    >
+                      Mark Resolved
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
