@@ -814,9 +814,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                                 <span className="text-sm font-mono font-semibold text-white">{ticket.pricing}</span>
                               </div>
                               <button 
-                                onClick={() => {
-                                  alert(`Pass booking for "${ticket.title}" is currently offline. Direct tickets will open shortly on the CineVenue gateway!`);
-                                }}
+                                onClick={() => navigate("/events")}
                                 className="px-4 py-2 bg-[#D4AF37] hover:bg-[#E5C158] text-black text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-md"
                               >
                                 <span>Secure Pass</span>

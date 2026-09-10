@@ -1258,6 +1258,8 @@ export default function App() {
                   isEventBookingSystemActive={isEventBookingSystemActive}
                   onToggleEventSystemActive={(active) => setIsEventBookingSystemActive(active)}
                   onToggleEventBookingStatus={handleToggleEventActive}
+                  userWallet={cineCoinsUserWallet}
+                  onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
                 />
 
                 <Theatres
@@ -1824,7 +1826,67 @@ export default function App() {
 
         return (
           <>
-            <Route path="/events" element={renderEventManagement()} />
+            <Route 
+              path="/events" 
+              element={
+                serviceControl?.eventBooking?.status === false ? (
+                  <MaintenancePage 
+                    serviceName="Event Booking"
+                    title={serviceControl?.eventBooking?.title || "Event Booking Temporarily Unavailable"}
+                    message={serviceControl?.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable.\n\nPlease check back soon."}
+                    expectedTime={serviceControl?.eventBooking?.expectedTime || "31 July 2026, 10:00 AM"}
+                    icon="🎟️"
+                    onBackToHome={() => window.location.href = "/"}
+                  />
+                ) : (
+                  <div className="min-h-screen bg-dark-bg text-text-primary flex flex-col justify-between">
+                    <Navbar 
+                      userEmail={userEmail}
+                      onOpenAuth={() => setAuthOpen(true)}
+                      onLogout={handleLogout}
+                      onOpenAdmin={() => setAdminOpen(true)}
+                      onOpenTheatreManager={() => setTheatreManagerOpen(true)}
+                      onOpenEventManager={() => setEventManagerOpen(true)}
+                      onOpenRentalModal={() => setRentalModalOpen(true)}
+                      onOpenOrders={() => setOrdersModalOpen(true)}
+                      onOpenUserDashboard={() => setUserDashboardOpen(true)}
+                      userWallet={cineCoinsUserWallet}
+                      selectedCity={selectedCity}
+                      onSelectCity={handleSelectCity}
+                    />
+                    <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+                      <EventsShowcase
+                        events={events}
+                        userEmail={userEmail}
+                        onOpenAuth={() => setAuthOpen(true)}
+                        selectedCity={selectedCity}
+                        onBookEvent={handleBookEvent}
+                        onAddReview={handleAddReview}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        notifyMeRequests={notifyMeRequests}
+                        onAddNotifyMeRequest={handleAddNotifyMe}
+                        isEventBookingSystemActive={isEventBookingSystemActive}
+                        onToggleEventSystemActive={(active) => setIsEventBookingSystemActive(active)}
+                        onToggleEventBookingStatus={handleToggleEventActive}
+                        userWallet={cineCoinsUserWallet}
+                        onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
+                      />
+                    </main>
+                    <Footer 
+                      onOpenTerms={() => handleOpenFooterPage("terms")}
+                      onOpenPrivacy={() => handleOpenFooterPage("privacy")}
+                      onOpenRefunds={() => handleOpenFooterPage("refund")}
+                      onOpenCookies={() => handleOpenFooterPage("cookie")}
+                      onOpenContact={() => handleOpenFooterPage("contact")}
+                      onOpenFaq={() => handleOpenFooterPage("faq")}
+                      onOpenAbout={() => handleOpenFooterPage("about")}
+                      onOpenHelp={() => handleOpenFooterPage("help")}
+                    />
+                  </div>
+                )
+              }
+            />
             <Route path="/event-management" element={renderEventManagement()} />
             <Route path="/create-event" element={renderEventManagement(true)} />
           </>

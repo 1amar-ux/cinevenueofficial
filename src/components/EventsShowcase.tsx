@@ -8,6 +8,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest } from "../types";
 import MaintenancePage from "./MaintenancePage";
 import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
+import type { EventItem, EventBookingRecord } from "../types/eventBooking";
+import { getEvents as getTicketedEvents, getBookings as getEventBookings } from "../services/eventBookingService";
+import EventBookingModal from "./events/EventBookingModal";
+import DigitalTicketPassModal from "./events/DigitalTicketPassModal";
+import OrganizerEventHub from "./events/OrganizerEventHub";
 
 interface EventsShowcaseProps {
   events: Event[];
@@ -23,6 +28,8 @@ interface EventsShowcaseProps {
   isEventBookingSystemActive?: boolean;
   onToggleEventSystemActive?: (active: boolean) => void;
   onToggleEventBookingStatus?: (eventId: string) => void;
+  userWallet?: any;
+  onUpdateWallet?: (updatedWallet: any) => void;
 }
 
 export default function EventsShowcase({
@@ -39,6 +46,8 @@ export default function EventsShowcase({
   isEventBookingSystemActive = true,
   onToggleEventSystemActive,
   onToggleEventBookingStatus,
+  userWallet,
+  onUpdateWallet,
 }: EventsShowcaseProps) {
   const safeEvents = Array.isArray(events)
     ? events.map((event) => ({
@@ -75,21 +84,73 @@ export default function EventsShowcase({
   const [notifyMobile, setNotifyMobile] = useState("");
   const [notifySuccess, setNotifySuccess] = useState<string | null>(null);
 
-  // Sub-Site Portal Tabs & Quote Request State
-  const [eventShowcaseTab, setEventShowcaseTab] = useState<"portfolio" | "gallery" | "quote" | "passes">("portfolio");
-  const [quoteFormState, setQuoteFormState] = useState({
-    organizerName: "",
-    eventType: "Pre-Release Events",
-    audienceSize: "",
-    targetCityVenue: "",
-    tentativeDate: "",
-    contactPhone: "",
-    contactEmail: userEmail || "",
-    productionNotes: ""
-  });
-  const [quoteFormSuccess, setQuoteFormSuccess] = useState(false);
-  const [quoteRefId, setQuoteRefId] = useState("");
-  const [galleryModalItem, setGalleryModalItem] = useState<{ title: string; location: string; image: string } | null>(null);
+  // Ticketed Events & Unified Booking State
+  const [ticketedEventsList, setTicketedEventsList] = useState<EventItem[]>(() => getTicketedEvents());
+  const [bookingModalEvent, setBookingModalEvent] = useState<EventItem | null>(null);
+  const [viewingPass, setViewingPass] = useState<EventBookingRecord | null>(null);
+  const [showOrganizerHub, setShowOrganizerHub] = useState<boolean>(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All Categories");
+
+  const handleOpenBooking = (evt: Event) => {
+    let matched = ticketedEventsList.find(e => e.id === evt.id || e.title.toLowerCase() === evt.title.toLowerCase());
+    if (!matched) {
+      matched = {
+        id: evt.id,
+        title: evt.title,
+        slug: evt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        description: evt.description,
+        category: (evt.categories?.[0]?.name?.includes('Concert') ? 'Concerts' : 'Film Events') as any,
+        bannerUrl: evt.image,
+        organizer: {
+          id: 'ORG-MAIN',
+          name: 'CineVenue Events',
+          email: 'events@cinevenue.in',
+          isVerified: true,
+        },
+        date: evt.date || '2026-10-25',
+        startTime: evt.time || '07:00 PM',
+        venueName: evt.venueName,
+        venueAddress: evt.venueAddress,
+        city: evt.city || selectedCity,
+        seatingType: 'GeneralAdmission',
+        ticketTypes: evt.categories && evt.categories.length > 0 ? evt.categories.map((c, idx) => ({
+          id: `TKT-${evt.id}-${idx}`,
+          eventId: evt.id,
+          name: c.name,
+          tier: (idx === 0 ? 'General' : idx === 1 ? 'Premium' : 'VIP') as any,
+          description: `${c.name} admission pass.`,
+          price: c.price,
+          availableQuantity: c.availableSeats || 100,
+          soldQuantity: 0,
+          maxPerUser: 6,
+          minPerUser: 1,
+          status: 'Active',
+          isRefundable: true,
+        })) : [
+          {
+            id: `TKT-${evt.id}-GEN`,
+            eventId: evt.id,
+            name: 'General Admission',
+            tier: 'General',
+            description: 'Standard event pass.',
+            price: 499,
+            availableQuantity: 200,
+            soldQuantity: 0,
+            maxPerUser: 6,
+            minPerUser: 1,
+            status: 'Active',
+            isRefundable: true,
+          }
+        ],
+        totalCapacity: 500,
+        soldCount: 120,
+        status: 'Published',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    setBookingModalEvent(matched);
+  };
 
   // Curated Genres & Concierge State
   const [selectedGenreFilter, setSelectedGenreFilter] = useState("All Genres");
@@ -246,12 +307,19 @@ export default function EventsShowcase({
     }
 
     const matchesCity = selectedCity === "All Cities" || (evt.city || "").toLowerCase() === (selectedCity || "").toLowerCase();
+    const matchesCategory = selectedCategoryFilter === "All Categories" ||
+      (evt.categories || []).some(c => c.name.toLowerCase().includes(selectedCategoryFilter.toLowerCase())) ||
+      (evt.title || "").toLowerCase().includes(selectedCategoryFilter.toLowerCase()) ||
+      (evt.description || "").toLowerCase().includes(selectedCategoryFilter.toLowerCase());
+    const matchesGenre = selectedGenreFilter === "All Genres" ||
+      (evt.title || "").toLowerCase().includes(selectedGenreFilter.toLowerCase()) ||
+      (evt.description || "").toLowerCase().includes(selectedGenreFilter.toLowerCase());
     const matchesSearch = !searchQuery ||
       (evt.title || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
       (evt.description || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
       (evt.venueName || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
       (evt.city || "").toLowerCase().includes((searchQuery || "").toLowerCase());
-    return matchesCity && matchesSearch;
+    return matchesCity && matchesCategory && matchesGenre && matchesSearch;
   });
 
   const handleBookingSubmit = (e: React.FormEvent) => {
@@ -424,431 +492,44 @@ export default function EventsShowcase({
         </div>
       </div>
 
-      {/* SUB-SITE NAVIGATION TABS (PORTFOLIO, GALLERY, REQUEST QUOTE, UPCOMING PASSES) */}
-      <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-4 md:p-6 flex flex-wrap items-center justify-between gap-4 shadow-xl text-left">
+       {/* EVENT BOOKING CATEGORIES & QUICK ACTIONS BAR */}
+      <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl text-left">
         <div className="flex flex-wrap items-center gap-2">
           {[
-            { id: "portfolio", label: "EVENT SERVICES PORTFOLIO", icon: "✨ 🎤" },
-            { id: "gallery", label: "EVENT GALLERY", icon: "🖼️ 🖼️" },
-            { id: "quote", label: "REQUEST A CUSTOM QUOTE", icon: "📑 📝" },
-            { id: "passes", label: "UPCOMING PASSES & CONCERTS", icon: "🎟️ 🎪" }
-          ].map(tab => (
+            { id: "All Categories", label: "ALL EVENTS", icon: "🎟️" },
+            { id: "Concerts", label: "CONCERTS", icon: "⚡" },
+            { id: "Stand-up Comedy", label: "STAND-UP COMEDY", icon: "🎤" },
+            { id: "Film Events", label: "FILM GALAS", icon: "🎬" },
+            { id: "Workshops", label: "WORKSHOPS", icon: "📚" },
+            { id: "Cultural Events", label: "CULTURAL", icon: "🎻" },
+            { id: "Sports Events", label: "SPORTS", icon: "🏸" },
+          ].map(cat => (
             <button
-              key={tab.id}
-              onClick={() => setEventShowcaseTab(tab.id as any)}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                eventShowcaseTab === tab.id
-                  ? "bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-lg shadow-red-600/30 border border-red-500 font-extrabold"
+              key={cat.id}
+              onClick={() => setSelectedCategoryFilter(cat.id)}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                selectedCategoryFilter === cat.id
+                  ? "bg-gold text-black shadow-lg shadow-gold/20 font-black"
                   : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:text-white"
               }`}
             >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
             </button>
           ))}
         </div>
 
-        <span className="text-[10px] font-mono text-amber-400 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-lg">
-          FULL-SPECTRUM EVENT MANAGEMENT
-        </span>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowOrganizerHub(true)}
+            className="px-4 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <QrCode className="w-4 h-4 text-purple-400" />
+            <span>Organizer Hub & Gate Terminal</span>
+          </button>
+        </div>
       </div>
 
-      {/* TAB 1: EVENT SERVICES PORTFOLIO */}
-      {eventShowcaseTab === "portfolio" && (
-        <div className="space-y-8 text-left">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-amber-400 text-xs font-mono uppercase tracking-widest font-bold">
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              <span>Comprehensive Production Services</span>
-            </div>
-            <h3 className="font-display text-3xl font-light text-white italic">
-              Full-Spectrum <span className="text-[#D4AF37] not-italic font-normal">Event Management</span> Services
-            </h3>
-            <p className="text-xs text-white/60 font-light max-w-2xl">
-              From movie pre-release events to stadium concerts and corporate galas. We handle turnkey execution across India.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                id: "pre_release",
-                title: "Pre-Release Events",
-                icon: "🎬",
-                description: "Grand scale audio & trailer launches in stadium venues with LED stage setups & VIP security."
-              },
-              {
-                id: "audio_launches",
-                title: "Audio Launches",
-                icon: "🎵",
-                description: "Live music releases featuring top composers, orchestra performances, and star cast interactions."
-              },
-              {
-                id: "movie_promotions",
-                title: "Movie Promotions",
-                icon: "📣",
-                description: "Pan-India city tours, mall visits, college flashmobs, and press conference management."
-              },
-              {
-                id: "success_meets",
-                title: "Success Meets",
-                icon: "🏆",
-                description: "Celebratory star nights, shield distribution, media Q&A, and red carpet photo calls."
-              },
-              {
-                id: "celebrity_shows",
-                title: "Celebrity Shows",
-                icon: "⭐",
-                description: "Exclusive star dance performances, celebrity meets, comedy nights, and fan park events."
-              },
-              {
-                id: "live_concerts",
-                title: "Live Concerts",
-                icon: "🎤",
-                description: "Massive stadium concerts, international tour logistics, line array audio & light show production."
-              },
-              {
-                id: "musical_nights",
-                title: "Musical Nights",
-                icon: "🎶",
-                description: "Intimate playback singer evenings, classical fusion concerts, and unplugged acoustic sessions."
-              },
-              {
-                id: "corporate_events",
-                title: "Corporate Events",
-                icon: "🏢",
-                description: "Annual general meetings, product unveilings, award ceremonies, and team retreats."
-              },
-              {
-                id: "college_fests",
-                title: "College Fests",
-                icon: "🎓",
-                description: "Campus pro-nights, battle of the bands, star headliner concerts, and youth cultural festivals."
-              },
-              {
-                id: "brand_activations",
-                title: "Brand Activations",
-                icon: "🏷️",
-                description: "Experiential marketing booths, interactive VR setups, and promotional pop-up installations."
-              },
-              {
-                id: "wedding_entertainment",
-                title: "Wedding Entertainment",
-                icon: "💍",
-                description: "Royal sangeet choreography, celebrity guest appearances, and bespoke musical band bookings."
-              }
-            ].map((item) => (
-              <div
-                key={item.id}
-                className="bg-[#0D0E13] border border-white/10 hover:border-amber-500/40 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col justify-between space-y-4 group"
-              >
-                <div className="space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                    {item.icon}
-                  </div>
-                  <h4 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                    {item.title}
-                  </h4>
-                  <p className="text-xs text-white/60 leading-relaxed font-light">
-                    {item.description}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setQuoteFormState(prev => ({ ...prev, eventType: item.title }));
-                    setEventShowcaseTab("quote");
-                  }}
-                  className="pt-4 border-t border-white/5 text-amber-400 hover:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer group-hover:translate-x-1"
-                >
-                  <span>→ Request Quote</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: EVENT GALLERY */}
-      {eventShowcaseTab === "gallery" && (
-        <div className="space-y-8 text-left">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-rose-400 text-xs font-mono uppercase tracking-widest font-bold">
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              <span>Production Portfolio Showcase</span>
-            </div>
-            <h3 className="font-display text-3xl font-light text-white italic">
-              Cinevenue <span className="text-rose-400 not-italic font-normal">Live Event Gallery</span>
-            </h3>
-            <p className="text-xs text-white/60 font-light max-w-2xl">
-              Glance at our stadium setups, stage lighting setups, and star-studded gatherings.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                id: "gal_1",
-                title: "Grand Pre-Release Event",
-                location: "📍 Hyderabad Stadium",
-                image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1000&q=80"
-              },
-              {
-                id: "gal_2",
-                title: "Live Star Concert Arena",
-                location: "📍 Bengaluru Beach Ground",
-                image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80"
-              },
-              {
-                id: "gal_3",
-                title: "Audio Launch Light Show",
-                location: "📍 Chennai Trade Centre",
-                image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1000&q=80"
-              },
-              {
-                id: "gal_4",
-                title: "Success Meet Star Gala",
-                location: "📍 Vijayawada Convention Hall",
-                image: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1000&q=80"
-              },
-              {
-                id: "gal_5",
-                title: "College Cultural Pro-Night",
-                location: "📍 Vizag Campus Ground",
-                image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1000&q=80"
-              },
-              {
-                id: "gal_6",
-                title: "Corporate Award Ceremony",
-                location: "📍 HITEX Exhibition Centre, Hyderabad",
-                image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=80"
-              }
-            ].map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setGalleryModalItem(item)}
-                className="group relative bg-[#0D0E13] border border-white/10 rounded-2xl overflow-hidden cursor-pointer hover:border-rose-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-rose-500/10"
-              >
-                <div className="h-56 w-full overflow-hidden relative">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                  <span className="absolute top-3 right-3 px-3 py-1 bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-300 rounded-lg border border-amber-500/30 font-mono">
-                    {item.location}
-                  </span>
-                </div>
-
-                <div className="p-5 space-y-2 relative z-10">
-                  <h4 className="text-lg font-bold text-white group-hover:text-rose-400 transition-colors">
-                    {item.title}
-                  </h4>
-                  <p className="text-xs text-white/50 flex items-center gap-1">
-                    <span>Click to view stage setup photo</span>
-                    <ArrowRight className="w-3 h-3 text-rose-400 group-hover:translate-x-1 transition-transform" />
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: REQUEST A CUSTOM QUOTE FORM */}
-      {eventShowcaseTab === "quote" && (
-        <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-6 md:p-10 space-y-8 shadow-2xl max-w-4xl mx-auto text-left">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-red-400 text-xs font-mono uppercase tracking-widest font-bold">
-              <FileText className="w-4 h-4" />
-              <span>Direct B2B Inquiry Portal</span>
-            </div>
-            <h3 className="font-display text-3xl font-bold text-white">
-              Request Event Management Quote
-            </h3>
-            <p className="text-xs text-white/60 font-light">
-              Fill in your event details to receive a customized proposal and budget estimation.
-            </p>
-          </div>
-
-          {quoteFormSuccess ? (
-            <div className="p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-4">
-              <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto animate-bounce" />
-              <div className="space-y-1">
-                <h4 className="text-xl font-bold text-emerald-300">
-                  Quote Request Submitted Successfully!
-                </h4>
-                <p className="text-xs text-white/70 max-w-md mx-auto">
-                  Thank you, <strong className="text-white">{quoteFormState.organizerName || "Organizer"}</strong>. Your event request reference ID is <strong className="text-amber-400 font-mono">{quoteRefId}</strong>.
-                </p>
-              </div>
-              <p className="text-xs text-emerald-400/80 bg-black/40 p-3 rounded-xl inline-block font-mono border border-emerald-500/20">
-                Our Event Line Production Director will contact you at {quoteFormState.contactPhone || "your phone"} within 2 hours.
-              </p>
-              <div className="pt-2">
-                <button
-                  onClick={() => setQuoteFormSuccess(false)}
-                  className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                >
-                  Submit Another Request
-                </button>
-              </div>
-            </div>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!quoteFormState.organizerName || !quoteFormState.contactPhone || !quoteFormState.contactEmail) {
-                  alert("Please fill in all required fields (*).");
-                  return;
-                }
-
-                const refId = `EV-QUOTE-${Math.floor(100000 + Math.random() * 900000)}`;
-                setQuoteRefId(refId);
-                setQuoteFormSuccess(true);
-              }}
-              className="space-y-6 text-left"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* ORGANIZER NAME / COMPANY */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                    ORGANIZER NAME / COMPANY <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={quoteFormState.organizerName}
-                    onChange={(e) => setQuoteFormState(prev => ({ ...prev, organizerName: e.target.value }))}
-                    placeholder="e.g. Production Company"
-                    className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {/* EVENT TYPE Dropdown */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                    EVENT TYPE <span className="text-red-400">*</span>
-                  </label>
-                  <select
-                    value={quoteFormState.eventType}
-                    onChange={(e) => setQuoteFormState(prev => ({ ...prev, eventType: e.target.value }))}
-                    className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white focus:outline-none transition-all"
-                  >
-                    <option value="Pre-Release Events">Pre-Release Events</option>
-                    <option value="Audio Launches">Audio Launches</option>
-                    <option value="Movie Promotions">Movie Promotions</option>
-                    <option value="Success Meets">Success Meets</option>
-                    <option value="Celebrity Shows">Celebrity Shows</option>
-                    <option value="Live Concerts">Live Concerts</option>
-                    <option value="Musical Nights">Musical Nights</option>
-                    <option value="Corporate Events">Corporate Events</option>
-                    <option value="College Fests">College Fests</option>
-                    <option value="Brand Activations">Brand Activations</option>
-                    <option value="Wedding Entertainment">Wedding Entertainment</option>
-                  </select>
-                </div>
-
-                {/* EXPECTED AUDIENCE SIZE */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                    EXPECTED AUDIENCE SIZE
-                  </label>
-                  <input
-                    type="text"
-                    value={quoteFormState.audienceSize}
-                    onChange={(e) => setQuoteFormState(prev => ({ ...prev, audienceSize: e.target.value }))}
-                    placeholder="e.g. 10,000 People"
-                    className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {/* TARGET CITY / VENUE */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                    TARGET CITY / VENUE
-                  </label>
-                  <input
-                    type="text"
-                    value={quoteFormState.targetCityVenue}
-                    onChange={(e) => setQuoteFormState(prev => ({ ...prev, targetCityVenue: e.target.value }))}
-                    placeholder="e.g. Gachibowli Stadium, Hyderabad"
-                    className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {/* TENTATIVE DATE */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                    TENTATIVE DATE
-                  </label>
-                  <input
-                    type="text"
-                    value={quoteFormState.tentativeDate}
-                    onChange={(e) => setQuoteFormState(prev => ({ ...prev, tentativeDate: e.target.value }))}
-                    placeholder="e.g. 20 September 2026"
-                    className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {/* CONTACT PHONE */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                    CONTACT PHONE <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={quoteFormState.contactPhone}
-                    onChange={(e) => setQuoteFormState(prev => ({ ...prev, contactPhone: e.target.value }))}
-                    placeholder="+91 98765 43210"
-                    className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* CONTACT EMAIL */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                  CONTACT EMAIL <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={quoteFormState.contactEmail}
-                  onChange={(e) => setQuoteFormState(prev => ({ ...prev, contactEmail: e.target.value }))}
-                  placeholder="events@company.com"
-                  className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
-                />
-              </div>
-
-              {/* SPECIFIC REQUIREMENTS / PRODUCTION NOTES */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                  SPECIFIC REQUIREMENTS / PRODUCTION NOTES
-                </label>
-                <textarea
-                  rows={4}
-                  value={quoteFormState.productionNotes}
-                  onChange={(e) => setQuoteFormState(prev => ({ ...prev, productionNotes: e.target.value }))}
-                  placeholder="Specify requirements for LED screens, stage dimensions, VIP celebrity security, fireworks, line array sound, or audio release setups..."
-                  className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl p-4 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all leading-relaxed"
-                />
-              </div>
-
-              {/* SUBMIT BUTTON */}
-              <button
-                type="submit"
-                className="w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-sm uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Send className="w-5 h-5 text-white" />
-                <span>🚀 SUBMIT QUOTE REQUEST</span>
-              </button>
-            </form>
-          )}
-        </div>
-      )}
 
       {/* CURATED GENRES & CATEGORIES FILTER BAR */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-white/5 text-left">
@@ -947,11 +628,8 @@ export default function EventsShowcase({
                 </div>
                 <button
                   onClick={() => {
-                    if (!userEmail) {
-                      onOpenAuth();
-                    } else {
-                      alert(`Pass booking for "${ticket.title}" initiated! Complete payment in your VIP dashboard.`);
-                    }
+                    const matched = ticketedEventsList.find(e => e.title.toLowerCase().includes(ticket.title.toLowerCase().split(' ')[0])) || ticketedEventsList[0];
+                    setBookingModalEvent(matched);
                   }}
                   className="px-3.5 py-1.5 bg-[#D4AF37] hover:bg-[#E5C158] text-black text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-md"
                 >
@@ -1062,7 +740,13 @@ export default function EventsShowcase({
                       <button
                         type="button"
                         id={`btn-view-event-${evt.id}`}
-                        onClick={() => setSelectedEvent(evt)}
+                        onClick={() => {
+                          if (evt.comingSoon) {
+                            setSelectedEvent(evt);
+                          } else {
+                            handleOpenBooking(evt);
+                          }
+                        }}
                         className={`px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
                           evt.comingSoon
                             ? "bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border border-amber-500/20"
@@ -1918,43 +1602,35 @@ export default function EventsShowcase({
         )}
       </AnimatePresence>
 
-      {/* GALLERY LIGHTBOX MODAL */}
-      {galleryModalItem && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="relative max-w-4xl w-full bg-[#0D0E13] border border-white/20 rounded-2xl overflow-hidden shadow-2xl space-y-4 text-left p-6">
-            <button
-              onClick={() => setGalleryModalItem(null)}
-              className="absolute top-4 right-4 z-20 p-2.5 bg-black/80 hover:bg-white/20 text-white rounded-full transition-all cursor-pointer border border-white/20"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {/* UNIFIED EVENT BOOKING MODAL */}
+      {bookingModalEvent && (
+        <EventBookingModal
+          event={bookingModalEvent}
+          userEmail={userEmail}
+          userWallet={userWallet}
+          onUpdateWallet={onUpdateWallet}
+          onClose={() => setBookingModalEvent(null)}
+          onBookingSuccess={(booking) => {
+            setBookingModalEvent(null);
+            setViewingPass(booking);
+          }}
+        />
+      )}
 
-            <div className="h-[60vh] max-h-[500px] w-full rounded-xl overflow-hidden relative">
-              <img
-                src={galleryModalItem.image}
-                alt={galleryModalItem.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
-                <div>
-                  <h3 className="text-xl font-bold">{galleryModalItem.title}</h3>
-                  <p className="text-xs text-amber-300 font-mono mt-0.5">{galleryModalItem.location}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setGalleryModalItem(null);
-                    setQuoteFormState(prev => ({ ...prev, eventType: galleryModalItem.title }));
-                    setEventShowcaseTab("quote");
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:from-red-500 hover:to-rose-500 transition-all cursor-pointer shadow-lg"
-                >
-                  Book Stage Setup
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* DIGITAL TICKET PASS MODAL */}
+      {viewingPass && (
+        <DigitalTicketPassModal
+          booking={viewingPass}
+          onClose={() => setViewingPass(null)}
+        />
+      )}
+
+      {/* ORGANIZER & GATE CHECK-IN TERMINAL */}
+      {showOrganizerHub && (
+        <OrganizerEventHub
+          userEmail={userEmail}
+          onClose={() => setShowOrganizerHub(false)}
+        />
       )}
     </section>
   );
