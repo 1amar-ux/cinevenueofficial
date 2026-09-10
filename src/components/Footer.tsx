@@ -3,14 +3,30 @@ import { Phone, MapPin, Share2, Shield, Lock, FileCheck } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 import { InfoModalType } from "./InfoModal";
 
-interface FooterProps {
-  onOpenInfo: (type: "about" | "privacy" | "terms" | "refund" | "cookie" | "user-agreement" | "contact") => void;
-  onOpenRental: () => void;
-  onOpenAdmin: () => void;
-  onShare: () => void;
+export interface FooterProps {
+  onOpenInfo?: (type: "about" | "privacy" | "terms" | "refund" | "cookie" | "user-agreement" | "contact") => void;
+  onOpenRental?: () => void;
+  onOpenAdmin?: () => void;
+  onShare?: () => void;
 }
 
-export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare }: FooterProps) {
+export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare }: FooterProps = {}) {
+  const handleOpenInfoSafe = (type: any) => {
+    if (onOpenInfo) {
+      onOpenInfo(type);
+    } else {
+      window.location.href = `/?info=${type}`;
+    }
+  };
+
+  const handleShareSafe = () => {
+    if (onShare) {
+      onShare();
+    } else {
+      navigator.clipboard.writeText(window.location.origin);
+      alert("Platform link copied to clipboard!");
+    }
+  };
   return (
     <footer className="bg-[#0A0A0B] border-t border-white/10 py-16 px-6 md:px-12 relative z-10">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
@@ -47,31 +63,31 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
           {/* Main Legal & Compliance Group */}
           <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] uppercase tracking-[0.15em] font-medium text-white/80">
             <button
-              onClick={() => onOpenInfo("privacy")}
+              onClick={() => handleOpenInfoSafe("privacy")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               Privacy Statement
             </button>
             <button
-              onClick={() => onOpenInfo("terms")}
+              onClick={() => handleOpenInfoSafe("terms")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               Terms & Conditions
             </button>
             <button
-              onClick={() => onOpenInfo("refund")}
+              onClick={() => handleOpenInfoSafe("refund")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               Refund Policy
             </button>
             <button
-              onClick={() => onOpenInfo("cookie")}
+              onClick={() => handleOpenInfoSafe("cookie")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               Cookie Policy
             </button>
             <button
-              onClick={() => onOpenInfo("user-agreement")}
+              onClick={() => handleOpenInfoSafe("user-agreement")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               User Agreement
@@ -81,13 +97,13 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
           {/* Secondary Navigational links */}
           <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] uppercase tracking-[0.15em] font-medium opacity-70">
             <button
-              onClick={() => onOpenInfo("about")}
+              onClick={() => handleOpenInfoSafe("about")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               About CineVenue
             </button>
             <button
-              onClick={() => onOpenInfo("contact")}
+              onClick={() => handleOpenInfoSafe("contact")}
               className="hover:text-gold transition-colors cursor-pointer"
             >
               Concierge Contact
@@ -129,7 +145,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
 
       {/* Floating Action Share Button */}
       <button
-        onClick={onShare}
+        onClick={handleShareSafe}
         className="home-share-button fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gold hover:bg-gold-light text-dark-bg flex items-center justify-center cursor-pointer shadow-xl shadow-gold/30 hover:scale-110 active:scale-95 transition-all duration-200"
         title="Share CineVenue"
       >

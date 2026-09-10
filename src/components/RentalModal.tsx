@@ -43,12 +43,12 @@ export default function RentalModal({
 
   // Available unique cities based on theatres data
   const cities = Array.from(
-    new Set(theatres.map((t) => t.location.split(" · ")[0]))
+    new Set(theatres.map((t) => t.location ? t.location.split(" · ")[0] : "Hyderabad"))
   ).filter(Boolean);
 
   // Filtered theatres based on selected city
   const filteredTheatres = theatres.filter(
-    (t) => t.location.split(" · ")[0] === selectedCity
+    (t) => (t.location ? t.location.split(" · ")[0] : "Hyderabad") === selectedCity
   );
 
   // Keep selected theatre ID in sync with city changes
@@ -65,7 +65,7 @@ export default function RentalModal({
     if (isOpen) {
       setRentalSuccess(false);
       if (theatres.length > 0) {
-        const firstCity = theatres[0].location.split(" · ")[0];
+        const firstCity = theatres[0].location ? theatres[0].location.split(" · ")[0] : "Hyderabad";
         setSelectedCity(firstCity);
         setSelectedTheatreId(theatres[0].id);
       }

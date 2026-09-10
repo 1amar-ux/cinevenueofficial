@@ -104,7 +104,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                 {/* Location absolute badge */}
                 <div className="absolute top-3 left-3 bg-[#0A0A0B]/85 border border-white/10 text-text-secondary text-xs px-2.5 py-1 rounded backdrop-blur-md flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-gold" />
-                  <span>{theatre.location.split("·")[0].trim()}</span>
+                  <span>{theatre.location ? theatre.location.split("·")[0]?.trim() : "Prime Venue"}</span>
                 </div>
               </div>
 
@@ -120,7 +120,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
 
                 {/* Facilities/Features pill row */}
                 <div className="flex flex-wrap gap-1.5 mb-6">
-                  {theatre.features.map((feature) => (
+                  {(theatre.features || []).map((feature) => (
                     <span
                       key={feature}
                       className="text-[9px] font-semibold text-text-secondary border border-white/10 px-2.5 py-1 rounded uppercase tracking-[0.1em]"

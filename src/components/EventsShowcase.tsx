@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { 
   Calendar, MapPin, Clock, Ticket, Star, Plus, ChevronRight, Info, Sparkles, 
   Share2, Award, CheckCircle2, MessageSquare, PlusCircle, X, FileText, Printer, Shield, ArrowLeft,
-  Download, Mail, Power, ToggleLeft, ToggleRight, Send, Activity, ArrowRight, Sparkle, UserCheck, Lock
+  Download, Mail, Power, ToggleLeft, ToggleRight, Send, Activity, ArrowRight, Sparkle, UserCheck, Lock,
+  QrCode
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest } from "../types";

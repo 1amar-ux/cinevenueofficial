@@ -1842,18 +1842,25 @@ export default function App() {
                 ) : (
                   <div className="min-h-screen bg-dark-bg text-text-primary flex flex-col justify-between">
                     <Navbar 
-                      userEmail={userEmail}
-                      onOpenAuth={() => setAuthOpen(true)}
-                      onLogout={handleLogout}
-                      onOpenAdmin={() => setAdminOpen(true)}
-                      onOpenTheatreManager={() => setTheatreManagerOpen(true)}
-                      onOpenEventManager={() => setEventManagerOpen(true)}
-                      onOpenRentalModal={() => setRentalModalOpen(true)}
-                      onOpenOrders={() => setOrdersModalOpen(true)}
-                      onOpenUserDashboard={() => setUserDashboardOpen(true)}
-                      userWallet={cineCoinsUserWallet}
                       selectedCity={selectedCity}
-                      onSelectCity={handleSelectCity}
+                      setSelectedCity={setSelectedCity}
+                      onOpenLocation={() => setLocationOpen(true)}
+                      cities={cities}
+                      userEmail={userEmail}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      onLogout={handleLogout}
+                      onOpenAuth={handleOpenAuth}
+                      onOpenAdmin={handleOpenAdmin}
+                      onOpenTheatreDashboard={handleOpenManagerDashboard}
+                      onOpenEventDashboard={handleOpenEventDashboard}
+                      onOpenOrders={() => setIsUserDashboardOpen(true)}
+                      onOpenCineCoins={() => window.location.href = "/cinecoins"}
+                      onOpenAccount={() => window.location.href = "/account"}
+                      onOpenProductions={() => window.location.href = "/productions"}
+                      theatreAdmins={theatreAdmins}
+                      eventOrganizers={eventOrganizers}
+                      superAdminEmail={superAdminEmail}
                     />
                     <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
                       <EventsShowcase
@@ -1875,14 +1882,9 @@ export default function App() {
                       />
                     </main>
                     <Footer 
-                      onOpenTerms={() => handleOpenFooterPage("terms")}
-                      onOpenPrivacy={() => handleOpenFooterPage("privacy")}
-                      onOpenRefunds={() => handleOpenFooterPage("refund")}
-                      onOpenCookies={() => handleOpenFooterPage("cookie")}
-                      onOpenContact={() => handleOpenFooterPage("contact")}
-                      onOpenFaq={() => handleOpenFooterPage("faq")}
-                      onOpenAbout={() => handleOpenFooterPage("about")}
-                      onOpenHelp={() => handleOpenFooterPage("help")}
+                      onOpenInfo={(tab) => setInfoModalType(tab)}
+                      onOpenRental={() => setRentalOpen(true)}
+                      onOpenAdmin={handleOpenAdmin}
                     />
                   </div>
                 )
