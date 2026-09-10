@@ -13,6 +13,7 @@ import { getEvents as getTicketedEvents, getBookings as getEventBookings } from 
 import EventBookingModal from "./events/EventBookingModal";
 import DigitalTicketPassModal from "./events/DigitalTicketPassModal";
 import OrganizerEventHub from "./events/OrganizerEventHub";
+import CineVenueLiveBanner from "./advertising/CineVenueLiveBanner";
 
 interface EventsShowcaseProps {
   events: Event[];
@@ -490,6 +491,11 @@ export default function EventsShowcase({
           />
           <Plus className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4 rotate-45" />
         </div>
+      </div>
+
+      {/* LIVE BANNER ADVERTISEMENT PLACEMENT: EVENTS TOP */}
+      <div className="w-full mb-6">
+        <CineVenueLiveBanner placement="events_top" />
       </div>
 
        {/* EVENT BOOKING CATEGORIES & QUICK ACTIONS BAR */}

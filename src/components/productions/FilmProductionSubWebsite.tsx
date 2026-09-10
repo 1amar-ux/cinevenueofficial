@@ -6,6 +6,7 @@ import {
   ExternalLink, Layers, Music, Camera, Zap, Tv, MapPin, Globe, HelpCircle
 } from "lucide-react";
 import { getEventRequests, submitEventRequest, postEventMessage } from "../../services/eventService";
+import CineVenueLiveBanner from "../advertising/CineVenueLiveBanner";
 
 import { 
   ProductionProject, 
@@ -363,6 +364,11 @@ export default function FilmProductionSubWebsite({
           </div>
         </div>
       </header>
+
+      {/* LIVE BANNER ADVERTISEMENT PLACEMENT: FILM PRODUCTION TOP */}
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-2">
+        <CineVenueLiveBanner placement="film_production_top" />
+      </div>
 
       {/* DYNAMIC MODULE RENDERING */}
       {activeModule === "events" && (

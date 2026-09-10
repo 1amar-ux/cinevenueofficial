@@ -5,6 +5,7 @@ import MaintenancePage from "../components/MaintenancePage";
 import CineVenueLogo from "../components/CineVenueLogo";
 import EventManagementHub from "../components/events/EventManagementHub";
 import FilmProductionHub from "../components/film-production/FilmProductionHub";
+import CineVenueLiveBanner from "../components/advertising/CineVenueLiveBanner";
 import { 
   Film, Sparkles, Megaphone, Ticket, Shield, Mail, Phone, Users, 
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
@@ -295,8 +296,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         </div>
       )}
 
+      {/* LIVE BANNER ADVERTISEMENT PLACEMENT: HOMEPAGE TOP */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-24 pb-0 z-20 relative">
+        <CineVenueLiveBanner placement="homepage_top" />
+      </div>
+
       {/* LUXURY CINEMATIC HERO */}
-      <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 md:pt-48 md:pb-36 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
+      <section className="relative pt-16 pb-16 sm:pt-24 sm:pb-24 md:pt-28 md:pb-36 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
         {/* Subtle decorative glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-[#D4AF37]/5 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
         
@@ -665,6 +671,11 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           </div>
         </div>
       </section>
+
+      {/* LIVE BANNER ADVERTISEMENT PLACEMENT: HOMEPAGE MIDDLE */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 py-6">
+        <CineVenueLiveBanner placement="homepage_middle" />
+      </div>
 
       {/* DYNAMIC SHOWCASE CONTAINER */}
       <AnimatePresence mode="wait">

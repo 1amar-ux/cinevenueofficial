@@ -14,6 +14,13 @@ import type {
   InquiryStatus,
   CampaignStatus,
   AdsTxtEntry,
+  BannerPlacementId,
+  BannerPlacementConfig,
+  LiveBannerCampaign,
+  BannerPricingQuote,
+  PlacementSlotAvailability,
+  CampaignCalendarSlot,
+  LiveCampaignStatus
 } from '../types/advertising';
 
 // ─── Storage Keys ───────────────────────────────────────────
@@ -411,3 +418,464 @@ export function generateAdsTxtContent(entries: AdsTxtEntry[]): string {
   }
   return lines.join('\n');
 }
+
+// ============================================================
+// 24-HOUR LIVE BANNER ADVERTISING CLIENT SERVICE
+// Calls /api/v1/advertising with resilient local fallbacks
+// ============================================================
+
+const API_BASE = '/api/v1/advertising';
+const ADMIN_API_BASE = '/api/v1/admin/advertising';
+
+export async function fetchLiveBannerPlacements(): Promise<BannerPlacementConfig[]> {
+  try {
+    const res = await fetch(`${API_BASE}/placements`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data?.placements) {
+        return data.data.placements;
+      }
+    }
+  } catch (err) {
+    console.warn('[AdService] Backend unreachable, using client placements fallback');
+  }
+
+  // Fallback placements list
+  return [
+    {
+      id: "homepage_top",
+      name: "Homepage Top Spotlight",
+      page: "Home",
+      locationDescription: "Prime billboard positioned directly above featured movies and hero carousel.",
+      desktopDimensions: "1280x280",
+      mobileDimensions: "640x320",
+      aspectRatio: "4.5:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 4999,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "homepage_middle",
+      name: "Homepage Mid-Feed Showcase",
+      page: "Home",
+      locationDescription: "Full-width marquee banner positioned between Now Showing and Trending Showcases.",
+      desktopDimensions: "1200x240",
+      mobileDimensions: "600x300",
+      aspectRatio: "5:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 3499,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "homepage_bottom",
+      name: "Homepage Footer Billboard",
+      page: "Home",
+      locationDescription: "High-visibility closing display banner located right above CineVenue footer.",
+      desktopDimensions: "1200x200",
+      mobileDimensions: "600x250",
+      aspectRatio: "6:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 1999,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "movies_top",
+      name: "Movies & Showtimes Header Banner",
+      page: "Movies",
+      locationDescription: "Header position across movie discovery and theatre schedule views.",
+      desktopDimensions: "1200x250",
+      mobileDimensions: "600x300",
+      aspectRatio: "4.8:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 3999,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "movie_details",
+      name: "Movie Synopsis & Booking Interstitial",
+      page: "Movie Details",
+      locationDescription: "Featured banner between trailer embed and theatre showtime grid.",
+      desktopDimensions: "960x220",
+      mobileDimensions: "600x280",
+      aspectRatio: "4.3:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 2799,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "events_top",
+      name: "Live Events & Concerts Leaderboard",
+      page: "Events",
+      locationDescription: "Top banner across live comedy, music concerts, and gala booking lobbies.",
+      desktopDimensions: "1200x250",
+      mobileDimensions: "600x300",
+      aspectRatio: "4.8:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 2999,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "event_details",
+      name: "Event Pass Confirmation Banner",
+      page: "Events",
+      locationDescription: "Targeted card banner visible before and after attendee pass selection.",
+      desktopDimensions: "800x250",
+      mobileDimensions: "500x250",
+      aspectRatio: "3.2:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 2199,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "film_production_top",
+      name: "Film Industry Hub Top Banner",
+      page: "Film Production",
+      locationDescription: "Premier header banner across 24 Crafts, casting notices, and talent directories.",
+      desktopDimensions: "1200x260",
+      mobileDimensions: "600x300",
+      aspectRatio: "4.6:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 2499,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "film_production_middle",
+      name: "Film Production Directory Spotlight",
+      page: "Film Production",
+      locationDescription: "Engaging showcase ad between verified professionals and project pitches.",
+      desktopDimensions: "1100x220",
+      mobileDimensions: "550x260",
+      aspectRatio: "5:1",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 1799,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "content_top",
+      name: "Editorial & News Header",
+      page: "All Content",
+      locationDescription: "Universal header banner on informative and promotional platform pages.",
+      desktopDimensions: "1200x200",
+      mobileDimensions: "600x250",
+      aspectRatio: "6:1",
+      maxConcurrentCampaigns: 2,
+      basePrice24hINR: 1899,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    },
+    {
+      id: "content_sidebar",
+      name: "High-Impact Sticky Sidebar",
+      page: "All Content",
+      locationDescription: "Vertical companion ad unit on desktop layouts.",
+      desktopDimensions: "300x600",
+      mobileDimensions: "300x300",
+      aspectRatio: "1:2",
+      maxConcurrentCampaigns: 1,
+      basePrice24hINR: 2299,
+      isActive: true,
+      supportsGoogleAdSenseFallback: true
+    }
+  ];
+}
+
+export async function checkLiveSlotAvailability(
+  placementId: BannerPlacementId,
+  startAtUtc: string,
+  durationHours: number = 24
+): Promise<PlacementSlotAvailability> {
+  try {
+    const res = await fetch(
+      `${API_BASE}/availability?placementId=${encodeURIComponent(placementId)}&startAtUtc=${encodeURIComponent(startAtUtc)}&durationHours=${durationHours}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data?.availability) {
+        return data.data.availability;
+      }
+    }
+  } catch (err) {
+    console.warn('[AdService] Availability check fallback');
+  }
+
+  // Resilient fallback
+  const startMs = new Date(startAtUtc).getTime();
+  const endMs = startMs + durationHours * 3600 * 1000;
+  return {
+    placementId,
+    isAvailable: true,
+    startAtUtc,
+    endAtUtc: new Date(endMs).toISOString(),
+    conflictingCampaignCount: 0,
+    maxAllowed: 1
+  };
+}
+
+export async function fetchLiveBannerQuote(
+  placementId: BannerPlacementId,
+  durationHours: number = 24,
+  discountCode?: string
+): Promise<BannerPricingQuote> {
+  try {
+    const res = await fetch(`${API_BASE}/quote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placementId, durationHours, discountCode })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data?.quote) {
+        return data.data.quote;
+      }
+    }
+  } catch (err) {
+    console.warn('[AdService] Quote calculation fallback');
+  }
+
+  // Fallback quote computation
+  const basePriceINR = 3499;
+  const discountINR = discountCode?.toUpperCase() === 'LAUNCH500' ? 500 : 0;
+  const taxable = Math.max(0, basePriceINR - discountINR);
+  const gstAmountINR = Math.round(taxable * 0.18);
+  return {
+    placementId,
+    durationHours,
+    basePriceINR,
+    gstRatePercent: 18,
+    gstAmountINR,
+    discountINR,
+    finalAmountINR: taxable + gstAmountINR,
+    currency: 'INR'
+  };
+}
+
+export async function submitLiveBannerCampaign(campaignData: any): Promise<LiveBannerCampaign> {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_BASE}/campaigns`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(campaignData)
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Failed to submit advertising campaign');
+  }
+  return data.data.campaign;
+}
+
+export async function createBannerPaymentOrder(campaignId: string): Promise<{
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  campaignId: string;
+  isSandbox: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/campaigns/${campaignId}/payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Failed to generate payment order');
+  }
+  return data.data;
+}
+
+export async function verifyBannerPayment(params: {
+  campaignId: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature?: string;
+}): Promise<LiveBannerCampaign> {
+  const res = await fetch(`${API_BASE}/payment/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Payment verification failed');
+  }
+  return data.data.campaign;
+}
+
+export async function fetchActiveLiveBanner(placementId: BannerPlacementId): Promise<{
+  hasDirectAd: boolean;
+  banner?: {
+    id: string;
+    campaignNumber: string;
+    businessName: string;
+    adTitle: string;
+    shortDescription?: string;
+    destinationUrl: string;
+    desktopImageUrl: string;
+    mobileImageUrl: string;
+    altText: string;
+    startAtUtc: string;
+    endAtUtc: string;
+    remainingSeconds: number;
+  };
+  supportsGoogleAdSenseFallback: boolean;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/live/${placementId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data) {
+        return data.data;
+      }
+    }
+  } catch (err) {
+    // Network fallback
+  }
+
+  return {
+    hasDirectAd: false,
+    supportsGoogleAdSenseFallback: true
+  };
+}
+
+export async function trackLiveBannerEvent(campaignId: string, type: 'impression' | 'click'): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaignId, type }),
+      keepalive: true
+    });
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
+export async function fetchMyLiveCampaigns(email?: string): Promise<LiveBannerCampaign[]> {
+  try {
+    const token = localStorage.getItem('token');
+    const url = email ? `${API_BASE}/my-campaigns?email=${encodeURIComponent(email)}` : `${API_BASE}/my-campaigns`;
+    const res = await fetch(url, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data?.campaigns) {
+        return data.data.campaigns;
+      }
+    }
+  } catch (err) {
+    console.warn('[AdService] Fetch my campaigns fallback');
+  }
+
+  return [];
+}
+
+// ─── Admin Live Banner Operations ────────────────────────────
+
+export async function fetchAdminLiveBannerStats(): Promise<any> {
+  const res = await fetch(`${ADMIN_API_BASE}/stats`, {
+    headers: { 'x-admin-passcode': '8888' }
+  });
+  const data = await res.json();
+  return data.data?.stats || null;
+}
+
+export async function fetchAdminLiveCampaigns(filters?: any): Promise<LiveBannerCampaign[]> {
+  const query = new URLSearchParams(filters || {}).toString();
+  const res = await fetch(`${ADMIN_API_BASE}/campaigns?${query}`, {
+    headers: { 'x-admin-passcode': '8888' }
+  });
+  const data = await res.json();
+  return data.data?.campaigns || [];
+}
+
+export async function approveLiveCampaign(id: string, reviewer?: string): Promise<LiveBannerCampaign> {
+  const res = await fetch(`${ADMIN_API_BASE}/campaigns/${id}/approve`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-passcode': '8888'
+    },
+    body: JSON.stringify({ reviewer })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || 'Failed to approve campaign');
+  return data.data.campaign;
+}
+
+export async function rejectLiveCampaign(id: string, reason: string, reviewer?: string): Promise<LiveBannerCampaign> {
+  const res = await fetch(`${ADMIN_API_BASE}/campaigns/${id}/reject`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-passcode': '8888'
+    },
+    body: JSON.stringify({ reason, reviewer })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || 'Failed to reject campaign');
+  return data.data.campaign;
+}
+
+export async function pauseLiveCampaign(id: string): Promise<LiveBannerCampaign> {
+  const res = await fetch(`${ADMIN_API_BASE}/campaigns/${id}/pause`, {
+    method: 'PUT',
+    headers: { 'x-admin-passcode': '8888' }
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || 'Failed to pause campaign');
+  return data.data.campaign;
+}
+
+export async function resumeLiveCampaign(id: string): Promise<LiveBannerCampaign> {
+  const res = await fetch(`${ADMIN_API_BASE}/campaigns/${id}/resume`, {
+    method: 'PUT',
+    headers: { 'x-admin-passcode': '8888' }
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || 'Failed to resume campaign');
+  return data.data.campaign;
+}
+
+export async function fetchLiveBannerCalendar(): Promise<CampaignCalendarSlot[]> {
+  const res = await fetch(`${ADMIN_API_BASE}/calendar`, {
+    headers: { 'x-admin-passcode': '8888' }
+  });
+  const data = await res.json();
+  return data.data?.slots || [];
+}
+
+export async function updateLivePlacementPricing(
+  id: BannerPlacementId,
+  basePrice24hINR: number,
+  isActive?: boolean
+): Promise<BannerPlacementConfig> {
+  const res = await fetch(`${ADMIN_API_BASE}/pricing/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-passcode': '8888'
+    },
+    body: JSON.stringify({ basePrice24hINR, isActive })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || 'Failed to update pricing');
+  return data.data.placement;
+}
+

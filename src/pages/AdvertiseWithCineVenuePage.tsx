@@ -9,6 +9,8 @@ import {
 import CineVenueLogo from '../components/CineVenueLogo';
 import { DEFAULT_PLACEMENTS, submitInquiry } from '../services/advertisingService';
 import type { AdPlacementId } from '../types/advertising';
+import LiveBannerBookingWizard from '../components/advertising/LiveBannerBookingWizard';
+import { Sparkles } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────
 const formatINR = (n: number) =>
@@ -339,12 +341,21 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 // ─── Main Page ───────────────────────────────────────────────
 export default function AdvertiseWithCineVenuePage() {
+  const [activeTab, setActiveTab] = useState<'24h-banner' | 'inquiry'>('24h-banner');
+
   return (
     <div className="min-h-screen bg-[#070709] text-text-primary font-sans">
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-[#070709]/95 backdrop-blur-xl border-b border-white/[0.06] px-4 md:px-8 py-3.5 flex items-center justify-between">
         <CineVenueLogo size="md" onClick={() => window.location.href = '/'} />
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.location.href = '/advertising/my-campaigns'}
+            className="px-3.5 py-1.5 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-semibold rounded-lg border border-gold/30 cursor-pointer transition-all flex items-center gap-1.5"
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>My Campaigns</span>
+          </button>
           <a href="mailto:advertise@cinevenue.in" className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors">
             <Mail className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">advertise@cinevenue.in</span>
@@ -509,16 +520,52 @@ export default function AdvertiseWithCineVenuePage() {
         </div>
       </section>
 
-      {/* Inquiry Form */}
-      <section id="inquiry-form" className="px-4 md:px-8 py-16">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-black text-white mb-3">Submit Your Advertising Inquiry</h2>
-            <p className="text-text-secondary">Complete the form below and our team will prepare a customised advertising proposal for you.</p>
+      {/* Advertising Action Module */}
+      <section id="inquiry-form" className="px-4 md:px-8 py-16 scroll-mt-20">
+        <div className="max-w-5xl mx-auto space-y-10">
+          <div className="text-center space-y-3">
+            <h2 className="text-3xl md:text-4xl font-black text-white">Start Your Advertising Campaign</h2>
+            <p className="text-text-secondary max-w-xl mx-auto text-sm">
+              Choose between instant 24-Hour Live Banners or request a bespoke multi-week campaign proposal.
+            </p>
+
+            <div className="inline-flex p-1.5 bg-[#0F0F14] border border-white/10 rounded-2xl gap-2 shadow-2xl mt-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab('24h-banner')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === '24h-banner'
+                    ? 'bg-gold text-black shadow-lg shadow-gold/20 font-black'
+                    : 'text-text-muted hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-inherit" />
+                <span>24-Hour Live Banner (Instant Booking)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('inquiry')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === 'inquiry'
+                    ? 'bg-gold text-black shadow-lg shadow-gold/20 font-black'
+                    : 'text-text-muted hover:text-white'
+                }`}
+              >
+                <Send className="w-4 h-4 text-inherit" />
+                <span>Bespoke Proposal Inquiry</span>
+              </button>
+            </div>
           </div>
-          <div className="bg-[#0F0F11] border border-white/[0.08] rounded-2xl p-6 md:p-8">
-            <InquiryForm />
-          </div>
+
+          {activeTab === '24h-banner' ? (
+            <LiveBannerBookingWizard />
+          ) : (
+            <div className="max-w-3xl mx-auto">
+              <div className="bg-[#0F0F11] border border-white/[0.08] rounded-2xl p-6 md:p-8">
+                <InquiryForm />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

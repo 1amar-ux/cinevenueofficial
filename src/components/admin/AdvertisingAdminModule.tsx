@@ -4,8 +4,9 @@ import {
   XCircle, Clock, Plus, Trash2, Edit3, ExternalLink, AlertTriangle,
   Settings, Globe, FileText, RefreshCw, ChevronDown, ChevronUp,
   Search, Filter, ToggleLeft, ToggleRight, Mail, Phone, Building,
-  Calendar, Layers, Zap, Shield, Info, Copy, Check,
+  Calendar, Layers, Zap, Shield, Info, Copy, Check, Sparkles,
 } from 'lucide-react';
+import LiveBannersAdminTab from './LiveBannersAdminTab';
 import type {
   AdCampaign, AdvertiserInquiry, AdPlacement, AdvertisingConfig,
   CampaignStatus, InquiryStatus, AdPlacementId,
@@ -43,6 +44,7 @@ const inquiryStatusColors: Record<InquiryStatus, string> = {
 
 const SECTION_TABS = [
   { id: 'overview', label: 'Revenue Overview', icon: BarChart2 },
+  { id: '24h_banners', label: '24-Hour Live Banners', icon: Sparkles },
   { id: 'campaigns', label: 'Campaigns', icon: Layers },
   { id: 'inquiries', label: 'Ad Inquiries', icon: Mail },
   { id: 'placements', label: 'Ad Placements', icon: Globe },
@@ -536,6 +538,11 @@ export default function AdvertisingAdminModule() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── SECTION: 24-Hour Live Banners ──────────────────── */}
+      {section === '24h_banners' && (
+        <LiveBannersAdminTab />
       )}
 
       {/* ── SECTION: Campaigns ─────────────────────────────── */}

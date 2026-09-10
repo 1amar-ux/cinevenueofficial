@@ -61,6 +61,7 @@ import CreateEvent from "./pages/CreateEvent";
 import { ProposalSubmitForm } from "./components/proposals/ProposalSubmitForm";
 import { CustomerProposalsView } from "./components/proposals/CustomerProposalsView";
 import AdvertiseWithCineVenuePage from "./pages/AdvertiseWithCineVenuePage";
+import MyAdvertisingCampaigns from "./pages/MyAdvertisingCampaigns";
 import CineVenueLogo from "./components/CineVenueLogo";
 import LocationSelector from "./components/location/LocationSelector";
 import { calculateDistance, getCoordinates } from "./lib/location";
@@ -1995,6 +1996,7 @@ export default function App() {
       {/* Advertising & Monetization Routes */}
       <Route path="/advertise" element={<AdvertiseWithCineVenuePage />} />
       <Route path="/advertise-with-cinevenue" element={<AdvertiseWithCineVenuePage />} />
+      <Route path="/advertising/my-campaigns" element={<MyAdvertisingCampaigns />} />
 
       {/* Official Legal & Compliance Routes */}
       <Route path="/legal" element={<LegalPolicies />} />

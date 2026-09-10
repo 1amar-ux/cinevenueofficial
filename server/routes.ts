@@ -11,6 +11,7 @@ import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
 import filmProductionRoutes from "./modules/marketplace/filmProduction.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import posRoutes from "./modules/pos/pos.routes";
+import { advertisingPublicRouter, adminAdvertisingRouter } from "./modules/advertising/advertising.routes";
 import { checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
 
@@ -56,6 +57,8 @@ router.use("/events", eventRoutes);
 router.use("/marketplace", marketplaceRoutes);
 router.use("/film-production", filmProductionRoutes);
 router.use("/marketplace", filmProductionRoutes);
+router.use("/advertising", advertisingPublicRouter);
+router.use("/admin/advertising", adminAdvertisingRouter);
 router.use("/admin", adminRoutes);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 
