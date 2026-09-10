@@ -429,7 +429,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               </div>
               <div className="space-y-1.5 text-left">
                 <h3 className="font-display text-lg font-bold text-white group-hover:text-[#D4AF37] transition-colors">
-                  Exclusive Events & Galas
+                  Event Booking
                 </h3>
                 <p className="text-xs text-white/50 leading-relaxed font-light min-h-[60px]">
                   Secure premium entry passes, audio launches, standup comedy sets, and elite VIP musical concert nights.

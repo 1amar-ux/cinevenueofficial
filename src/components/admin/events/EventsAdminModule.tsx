@@ -15,9 +15,8 @@ export default function EventsAdminModule() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-text-primary tracking-wide flex items-center gap-2">
-            <span>Exclusive</span>
-            <span className="text-gold">Cinematic Events</span>
-            <span>& Galas</span>
+            <span>Event</span>
+            <span className="text-gold">Booking</span>
           </h2>
           <p className="text-xs text-text-secondary mt-0.5">
             Manage movie pre-releases, audio launches, fan meets, and generate secure passes.

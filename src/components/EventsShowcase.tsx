@@ -473,7 +473,7 @@ export default function EventsShowcase({
           </div>
 
           <h2 className="font-display text-4xl md:text-5xl font-light tracking-tight text-text-primary italic">
-            Exclusive <span className="text-gold not-italic font-normal">Cinematic Events</span> & Galas
+            Event <span className="text-gold not-italic font-normal">Booking</span>
           </h2>
           <p className="text-xs text-text-muted mt-2 max-w-xl">
             Register for celebrity meetups, custom fan-premieres, and immersive concerts occurring live in high-end theater venues near you.
