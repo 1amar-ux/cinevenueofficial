@@ -513,9 +513,37 @@ export default async function handler(req: any, res: any) {
       });
     }
     return new Promise((resolve, reject) => {
+      let isResolved = false;
+      const done = () => {
+        if (!isResolved) {
+          isResolved = true;
+          resolve(undefined);
+        }
+      };
+
+      res.on("finish", done);
+      res.on("close", done);
+      res.on("error", (err: any) => {
+        if (!isResolved) {
+          isResolved = true;
+          reject(err);
+        }
+      });
+
       app(req, res, (err: any) => {
-        if (err) return reject(err);
-        resolve(undefined);
+        if (err) {
+          if (!isResolved) {
+            isResolved = true;
+            return reject(err);
+          }
+        }
+        if (!res.headersSent) {
+          res.status(404).json({
+            success: false,
+            error: { code: "NOT_FOUND", message: `Cannot ${req.method} ${url}` }
+          });
+        }
+        done();
       });
     });
   } catch (error: any) {
