@@ -8,7 +8,7 @@ const SENSITIVE_KEYS = new Set([
   "refreshtoken",
   "jwt",
   "secret",
-  "razorpay_signature",
+  "cashfree_signature",
   "keysecret",
   "otp",
   "encryptedaccountnumber"

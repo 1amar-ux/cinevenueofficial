@@ -545,7 +545,7 @@ export default function Bookings({ theatreName, bookings, onUpdateBookings }: Bo
                 <div className="border-t border-white/5 pt-3 grid grid-cols-2 gap-4 text-[11px]">
                   <div>
                     <span className="text-text-muted block">PAYMENT METHOD</span>
-                    <strong className="text-white uppercase">Razorpay Payment Gateway</strong>
+                    <strong className="text-white uppercase">Cashfree Payment Gateway</strong>
                   </div>
                   <div>
                     <span className="text-text-muted block">TOTAL GROSS AMOUNT</span>

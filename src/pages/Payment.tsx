@@ -15,6 +15,8 @@ import { useNavigate } from "react-router-dom";
 import { BookingContext } from "../context/BookingContext";
 import api from "../services/api";
 
+import { triggerCashfreeCheckout, createMovieBookingCashfreeOrder, verifyMovieBookingCashfreePayment } from "../services/cashfreeService";
+
 export default function Payment() {
   const navigate = useNavigate();
   const { booking, setBooking } = useContext(BookingContext);
@@ -32,91 +34,52 @@ export default function Payment() {
     setPaymentSuccess(null);
     setLoading(true);
 
-    // Check if Razorpay script is loaded
-    const Razorpay = (window as any).Razorpay;
-    if (!Razorpay) {
-      setPaymentError("Razorpay SDK failed to load. Please refresh the page or check your internet connection.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      // 1. Create Payment Order on Backend
-      const orderRes = await api.post("/create-order", {
-        amount: total * 100, // in paise
-        currency: "INR"
+      // 1. Create Cashfree Order on Backend
+      const orderData = await createMovieBookingCashfreeOrder({
+        amount: total,
+        customerName: "CineVenue Guest",
+        customerEmail: "guest@cinevenue.in",
+        customerPhone: "9876543210",
+        tickets: booking.seats.map((s: string) => ({ seatId: s, price: total / (booking.seats.length || 1) }))
       });
 
-      if (!orderRes.data || !orderRes.data.success || !orderRes.data.order_id) {
-        throw new Error(orderRes.data?.message || "Failed to create payment order on the server.");
+      if (!orderData || !orderData.paymentSessionId) {
+        throw new Error(orderData?.message || "Failed to initialize Cashfree payment order on the server.");
       }
 
-      const { order_id } = orderRes.data;
-
-      // 2. Open Razorpay Checkout Modal
-      const options = {
-        key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID || "rzp_test_TB7njDD8MonAMK",
-        amount: total * 100, // in paise
-        currency: "INR",
-        name: "CineVenue Checkout",
-        description: `Movie Ticket: ${movieTitle} (Seats: ${seats})`,
-        order_id: order_id,
-        handler: async function (response: any) {
+      // 2. Open Cashfree Drop Checkout Modal
+      await triggerCashfreeCheckout({
+        paymentSessionId: orderData.paymentSessionId,
+        orderId: orderData.orderId,
+        environment: orderData.environment || "TEST",
+        onSuccess: async () => {
           try {
             setLoading(true);
             setPaymentSuccess("Payment authorized! Verifying secure transaction signature...");
 
-            // 3. Send payment signatures to backend for verification
-            const verifyRes = await api.post("/verify-payment", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+            // 3. Verify payment on server
+            await verifyMovieBookingCashfreePayment({
+              orderId: orderData.orderId,
+              bookingId: orderData.bookingId
             });
 
-            if (verifyRes.data && verifyRes.data.success) {
-              setPaymentSuccess("Payment verified successfully! Generating your ticket...");
-              setTimeout(() => {
-                completeBooking();
-              }, 1500);
-            } else {
-              throw new Error(verifyRes.data?.message || "Signature verification failed on the server.");
-            }
+            setPaymentSuccess("Payment verified successfully! Generating your ticket...");
+            setTimeout(() => {
+              completeBooking();
+            }, 1500);
           } catch (verifyErr: any) {
-            console.error("Signature verification error:", verifyErr);
-            setPaymentError(
-              verifyErr.response?.data?.message || 
-              verifyErr.message || 
-              "Signature verification failed. Secure transaction compromised."
-            );
+            console.error("Cashfree verification error:", verifyErr);
+            setPaymentError(verifyErr.message || "Signature verification failed.");
             setLoading(false);
           }
         },
-        prefill: {
-          name: "Amarnath",
-          email: "amarnath@example.com",
-          contact: "9876543210"
-        },
-        theme: {
-          color: "#F84464"
-        },
-        modal: {
-          ondismiss: function () {
-            setPaymentError("Payment session closed. You can try paying again when ready.");
-            setLoading(false);
-          }
+        onFailure: (err: any) => {
+          console.error("Cashfree payment failed:", err);
+          setPaymentError(err?.message || "Cashfree payment was cancelled or declined.");
+          setLoading(false);
         }
-      };
-
-      const rzp = new Razorpay(options);
-
-      // Handle failed payments explicitly
-      rzp.on("payment.failed", function (response: any) {
-        console.error("Razorpay Payment Failed:", response.error);
-        setPaymentError(`Payment failed: ${response.error.description || "Unknown failure reason"}`);
-        setLoading(false);
       });
-
-      rzp.open();
     } catch (err: any) {
       console.error("Payment setup error:", err);
       setPaymentError(
@@ -190,7 +153,7 @@ export default function Payment() {
             Payment Options
           </Typography>
           <Typography sx={{ textAlign: "center", color: "text.secondary", mb: 2 }}>
-            Secure checkout powered by Razorpay
+            Secure checkout powered by Cashfree Payments
           </Typography>
           <Divider sx={{ my: 2 }} />
 

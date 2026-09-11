@@ -22,10 +22,12 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
   
-  // Payment Gateway
-  RAZORPAY_KEY_ID: z.string().optional().default("rzp_test_TB7njDD8MonAMK"),
-  RAZORPAY_KEY_SECRET: z.string().optional(),
-  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+  // Payment Gateways (Cashfree)
+  CASHFREE_APP_ID: z.string().optional(),
+  CASHFREE_SECRET_KEY: z.string().optional(),
+  CASHFREE_ENV: z.enum(["TEST", "PROD"]).default("TEST"),
+  CASHFREE_API_VERSION: z.string().default("2023-08-01"),
+  DEFAULT_PAYMENT_GATEWAY: z.literal("CASHFREE").default("CASHFREE"),
   
   // AI Service
   GEMINI_API_KEY: z.string().optional(),

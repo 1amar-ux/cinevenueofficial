@@ -19,6 +19,11 @@ import {
   validateCoupon,
   createEventBooking,
 } from '../../services/eventBookingService';
+import {
+  createEventBookingCashfreeOrder,
+  verifyEventBookingCashfreePayment,
+  triggerCashfreeCheckout,
+} from '../../services/cashfreeService';
 import DigitalTicketPassModal from './DigitalTicketPassModal';
 
 interface EventBookingModalProps {
@@ -212,8 +217,60 @@ export default function EventBookingModal({
     setCouponMessage(null);
   };
 
-  // Final Booking Confirmation
-  const handleConfirmAndPay = () => {
+  // Final Booking Confirmation with Wallet & Gateway integration
+  const finalizeBooking = (paymentRefId?: string) => {
+    try {
+      const booking = createEventBooking({
+        eventId: event.id,
+        ticketTypeId: selectedTicketType?.id,
+        ticketCount: totalTicketCount,
+        seatCodes: selectedSeatCodes.length > 0 ? selectedSeatCodes : undefined,
+        primaryAttendee: {
+          name: primaryName.trim(),
+          email: primaryEmail.trim(),
+          phone: primaryPhone.trim(),
+        },
+        additionalAttendees,
+        pricing: fees,
+        paymentMethod: `${selectedGateway} (${paymentMethod})` as any,
+        sessionId,
+      });
+
+      // If CineCoins were redeemed, deduct from user wallet & record ledger
+      if (useCineCoins && coinsToRedeem > 0 && userWallet && onUpdateWallet) {
+        const updatedWallet: CineCoinsUserWallet = {
+          ...userWallet,
+          balance: Math.max(userWallet.balance - coinsToRedeem, 0),
+          totalRedeemed: (userWallet.totalRedeemed || 0) + coinsToRedeem,
+          recentTransactions: [
+            {
+              id: `TX-${Date.now()}`,
+              userId: primaryEmail,
+              amount: coinsToRedeem,
+              type: 'REDEEM',
+              source: 'EVENT_BOOKING',
+              title: `Redeemed for ${event.title}`,
+              description: `CineCoins discount applied on Event Pass #${booking.id}`,
+              balanceAfter: Math.max(userWallet.balance - coinsToRedeem, 0),
+              createdAt: new Date().toISOString(),
+            },
+            ...(userWallet.recentTransactions || []),
+          ],
+        };
+        onUpdateWallet(updatedWallet);
+      }
+
+      setConfirmedBooking(booking);
+      if (onBookingSuccess) onBookingSuccess(booking);
+    } catch (err) {
+      console.error('Booking failed:', err);
+      alert('Failed to process booking. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleConfirmAndPay = async () => {
     if (!primaryName.trim() || !primaryEmail.trim() || !primaryPhone.trim()) {
       alert('Please fill in your primary contact information.');
       setCurrentStep(2);
@@ -222,57 +279,44 @@ export default function EventBookingModal({
 
     setIsProcessingPayment(true);
 
-    setTimeout(() => {
-      try {
-        const booking = createEventBooking({
-          eventId: event.id,
-          ticketTypeId: selectedTicketType?.id,
-          ticketCount: totalTicketCount,
-          seatCodes: selectedSeatCodes.length > 0 ? selectedSeatCodes : undefined,
-          primaryAttendee: {
-            name: primaryName.trim(),
-            email: primaryEmail.trim(),
-            phone: primaryPhone.trim(),
-          },
-          additionalAttendees,
-          pricing: fees,
-          paymentMethod,
-          sessionId,
-        });
+    try {
+      const orderData = await createEventBookingCashfreeOrder({
+        eventId: event.id,
+        amount: fees.finalAmount,
+        customerName: primaryName.trim(),
+        customerEmail: primaryEmail.trim(),
+        customerPhone: primaryPhone.trim(),
+        ticketCount: totalTicketCount,
+      });
 
-        // If CineCoins were redeemed, deduct from user wallet & record ledger
-        if (useCineCoins && coinsToRedeem > 0 && userWallet && onUpdateWallet) {
-          const updatedWallet: CineCoinsUserWallet = {
-            ...userWallet,
-            balance: Math.max(userWallet.balance - coinsToRedeem, 0),
-            totalRedeemed: (userWallet.totalRedeemed || 0) + coinsToRedeem,
-            recentTransactions: [
-              {
-                id: `TX-${Date.now()}`,
-                userId: primaryEmail,
-                amount: coinsToRedeem,
-                type: 'REDEEM',
-                source: 'EVENT_BOOKING',
-                title: `Redeemed for ${event.title}`,
-                description: `CineCoins discount applied on Event Pass #${booking.id}`,
-                balanceAfter: Math.max(userWallet.balance - coinsToRedeem, 0),
-                createdAt: new Date().toISOString(),
-              },
-              ...(userWallet.recentTransactions || []),
-            ],
-          };
-          onUpdateWallet(updatedWallet);
-        }
-
-        setConfirmedBooking(booking);
-        if (onBookingSuccess) onBookingSuccess(booking);
-      } catch (err) {
-        console.error('Booking failed:', err);
-        alert('Failed to process booking. Please try again.');
-      } finally {
-        setIsProcessingPayment(false);
-      }
-    }, 1200);
+      await triggerCashfreeCheckout({
+        paymentSessionId: orderData.paymentSessionId,
+        orderId: orderData.orderId,
+        environment: orderData.environment || 'TEST',
+        onSuccess: async () => {
+          try {
+            await verifyEventBookingCashfreePayment({
+              orderId: orderData.orderId,
+              bookingId: orderData.bookingId,
+            });
+            finalizeBooking(`CF-${orderData.orderId}`);
+          } catch (vErr: any) {
+            console.error('Cashfree event verification error:', vErr);
+            alert(vErr.message || 'Payment verification could not be confirmed.');
+            setIsProcessingPayment(false);
+          }
+        },
+        onFailure: (err: any) => {
+          console.error('Cashfree checkout error:', err);
+          alert(err?.message || 'Cashfree payment failed or was cancelled.');
+          setIsProcessingPayment(false);
+        },
+      });
+    } catch (err: any) {
+      console.error('Cashfree Order Error:', err);
+      alert(err.message || 'Failed to initialize Cashfree payment.');
+      setIsProcessingPayment(false);
+    }
   };
 
   // Format MM:SS for countdown timer
@@ -767,10 +811,28 @@ export default function EventBookingModal({
                 </div>
               </div>
 
+              {/* Payment Gateway Header */}
+              <div className="bg-gold/10 border border-gold/30 p-3 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      Cashfree Payments <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold text-black font-extrabold uppercase">Official Gateway</span>
+                    </span>
+                    <span className="text-[10px] text-white/60 block">Instant Zero-Surcharge Checkout · UPI, Cards, NetBanking</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+                  <Check className="w-3.5 h-3.5" /> Secure SSL
+                </div>
+              </div>
+
               {/* Payment Method Selector */}
               <div className="space-y-2">
                 <span className="text-xs font-bold text-white uppercase tracking-wider block">
-                  Select Payment Method
+                  Select Payment Channel
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   {[

@@ -26,14 +26,16 @@ export async function createOrder(req: Request, res: Response) {
   }
 }
 
-export async function handleRazorpayWebhook(req: Request, res: Response) {
+export async function handleCashfreeWebhook(req: Request, res: Response) {
   try {
-    await financeService.processWebhook("RAZORPAY", req.body);
-    res.json({ success: true, message: "Webhook processed" });
+    await financeService.processWebhook("CASHFREE", req.body);
+    res.json({ success: true, message: "Cashfree webhook processed" });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 }
+
+export const handleRazorpayWebhook = handleCashfreeWebhook;
 
 export async function getAdminFees(req: Request, res: Response) {
   try {

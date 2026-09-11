@@ -5,7 +5,8 @@ const router = Router();
 
 router.post("/booking/calculate-price", financeController.calculatePrice);
 router.post("/payments/create-order", financeController.createOrder);
-router.post("/payments/webhook/razorpay", financeController.handleRazorpayWebhook);
+router.post("/payments/webhook/cashfree", financeController.handleCashfreeWebhook);
+router.post("/payments/webhook/razorpay", financeController.handleCashfreeWebhook);
 
 router.get("/admin/fees", financeController.getAdminFees);
 router.put("/admin/fees/slabs/:id", financeController.updateFeeSlab);

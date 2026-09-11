@@ -225,7 +225,7 @@ export class BookingService {
       await tx.payment.create({
         data: {
           bookingId: booking.id,
-          provider: "RAZORPAY",
+          provider: paymentDetails.provider || "CASHFREE",
           providerId: paymentDetails.paymentId,
           orderId: paymentDetails.orderId,
           amount: booking.totalAmount,

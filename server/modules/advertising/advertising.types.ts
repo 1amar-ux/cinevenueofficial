@@ -87,7 +87,7 @@ export interface LiveBannerCampaign {
 
   // Payment Tracking
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
-  paymentGateway: 'RAZORPAY' | 'UPI' | 'SANDBOX';
+  paymentGateway: 'CASHFREE' | 'UPI' | 'SANDBOX';
   paymentOrderId?: string;
   paymentTransactionId?: string;
   paidAtUtc?: string;

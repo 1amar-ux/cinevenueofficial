@@ -7,6 +7,11 @@ import { MovieSchedule, Booking, Theatre } from "../types";
 import { FeeCalculationService } from "../services/feeCalculationService";
 import { FeeCalculationResult, FeeRule, TaxRule, DiscountRule } from "../types/fees";
 import api from "../services/api";
+import { 
+  createMovieBookingCashfreeOrder, 
+  verifyMovieBookingCashfreePayment, 
+  triggerCashfreeCheckout 
+} from "../services/cashfreeService";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -397,8 +402,8 @@ export default function BookingModal({
 
   const finalPayableAmount = calculatedBreakdown ? calculatedBreakdown.totalAmount : rawBaseTicketPrice;
 
-  // Trigger Official Razorpay Checkout Flow
-  const handleRazorpayPayment = async () => {
+  // Trigger Official Cashfree Drop Checkout Flow
+  const handleCashfreePayment = async () => {
     if (!userEmail) {
       alert("Sign In Required: Please log in to complete your premium ticket purchase.");
       onOpenAuth();
@@ -419,7 +424,7 @@ export default function BookingModal({
     setIsProcessingPayment(true);
 
     try {
-      // 1. Authoritative POS Seat Hold (locks seats at the counter before checkout)
+      // 1. Authoritative POS Seat Hold
       try {
         const holdRes = await fetch("/api/pos/hold", {
           method: "POST",
@@ -443,154 +448,98 @@ export default function BookingModal({
         return;
       }
 
-      // 2. Create Razorpay Payment Order on the Server
+      // 2. Create Cashfree Order on Server
       const tickets = selectedSeats.map(seat => ({ seatId: seat, price: getSeatPrice(seat) }));
-      const orderRes = await fetch("/api/payments/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          showId: selectedScheduleId || "show_123",
-          tickets
-        })
+      const orderData = await createMovieBookingCashfreeOrder({
+        amount: finalPayableAmount,
+        customerName: bookingName.trim() || (userEmail ? userEmail.split("@")[0] : "Cinema Guest"),
+        customerPhone: bookingMobile.trim(),
+        customerEmail: userEmail,
+        showId: selectedScheduleId || "show_123",
+        tickets
       });
-      const orderData = await orderRes.json();
 
-      if (!orderData || !orderData.success || !orderData.data.orderId) {
-        throw new Error(orderData?.message || "Unable to initiate checkout order.");
+      if (!orderData || !orderData.paymentSessionId) {
+        throw new Error("Unable to initialize Cashfree payment session.");
       }
 
-      const order_id = orderData.data.orderId;
-      const key_id = "rzp_test_mock";
-
-      // 3. Ensure Razorpay Checkout SDK is loaded
-      const RazorpaySDK = (window as any).Razorpay;
-      if (!RazorpaySDK) {
-        throw new Error("Razorpay SDK is initializing. Please retry in a moment.");
-      }
-
-      // 4. Configure Original Razorpay Checkout Options
-      const options = {
-        key: key_id || (import.meta as any).env.VITE_RAZORPAY_KEY_ID || "rzp_test_TB7njDD8MonAMK",
-        amount: Math.round(finalPayableAmount * 100), // In paise
-        currency: "INR",
-        name: "CineVenue VIP Cinemas",
-        description: `${movieTitle} · ${selectedSeats.length} Ticket(s) (${selectedSeats.join(", ")}) · Net: ₹${finalPayableAmount}`,
-        image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=128&auto=format&fit=crop&q=80",
-        order_id: order_id,
-        prefill: {
-          name: bookingName.trim() || (userEmail ? userEmail.split("@")[0] : "Cinema Guest"),
-          email: userEmail,
-          contact: bookingMobile.trim()
-        },
-        notes: {
-          movie: movieTitle,
-          theatre: displayTheatre,
-          timeSlot: displayTimeSlot,
-          seats: selectedSeats.join(", "),
-          city: selectedCity,
-          platformFee: calculatedBreakdown?.platformFeeTotal || 18,
-          taxes: calculatedBreakdown?.totalTaxes || 3.24,
-          discount: calculatedBreakdown?.totalDiscount || 0,
-          paymentMethod
-        },
-        theme: {
-          color: "#D4AF37", // CineVenue Luxury Gold
-          backdrop_color: "#0A0A0B"
-        },
-        modal: {
-          ondismiss: function () {
-            setIsProcessingPayment(false);
-          }
-        },
-        handler: async function (response: any) {
+      // 3. Trigger Cashfree Drop Modal Checkout
+      await triggerCashfreeCheckout({
+        paymentSessionId: orderData.paymentSessionId,
+        orderId: orderData.orderId,
+        environment: orderData.environment || "TEST",
+        onSuccess: async () => {
           try {
             setIsProcessingPayment(true);
-
-            // 5. Verify Payment Signature and Confirm with POS on the Server
-            const verifyRes = await api.post("/verify-payment", {
-              razorpay_order_id: response.razorpay_order_id || order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+            // 4. Authoritative Verification
+            await verifyMovieBookingCashfreePayment({
+              orderId: orderData.orderId,
+              bookingId: orderData.bookingId
             });
 
-            if (verifyRes.data && verifyRes.data.success) {
-              const finalBookingName = bookingName.trim() || (userEmail ? userEmail.split("@")[0] : "Attendee");
-              const posRef = verifyRes.data.posBookingId || verifyRes.data.posReferenceNumber || `POS-${Math.floor(1000000 + Math.random() * 9000000)}`;
-              setPosBookingReference(posRef);
-              
-              const resBooking = onConfirmBooking(
-                movieTitle,
-                selectedSeats,
-                finalPayableAmount,
-                displayTheatre,
-                displayTimeSlot,
-                finalBookingName,
-                bookingMobile.trim(),
-                {
-                  ticketAmount: rawBaseTicketPrice,
-                  platformFee: calculatedBreakdown?.platformFeeTotal || 0,
-                  convenienceFee: calculatedBreakdown?.convenienceFeeTotal || 0,
-                  bookingFee: calculatedBreakdown?.bookingFeeTotal || 0,
-                  otherFeeAmount: calculatedBreakdown?.otherFeesTotal || 0,
-                  taxAmount: calculatedBreakdown?.totalTaxes || 0,
-                  discountAmount: calculatedBreakdown?.totalDiscount || 0,
-                  gatewayFee: calculatedBreakdown?.gatewayCharges || 0,
-                  paymentMethod: paymentMethod,
-                  feeLines: calculatedBreakdown?.fees || [],
-                  taxLines: calculatedBreakdown?.taxes || []
-                }
-              );
+            const finalBookingName = bookingName.trim() || (userEmail ? userEmail.split("@")[0] : "Attendee");
+            const posRef = `POS-CF-${Math.floor(1000000 + Math.random() * 9000000)}`;
+            setPosBookingReference(posRef);
 
-              setPaymentInfo({
-                paymentId: response.razorpay_payment_id,
-                orderId: response.razorpay_order_id || order_id,
-                method: `Razorpay (${paymentMethod})`
-              });
-
-              if (resBooking && resBooking.id) {
-                setGeneratedBookingId(resBooking.id);
-              } else {
-                setGeneratedBookingId("CV-" + new Date().toISOString().slice(0,10).replace(/-/g,'') + "-" + Math.floor(100000 + Math.random() * 900000));
+            const resBooking = onConfirmBooking(
+              movieTitle,
+              selectedSeats,
+              finalPayableAmount,
+              displayTheatre,
+              displayTimeSlot,
+              finalBookingName,
+              bookingMobile.trim(),
+              {
+                ticketAmount: rawBaseTicketPrice,
+                platformFee: calculatedBreakdown?.platformFeeTotal || 0,
+                convenienceFee: calculatedBreakdown?.convenienceFeeTotal || 0,
+                bookingFee: calculatedBreakdown?.bookingFeeTotal || 0,
+                otherFeeAmount: calculatedBreakdown?.otherFeesTotal || 0,
+                taxAmount: calculatedBreakdown?.totalTaxes || 0,
+                discountAmount: calculatedBreakdown?.totalDiscount || 0,
+                gatewayFee: calculatedBreakdown?.gatewayCharges || 0,
+                paymentMethod: paymentMethod,
+                feeLines: calculatedBreakdown?.fees || [],
+                taxLines: calculatedBreakdown?.taxes || []
               }
-
-              setIsProcessingPayment(false);
-              setBookingStep("confirmed");
-              setBookingSuccess(true);
-            } else {
-              throw new Error(verifyRes.data?.message || "Razorpay signature verification failed.");
-            }
-          } catch (verificationError: any) {
-            console.error("Signature verification error:", verificationError);
-            setPaymentError(
-              verificationError.response?.data?.message ||
-              verificationError.message ||
-              "Payment verification could not be confirmed. If money was debited, contact CineVenue concierge."
             );
+
+            setPaymentInfo({
+              paymentId: orderData.cfOrderId || orderData.orderId,
+              orderId: orderData.orderId,
+              method: `Cashfree (${paymentMethod})`
+            });
+
+            if (resBooking && resBooking.id) {
+              setGeneratedBookingId(resBooking.id);
+            } else {
+              setGeneratedBookingId("CV-CF-" + new Date().toISOString().slice(0, 10).replace(/-/g, "") + "-" + Math.floor(100000 + Math.random() * 900000));
+            }
+
+            setIsProcessingPayment(false);
+            setBookingStep("confirmed");
+            setBookingSuccess(true);
+          } catch (vErr: any) {
+            console.error("Cashfree verification error:", vErr);
+            setPaymentError(vErr.message || "Payment verification could not be confirmed.");
             setIsProcessingPayment(false);
           }
+        },
+        onFailure: (err: any) => {
+          console.error("Cashfree checkout error:", err);
+          setPaymentError(err?.message || "Cashfree transaction was cancelled or declined.");
+          setIsProcessingPayment(false);
         }
-      };
-
-      const rzp = new RazorpaySDK(options);
-
-      rzp.on("payment.failed", function (response: any) {
-        console.error("Razorpay Payment Failure:", response.error);
-        setPaymentError(
-          `Payment not completed: ${response.error?.description || response.error?.reason || "Transaction was cancelled or declined."}`
-        );
-        setIsProcessingPayment(false);
       });
-
-      rzp.open();
     } catch (err: any) {
-      console.error("Razorpay Setup Error:", err);
-      setPaymentError(
-        err.response?.data?.message ||
-        err.message ||
-        "An unexpected error occurred while launching Razorpay. Please try again."
-      );
+      console.error("Cashfree Launch Error:", err);
+      setPaymentError(err.message || "An unexpected error occurred while launching Cashfree. Please try again.");
       setIsProcessingPayment(false);
     }
+  };
+
+  const handleProceedToPayment = () => {
+    handleCashfreePayment();
   };
 
   if (!isOpen) return null;
@@ -700,7 +649,7 @@ export default function BookingModal({
 
               {paymentInfo.paymentId && (
                 <div className="flex justify-between items-center pt-1 font-mono text-[10px] text-text-muted">
-                  <span>Razorpay Payment ID:</span>
+                  <span>Cashfree Transaction ID:</span>
                   <span className="text-text-secondary">{paymentInfo.paymentId}</span>
                 </div>
               )}
@@ -1056,7 +1005,25 @@ export default function BookingModal({
               )}
             </div>
 
-            {/* Payment Method Selector */}
+            {/* Payment Gateway Header */}
+            <div className="mb-4 bg-gold/10 border border-gold/30 p-3 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Cashfree Payments <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold text-black font-extrabold uppercase">Official Gateway</span>
+                  </span>
+                  <span className="text-[10px] text-white/60 block">Instant Zero-Surcharge Checkout · UPI, Cards, NetBanking</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+                <Check className="w-3.5 h-3.5" /> Secure SSL
+              </div>
+            </div>
+
+            {/* Payment Channel Selector */}
             <div className="mb-4 bg-white/[0.01] border border-white/5 p-3.5 rounded-xl space-y-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">
                 Select Payment Channel
@@ -1182,11 +1149,13 @@ export default function BookingModal({
               </div>
             </div>
 
-            {/* Razorpay Authentic Trust Badge */}
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-blue-500/5 border border-blue-500/15 mb-5 text-[11px] text-text-secondary">
+            {/* Authentic Trust Badge */}
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg border mb-5 text-[11px] text-text-secondary bg-gold/5 border-gold/20">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>100% Encrypted Checkout via <strong>Razorpay</strong></span>
+                <span>
+                  100% Encrypted Checkout via <strong>Cashfree Payments</strong>
+                </span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
                 <span>{paymentMethod}</span> · <span>Instant Webhook Verified</span>
@@ -1196,7 +1165,7 @@ export default function BookingModal({
             {/* Payment CTA button */}
             <button
               disabled={selectedSeats.length === 0 || !isMovieBookingSystemActive || isProcessingPayment || isCalculating}
-              onClick={handleRazorpayPayment}
+              onClick={handleProceedToPayment}
               className={`w-full py-4 rounded-sm text-xs font-bold tracking-[0.2em] uppercase transition-all duration-200 shadow-xl flex items-center justify-center gap-2.5 border-0 cursor-pointer ${
                 selectedSeats.length === 0 || !isMovieBookingSystemActive
                   ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-60 pointer-events-none"
@@ -1209,7 +1178,7 @@ export default function BookingModal({
               {isProcessingPayment ? (
                 <>
                   <span className="w-4 h-4 border-2 border-t-transparent border-black rounded-full animate-spin" />
-                  <span>Launching Razorpay Checkout...</span>
+                  <span>Launching Cashfree Checkout...</span>
                 </>
               ) : isCalculating ? (
                 <>
@@ -1223,7 +1192,7 @@ export default function BookingModal({
                     ? "Booking Turned OFF"
                     : selectedSeats.length === 0
                     ? "Select Seats to Proceed"
-                    : `Pay ₹${finalPayableAmount.toFixed(2)} with Razorpay (${paymentMethod})`}
+                    : `Pay ₹${finalPayableAmount.toFixed(2)} with Cashfree (${paymentMethod})`}
                 </>
               )}
             </button>

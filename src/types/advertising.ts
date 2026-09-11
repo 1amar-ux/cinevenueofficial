@@ -248,7 +248,7 @@ export interface LiveBannerCampaign {
   finalAmountINR: number;
   currency: string;
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
-  paymentGateway: 'RAZORPAY' | 'UPI' | 'SANDBOX';
+  paymentGateway: 'CASHFREE' | 'UPI' | 'SANDBOX';
   paymentOrderId?: string;
   paymentTransactionId?: string;
   paidAtUtc?: string;

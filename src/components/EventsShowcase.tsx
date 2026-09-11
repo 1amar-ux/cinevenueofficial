@@ -353,7 +353,7 @@ export default function EventsShowcase({
       quantity: finalQuantity,
       totalPrice: totalPrice,
       status: isFree ? "Confirmed" : "Pending",
-      paymentMethod: isFree ? "Free Access Pass" : "Razorpay Secure Gateway",
+      paymentMethod: isFree ? "Free Access Pass" : "Cashfree Secure Gateway",
       bookingDate: new Date().toLocaleDateString("en-IN") + ", " + new Date().toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' }),
       organizerApproved: isFree ? true : false,
       superadminApproved: isFree ? true : false,

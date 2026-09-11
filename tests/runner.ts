@@ -1,6 +1,7 @@
 import { runAuthTests } from "./unit/auth.test";
 import { runMaintenanceTests } from "./unit/maintenance.test";
 import { runSubwebsiteGateTests } from "./unit/subwebsiteGate.test";
+import { runCashfreeTests } from "./unit/cashfree.test";
 
 async function main() {
   console.log("==========================================");
@@ -37,6 +38,18 @@ async function main() {
   console.log("\n--- 3. Centralized Global Sub-Website Control System Tests ---");
   const subwebsiteResults = await runSubwebsiteGateTests();
   for (const r of subwebsiteResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 4. Cashfree Payment Gateway & Security Tests ---");
+  const cashfreeResults = await runCashfreeTests();
+  for (const r of cashfreeResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;

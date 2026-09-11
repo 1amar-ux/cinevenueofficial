@@ -103,34 +103,59 @@ advertisingPublicRouter.get("/campaigns/:id", (req: Request, res: Response, next
   }
 });
 
-// Create Payment Order
+// Create Payment Order (Cashfree)
 advertisingPublicRouter.post("/campaigns/:id/payment", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const orderData = await advertisingService.createPaymentOrder(req.params.id);
+    const orderData = await advertisingService.createCashfreePaymentOrder(req.params.id);
     return res.json({ success: true, data: orderData });
   } catch (error) {
     next(error);
   }
 });
 
-// Verify Payment
-advertisingPublicRouter.post("/payment/verify", (req: Request, res: Response, next: NextFunction) => {
+// Create Cashfree Payment Order
+advertisingPublicRouter.post("/campaigns/:id/cashfree-payment", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { campaignId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    if (!campaignId || !razorpay_order_id || !razorpay_payment_id) {
-      throw new ValidationError("Missing required payment verification parameters");
+    const orderData = await advertisingService.createCashfreePaymentOrder(req.params.id);
+    return res.json({ success: true, data: orderData });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify Cashfree Payment
+advertisingPublicRouter.post("/payment/verify", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { campaignId, orderId } = req.body;
+    if (!campaignId || !orderId) {
+      throw new ValidationError("Missing required parameters: campaignId and orderId are required.");
     }
 
-    const campaign = advertisingService.verifyPayment({
-      campaignId,
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature
-    });
+    const campaign = await advertisingService.verifyCashfreePayment(campaignId, orderId);
 
     return res.json({
       success: true,
-      message: "Payment verified successfully. Campaign queued for admin approval.",
+      message: "Payment verified successfully via Cashfree. Campaign queued for admin approval.",
+      data: { campaign }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Verify Cashfree Payment
+advertisingPublicRouter.post("/payment/cashfree/verify", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { campaignId, orderId } = req.body;
+    if (!campaignId || !orderId) {
+      throw new ValidationError("Missing campaignId or orderId for Cashfree verification");
+    }
+
+    const campaign = await advertisingService.verifyCashfreePayment(campaignId, orderId);
+
+    return res.json({
+      success: true,
+      message: "Cashfree payment verified successfully. Campaign queued for admin approval.",
       data: { campaign }
     });
   } catch (error) {

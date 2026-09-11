@@ -19,6 +19,11 @@ import {
   createBannerPaymentOrder,
   verifyBannerPayment
 } from "../../services/advertisingService";
+import {
+  createAdvertisingCashfreeOrder,
+  verifyAdvertisingCashfreePayment,
+  triggerCashfreeCheckout
+} from "../../services/cashfreeService";
 
 interface LiveBannerBookingWizardProps {
   userEmail?: string;
@@ -194,20 +199,28 @@ export const LiveBannerBookingWizard: React.FC<LiveBannerBookingWizardProps> = (
 
       setCreatedCampaign(campaign);
 
-      // 2. Generate Payment Order
-      const order = await createBannerPaymentOrder(campaign.id);
-
-      // 3. Initiate Payment Verification
-      const verifyRes = await verifyBannerPayment({
-        campaignId: campaign.id,
-        razorpay_order_id: order.orderId,
-        razorpay_payment_id: `pay_direct_${Date.now()}`,
-        razorpay_signature: undefined // Simulated signature verified server-side
+      const order = await createAdvertisingCashfreeOrder(campaign.id);
+      await triggerCashfreeCheckout({
+        paymentSessionId: order.paymentSessionId,
+        orderId: order.orderId,
+        environment: order.environment || "TEST",
+        onSuccess: async () => {
+          try {
+            const verifyRes = await verifyAdvertisingCashfreePayment({
+              campaignId: campaign.id,
+              orderId: order.orderId
+            });
+            setCreatedCampaign(verifyRes.campaign);
+            setStep(5);
+            if (onSuccess) onSuccess(verifyRes.campaign);
+          } catch (vErr: any) {
+            setError(vErr.message || "Payment verification failed.");
+          }
+        },
+        onFailure: (err: any) => {
+          setError(err?.message || "Cashfree payment failed or was cancelled.");
+        }
       });
-
-      setCreatedCampaign(verifyRes);
-      setStep(5); // Go to Confirmation / Receipt
-      if (onSuccess) onSuccess(verifyRes);
     } catch (err: any) {
       setError(err.message || "Failed processing campaign checkout.");
     } finally {
@@ -692,11 +705,33 @@ export const LiveBannerBookingWizard: React.FC<LiveBannerBookingWizardProps> = (
                     Apply
                   </button>
                 </div>
+
+                {/* Payment Gateway Header */}
+                <div className="pt-2">
+                  <div className="bg-gold/10 border border-gold/30 p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          Cashfree Payments <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold text-black font-extrabold uppercase">Official Gateway</span>
+                        </span>
+                        <span className="text-[10px] text-white/60 block">Instant Zero-Surcharge Checkout · UPI, Cards, NetBanking</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+                      <Check className="w-3.5 h-3.5" /> Secure SSL
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-3 bg-gold/5 border border-gold/20 rounded-xl flex items-center gap-2 text-[11px] text-text-secondary">
+              <div className="p-3 rounded-xl flex items-center gap-2 text-[11px] text-text-secondary bg-gold/5 border border-gold/20">
                 <Lock className="w-4 h-4 text-gold shrink-0" />
-                <span>Encrypted Razorpay Checkout with instant server verification.</span>
+                <span>
+                  Encrypted Cashfree Drop-in Checkout with instant server verification.
+                </span>
               </div>
             </div>
           </div>
@@ -714,7 +749,7 @@ export const LiveBannerBookingWizard: React.FC<LiveBannerBookingWizardProps> = (
               className="px-8 py-3.5 bg-gold hover:bg-gold-light text-black font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 cursor-pointer shadow-xl shadow-gold/20 disabled:opacity-50 disabled:pointer-events-none transition-all"
             >
               <CreditCard className="w-4 h-4" />
-              <span>{submitting ? "Processing Payment..." : `Pay ₹${quote.finalAmountINR.toLocaleString()} & Book Slot`}</span>
+              <span>{submitting ? "Processing Payment..." : `Pay ₹${quote.finalAmountINR.toLocaleString()} with Cashfree`}</span>
             </button>
           </div>
         </div>

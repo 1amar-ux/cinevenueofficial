@@ -269,7 +269,7 @@ export default function AdminLayout() {
     if (cached) return JSON.parse(cached);
     return [
       { id: "PAY-ID-829104", amount: 500, method: "UPI GPay", status: "SUCCESS", timestamp: "01:45 PM Today", email: "sarah@gmail.com", tax: 90 },
-      { id: "PAY-ID-829012", amount: 750, method: "Razorpay Card", status: "SUCCESS", timestamp: "12:20 PM Today", email: "kiran_dev@gmail.com", tax: 135 }
+      { id: "PAY-ID-829012", amount: 750, method: "Cashfree Card", status: "SUCCESS", timestamp: "12:20 PM Today", email: "kiran_dev@gmail.com", tax: 135 }
     ];
   });
   
@@ -619,7 +619,7 @@ export default function AdminLayout() {
   const handleSimulatePayment = () => {
     const randNum = Math.floor(100000 + Math.random() * 900000);
     const amount = [350, 480, 600, 950][Math.floor(Math.random() * 4)];
-    const method = ["UPI Pay (PhonePe)", "UPI Pay (GPay)", "Razorpay Netbanking", "Razorpay Visa Card"][Math.floor(Math.random() * 4)];
+    const method = ["UPI Pay (PhonePe)", "UPI Pay (GPay)", "Cashfree Netbanking", "Cashfree Visa Card"][Math.floor(Math.random() * 4)];
     const email = ["customer." + Math.floor(Math.random() * 99) + "@gmail.com", "testuser@gmail.com", "sarah@gmail.com"][Math.floor(Math.random() * 3)];
     const newLog = {
       id: `PAY-ID-${randNum}`,
@@ -1848,7 +1848,7 @@ export default function AdminLayout() {
                   {/* Payment Logs */}
                   <div className="bg-[#121213] border border-white/5 p-5 rounded-2xl md:col-span-2 space-y-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2 flex justify-between items-center">
-                      <span>Payment Gateway API Logs (Razorpay Secure / UPI)</span>
+                      <span>Payment Gateway API Logs (Cashfree Secure / UPI)</span>
                       <span className="text-[9px] font-mono text-gold normal-case">{customGatewayLogs.length} Active Records</span>
                     </h3>
                     <div className="space-y-3 font-mono text-[10px] max-h-[320px] overflow-y-auto pr-1">

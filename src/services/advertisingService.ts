@@ -678,13 +678,13 @@ export async function submitLiveBannerCampaign(campaignData: any): Promise<LiveB
 
 export async function createBannerPaymentOrder(campaignId: string): Promise<{
   orderId: string;
+  paymentSessionId: string;
   amount: number;
   currency: string;
-  keyId: string;
   campaignId: string;
   isSandbox: boolean;
 }> {
-  const res = await fetch(`${API_BASE}/campaigns/${campaignId}/payment`, {
+  const res = await fetch(`${API_BASE}/campaigns/${campaignId}/cashfree-payment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
@@ -698,11 +698,9 @@ export async function createBannerPaymentOrder(campaignId: string): Promise<{
 
 export async function verifyBannerPayment(params: {
   campaignId: string;
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature?: string;
+  orderId: string;
 }): Promise<LiveBannerCampaign> {
-  const res = await fetch(`${API_BASE}/payment/verify`, {
+  const res = await fetch(`${API_BASE}/payment/cashfree/verify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params)

@@ -4,6 +4,11 @@ import EventsNavbar from "../../components/events/EventsNavbar";
 import { CheckCircle2, AlertCircle, Calendar, MapPin, Ticket } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
 import { useContext } from "react";
+import {
+  createEventBookingCashfreeOrder,
+  triggerCashfreeCheckout,
+  verifyEventBookingCashfreePayment
+} from "../../services/cashfreeService";
 
 export default function EventCheckout() {
   const { eventId } = useParams();
@@ -67,43 +72,36 @@ export default function EventCheckout() {
 
     try {
       if (calculatedBreakdown && calculatedBreakdown.totalAmount > 0) {
-        // Payment flow
-        const orderRes = await fetch("/api/payments/create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: calculatedBreakdown.totalAmount * 100 })
+        const orderData = await createEventBookingCashfreeOrder({
+          eventId: eventId || "evt_general",
+          amount: calculatedBreakdown.totalAmount,
+          customerName: attendeeName.trim(),
+          customerPhone: attendeeMobile.trim(),
+          customerEmail: userEmail || "guest@cinevenue.in",
+          ticketCount: quantity
         });
-        const orderData = await orderRes.json();
-        
-        if (!orderData.success) {
-          throw new Error("Failed to create payment order");
-        }
 
-        // Simulate Razorpay verification via webhook
-        const verifyRes = await fetch("/api/payments/webhook/razorpay", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            eventId: "evt_" + Date.now(),
-            event: "payment.captured",
-            orderId: orderData.order_id,
-            payload: {
-               payment: {
-                 entity: {
-                   order_id: orderData.order_id,
-                   id: "pay_" + Date.now()
-                 }
-               }
+        await triggerCashfreeCheckout({
+          paymentSessionId: orderData.paymentSessionId,
+          orderId: orderData.orderId,
+          environment: orderData.environment || "TEST",
+          onSuccess: async () => {
+            try {
+              await verifyEventBookingCashfreePayment({
+                orderId: orderData.orderId,
+                bookingId: orderData.bookingId
+              });
+              generatePass();
+            } catch (vErr: any) {
+              setPaymentError(vErr.message || "Payment verification failed");
+              setLoading(false);
             }
-          })
+          },
+          onFailure: (err: any) => {
+            setPaymentError(err?.message || "Cashfree payment failed or was cancelled");
+            setLoading(false);
+          }
         });
-
-        const verifyData = await verifyRes.json();
-        if (verifyData.success) {
-          generatePass();
-        } else {
-          throw new Error("Payment verification failed");
-        }
       } else {
         // Free ticket
         generatePass();

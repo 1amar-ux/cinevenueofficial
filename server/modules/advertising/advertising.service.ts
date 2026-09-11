@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import Razorpay from "razorpay";
 import { env } from "../../config/env";
 import { logger } from "../../shared/logger";
 import { ValidationError, NotFoundError } from "../../shared/errors";
+import { cashfreeService } from "../payments/cashfree.service";
 import {
   LiveBannerCampaign,
   BannerPlacementConfig,
@@ -452,7 +452,7 @@ class AdvertisingService {
       finalAmountINR: quote.finalAmountINR,
       currency: "INR",
       paymentStatus: "UNPAID",
-      paymentGateway: "RAZORPAY",
+      paymentGateway: "CASHFREE",
       status: "PENDING_PAYMENT",
       impressions: 0,
       clicks: 0,
@@ -467,108 +467,81 @@ class AdvertisingService {
   }
 
   // -------------------------------------------------------------
-  // PAYMENT ORDER & VERIFICATION
+  // PAYMENT ORDER & VERIFICATION (CASHFREE)
   // -------------------------------------------------------------
-  public async createPaymentOrder(campaignId: string): Promise<{
-    orderId: string;
-    amount: number;
-    currency: string;
-    keyId: string;
-    campaignId: string;
-    isSandbox: boolean;
-  }> {
+  public async createPaymentOrder(campaignId: string): Promise<any> {
+    return this.createCashfreePaymentOrder(campaignId);
+  }
+
+  public async verifyPayment(data: { campaignId: string; orderId: string }): Promise<LiveBannerCampaign> {
+    return this.verifyCashfreePayment(data.campaignId, data.orderId);
+  }
+
+  public async createCashfreePaymentOrder(campaignId: string): Promise<any> {
     this.loadData();
     const campaign = this.campaigns.find(c => c.id === campaignId);
     if (!campaign) throw new NotFoundError("LiveBannerCampaign", campaignId);
 
-    if (campaign.paymentStatus === "PAID") {
-      throw new ValidationError("Campaign is already paid");
-    }
+    const orderId = `CF_AD_${campaign.campaignNumber}_${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 45);
+    const amountInINR = (campaign as any).pricing?.totalPayableINR || campaign.finalAmountINR || campaign.basePriceINR || 1999;
+    const resolvedEmail = (campaign as any).advertiserEmail || campaign.contactEmail || "ads@cinevenue.in";
+    const resolvedName = (campaign as any).advertiserName || campaign.contactName || campaign.businessName || "Advertiser";
+    const resolvedPhone = (campaign as any).advertiserPhone || campaign.contactPhone || "9876543210";
 
-    const amountInPaise = Math.round(campaign.finalAmountINR * 100);
-    const keyId = env.RAZORPAY_KEY_ID;
-    const keySecret = env.RAZORPAY_KEY_SECRET;
-
-    if (keyId && keySecret) {
-      try {
-        const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
-        const order = await rzp.orders.create({
-          amount: amountInPaise,
-          currency: "INR",
-          receipt: `rcpt_${campaign.campaignNumber}`,
-          notes: {
-            campaignId: campaign.id,
-            placementId: campaign.placementId,
-            businessName: campaign.businessName
-          }
-        });
-
-        campaign.paymentOrderId = order.id;
-        campaign.status = "PAYMENT_PROCESSING";
-        this.saveCampaigns();
-
-        return {
-          orderId: order.id,
-          amount: order.amount,
-          currency: order.currency,
-          keyId,
-          campaignId: campaign.id,
-          isSandbox: false
-        };
-      } catch (err: any) {
-        logger.warn(`Razorpay order creation fallback: ${err.message}`);
+    const cashfreeOrder = await cashfreeService.createOrder({
+      orderId,
+      orderAmount: amountInINR,
+      orderCurrency: "INR",
+      customerDetails: {
+        customerId: resolvedEmail.replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 50),
+        customerName: resolvedName,
+        customerEmail: resolvedEmail,
+        customerPhone: resolvedPhone
+      },
+      orderMeta: {
+        returnUrl: `${env.FRONTEND_URL}/advertising/my-campaigns?cf_order_id={order_id}&campaign_id=${campaign.id}`
+      },
+      notes: {
+        campaignId: campaign.id,
+        placementId: campaign.placementId,
+        businessName: campaign.businessName
       }
-    }
+    });
 
-    // Sandbox Fallback
-    const fallbackOrderId = `order_ad_${Date.now()}`;
-    campaign.paymentOrderId = fallbackOrderId;
+    campaign.paymentOrderId = cashfreeOrder.orderId;
     campaign.status = "PAYMENT_PROCESSING";
     this.saveCampaigns();
 
     return {
-      orderId: fallbackOrderId,
-      amount: amountInPaise,
-      currency: "INR",
-      keyId: keyId || "rzp_test_TB7njDD8MonAMK",
+      orderId: cashfreeOrder.orderId,
+      paymentSessionId: cashfreeOrder.paymentSessionId,
+      cfOrderId: cashfreeOrder.cfOrderId,
+      amount: cashfreeOrder.orderAmount,
+      currency: cashfreeOrder.orderCurrency,
       campaignId: campaign.id,
-      isSandbox: true
+      environment: cashfreeOrder.environment,
+      isSandbox: cashfreeOrder.isSandbox
     };
   }
 
-  public verifyPayment(data: {
-    campaignId: string;
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature?: string;
-  }): LiveBannerCampaign {
+  public async verifyCashfreePayment(campaignId: string, orderId: string): Promise<LiveBannerCampaign> {
     this.loadData();
-    const campaign = this.campaigns.find(c => c.id === data.campaignId);
-    if (!campaign) throw new NotFoundError("LiveBannerCampaign", data.campaignId);
+    const campaign = this.campaigns.find(c => c.id === campaignId);
+    if (!campaign) throw new NotFoundError("LiveBannerCampaign", campaignId);
 
-    const keySecret = env.RAZORPAY_KEY_SECRET;
-
-    // Cryptographic signature check if production keys present
-    if (keySecret && data.razorpay_signature) {
-      const generatedSignature = crypto
-        .createHmac("sha256", keySecret)
-        .update(`${data.razorpay_order_id}|${data.razorpay_payment_id}`)
-        .digest("hex");
-
-      if (generatedSignature !== data.razorpay_signature) {
-        throw new ValidationError("Cryptographic signature mismatch. Payment verification rejected.");
-      }
+    const verification = await cashfreeService.verifyOrderPayment(orderId);
+    if (!verification.isPaid) {
+      throw new ValidationError(`Payment status is ${verification.orderStatus}. Payment could not be verified.`);
     }
 
-    // Mark as PAID and queue for Admin Approval
     campaign.paymentStatus = "PAID";
-    campaign.paymentTransactionId = data.razorpay_payment_id;
+    campaign.paymentTxnId = verification.paymentDetails?.cfOrderId || orderId;
     campaign.paidAtUtc = new Date().toISOString();
-    campaign.status = "PENDING_APPROVAL";
+    campaign.status = "REVIEW_PENDING";
     campaign.updatedAtUtc = new Date().toISOString();
 
     this.saveCampaigns();
-    logger.info(`[24H BANNER] Campaign ${campaign.campaignNumber} verified PAID. Awaiting Admin Approval.`);
+    logger.info(`[24H BANNER] Campaign ${campaign.campaignNumber} verified PAID via Cashfree.`);
     return campaign;
   }
 

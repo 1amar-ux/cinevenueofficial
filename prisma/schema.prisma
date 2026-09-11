@@ -424,7 +424,7 @@ model Payment {
   id          String        @id @default(cuid())
   bookingId   String        @unique
 
-  provider    String        @default("RAZORPAY")
+  provider    String        @default("CASHFREE")
   providerId  String?
   orderId     String?
   signature   String?
