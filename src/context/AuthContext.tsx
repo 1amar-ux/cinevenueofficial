@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState, ReactNode } from "react";
 import apiClient from "../services/apiClient";
-import { supabase } from "../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
 export interface AuthUser {
   id: string;
@@ -137,7 +137,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signInWithGoogle = async (customRedirectTo?: string) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://cinevenue.com";
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        "Google Sign-In is not configured yet. Please sign in using your Email & Password, or add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel environment variables."
+      );
+    }
+
+    const origin = typeof window !== "undefined" ? window.location.origin.replace("://www.", "://") : "https://cinevenue.com";
     const callbackUrl = customRedirectTo || `${origin}/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({

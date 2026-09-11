@@ -93,7 +93,14 @@ export default function Login() {
           variant="outlined"
           fullWidth
           size="large"
-          onClick={() => signInWithGoogle?.()}
+          onClick={async () => {
+            try {
+              setError("");
+              await signInWithGoogle?.();
+            } catch (gErr: any) {
+              setError(gErr?.message || "Google Sign-In is unavailable. Please use Email and Password.");
+            }
+          }}
           sx={{
             mt: 2,
             borderColor: "rgba(255,255,255,0.2)",

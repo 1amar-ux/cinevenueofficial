@@ -3,7 +3,7 @@ import { X, Mail, Lock, User, Phone, ChevronRight, ArrowRight } from "lucide-rea
 import CineVenueLogo from "./CineVenueLogo";
 import apiClient from "../services/apiClient";
 import { AuthContext } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -139,10 +139,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     setIsGoogleLoading(true);
     setErrorMessage("");
     try {
+      if (!isSupabaseConfigured) {
+        setErrorMessage("Google Sign-In is not configured yet. Please sign in or register using your Email & Password.");
+        setIsGoogleLoading(false);
+        return;
+      }
+
       if (signInWithGoogle) {
         await signInWithGoogle();
       } else {
-        const callbackUrl = `${window.location.origin}/auth/callback`;
+        const origin = typeof window !== "undefined" ? window.location.origin.replace("://www.", "://") : "https://cinevenue.com";
+        const callbackUrl = `${origin}/auth/callback`;
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo: callbackUrl }
