@@ -391,7 +391,7 @@ var init_maintenance = __esm({
   }
 });
 
-// api/index.ts
+// server/serverless.ts
 import fs3 from "fs";
 import path3 from "path";
 
@@ -7572,7 +7572,7 @@ google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
   return app;
 }
 
-// api/index.ts
+// server/serverless.ts
 init_database();
 init_maintenance();
 var CONFIG_FILE_PATH2 = path3.resolve(process.cwd(), "server/config/global_settings.json");
