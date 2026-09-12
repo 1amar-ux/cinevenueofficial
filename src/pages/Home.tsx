@@ -11,7 +11,8 @@ import {
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
   TrendingUp, BarChart2, Briefcase, Camera, Video, Compass, HelpCircle,
   Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send, Menu,
-  Target, FileText, Tv, X, UserCheck, Coins, PlusCircle, ExternalLink, Clapperboard
+  Target, FileText, Tv, X, UserCheck, Coins, PlusCircle, ExternalLink, Clapperboard,
+  User, LogOut
 } from "lucide-react";
 
 type DivisionType = "none" | "live_booking" | "production" | "events" | "promotions";
@@ -26,9 +27,10 @@ interface HomeProps {
   onAddServiceProposal?: (proposal: Omit<any, "id" | "submittedAt" | "status">) => void;
   onOpenOrders?: () => void;
   onOpenAuth?: (mode?: "signin" | "signup") => void;
+  onLogout?: () => void;
 }
 
-export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceControl, setServiceControl, onAddServiceProposal, onOpenOrders, onOpenAuth }: HomeProps) {
+export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceControl, setServiceControl, onAddServiceProposal, onOpenOrders, onOpenAuth, onLogout }: HomeProps) {
   const navigate = useNavigate();
   const [activeDivision, setActiveDivision] = useState<DivisionType>("none");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -229,12 +231,29 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           </button>
 
           {userEmail ? (
-            <button
-              onClick={() => navigate("/account")}
-              className="rounded-full border border-gold/40 bg-gold/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-gold hover:bg-gold hover:text-black"
-            >
-              {userEmail.split("@")[0]}
-            </button>
+            <div className="flex items-center gap-2 bg-white/[0.03] border border-gold/40 px-3 py-1.5 rounded-full">
+              <button
+                onClick={() => navigate("/account")}
+                className="flex items-center gap-2 text-[11px] text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
+                title={`Logged in as ${userEmail}`}
+              >
+                <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
+                  <User className="w-3 h-3 text-gold" />
+                </div>
+                <span className="hidden sm:inline max-w-[120px] truncate font-medium text-text-primary">
+                  {userEmail.split("@")[0]}
+                </span>
+              </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="text-text-muted hover:text-red-400 p-0.5 ml-1 transition-colors cursor-pointer border-none bg-transparent flex items-center"
+                  title="Logout"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <button

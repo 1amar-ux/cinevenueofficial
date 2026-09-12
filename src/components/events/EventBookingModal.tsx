@@ -108,7 +108,7 @@ export default function EventBookingModal({
 
   // Max coins allowed (20% of subtotal, limited by user wallet balance)
   const maxAvailableCoins = useMemo(() => {
-    const userBalance = userWallet?.balance || 0;
+    const userBalance = userWallet?.balanceCoins ?? (userWallet as any)?.balance ?? 0;
     const maxSubtotalAllowed = Math.floor(fees.ticketSubtotal * 0.2);
     return Math.min(userBalance, maxSubtotalAllowed);
   }, [userWallet, fees.ticketSubtotal]);
@@ -232,30 +232,17 @@ export default function EventBookingModal({
         },
         additionalAttendees,
         pricing: fees,
-        paymentMethod: `${selectedGateway} (${paymentMethod})` as any,
+        paymentMethod: `Cashfree (${paymentMethod})` as any,
         sessionId,
       });
 
       // If CineCoins were redeemed, deduct from user wallet & record ledger
       if (useCineCoins && coinsToRedeem > 0 && userWallet && onUpdateWallet) {
+        const currentBalance = userWallet.balanceCoins ?? (userWallet as any).balance ?? 0;
         const updatedWallet: CineCoinsUserWallet = {
           ...userWallet,
-          balance: Math.max(userWallet.balance - coinsToRedeem, 0),
+          balanceCoins: Math.max(currentBalance - coinsToRedeem, 0),
           totalRedeemed: (userWallet.totalRedeemed || 0) + coinsToRedeem,
-          recentTransactions: [
-            {
-              id: `TX-${Date.now()}`,
-              userId: primaryEmail,
-              amount: coinsToRedeem,
-              type: 'REDEEM',
-              source: 'EVENT_BOOKING',
-              title: `Redeemed for ${event.title}`,
-              description: `CineCoins discount applied on Event Pass #${booking.id}`,
-              balanceAfter: Math.max(userWallet.balance - coinsToRedeem, 0),
-              createdAt: new Date().toISOString(),
-            },
-            ...(userWallet.recentTransactions || []),
-          ],
         };
         onUpdateWallet(updatedWallet);
       }
@@ -738,7 +725,7 @@ export default function EventBookingModal({
                     <div>
                       <span className="text-xs font-bold text-white block">Redeem CineCoins</span>
                       <span className="text-[10px] text-white/40">
-                        Available Balance: {userWallet?.balance || 0} Coins (1 Coin = ₹1)
+                        Available Balance: {userWallet?.balanceCoins ?? (userWallet as any)?.balance ?? 0} Coins (1 Coin = ₹1)
                       </span>
                     </div>
                   </div>

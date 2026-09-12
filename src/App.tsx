@@ -1017,6 +1017,7 @@ export default function App() {
               onAddServiceProposal={handleAddServiceProposal}
               onOpenOrders={() => setOrdersOpen(true)}
               onOpenAuth={handleOpenAuth}
+              onLogout={handleLogout}
             />
             <AdminPanel
               isOpen={adminOpen}
