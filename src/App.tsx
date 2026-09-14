@@ -1246,24 +1246,6 @@ export default function App() {
                   onRecordAdClick={handleRecordAdClick}
                 />
 
-                <EventsShowcase
-                  events={events}
-                  userEmail={userEmail}
-                  onOpenAuth={() => setAuthOpen(true)}
-                  selectedCity={selectedCity}
-                  onBookEvent={handleBookEvent}
-                  onAddReview={handleAddReview}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  notifyMeRequests={notifyMeRequests}
-                  onAddNotifyMeRequest={handleAddNotifyMe}
-                  isEventBookingSystemActive={isEventBookingSystemActive}
-                  onToggleEventSystemActive={(active) => setIsEventBookingSystemActive(active)}
-                  onToggleEventBookingStatus={handleToggleEventActive}
-                  userWallet={cineCoinsUserWallet}
-                  onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
-                />
-
                 <Theatres
                   theatres={theatres}
                   selectedCity={selectedCity}
