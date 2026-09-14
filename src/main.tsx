@@ -13,17 +13,20 @@ import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { BookingProvider } from "./context/BookingContext";
 import { AppSettingsProvider } from "./context/AppSettingsContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <AppSettingsProvider>
-          <BookingProvider>
-            <App />
-          </BookingProvider>
-        </AppSettingsProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppSettingsProvider>
+            <BookingProvider>
+              <App />
+            </BookingProvider>
+          </AppSettingsProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>
 );

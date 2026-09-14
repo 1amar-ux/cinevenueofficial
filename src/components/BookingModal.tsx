@@ -781,7 +781,7 @@ export default function BookingModal({
             </div>
 
             {/* Interactive Seat map selection grid */}
-            <div className="flex flex-col gap-2.5 items-center justify-center mb-5 bg-black/40 p-4 sm:p-5 rounded-lg border border-white/10 select-none">
+            <div className="flex flex-col gap-2.5 items-center justify-center mb-5 bg-slate-100/70 dark:bg-black/40 p-4 sm:p-5 rounded-lg border border-slate-300/80 dark:border-white/10 select-none shadow-xs">
               {rows.map((row) => (
                 <div key={row} className="flex gap-2 sm:gap-2.5 items-center">
                   {/* Row Letter label */}
@@ -809,35 +809,35 @@ export default function BookingModal({
                     let seatTypeName = `${rowCat} Seat`;
 
                     if (isBooked) {
-                      seatClass = "bg-white/5 border border-white/5 text-text-secondary/25 cursor-not-allowed opacity-20";
+                      seatClass = "bg-slate-200/90 dark:bg-white/5 border border-slate-300 dark:border-white/5 text-text-muted/50 dark:text-text-secondary/25 cursor-not-allowed opacity-40 line-through";
                     } else if (isBlocked) {
-                      seatClass = "bg-red-950/20 border border-red-900/45 text-red-600/50 cursor-not-allowed opacity-25";
+                      seatClass = "bg-red-100 dark:bg-red-950/20 border border-red-300 dark:border-red-900/45 text-red-600 dark:text-red-500 cursor-not-allowed opacity-40";
                       content = "×";
                       seatTypeName = "Blocked Seat";
                     } else if (isSelected) {
-                      seatClass = "bg-gold border border-gold text-black font-extrabold shadow-lg shadow-gold/10 scale-105";
+                      seatClass = "bg-gold border border-gold text-black font-extrabold shadow-lg shadow-gold/20 scale-105";
                     } else if (isExit) {
-                      seatClass = "bg-emerald-950/30 border border-emerald-500 text-emerald-400 font-bold cursor-pointer";
+                      seatClass = "bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold cursor-pointer";
                       content = "🚪";
                       seatTypeName = "Emergency Exit Row";
                     } else if (isWheelchair) {
-                      seatClass = "bg-blue-950/30 border border-blue-500/40 hover:border-blue-400 text-blue-400 font-bold cursor-pointer";
+                      seatClass = "bg-blue-100 dark:bg-blue-950/30 border border-blue-500 hover:border-blue-600 text-blue-700 dark:text-blue-400 font-bold cursor-pointer";
                       content = "♿";
                       seatTypeName = "Wheelchair Seat";
                     } else if (isVip) {
-                      seatClass = "bg-purple-950/30 border border-purple-500/40 hover:border-purple-400 text-purple-400 font-bold cursor-pointer";
+                      seatClass = "bg-purple-100 dark:bg-purple-950/30 border border-purple-500 hover:border-purple-600 text-purple-700 dark:text-purple-400 font-bold cursor-pointer";
                       content = "👑";
                       seatTypeName = "VIP Luxury Seat";
                     } else if (isRecliner) {
-                      seatClass = "bg-pink-950/30 border border-pink-500/40 hover:border-pink-400 text-pink-400 font-bold cursor-pointer";
+                      seatClass = "bg-pink-100 dark:bg-pink-950/30 border border-pink-500 hover:border-pink-600 text-pink-700 dark:text-pink-400 font-bold cursor-pointer";
                       content = "🛋️";
                       seatTypeName = "Recliner Lounger";
                     } else if (rowCat === 'Premium') {
-                      seatClass = "bg-amber-500/10 border border-amber-500/35 hover:border-gold hover:text-gold text-amber-400 cursor-pointer";
+                      seatClass = "bg-amber-100/80 dark:bg-amber-500/10 border border-amber-500/50 dark:border-amber-500/35 hover:border-gold hover:text-gold text-amber-700 dark:text-amber-400 cursor-pointer";
                     } else if (rowCat === 'Gold') {
-                      seatClass = "bg-yellow-600/10 border border-yellow-600/35 hover:border-gold hover:text-gold text-yellow-400 cursor-pointer";
+                      seatClass = "bg-yellow-100/80 dark:bg-yellow-600/10 border border-yellow-600/50 dark:border-yellow-600/35 hover:border-gold hover:text-gold text-yellow-700 dark:text-yellow-400 cursor-pointer";
                     } else {
-                      seatClass = "bg-white/[0.02] border border-white/10 hover:border-gold hover:text-gold text-text-secondary cursor-pointer";
+                      seatClass = "bg-white dark:bg-white/[0.02] border border-slate-300 dark:border-white/10 hover:border-gold hover:text-gold text-text-primary dark:text-text-secondary cursor-pointer shadow-xs";
                     }
 
                     return (

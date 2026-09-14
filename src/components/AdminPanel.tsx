@@ -15,6 +15,7 @@ import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, 
 import { DEFAULT_CINECOINS_SETTINGS } from "../data";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import CineVenueLogo from "./CineVenueLogo";
+import ThemeToggle from "./ThemeToggle";
 import SubWebsiteCMSManager from "./cms/SubWebsiteCMSManager";
 import IntegrationTestingModule from "./admin/integration-testing/IntegrationTestingModule";
 import FinanceModule from "./admin/finance/FinanceModule";
@@ -1863,13 +1864,16 @@ export default function AdminPanel({
               </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/10 text-xs text-text-secondary hover:text-gold hover:border-gold cursor-pointer"
-          >
-            <ArrowLeft className="w-4.5 h-4.5 text-gold" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Lobby</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/10 text-xs text-text-secondary hover:text-gold hover:border-gold cursor-pointer"
+            >
+              <ArrowLeft className="w-4.5 h-4.5 text-gold" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Lobby</span>
+            </button>
+          </div>
         </div>
 
         {/* SIDEBAR NAVIGATION PANEL */}
@@ -1887,6 +1891,7 @@ export default function AdminPanel({
                   {effectiveSuperAdmin ? "Super Admin" : "Venue Admin"}
                 </span>
               </div>
+              <ThemeToggle />
             </div>
 
             {/* Sidebar content */}

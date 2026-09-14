@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Booking, EventRegistration } from "../types";
 import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
+import ThemeToggle from "./ThemeToggle";
 
 interface UserDashboardModalProps {
   isOpen: boolean;
@@ -158,12 +159,15 @@ Show this ticket with QR Code at the venue entrance.
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-text-muted hover:text-white transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle />
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-text-muted hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* BODY */}

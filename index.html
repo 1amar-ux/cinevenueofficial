@@ -3,6 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        try {
+          var mode = localStorage.getItem('cine_theme_preference') || 'system';
+          var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var effective = isDark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', effective);
+          if (effective === 'light') {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <title>CineVenue – India's Premier Movie Ticketing & Entertainment Portal</title>
     <meta name="description" content="CineVenue is India's premier entertainment portal for movie ticket booking, live events, CineCoins rewards, film production, casting calls, and brand partnerships." />
     <meta name="robots" content="index, follow" />

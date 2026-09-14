@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
+import ThemeToggle from "./ThemeToggle";
 import { useAppSettings } from "../context/AppSettingsContext";
 
 interface NavbarProps {
@@ -104,8 +105,9 @@ export default function Navbar({
             />
           </div>
 
-          {/* Mobile Location Selector (Right aligned on mobile) */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Mobile Location Selector and Theme Toggle (Right aligned on mobile) */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            <ThemeToggle />
             <button
               onClick={onOpenLocation}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors group cursor-pointer border border-white/10 bg-black/50 text-white shadow-sm"
@@ -196,9 +198,14 @@ export default function Navbar({
           </button>
         </div>
 
-        {/* Right Side: Location Filter and Member Actions */}
-        <div className="flex items-center gap-4">
+        {/* Right Side: Theme Toggle, Location Filter and Member Actions */}
+        <div className="flex items-center gap-3 md:gap-4">
           
+          {/* Desktop Theme Switcher */}
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
+
           {/* Location Dropdown selector */}
           <div className="relative hidden md:block">
             <button
@@ -390,6 +397,13 @@ export default function Navbar({
           >
             Contact Concierge
           </button>
+
+          {/* Mobile Theme Selection Row */}
+          <div className="flex items-center justify-between px-3 py-2.5 border-t border-white/10 mt-1">
+            <span className="text-[11px] uppercase tracking-wider font-bold text-text-secondary">App Theme</span>
+            <ThemeToggle variant="segmented" />
+          </div>
+
           {!userEmail && (
             <div className="flex items-center gap-2 pt-2 border-t border-white/10 sm:hidden">
               <button
