@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2 } from "lucide-react";
+import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 import { useAppSettings } from "../context/AppSettingsContext";
 
@@ -77,12 +77,32 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-4 md:px-12 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
         
         {/* Top bar container for mobile */}
-        <div className="flex items-center justify-between w-full md:w-auto gap-4">
-          {/* Brand Logo */}
-          <CineVenueLogo 
-            size="md" 
-            onClick={() => handleScroll("home")} 
-          />
+        <div className="flex items-center justify-between w-full md:w-auto gap-3">
+          {/* Back Button & Brand Logo */}
+          <div className="flex items-center gap-2">
+            {typeof window !== "undefined" && window.location.pathname !== "/" && window.location.pathname !== "" && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    window.location.href = "/";
+                  }
+                }}
+                className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold text-amber-200 hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
+                title="Back to previous page"
+                aria-label="Back to previous page"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-gold group-hover:-translate-x-0.5 transition-transform" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+            )}
+            <CineVenueLogo 
+              size="md" 
+              onClick={() => handleScroll("home")} 
+            />
+          </div>
 
           {/* Mobile Location Selector (Right aligned on mobile) */}
           <div className="flex items-center gap-2 md:hidden">

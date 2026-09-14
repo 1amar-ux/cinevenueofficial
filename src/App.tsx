@@ -21,6 +21,7 @@ import EventManagerDashboard from "./components/EventManagerDashboard";
 import OrdersModal from "./components/OrdersModal";
 import UserDashboardModal from "./components/UserDashboardModal";
 import InfoModal from "./components/InfoModal";
+import GlobalBackButton from "./components/GlobalBackButton";
 
 // Sub-Pages
 import Login from "./pages/Login";
@@ -961,6 +962,7 @@ export default function App() {
 
   return (
     <>
+      <GlobalBackButton />
       <Routes>
       {/* Supabase OAuth Callback Handler */}
       <Route path="/auth/callback" element={<AuthCallback />} />
