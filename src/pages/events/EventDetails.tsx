@@ -4,6 +4,8 @@ import EventsNavbar from "../../components/events/EventsNavbar";
 import { Calendar, MapPin, Share2, Users, Clock, Info, CheckCircle2 } from "lucide-react";
 import { Event } from "../../types";
 
+import apiClient from "../../services/apiClient";
+
 export default function EventDetails() {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -11,32 +13,78 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would fetch from /api/events/:id
-    const mockEvent: Event = {
-      id: "evt_1",
-      title: "Pushpa 2 Pre-Release Event",
-      description: "Join the massive pre-release event of Pushpa 2: The Rule. Featuring Allu Arjun, Rashmika Mandanna, and director Sukumar. Live performances, exclusive trailer showcase, and interaction with the cast.",
-      venueName: "Hyderabad Convention Centre",
-      venueAddress: "HITEC City",
-      city: "Hyderabad",
-      date: "2026-10-15",
-      time: "17:00",
-      image: "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
-      categories: [
-        { name: "VVIP Pass", price: 10000, availableSeats: 50 }, 
-        { name: "VIP Pass", price: 5000, availableSeats: 200 }, 
-        { name: "Fan Pass", price: 500, availableSeats: 1500 }
-      ],
-      reviews: [],
-      featured: true,
-      isPaid: true,
-      isActive: true
-    };
+    let isMounted = true;
 
-    setTimeout(() => {
-      setEvent(mockEvent);
-      setLoading(false);
-    }, 500);
+    async function loadEvent() {
+      try {
+        if (eventId) {
+          const res = await apiClient.get(`/events/${eventId}`);
+          const e = res.data?.data?.event;
+          if (e) {
+            const mapped: Event = {
+              id: e.id,
+              title: e.title,
+              description: e.description || "",
+              venueName: e.venue || "Convention Arena",
+              venueAddress: e.venue || "",
+              city: e.city || "All Cities",
+              date: e.date ? new Date(e.date).toISOString().split("T")[0] : "2026-10-15",
+              time: e.time || "18:00",
+              image: e.bannerUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+              categories: (e.ticketTypes || []).map((t: any) => ({
+                name: t.name,
+                price: Number(t.price),
+                availableSeats: t.available
+              })),
+              reviews: [],
+              featured: true,
+              isPaid: Number(e.price) > 0,
+              isActive: e.status === "PUBLISHED"
+            };
+            if (isMounted) {
+              setEvent(mapped);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[EventDetails] Live fetch fallback notice:", err);
+      }
+
+      // Default Event
+      const defaultEvent: Event = {
+        id: eventId || "evt_1",
+        title: "Pushpa 2 Pre-Release Event",
+        description: "Join the massive pre-release event of Pushpa 2: The Rule. Featuring Allu Arjun, Rashmika Mandanna, and director Sukumar. Live performances, exclusive trailer showcase, and interaction with the cast.",
+        venueName: "Hyderabad Convention Centre",
+        venueAddress: "HITEC City",
+        city: "Hyderabad",
+        date: "2026-10-15",
+        time: "17:00",
+        image: "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+        categories: [
+          { name: "VVIP Pass", price: 10000, availableSeats: 50 }, 
+          { name: "VIP Pass", price: 5000, availableSeats: 200 }, 
+          { name: "Fan Pass", price: 500, availableSeats: 1500 }
+        ],
+        reviews: [],
+        featured: true,
+        isPaid: true,
+        isActive: true
+      };
+
+      if (isMounted) {
+        setEvent(defaultEvent);
+        setLoading(false);
+      }
+    }
+
+    loadEvent();
+
+    return () => {
+      isMounted = false;
+    };
   }, [eventId]);
 
   if (loading) {

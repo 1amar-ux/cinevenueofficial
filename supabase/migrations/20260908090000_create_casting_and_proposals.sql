@@ -107,7 +107,7 @@ create table proposals (
 create table proposal_revisions (
   id uuid primary key default uuid_generate_v4(),
   proposal_id uuid references proposals(id) on delete cascade,
-  reviser_id uuid references auth/users(id) on delete cascade,
+  reviser_id uuid references auth.users(id) on delete cascade,
   changes jsonb,
   created_at timestamp with time zone default now()
 );

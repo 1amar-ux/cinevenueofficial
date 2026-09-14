@@ -187,7 +187,7 @@ export class BookingService {
   }
 
   // 4. Confirm Booking upon Verified Payment
-  public async confirmBooking(bookingId: string, paymentDetails: { orderId: string; paymentId: string }) {
+  public async confirmBooking(bookingId: string, paymentDetails: { orderId: string; paymentId: string; provider?: string }) {
     return prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },

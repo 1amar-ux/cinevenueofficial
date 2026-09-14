@@ -90,6 +90,7 @@ export interface LiveBannerCampaign {
   paymentGateway: 'CASHFREE' | 'UPI' | 'SANDBOX';
   paymentOrderId?: string;
   paymentTransactionId?: string;
+  paymentTxnId?: string;
   paidAtUtc?: string;
 
   // Lifecycle & Moderation

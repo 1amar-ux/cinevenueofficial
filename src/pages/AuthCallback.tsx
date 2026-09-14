@@ -98,9 +98,16 @@ export default function AuthCallback() {
         if (!isMounted) return;
         console.error("Auth callback error:", err);
         setStatus("error");
-        setErrorMessage(
-          err?.message || "Unable to complete Google authentication. Please try signing in again."
-        );
+        const rawMsg = err?.message || "";
+        if (rawMsg.includes("Unable to exchange external code")) {
+          setErrorMessage(
+            "Google sign-in could not be completed. The external authorization credentials or redirect URL in your Supabase Auth settings need verification. Please sign in with email/password or contact support."
+          );
+        } else {
+          setErrorMessage(
+            rawMsg || "Unable to complete Google authentication. Please try signing in again."
+          );
+        }
       }
     }
 

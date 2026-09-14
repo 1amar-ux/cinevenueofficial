@@ -1,0 +1,18 @@
+{
+  "short_name": "CineVenue",
+  "name": "CineVenue – Movies, Events & Production",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["entertainment", "movies", "tickets"]
+}

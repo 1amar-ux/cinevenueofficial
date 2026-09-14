@@ -925,7 +925,7 @@ export default function AdminPanel({
   const [editBookingEmail, setEditBookingEmail] = useState("");
   const [editBookingSeats, setEditBookingSeats] = useState("");
   const [editBookingTimeSlot, setEditBookingTimeSlot] = useState("");
-  const [editBookingStatus, setEditBookingStatus] = useState<"Pending" | "Settled" | "Cancelled">("Pending");
+  const [editBookingStatus, setEditBookingStatus] = useState<string>("Pending");
 
   // State: Event Creator
   const [eventTitle, setEventTitle] = useState("");
@@ -1716,7 +1716,7 @@ export default function AdminPanel({
       userEmail: editBookingEmail,
       seats: parsedSeats,
       timeSlot: editBookingTimeSlot,
-      status: editBookingStatus,
+      status: editBookingStatus as any,
     };
 
     onUpdateBooking(editingBooking.id, updated);

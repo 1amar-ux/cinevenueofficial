@@ -446,8 +446,7 @@ export class PosIntegrationService {
                 movieId: movieMap.cinevenueId,
                 startTime: startTimeDate,
                 endTime: endTimeDate,
-                price: new Decimal(basePrice),
-                status: "SCHEDULED"
+                status: "ACTIVE"
               }
             });
             recordsCreated++;

@@ -153,7 +153,7 @@ router.post("/pos/cancel", async (req: Request, res: Response, next: NextFunctio
     const result = await posIntegrationService.cancelBookingInPos(bookingId, reason);
     return res.json({
       success: result.success,
-      message: result.success ? "Booking successfully cancelled and refund initiated." : (result.error || "Cancellation could not be completed."),
+      message: result.success ? "Booking successfully cancelled and refund initiated." : ((result as any).error || "Cancellation could not be completed."),
       data: result
     });
   } catch (error: any) {

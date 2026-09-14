@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { env } from "../../config/env";
 import { prisma } from "../../config/database";
 import { bookingService } from "../bookings/booking.service";
-import { NotFoundError, PaymentError, ValidationError } from "../../shared/errors";
+import { ForbiddenError, NotFoundError, PaymentError, ValidationError } from "../../shared/errors";
 import { logger } from "../../shared/logger";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
 import { checkMovieBookingMaintenance } from "../../middleware/maintenance";
@@ -48,6 +48,9 @@ router.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance,
       if (booking) {
         if (booking.status === "CONFIRMED") {
           throw new ValidationError("This booking has already been paid and confirmed.");
+        }
+        if (req.user?.userId && booking.userId && booking.userId !== req.user.userId) {
+          throw new ForbiddenError("You are not authorized to initiate payment for this booking.");
         }
         amountInINR = Number(booking.totalAmount);
       }
@@ -165,6 +168,9 @@ router.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMai
         if (booking) {
           if (booking.status === "CONFIRMED") {
             throw new ValidationError("This booking has already been paid and confirmed.");
+          }
+          if (req.user?.userId && booking.userId && booking.userId !== req.user.userId) {
+            throw new ForbiddenError("You are not authorized to initiate payment for this booking.");
           }
           amountInINR = Number(booking.totalAmount);
           if (booking.user?.name) resolvedCustomerName = booking.user.name;

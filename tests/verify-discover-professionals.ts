@@ -83,7 +83,7 @@ async function runTests() {
     assert(!!sample.fullName, `Profile has full name: ${sample.fullName}`);
     assert(!!sample.handle, `Profile has handle: ${sample.handle}`);
     assert(!!sample.primaryCraftName, `Profile has craft: ${sample.primaryCraftName}`);
-    assert(!sample.phone, "Private phone is sanitized and NOT exposed");
+    assert(!(sample as any).phone, "Private phone is sanitized and NOT exposed");
 
     // 5. Client Service - Filter by Role
     console.log("\n--- TEST 5: Client Service Filter by Role ---");

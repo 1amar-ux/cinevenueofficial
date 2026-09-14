@@ -535,9 +535,11 @@ class AdvertisingService {
     }
 
     campaign.paymentStatus = "PAID";
-    campaign.paymentTxnId = verification.paymentDetails?.cfOrderId || orderId;
+    const txnId = verification.paymentDetails?.cfOrderId || orderId;
+    campaign.paymentTransactionId = txnId;
+    campaign.paymentTxnId = txnId;
     campaign.paidAtUtc = new Date().toISOString();
-    campaign.status = "REVIEW_PENDING";
+    campaign.status = "PENDING_APPROVAL";
     campaign.updatedAtUtc = new Date().toISOString();
 
     this.saveCampaigns();

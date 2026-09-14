@@ -4,67 +4,113 @@ import EventsNavbar from "../../components/events/EventsNavbar";
 import { Calendar, MapPin, Tag, ChevronRight, Ticket, Filter, Search } from "lucide-react";
 import { Event } from "../../types";
 
+import apiClient from "../../services/apiClient";
+
 export default function EventsHome() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would fetch from /api/events
-    const mockEvents: Event[] = [
-      {
-        id: "evt_1",
-        title: "Pushpa 2 Pre-Release Event",
-        description: "Join the massive pre-release event of Pushpa 2: The Rule.",
-        venueName: "Hyderabad Convention Centre",
-        venueAddress: "HITEC City",
-        city: "Hyderabad",
-        date: "2026-10-15",
-        time: "17:00",
-        image: "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
-        categories: [{ name: "VIP", price: 5000, availableSeats: 100 }, { name: "General", price: 500, availableSeats: 1000 }],
-        reviews: [],
-        featured: true,
-        isPaid: true,
-        isActive: true
-      },
-      {
-        id: "evt_2",
-        title: "Symphony Under The Stars",
-        description: "A beautiful evening of classical music.",
-        venueName: "Open Air Theatre",
-        venueAddress: "Central Park",
-        city: "Mumbai",
-        date: "2026-11-02",
-        time: "19:00",
-        image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200",
-        categories: [{ name: "Standard", price: 1500, availableSeats: 500 }],
-        reviews: [],
-        featured: false,
-        isPaid: true,
-        isActive: true
-      },
-      {
-        id: "evt_3",
-        title: "Tech Innovators Conference 2026",
-        description: "Annual gathering of tech leaders and startups.",
-        venueName: "Tech Hub",
-        venueAddress: "Silicon Valley",
-        city: "Bengaluru",
-        date: "2026-09-20",
-        time: "09:00",
-        image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=1200",
-        categories: [{ name: "Entry", price: 0, availableSeats: 2000 }],
-        reviews: [],
-        featured: false,
-        isPaid: false,
-        isActive: true
-      }
-    ];
+    let isMounted = true;
 
-    setTimeout(() => {
-      setEvents(mockEvents);
-      setLoading(false);
-    }, 500);
+    async function loadEvents() {
+      try {
+        const res = await apiClient.get("/events");
+        const apiEvents = res.data?.data?.events;
+        if (apiEvents && Array.isArray(apiEvents) && apiEvents.length > 0) {
+          const mapped: Event[] = apiEvents.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description || "",
+            venueName: e.venue || "Convention Arena",
+            venueAddress: e.venue || "",
+            city: e.city || "All Cities",
+            date: e.date ? new Date(e.date).toISOString().split("T")[0] : "2026-10-15",
+            time: e.time || "18:00",
+            image: e.bannerUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+            categories: (e.ticketTypes || []).map((t: any) => ({
+              name: t.name,
+              price: Number(t.price),
+              availableSeats: t.available
+            })),
+            reviews: [],
+            featured: true,
+            isPaid: Number(e.price) > 0,
+            isActive: e.status === "PUBLISHED"
+          }));
+          if (isMounted) {
+            setEvents(mapped);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("[Events] Live fetch fallback notice:", err);
+      }
+
+      // Default Showcase Events
+      const defaultEvents: Event[] = [
+        {
+          id: "evt_1",
+          title: "Pushpa 2 Pre-Release Event",
+          description: "Join the massive pre-release event of Pushpa 2: The Rule.",
+          venueName: "Hyderabad Convention Centre",
+          venueAddress: "HITEC City",
+          city: "Hyderabad",
+          date: "2026-10-15",
+          time: "17:00",
+          image: "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+          categories: [{ name: "VIP", price: 5000, availableSeats: 100 }, { name: "General", price: 500, availableSeats: 1000 }],
+          reviews: [],
+          featured: true,
+          isPaid: true,
+          isActive: true
+        },
+        {
+          id: "evt_2",
+          title: "Symphony Under The Stars",
+          description: "A beautiful evening of classical music.",
+          venueName: "Open Air Theatre",
+          venueAddress: "Central Park",
+          city: "Mumbai",
+          date: "2026-11-02",
+          time: "19:00",
+          image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200",
+          categories: [{ name: "Standard", price: 1500, availableSeats: 500 }],
+          reviews: [],
+          featured: false,
+          isPaid: true,
+          isActive: true
+        },
+        {
+          id: "evt_3",
+          title: "Tech Innovators Conference 2026",
+          description: "Annual gathering of tech leaders and startups.",
+          venueName: "Tech Hub",
+          venueAddress: "Silicon Valley",
+          city: "Bengaluru",
+          date: "2026-09-20",
+          time: "09:00",
+          image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=1200",
+          categories: [{ name: "Entry", price: 0, availableSeats: 2000 }],
+          reviews: [],
+          featured: false,
+          isPaid: false,
+          isActive: true
+        }
+      ];
+
+      if (isMounted) {
+        setEvents(defaultEvents);
+        setLoading(false);
+      }
+    }
+
+    loadEvents();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

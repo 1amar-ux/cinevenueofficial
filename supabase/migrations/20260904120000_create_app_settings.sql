@@ -59,14 +59,14 @@ CREATE POLICY "Admins manage app_settings"
     USING (
         EXISTS (
             SELECT 1 FROM "User"
-            WHERE "User"."id" = auth.uid()
+            WHERE "User"."id" = auth.uid()::text
             AND "User"."role" IN ('SUPER_ADMIN', 'ADMIN')
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM "User"
-            WHERE "User"."id" = auth.uid()
+            WHERE "User"."id" = auth.uid()::text
             AND "User"."role" IN ('SUPER_ADMIN', 'ADMIN')
         )
     );
