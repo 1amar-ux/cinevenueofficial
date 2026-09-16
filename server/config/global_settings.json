@@ -1,4 +1,5 @@
 {
-  "globalSubwebsiteEnabled": false,
-  "updatedAt": "2026-09-16T06:45:18.901Z"
+  "globalSubwebsiteEnabled": true,
+  "subwebsiteMaintenanceMessage": "Test live status",
+  "updatedAt": "2026-09-16T06:49:28.758Z"
 }
