@@ -187,10 +187,21 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       const [httpRes, sbRes]: [any, any] = await Promise.all([httpPromise, sbPromise]);
 
-      if (sbRes && !sbRes.error && sbRes.data) {
-        applySettingsRecord(sbRes.data, false);
-      } else if (httpRes?.data?.success && httpRes.data?.data) {
-        applySettingsRecord(httpRes.data.data, false);
+      const sbData = (sbRes && !sbRes.error && sbRes.data) ? sbRes.data : null;
+      const httpData = (httpRes?.data?.success && httpRes.data?.data) ? httpRes.data.data : null;
+
+      if (sbData && httpData) {
+        const sbTime = new Date(sbData.updated_at || sbData.updatedAt || 0).getTime();
+        const httpTime = new Date(httpData.updatedAt || httpData.updated_at || 0).getTime();
+        if (httpTime > sbTime) {
+          applySettingsRecord(httpData, false);
+        } else {
+          applySettingsRecord(sbData, false);
+        }
+      } else if (sbData) {
+        applySettingsRecord(sbData, false);
+      } else if (httpData) {
+        applySettingsRecord(httpData, false);
       }
     } catch (err: any) {
       console.warn("[AppSettings] Resilient fetch notice:", err?.message || err);

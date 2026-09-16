@@ -462,6 +462,25 @@ export default async function handler(req: any, res: any) {
       });
     } catch (e) {}
 
+    // Authoritative Cloud Sync to Supabase for all devices
+    try {
+      const { syncAppSettingsToSupabase } = await import("./config/supabaseAdmin");
+      await syncAppSettingsToSupabase({
+        maintenanceMode: globalServerlessState.maintenanceMode,
+        maintenanceTitle: globalServerlessState.maintenanceTitle,
+        maintenanceMessage: globalServerlessState.maintenanceMessage,
+        maintenanceCountdownEnabled: globalServerlessState.maintenanceCountdownEnabled,
+        maintenanceEndTime: globalServerlessState.maintenanceEndTime,
+        globalSubwebsiteEnabled: globalServerlessState.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: globalServerlessState.subwebsiteMaintenanceMessage,
+        serviceControls: globalServerlessState.serviceControls,
+        updatedBy: "admin",
+        updatedAt: globalServerlessState.updatedAt || new Date()
+      });
+    } catch (sbErr: any) {
+      console.warn("[API Serverless] Supabase sync notice:", sbErr?.message || sbErr);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Global settings successfully updated across all services.",

@@ -343,6 +343,25 @@ router.post("/settings/global", async (req: Request, res: Response, next: NextFu
       serviceControls: updated.serviceControls
     });
 
+    // Authoritative Cloud Sync to Supabase (bypasses RLS with secret key, broadcasts realtime to all worldwide devices)
+    try {
+      const { syncAppSettingsToSupabase } = await import("../../config/supabaseAdmin");
+      await syncAppSettingsToSupabase({
+        maintenanceMode: updated.maintenanceMode,
+        maintenanceTitle: updated.maintenanceTitle,
+        maintenanceMessage: updated.maintenanceMessage,
+        maintenanceCountdownEnabled: updated.maintenanceCountdownEnabled,
+        maintenanceEndTime: updated.maintenanceEndTime,
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+        serviceControls: updated.serviceControls,
+        updatedBy: req.user?.email || "admin",
+        updatedAt: updated.updatedAt || new Date()
+      });
+    } catch (sbSyncErr: any) {
+      console.warn("[AdminSettings] Supabase cloud sync notice:", sbSyncErr?.message || sbSyncErr);
+    }
+
     return res.json({
       success: true,
       message: `Global settings updated successfully. Sub-websites: ${updated.globalSubwebsiteEnabled ? "ENABLED" : "DISABLED"}`,
@@ -421,6 +440,19 @@ router.post("/settings/subwebsite", async (req: Request, res: Response, next: Ne
       globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
       subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage
     });
+
+    // Authoritative Cloud Sync to Supabase (bypasses RLS with secret key, broadcasts realtime to all worldwide devices)
+    try {
+      const { syncAppSettingsToSupabase } = await import("../../config/supabaseAdmin");
+      await syncAppSettingsToSupabase({
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+        updatedBy: req.user?.email || "admin",
+        updatedAt: updated.updatedAt || new Date()
+      });
+    } catch (sbSyncErr: any) {
+      console.warn("[AdminSettings] Supabase cloud sync notice:", sbSyncErr?.message || sbSyncErr);
+    }
 
     return res.json({
       success: true,
@@ -561,6 +593,25 @@ const handleMaintenanceToggle = async (req: Request, res: Response, next: NextFu
         }
       }
     }).catch(() => {});
+
+    // Authoritative Cloud Sync to Supabase (bypasses RLS with secret key, broadcasts realtime to all worldwide devices)
+    try {
+      const { syncAppSettingsToSupabase } = await import("../../config/supabaseAdmin");
+      await syncAppSettingsToSupabase({
+        maintenanceMode: updated.maintenanceMode,
+        maintenanceTitle: updated.maintenanceTitle,
+        maintenanceMessage: updated.maintenanceMessage,
+        maintenanceCountdownEnabled: updated.maintenanceCountdownEnabled,
+        maintenanceEndTime: updated.maintenanceEndTime,
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+        serviceControls: updated.serviceControls,
+        updatedBy: req.user?.email || "admin",
+        updatedAt: updated.updatedAt || new Date()
+      });
+    } catch (sbSyncErr: any) {
+      console.warn("[AdminSettings] Supabase cloud sync notice for maintenance toggle:", sbSyncErr?.message || sbSyncErr);
+    }
 
     return res.json({
       success: true,
