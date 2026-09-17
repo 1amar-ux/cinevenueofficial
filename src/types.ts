@@ -14,6 +14,7 @@ export * from './types/fees';
 import { FeeLine, TaxLine } from './types/fees';
 
 export interface Movie {
+  id?: string | number;
   title: string;
   genre: string;
   lang: string;
@@ -27,6 +28,15 @@ export interface Movie {
   certificate?: 'U' | 'UA' | 'A';
   distributor?: string;
   isActive?: boolean;
+  description?: string;
+  language?: string;
+  releaseDate?: string;
+  poster?: string;
+  banner?: string;
+  cast?: string[];
+  director?: string;
+  isSpotlight?: boolean;
+  status?: string;
 }
 
 export interface Theatre {
@@ -47,6 +57,10 @@ export interface Theatre {
   features: string[];
   price: string;
   img: string;
+  image?: string;
+  rating?: number | string;
+  screens?: any[];
+  facilities?: string[];
   bankRouting?: string;
   lastSettleDate?: string;
   customAllocPercent?: number;
@@ -89,6 +103,11 @@ export interface Booking {
   city?: string;
   userName?: string;
   mobileNumber?: string;
+  userPhone?: string;
+  screenName?: string;
+  category?: string;
+  moviePoster?: string;
+  qrToken?: string;
   utrNumber?: string;
   paymentScreenshot?: string;
   paymentVerificationStatus?: 'Pending Review' | 'Approved' | 'Rejected';

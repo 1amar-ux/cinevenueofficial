@@ -73,7 +73,7 @@ router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Re
         name,
         address,
         city,
-        state,
+        state: state || "Telangana",
         phone: phone || null,
         status: status || "ACTIVE"
       }
@@ -124,6 +124,42 @@ router.get("/:theatreId/bank-accounts", authenticate, authorize("SUPER_ADMIN", "
     return res.json({
       success: true,
       data: { accounts }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 6. Admin: Update Theatre
+router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const theatre = await prisma.theatre.update({
+      where: { id },
+      data: req.body
+    });
+
+    return res.json({
+      success: true,
+      message: "Theatre updated successfully",
+      data: { theatre }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 7. Admin: Delete Theatre
+router.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.theatre.delete({ where: { id } }).catch(async () => {
+      await prisma.theatre.update({ where: { id }, data: { status: "INACTIVE" } });
+    });
+
+    return res.json({
+      success: true,
+      message: "Theatre removed successfully"
     });
   } catch (error) {
     next(error);

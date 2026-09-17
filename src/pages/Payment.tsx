@@ -16,6 +16,7 @@ import { BookingContext } from "../context/BookingContext";
 import api from "../services/api";
 
 import { triggerCashfreeCheckout, createMovieBookingCashfreeOrder, verifyMovieBookingCashfreePayment } from "../services/cashfreeService";
+import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "../utils/ticketDeliveryService";
 
 export default function Payment() {
   const navigate = useNavigate();
@@ -92,6 +93,9 @@ export default function Payment() {
   };
 
   const completeBooking = async () => {
+    const bookingId = "BMS" + Math.floor(10000000 + Math.random() * 90000000);
+    const qrToken = generateSecureTicketToken(bookingId);
+
     // Save to local storage bookings list
     const newBooking = {
       movie: movieTitle,
@@ -99,7 +103,9 @@ export default function Payment() {
       seats: seats,
       amount: total,
       date: "Today",
-      bookingId: "BMS" + Math.floor(10000000 + Math.random() * 90000000)
+      bookingId: bookingId,
+      qrToken: qrToken,
+      status: "Confirmed"
     };
 
     // Store in localStorage for the booking history page
@@ -109,19 +115,65 @@ export default function Payment() {
     // Also update BookingContext with booking details
     setBooking((prev) => ({
       ...prev,
-      show: newBooking.bookingId // Save booking ID under show
+      show: newBooking.bookingId
     }));
 
-    // Post to backend database if logged in
+    // Multi-Channel Automated Ticket Delivery Dispatch
+    const customerEmail = (booking as any).customerEmail || "guest@cinevenue.in";
+    const customerPhone = (booking as any).customerPhone || "9876543210";
+
+    dispatchTicketEmail({
+      type: "MOVIE",
+      bookingId: bookingId,
+      ticketCode: bookingId,
+      qrToken: qrToken,
+      customerName: "Valued Patron",
+      customerEmail: customerEmail,
+      customerMobile: customerPhone,
+      title: movieTitle,
+      venue: theatreName,
+      screen: "Cinema Hall 1",
+      date: "Today",
+      time: "7:00 PM",
+      seats: booking.seats.length > 0 ? booking.seats : ["A1", "A2"],
+      categoryName: "VIP Tier",
+      quantity: booking.seats.length || 2,
+      totalPaid: total,
+      paymentMethod: "Cashfree UPI / Cards",
+      posterUrl: booking.movie?.poster
+    }).catch(err => console.warn("Email delivery note:", err));
+
+    if (customerPhone) {
+      dispatchTicketSms({
+        type: "MOVIE",
+        bookingId: bookingId,
+        ticketCode: bookingId,
+        qrToken: qrToken,
+        customerName: "Valued Patron",
+        customerEmail: customerEmail,
+        customerMobile: customerPhone,
+        title: movieTitle,
+        venue: theatreName,
+        date: "Today",
+        time: "7:00 PM",
+        seats: booking.seats.length > 0 ? booking.seats : ["A1", "A2"],
+        quantity: booking.seats.length || 2,
+        totalPaid: total
+      }).catch(err => console.warn("SMS delivery note:", err));
+    }
+
+    // Post to backend database
     try {
       await api.post("/bookings", {
         movieName: movieTitle,
         theatreName: theatreName,
         seats: booking.seats,
-        totalAmount: total
+        totalAmount: total,
+        bookingNumber: bookingId,
+        qrToken: qrToken
       });
     } catch (err) {
-      console.log("Backend sync skipped or failed:", err);
+      console.log("Backend sync note:", err);
     }
 
     navigate("/ticket");

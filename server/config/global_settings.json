@@ -1,5 +1,19 @@
 {
   "globalSubwebsiteEnabled": true,
-  "subwebsiteMaintenanceMessage": "Test live status",
-  "updatedAt": "2026-09-16T06:49:28.758Z"
+  "subwebsiteMaintenanceMessage": "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+  "updatedAt": "2026-09-17T10:05:43.365Z",
+  "maintenanceMode": false,
+  "maintenanceTitle": "Movie Booking Temporarily Unavailable",
+  "maintenanceMessage": "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+  "serviceControls": {
+    "website": {
+      "status": true
+    },
+    "movieBooking": {
+      "status": true
+    },
+    "eventBooking": {
+      "status": true
+    }
+  }
 }

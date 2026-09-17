@@ -23,10 +23,14 @@ export const refreshTokenSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Please provide a valid email address")
+  email: z.string().optional(),
+  identifier: z.string().optional()
+}).refine(data => !!(data.email || data.identifier), {
+  message: "Please provide your email address or mobile number"
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Reset token is required"),
-  newPassword: z.string().min(6, "New password must be at least 6 characters long")
+  token: z.string().min(1, "Reset token or code is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters long"),
+  identifier: z.string().optional()
 });

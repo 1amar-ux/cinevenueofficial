@@ -1,6 +1,20 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
-const API_BASE_URL = "/api/v1";
+function resolveApiBaseUrl(): string {
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === "string" && envUrl.trim().length > 0) {
+    return envUrl.replace(/\/+$/, "") + "/api/v1";
+  }
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+    if (origin.startsWith("capacitor://") || (origin.startsWith("http://localhost") && window.location.port !== "3000")) {
+      return "https://cinevenue.com/api/v1";
+    }
+  }
+  return "/api/v1";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 class ApiClient {
   private client: AxiosInstance;

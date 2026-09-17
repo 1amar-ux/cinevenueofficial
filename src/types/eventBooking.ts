@@ -2,6 +2,8 @@
 // CineVenue Event Booking & Ticketing Module — Type Definitions
 // ============================================================
 
+export type EventType = 'PAID' | 'FREE' | 'HYBRID';
+
 export type EventCategoryType =
   | 'Concerts'
   | 'Film Events'
@@ -34,6 +36,7 @@ export interface EventTicketType {
   tier: TicketTier;
   description: string;
   price: number;
+  isFree?: boolean;
   availableQuantity: number;
   soldQuantity: number;
   maxPerUser: number;
@@ -108,6 +111,9 @@ export interface EventItem {
   totalCapacity: number;
   soldCount: number;
   status: EventStatus;
+  eventType?: EventType;
+  isWaitlistEnabled?: boolean;
+  waitlistCount?: number;
   isFeatured?: boolean;
   isSellingFast?: boolean;
   rating?: number;
@@ -159,7 +165,8 @@ export interface EventBookingRecord {
   additionalAttendees?: AdditionalAttendee[];
   pricing: EventFeeBreakdown;
   paymentMethod: string;
-  paymentStatus: 'Paid' | 'Pending' | 'Failed' | 'Refunded';
+  paymentRequired?: boolean;
+  paymentStatus: 'Paid' | 'Pending' | 'Failed' | 'Refunded' | 'NOT_REQUIRED';
   bookingStatus: 'Confirmed' | 'Cancelled' | 'Attended';
   qrCodePayload: string; // Encrypted JSON payload for scanner validation
   bookedAt: string;

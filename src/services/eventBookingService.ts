@@ -18,6 +18,8 @@ import type {
   OrganizerEventStats,
   EventCategoryType,
 } from '../types/eventBooking';
+import apiClient from './apiClient';
+import { dispatchTicketEmail, dispatchTicketSms } from '../utils/ticketDeliveryService';
 
 const STORAGE_KEYS = {
   EVENTS: 'cv_ticketed_events',
@@ -145,6 +147,7 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     ],
     cancellationPolicy: 'Cancellations allowed up to 48 hours before the event with a 15% cancellation fee.',
     seatingType: 'GeneralAdmission',
+    eventType: 'PAID',
     totalCapacity: 12000,
     soldCount: 7840,
     status: 'Published',
@@ -239,6 +242,7 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     ],
     cancellationPolicy: 'Non-refundable within 72 hours of showtime.',
     seatingType: 'AssignedSeating',
+    eventType: 'PAID',
     totalCapacity: 2200,
     soldCount: 1650,
     status: 'Published',
@@ -338,6 +342,7 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     ],
     cancellationPolicy: 'Refundable up to 24 hours prior to screening.',
     seatingType: 'AssignedSeating',
+    eventType: 'HYBRID',
     totalCapacity: 640,
     soldCount: 480,
     status: 'Published',
@@ -348,6 +353,21 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     createdAt: '2026-08-15T09:00:00Z',
     updatedAt: '2026-09-05T11:00:00Z',
     ticketTypes: [
+      {
+        id: 'TKT-103-FREE',
+        eventId: 'EVT-103',
+        name: 'General Fan Entry Pass (Free RSVP)',
+        tier: 'General',
+        description: 'Complimentary fan entry to red carpet photo ops and live auditorium screening.',
+        price: 0,
+        isFree: true,
+        availableQuantity: 200,
+        soldQuantity: 110,
+        maxPerUser: 2,
+        minPerUser: 1,
+        status: 'Active',
+        isRefundable: false,
+      },
       {
         id: 'TKT-103-1',
         eventId: 'EVT-103',
@@ -601,6 +621,7 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     ],
     cancellationPolicy: 'Non-refundable event.',
     seatingType: 'GeneralAdmission',
+    eventType: 'FREE',
     totalCapacity: 5000,
     soldCount: 3200,
     status: 'Published',
@@ -613,13 +634,14 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
       {
         id: 'TKT-106-1',
         eventId: 'EVT-106',
-        name: 'Court Upper Stands',
+        name: 'Open Community Spectator Pass (Free RSVP)',
         tier: 'General',
-        description: 'Upper tier arena view overlooking all courts.',
-        price: 299,
+        description: 'Complimentary open arena access to all matches and festival activities.',
+        price: 0,
+        isFree: true,
         availableQuantity: 3000,
         soldQuantity: 2100,
-        maxPerUser: 6,
+        maxPerUser: 4,
         minPerUser: 1,
         status: 'Active',
         isRefundable: false,
@@ -627,12 +649,13 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
       {
         id: 'TKT-106-2',
         eventId: 'EVT-106',
-        name: 'Courtside VIP Chair',
-        tier: 'VIP',
-        description: 'First row cushioned chairs directly adjacent to match courts.',
-        price: 1299,
-        availableQuantity: 800,
-        soldQuantity: 520,
+        name: 'Youth & Family Festival Pass (Free RSVP)',
+        tier: 'General',
+        description: 'Free family entry pass with sports workshop demo access.',
+        price: 0,
+        isFree: true,
+        availableQuantity: 2000,
+        soldQuantity: 1100,
         maxPerUser: 4,
         minPerUser: 1,
         status: 'Active',
@@ -665,8 +688,10 @@ function saveStorage<T>(key: string, data: T): void {
 // ─── Event Item Service API ───────────────────────────────────
 
 export function getEvents(): EventItem[] {
+  const isInitialized = typeof window !== 'undefined' ? localStorage.getItem('cv_ticketed_events_initialized') : null;
   const events = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
-  if (events.length === 0) {
+  if (!isInitialized && events.length === 0) {
+    if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
     saveStorage(STORAGE_KEYS.EVENTS, INITIAL_TICKETED_EVENTS);
     return INITIAL_TICKETED_EVENTS;
   }
@@ -702,6 +727,13 @@ export function saveEvent(event: EventItem): EventItem {
   }
 
   saveStorage(STORAGE_KEYS.EVENTS, updatedEvents);
+  if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
+
+  // Authoritative sync to backend API
+  apiClient.post('/events', event).catch((err) => {
+    console.warn('Syncing event to backend API notice:', err);
+  });
+
   return event;
 }
 
@@ -710,6 +742,13 @@ export function deleteEvent(id: string): boolean {
   const filtered = events.filter((e) => e.id !== id);
   if (filtered.length === events.length) return false;
   saveStorage(STORAGE_KEYS.EVENTS, filtered);
+  if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
+
+  // Authoritative delete from backend API
+  apiClient.delete(`/events/${id}`).catch((err) => {
+    console.warn('Deleting event from backend API notice:', err);
+  });
+
   return true;
 }
 
@@ -794,6 +833,18 @@ export function calculateEventFees(params: {
   cineCoinsToRedeem?: number; // 1 CineCoin = ₹1
   platformFeePercent?: number; // Default 5%
 }): EventFeeBreakdown {
+  if (params.ticketPrice === 0) {
+    return {
+      ticketSubtotal: 0,
+      platformBookingFee: 0,
+      taxAmount: 0,
+      discountAmount: 0,
+      cineCoinsRedeemed: 0,
+      cineCoinsDiscount: 0,
+      finalAmount: 0,
+    };
+  }
+
   const subtotal = params.ticketPrice * params.quantity;
   const platformFeeRate = (params.platformFeePercent ?? 5) / 100;
   const platformBookingFee = Math.round(subtotal * platformFeeRate);
@@ -920,6 +971,8 @@ export function createEventBooking(params: {
     date: event.date,
   });
 
+  const isFreeBooking = params.pricing.finalAmount === 0;
+
   const record: EventBookingRecord = {
     id: bookingId,
     passCode,
@@ -939,12 +992,13 @@ export function createEventBooking(params: {
     primaryAttendee: params.primaryAttendee,
     additionalAttendees: params.additionalAttendees,
     pricing: params.pricing,
-    paymentMethod: params.paymentMethod,
-    paymentStatus: 'Paid',
+    paymentMethod: isFreeBooking ? 'FREE_REGISTRATION' : params.paymentMethod,
+    paymentStatus: isFreeBooking ? 'NOT_REQUIRED' : 'Paid',
     bookingStatus: 'Confirmed',
     qrCodePayload: qrPayload,
     bookedAt: new Date().toISOString(),
     checkedIn: false,
+    paymentRequired: !isFreeBooking,
   };
 
   // 1. Save booking
@@ -992,6 +1046,55 @@ export function createEventBooking(params: {
     };
   });
   saveStorage(STORAGE_KEYS.EVENTS, updatedEvents);
+
+  // 4. Asynchronous Multi-Channel Ticket Dispatch (Email & SMS)
+  try {
+    dispatchTicketEmail({
+      type: 'EVENT',
+      bookingId: record.id,
+      ticketCode: record.passCode,
+      qrToken: record.passCode,
+      customerName: record.primaryAttendee.name,
+      customerEmail: record.primaryAttendee.email,
+      customerMobile: record.primaryAttendee.phone,
+      title: record.eventTitle,
+      venue: record.venueName,
+      date: record.eventDate,
+      time: record.eventTime,
+      seats: record.seatCodes,
+      categoryName: record.ticketTypeName,
+      quantity: record.ticketCount,
+      totalPaid: record.pricing.finalAmount,
+      isFree: isFreeBooking,
+      paymentMethod: record.paymentMethod,
+      posterUrl: record.bannerUrl,
+    }).catch(() => {});
+
+    if (record.primaryAttendee.phone) {
+      dispatchTicketSms({
+        type: 'EVENT',
+        bookingId: record.id,
+        ticketCode: record.passCode,
+        qrToken: record.passCode,
+        customerName: record.primaryAttendee.name,
+        customerEmail: record.primaryAttendee.email,
+        customerMobile: record.primaryAttendee.phone,
+        title: record.eventTitle,
+        venue: record.venueName,
+        date: record.eventDate,
+        time: record.eventTime,
+        seats: record.seatCodes,
+        categoryName: record.ticketTypeName,
+        quantity: record.ticketCount,
+        totalPaid: record.pricing.finalAmount,
+        isFree: isFreeBooking,
+        paymentMethod: record.paymentMethod,
+        posterUrl: record.bannerUrl,
+      }).catch(() => {});
+    }
+  } catch (notifErr) {
+    console.warn('Event notification dispatch non-fatal warning:', notifErr);
+  }
 
   return record;
 }

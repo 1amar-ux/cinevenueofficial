@@ -125,7 +125,8 @@ export class AuthController {
 
   public forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await authService.requestPasswordReset(req.body.email);
+      const identifier = String(req.body.identifier || req.body.email || req.body.mobile || "");
+      const result = await authService.requestPasswordReset(identifier);
       return res.json(result);
     } catch (error) {
       next(error);
@@ -134,8 +135,8 @@ export class AuthController {
 
   public resetPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { token, newPassword } = req.body;
-      const result = await authService.resetPassword(token, newPassword);
+      const { token, newPassword, identifier } = req.body;
+      const result = await authService.resetPassword(token, newPassword, identifier);
       return res.json(result);
     } catch (error) {
       next(error);

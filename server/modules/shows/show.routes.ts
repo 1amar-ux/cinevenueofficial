@@ -138,8 +138,47 @@ router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"
 
     return res.status(201).json({
       success: true,
-      message: "Show and seat inventory created successfully",
+      message: "Show created successfully",
       data: { show }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 4. Admin: Update Show / Toggle Status
+router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const show = await prisma.show.update({
+      where: { id },
+      data: req.body
+    });
+
+    return res.json({
+      success: true,
+      message: "Show updated successfully",
+      data: { show }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 5. Admin: Delete / Cancel Show
+router.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.show.update({
+      where: { id },
+      data: { status: "CANCELLED" }
+    }).catch(async () => {
+      await prisma.show.delete({ where: { id } });
+    });
+
+    return res.json({
+      success: true,
+      message: "Show cancelled successfully"
     });
   } catch (error) {
     next(error);

@@ -92,6 +92,11 @@ export default function EventsShowcase({
   const [viewingPass, setViewingPass] = useState<EventBookingRecord | null>(null);
   const [showOrganizerHub, setShowOrganizerHub] = useState<boolean>(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All Categories");
+  const [selectedEventTypeFilter, setSelectedEventTypeFilter] = useState<'ALL' | 'FREE' | 'PAID' | 'HYBRID'>('ALL');
+
+  useEffect(() => {
+    setTicketedEventsList(getTicketedEvents());
+  }, [events]);
 
   const handleOpenBooking = (evt: Event) => {
     let matched = ticketedEventsList.find(e => e.id === evt.id || e.title.toLowerCase() === evt.title.toLowerCase());
@@ -321,7 +326,13 @@ export default function EventsShowcase({
       (evt.description || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
       (evt.venueName || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
       (evt.city || "").toLowerCase().includes((searchQuery || "").toLowerCase());
-    return matchesCity && matchesCategory && matchesGenre && matchesSearch;
+
+    const ticketedMatch = ticketedEventsList.find(te => te.id === evt.id || te.title.toLowerCase() === evt.title.toLowerCase());
+    const minPrice = Math.min(...(evt.categories || []).map(c => c.price));
+    const effectiveType = ticketedMatch?.eventType || (minPrice === 0 || evt.isPaid === false ? 'FREE' : 'PAID');
+    const matchesEventType = selectedEventTypeFilter === 'ALL' || effectiveType === selectedEventTypeFilter;
+
+    return matchesCity && matchesCategory && matchesGenre && matchesSearch && matchesEventType;
   });
 
   const handleBookingSubmit = (e: React.FormEvent) => {
@@ -566,86 +577,37 @@ export default function EventsShowcase({
         </div>
       </div>
 
-      {/* UPCOMING VIP PASSES */}
-      <div className="space-y-4 text-left">
-        <div className="flex items-center justify-between">
-          <h5 className="text-xs font-bold text-[#D4AF37] uppercase tracking-[0.2em] flex items-center gap-1.5">
-            <Calendar className="w-4 h-4" /> Upcoming VIP Passes
-          </h5>
-          <span className="text-[10px] font-mono text-white/40">3 ACTIVE BOX OFFICE PASSES</span>
+      {/* EVENT TICKET PASS TYPES FILTER & ACTIVE INVENTORY */}
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 text-left">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-white/60 uppercase font-mono tracking-wider flex items-center gap-1.5 mr-2">
+            <Ticket className="w-4 h-4 text-gold" /> Filter By Pass Type:
+          </span>
+          {(['ALL', 'FREE', 'PAID', 'HYBRID'] as const).map(type => (
+            <button
+              key={type}
+              onClick={() => setSelectedEventTypeFilter(type)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+                selectedEventTypeFilter === type
+                  ? type === 'FREE'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                    : type === 'HYBRID'
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40 shadow-sm'
+                    : type === 'PAID'
+                    ? 'bg-gold/20 text-gold border border-gold/40 shadow-sm'
+                    : 'bg-white/20 text-white border border-white/30 shadow-sm'
+                  : 'bg-white/5 text-white/50 hover:text-white border border-white/5'
+              }`}
+            >
+              {type === 'ALL' ? 'All Tiers' : `${type} Passes`}
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            {
-              id: "evt_1",
-              title: "Sunburn Arena ft. Alan Walker",
-              date: "Saturday, Oct 12, 2026",
-              time: "06:00 PM onwards",
-              venue: "Gachibowli Stadium, Hyderabad",
-              pricing: "Starts at ₹1,499",
-              status: "SELLING FAST",
-              tag: "EDM / Mega Concert",
-              icon: "⚡"
-            },
-            {
-              id: "evt_2",
-              title: "Zakir Khan Live Comedy Special",
-              date: "Friday, Nov 02, 2026",
-              time: "08:00 PM onwards",
-              venue: "Shilpakala Vedika, Hyderabad",
-              pricing: "Starts at ₹799",
-              status: "LIMIT SLOTS",
-              tag: "Standup Comedy",
-              icon: "🎤"
-            },
-            {
-              id: "evt_3",
-              title: "Arijit Singh Premium Symphony Tour",
-              date: "Sunday, Dec 20, 2026",
-              time: "07:00 PM onwards",
-              venue: "Guntur Club Arena, Guntur",
-              pricing: "Starts at ₹2,499",
-              status: "VIP ACCESS ONLY",
-              tag: "Symphony Tour",
-              icon: "🎻"
-            }
-          ].map((ticket, idx) => (
-            <div key={idx} className="bg-gradient-to-b from-white/[0.03] to-black/40 border border-white/10 hover:border-[#D4AF37]/50 rounded-xl p-5 flex flex-col justify-between space-y-4 transition-all group relative overflow-hidden">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl p-2 rounded-lg bg-white/5 border border-white/5">{ticket.icon}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[9px] font-mono font-bold text-[#D4AF37] uppercase">{ticket.tag}</span>
-                    <span className="text-[9px] font-mono font-bold text-rose-400 bg-rose-400/10 border border-rose-400/20 px-1.5 py-0.5 rounded">{ticket.status}</span>
-                  </div>
-                </div>
-                <h6 className="font-display text-base font-bold text-white group-hover:text-[#D4AF37] transition-colors">{ticket.title}</h6>
-                <div className="space-y-1 text-xs text-white/60 font-light">
-                  <p className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-[#D4AF37]" /> {ticket.date}</p>
-                  <p className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-[#D4AF37]" /> {ticket.time}</p>
-                  <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#D4AF37]" /> {ticket.venue}</p>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] text-white/40 block uppercase">Box Office</span>
-                  <span className="text-xs font-mono font-bold text-white">{ticket.pricing}</span>
-                </div>
-                <button
-                  onClick={() => {
-                    const matched = ticketedEventsList.find(e => e.title.toLowerCase().includes(ticket.title.toLowerCase().split(' ')[0])) || ticketedEventsList[0];
-                    setBookingModalEvent(matched);
-                  }}
-                  className="px-3.5 py-1.5 bg-[#D4AF37] hover:bg-[#E5C158] text-black text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-md"
-                >
-                  <span>Secure Pass</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="text-right">
+          <span className="text-[10px] font-mono text-white/40 uppercase">
+            {filteredEvents.length} Active {filteredEvents.length === 1 ? 'Event' : 'Events'} Available
+          </span>
         </div>
       </div>
 
@@ -659,7 +621,10 @@ export default function EventsShowcase({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="events-showroom-grid">
           {filteredEvents.map((evt) => {
+            const ticketedEvt = ticketedEventsList.find(te => te.id === evt.id || te.title.toLowerCase() === evt.title.toLowerCase());
             const minPrice = Math.min(...(evt.categories || []).map(c => c.price));
+            const isFreeEvent = ticketedEvt?.eventType === 'FREE' || evt.isPaid === false || minPrice === 0;
+            const isHybridEvent = ticketedEvt?.eventType === 'HYBRID';
             const reviews = evt.reviews || [];
             const avgRating = reviews.length > 0
               ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -684,6 +649,15 @@ export default function EventsShowcase({
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
                     <span className="bg-black/80 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded text-[9px] font-bold text-gold uppercase tracking-wider">
                       {evt.city}
+                    </span>
+                    <span className={`px-2.5 py-1 rounded text-[9px] font-extrabold uppercase tracking-wider font-mono shadow-md backdrop-blur-md border ${
+                      isFreeEvent
+                        ? 'bg-emerald-500/90 text-white border-emerald-400'
+                        : isHybridEvent
+                        ? 'bg-purple-600/90 text-white border-purple-400'
+                        : 'bg-black/80 text-gold border-gold/40'
+                    }`}>
+                      {isFreeEvent ? 'FREE PASS' : isHybridEvent ? 'HYBRID ACCESS' : 'VIP TICKET'}
                     </span>
                   </div>
 
@@ -717,6 +691,20 @@ export default function EventsShowcase({
                           <span className="text-[9px] text-amber-400 uppercase tracking-wider block font-semibold font-mono">PRE-REGISTRATION</span>
                           <span className="text-xs font-display font-medium text-amber-300">
                             Pre-Notify Active
+                          </span>
+                        </div>
+                      ) : isFreeEvent ? (
+                        <div>
+                          <span className="text-[9px] text-emerald-400 uppercase tracking-wider block font-semibold font-mono">100% FREE ADMISSION</span>
+                          <span className="text-base font-display font-bold text-emerald-400">
+                            ₹0 <span className="text-xs text-text-secondary font-normal">Free RSVP</span>
+                          </span>
+                        </div>
+                      ) : isHybridEvent ? (
+                        <div>
+                          <span className="text-[9px] text-purple-400 uppercase tracking-wider block font-semibold font-mono">HYBRID (FREE & VIP)</span>
+                          <span className="text-base font-display font-medium text-text-primary">
+                            ₹0 onwards
                           </span>
                         </div>
                       ) : (
@@ -759,6 +747,8 @@ export default function EventsShowcase({
                             ? "bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border border-amber-500/20"
                             : (evt.isActive === false || !isEventBookingSystemActive)
                             ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                            : isFreeEvent
+                            ? "bg-emerald-500 hover:bg-emerald-400 text-black border border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20"
                             : "bg-white/5 group-hover:bg-gold border border-white/10 group-hover:border-gold text-text-primary group-hover:text-black"
                         }`}
                       >
@@ -767,7 +757,11 @@ export default function EventsShowcase({
                             ? "Notify Me" 
                             : (evt.isActive === false || !isEventBookingSystemActive) 
                             ? "Booking OFF" 
-                            : "Get Passes"}
+                            : isFreeEvent
+                            ? "Register Free"
+                            : isHybridEvent
+                            ? "Select Passes"
+                            : "Get VIP Pass"}
                         </span>
                         <ChevronRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                       </button>

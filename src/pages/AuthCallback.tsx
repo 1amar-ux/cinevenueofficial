@@ -176,10 +176,10 @@ export default function AuthCallback() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               <button
                 type="button"
-                onClick={() => navigate("/login", { replace: true })}
+                onClick={() => navigate("/?auth=signin", { replace: true })}
                 className="w-full py-2.5 px-4 bg-gold hover:bg-gold-light text-black font-bold uppercase tracking-wider text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-gold/20"
               >
-                <span>Sign In with Email</span>
+                <span>Sign In with Email / Mobile</span>
               </button>
               <button
                 type="button"
@@ -196,30 +196,48 @@ export default function AuthCallback() {
               <button
                 type="button"
                 onClick={() => setShowConfigHelp(!showConfigHelp)}
-                className="text-[11px] text-white/60 hover:text-gold transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="text-[11px] text-white/60 hover:text-gold transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
               >
-                <span>{showConfigHelp ? "Hide" : "How to fix this in Supabase & Google Console"}</span>
+                <span>{showConfigHelp ? "Hide Configuration Guide" : "How to fix this in Supabase & Google Console"}</span>
               </button>
 
               {showConfigHelp && (
-                <div className="mt-2.5 text-[11px] text-white/70 space-y-2 bg-white/5 border border-white/10 rounded-xl p-3">
-                  <p className="font-semibold text-gold">1. Google Cloud Console Redirect URI:</p>
-                  <p className="text-white/60">
-                    In Google Cloud Console &gt; APIs &amp; Services &gt; Credentials &gt; OAuth 2.0 Client ID, add this exact URL to <b>Authorized redirect URIs</b>:
-                  </p>
-                  <code className="block bg-black/60 text-emerald-400 p-1.5 rounded select-all break-all">
-                    https://mpeedjoyvimegnmymweb.supabase.co/auth/v1/callback
-                  </code>
+                <div className="mt-2.5 text-[11px] text-white/70 space-y-2.5 bg-white/5 border border-white/10 rounded-xl p-3.5 text-left">
+                  <div>
+                    <p className="font-semibold text-gold">1. Add Authorized Redirect URI in Google Cloud Console:</p>
+                    <p className="text-white/60 mt-0.5">
+                      Go to <b>console.cloud.google.com</b> &gt; <b>APIs &amp; Services</b> &gt; <b>Credentials</b> &gt; click your <b>OAuth 2.0 Client ID</b>. Under <b>Authorized redirect URIs</b>, ensure this exact URL is present:
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <code className="flex-1 bg-black/60 text-emerald-400 p-2 rounded text-[11px] select-all break-all font-mono">
+                        https://mpeedjoyvimegnmymweb.supabase.co/auth/v1/callback
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText("https://mpeedjoyvimegnmymweb.supabase.co/auth/v1/callback");
+                          alert("Supabase callback URL copied to clipboard!");
+                        }}
+                        className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-[10px] font-bold shrink-0 cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
 
-                  <p className="font-semibold text-gold mt-2">2. Supabase Dashboard Google Provider:</p>
-                  <p className="text-white/60">
-                    In Supabase Dashboard &gt; Authentication &gt; Providers &gt; Google, ensure the <b>Client ID</b> and <b>Client Secret</b> match your Google Cloud Console credentials.
-                  </p>
+                  <div>
+                    <p className="font-semibold text-gold">2. Verify Client Secret in Supabase Dashboard:</p>
+                    <p className="text-white/60 mt-0.5">
+                      In <b>supabase.com/dashboard</b> &gt; select project <b>mpeedjoyvimegnmymweb</b> &gt; <b>Authentication</b> &gt; <b>Providers</b> &gt; <b>Google</b>: verify that the <b>Client ID</b> and <b>Client Secret</b> match the values in your Google Cloud Console.
+                    </p>
+                  </div>
 
-                  <p className="font-semibold text-gold mt-2">3. Google OAuth Consent Screen:</p>
-                  <p className="text-white/60">
-                    If your app is in <b>Testing</b> mode in Google Cloud Console, add your Google email under <b>Test users</b>, or click <b>Publish App</b>.
-                  </p>
+                  <div>
+                    <p className="font-semibold text-gold">3. Google OAuth Consent Screen Status:</p>
+                    <p className="text-white/60 mt-0.5">
+                      If your Google OAuth Consent screen is in <b>Testing</b> mode, make sure your test account is added under <b>Test users</b> in Google Cloud Console, or click <b>Publish App</b>.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

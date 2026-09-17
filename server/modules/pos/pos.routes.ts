@@ -189,7 +189,7 @@ const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
-router.use(verifyAdminAccess);
+router.use("/admin", verifyAdminAccess);
 
 // 2. List All Integrations
 router.get("/admin/integrations", async (req: Request, res: Response, next: NextFunction) => {

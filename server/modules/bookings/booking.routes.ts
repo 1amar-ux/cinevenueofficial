@@ -35,20 +35,54 @@ router.post("/calculate-price", checkMovieBookingMaintenance, async (req: Reques
   }
 });
 
-// 3. Create Pending Booking
+// 3. Create / Sync Booking
 router.post("/", authenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { showId, seatIds, couponCode } = req.body;
-    const result = await bookingService.createPendingBooking({
-      showId,
-      showSeatIds: seatIds,
-      userId: req.user!.userId,
-      couponCode
+    const { showId, seatIds, couponCode, totalAmount, bookingNumber, qrToken } = req.body;
+
+    if (showId && Array.isArray(seatIds) && seatIds.length > 0) {
+      const result = await bookingService.createPendingBooking({
+        showId,
+        showSeatIds: seatIds,
+        userId: req.user!.userId,
+        couponCode
+      });
+      return res.status(201).json({
+        success: true,
+        message: "Pending booking created",
+        data: result
+      });
+    }
+
+    // Confirmed booking persistence from authorized client
+    const bNumber = bookingNumber || `CV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newBooking = await prisma.booking.create({
+      data: {
+        bookingNumber: bNumber,
+        userId: req.user!.userId,
+        totalAmount: Number(totalAmount) || 250,
+        ticketAmount: Number(totalAmount) || 250,
+        status: "CONFIRMED"
+      } as any
     });
+
+    const token = qrToken || `QR_${newBooking.id}_${Date.now()}`;
+    await prisma.ticket.create({
+      data: {
+        bookingId: newBooking.id,
+        ticketCode: bNumber,
+        qrToken: token
+      } as any
+    });
+
     return res.status(201).json({
       success: true,
-      message: "Pending booking created",
-      data: result
+      message: "Booking recorded in database",
+      data: {
+        booking: newBooking,
+        bookingNumber: bNumber,
+        qrToken: token
+      }
     });
   } catch (error) {
     next(error);

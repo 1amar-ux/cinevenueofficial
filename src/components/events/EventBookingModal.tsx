@@ -264,6 +264,13 @@ export default function EventBookingModal({
       return;
     }
 
+    // Direct Instant Pass for Free Events or 100% discount / ₹0 amount
+    if (fees.finalAmount === 0) {
+      setIsProcessingPayment(true);
+      finalizeBooking('FREE_REGISTRATION');
+      return;
+    }
+
     setIsProcessingPayment(true);
 
     try {
@@ -887,7 +894,7 @@ export default function EventBookingModal({
                 }}
                 className="px-6 py-2.5 rounded-xl bg-gold hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-gold/20"
               >
-                <span>Proceed to Payment</span>
+                <span>{fees.finalAmount === 0 ? 'Review & Confirm Pass' : 'Proceed to Payment'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -901,12 +908,12 @@ export default function EventBookingModal({
                 {isProcessingPayment ? (
                   <>
                     <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                    <span>Authorizing Payment...</span>
+                    <span>Generating Official Pass...</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Pay ₹{fees.finalAmount.toLocaleString('en-IN')} & Book</span>
+                    <span>{fees.finalAmount === 0 ? 'Confirm Free Registration & Get Pass' : `Pay ₹${fees.finalAmount.toLocaleString('en-IN')} & Book`}</span>
                   </>
                 )}
               </button>

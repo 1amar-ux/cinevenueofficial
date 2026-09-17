@@ -108,9 +108,20 @@ export default function EventsList() {
                       <p className="text-[10px] text-white/40 font-mono">{evt.id} • {evt.seatingType}</p>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="bg-gold/10 text-gold border border-gold/30 px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono">
-                        {evt.category}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className="bg-gold/10 text-gold border border-gold/30 px-2 py-0.5 rounded text-[9px] font-bold uppercase font-mono">
+                          {evt.category}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold uppercase font-mono border ${
+                          evt.eventType === 'FREE'
+                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : evt.eventType === 'HYBRID'
+                            ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                            : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                        }`}>
+                          {evt.eventType || 'PAID'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <p className="text-white/80">{evt.date}</p>

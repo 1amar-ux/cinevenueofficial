@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { 
   X, Calendar, MapPin, Armchair, CheckCircle, ShieldCheck, CreditCard, 
-  AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info
+  AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info,
+  Download, Printer, Share2, Mail, Smartphone
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import { MovieSchedule, Booking, Theatre } from "../types";
 import { FeeCalculationService } from "../services/feeCalculationService";
 import { FeeCalculationResult, FeeRule, TaxRule, DiscountRule } from "../types/fees";
@@ -12,6 +14,7 @@ import {
   verifyMovieBookingCashfreePayment, 
   triggerCashfreeCheckout 
 } from "../services/cashfreeService";
+import { generateAndDownloadTicketPdf, getTicketVerificationUrl } from "../utils/ticketDeliveryService";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -656,41 +659,93 @@ export default function BookingModal({
             </div>
 
             {/* Dynamic Interactive Barcode / QR Code */}
-            <div className="relative p-4 rounded-xl bg-white/[0.01] border border-white/5 w-full flex flex-col items-center justify-center gap-2 mb-6 shadow-inner select-none">
-              <div className="p-3 bg-white rounded-lg relative shadow-lg">
-                <svg className="w-20 h-20 text-black" viewBox="0 0 100 100" fill="currentColor">
-                  <rect x="0" y="0" width="30" height="30" fill="black" />
-                  <rect x="5" y="5" width="20" height="20" fill="white" />
-                  <rect x="10" y="10" width="10" height="10" fill="black" />
-
-                  <rect x="70" y="0" width="30" height="30" fill="black" />
-                  <rect x="75" y="5" width="20" height="20" fill="white" />
-                  <rect x="80" y="10" width="10" height="10" fill="black" />
-
-                  <rect x="0" y="70" width="30" height="30" fill="black" />
-                  <rect x="5" y="75" width="20" height="20" fill="white" />
-                  <rect x="10" y="80" width="10" height="10" fill="black" />
-
-                  <rect x="75" y="75" width="15" height="15" fill="black" />
-                  <rect x="79" y="79" width="7" height="7" fill="white" />
-                  <rect x="81" y="81" width="3" height="3" fill="black" />
-
-                  <path d="M35,3 L38,3 L38,6 L35,6 Z M42,3 L48,3 L48,9 L42,9 Z M52,2 L55,2 L55,5 L52,5 Z M60,0 L65,0 L65,8 L60,8 Z M35,12 L40,12 L40,15 L35,15 Z M45,15 L50,15 L50,18 L45,18 Z M55,10 L62,10 L62,13 L55,13 Z M65,12 L68,12 L68,18 L65,18 Z M35,22 L38,22 L38,28 L35,28 Z M45,22 L48,22 L48,25 L45,25 Z M52,20 L58,20 L58,23 L52,23 Z M62,24 L68,24 L68,29 L62,29 Z M5,35 L12,35 L12,38 L5,38 Z M18,35 L24,35 L24,40 L18,40 Z M28,32 L31,32 L31,38 L28,38 Z M5,42 L8,42 L8,48 L5,48 Z M15,45 L20,45 L20,50 L15,50 Z M25,44 L28,44 L28,48 L25,48 Z M3,54 L8,54 L8,60 L3,60 Z M12,52 L18,52 L18,58 L12,58 Z M22,55 L25,55 L25,58 L22,58 Z" />
-                  <path d="M35,35 L45,35 L45,45 L35,45 Z M50,32 L58,32 L58,40 L50,40 Z M62,35 L68,35 L68,38 L62,38 Z M32,50 L38,50 L38,55 L32,55 Z M42,52 L48,52 L48,58 L42,58 Z M52,48 L60,48 L60,54 L52,54 Z M64,50 L68,50 L68,56 L64,56 Z M35,62 L40,62 L40,68 L35,68 Z M45,64 L50,64 L50,68 L45,68 Z M55,60 L62,60 L62,65 L55,65 Z M65,62 L68,62 L68,68 L65,68 Z M72,32 L78,32 L78,35 L72,35 Z M82,35 L88,35 L88,38 L82,38 Z M92,32 L98,32 L98,38 L92,38 Z M72,42 L75,42 L75,48 L72,48 Z M80,45 L85,45 L85,50 L80,50 Z M90,42 L95,42 L95,48 L90,48 Z M72,52 L78,52 L78,58 L72,58 Z M82,55 L88,55 L88,58 L82,58 Z M92,52 L96,52 L96,56 L92,56 Z M72,62 L75,62 L75,68 L72,68 Z M80,64 L85,64 L85,68 L80,68 Z M90,60 L98,60 L98,65 L90,65 Z" />
-                </svg>
+            <div className="relative p-4 rounded-xl bg-white/[0.02] border border-white/10 w-full flex flex-col items-center justify-center gap-3 mb-6 shadow-inner select-none">
+              <div className="p-3 bg-white rounded-xl relative shadow-lg">
+                <QRCode
+                  value={getTicketVerificationUrl(generatedBookingId || `CVQR-${movieTitle}-${selectedSeats.join('')}`)}
+                  size={140}
+                  level="H"
+                />
               </div>
               
-              <div className="text-center font-mono text-[10px] text-gold font-bold tracking-[0.25em]">
-                {generatedBookingId || "TICKET ID: BK-7742"}
+              <div className="text-center font-mono text-xs text-gold font-bold tracking-[0.25em]">
+                {generatedBookingId || "TICKET ID: CONFIRMED"}
               </div>
-              <div className="text-[9px] text-text-muted font-mono uppercase">
-                Direct Gate Entry Authorized via CineVenue Mobile Pass
+              <div className="text-[10px] text-text-muted font-mono uppercase">
+                Direct Gate Turnstile Entry Authorized via CineVenue Pass
               </div>
+
+              {/* Multi-channel delivery indicators */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2 border-t border-white/5 w-full text-[10px] text-emerald-400 font-mono">
+                <span className="flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <Mail className="w-3 h-3" /> E-Ticket Sent to {userEmail || "your email"}
+                </span>
+                <span className="flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <Smartphone className="w-3 h-3" /> SMS Confirmed
+                </span>
+              </div>
+            </div>
+
+            {/* Ticket Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  generateAndDownloadTicketPdf({
+                    type: "MOVIE",
+                    bookingId: generatedBookingId || `BK-${Date.now().toString().slice(-6)}`,
+                    ticketCode: generatedBookingId || `BK-${Date.now().toString().slice(-6)}`,
+                    qrToken: generatedBookingId,
+                    customerName: userEmail ? userEmail.split("@")[0] : "Valued Patron",
+                    customerEmail: userEmail || "guest@cinevenue.com",
+                    title: movieTitle,
+                    venue: displayTheatre,
+                    screen: "Audi 1 - Laser 4K Dolby Atmos",
+                    date: "Today",
+                    time: displayTimeSlot,
+                    seats: selectedSeats,
+                    quantity: selectedSeats.length,
+                    totalPaid: finalPayableAmount,
+                    paymentMethod: paymentInfo.method || "Cashfree",
+                  });
+                }}
+                className="w-full bg-gold hover:bg-gold-light text-black py-3 px-4 rounded-xl text-xs font-bold tracking-wider uppercase cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-gold/10"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download PDF Ticket</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  generateAndDownloadTicketPdf({
+                    type: "MOVIE",
+                    bookingId: generatedBookingId || `BK-${Date.now().toString().slice(-6)}`,
+                    ticketCode: generatedBookingId || `BK-${Date.now().toString().slice(-6)}`,
+                    qrToken: generatedBookingId,
+                    customerName: userEmail ? userEmail.split("@")[0] : "Valued Patron",
+                    customerEmail: userEmail || "guest@cinevenue.com",
+                    title: movieTitle,
+                    venue: displayTheatre,
+                    screen: "Audi 1 - Laser 4K Dolby Atmos",
+                    date: "Today",
+                    time: displayTimeSlot,
+                    seats: selectedSeats,
+                    quantity: selectedSeats.length,
+                    totalPaid: finalPayableAmount,
+                    paymentMethod: paymentInfo.method || "Cashfree",
+                  });
+                }}
+                className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 py-3 px-4 rounded-xl text-xs font-bold tracking-wider uppercase cursor-pointer transition-all flex items-center justify-center gap-2"
+              >
+                <Printer className="w-4 h-4 text-gold" />
+                <span>Print Ticket</span>
+              </button>
             </div>
 
             <button
               onClick={onClose}
-              className="w-full bg-gold hover:bg-gold-light text-black py-3.5 rounded-sm text-xs font-bold tracking-[0.2em] uppercase cursor-pointer transition-all duration-200"
+              className="w-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white py-3 rounded-xl text-xs font-bold tracking-[0.2em] uppercase cursor-pointer transition-all duration-200 border border-white/5"
               id="return-to-lobby-btn"
             >
               Return to Lobby

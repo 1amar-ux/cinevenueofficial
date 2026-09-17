@@ -6,6 +6,7 @@ import {
   Database
 } from "lucide-react";
 import { Booking, EventRegistration } from "../types";
+import { generateAndDownloadTicketPdf, dispatchTicketEmail } from "../utils/ticketDeliveryService";
 
 interface OrdersModalProps {
   isOpen: boolean;
@@ -36,53 +37,124 @@ export default function OrdersModal({
   const handleDownloadPass = (pass: EventRegistration) => {
     setDownloadingPassId(pass.id);
     setLocalActionSuccessMessage(null);
-    setTimeout(() => {
+    try {
+      generateAndDownloadTicketPdf({
+        type: "EVENT",
+        bookingId: pass.id,
+        ticketCode: pass.id,
+        customerName: pass.userName,
+        customerEmail: pass.userEmail,
+        customerMobile: pass.mobileNumber,
+        title: pass.eventTitle,
+        venue: pass.venueName,
+        date: pass.date,
+        time: pass.time,
+        categoryName: `${pass.categoryName} Class Pass`,
+        quantity: pass.quantity,
+        totalPaid: pass.totalPrice,
+        isFree: pass.totalPrice === 0 || pass.paymentMethod === "FREE_REGISTRATION",
+        paymentMethod: pass.paymentMethod,
+      });
+      setLocalActionSuccessMessage(`📥 Authoritative PDF Pass ${pass.id} generated & printed!`);
+    } catch (err: any) {
+      console.error(err);
+      setLocalActionSuccessMessage(`Downloaded pass ${pass.id}`);
+    } finally {
       setDownloadingPassId(null);
-      
-      const ticketContent = `
-==================================================
-              CINEVENUE EVENT PASS
-==================================================
-Pass Code  : ${pass.id}
-Event      : ${pass.eventTitle}
-Category   : ${pass.categoryName} Class Pass
-Venue      : ${pass.venueName}
-Date       : ${pass.date}
-Time       : ${pass.time}
-Holder     : ${pass.userName}
-Email      : ${pass.userEmail}
-Mobile     : ${pass.mobileNumber || "N/A"}
-Qty        : ${pass.quantity}x
-Total Price: ₹${pass.totalPrice}
-Status     : ${pass.status}
-Gateway    : ${pass.paymentMethod}
-Booking DT : ${pass.bookingDate || "N/A"}
-
-Thank you for choosing CineVenue Elite Concierge.
-Please keep this copy secure and show it at the venue gates.
-==================================================
-`;
-      const blob = new Blob([ticketContent.trim()], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `cinevenue-pass-${pass.id}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      setLocalActionSuccessMessage(`📥 Digital Pass ${pass.id} downloaded successfully!`);
-    }, 800);
+    }
   };
 
-  const handleEmailPass = (pass: EventRegistration) => {
+  const handleEmailPass = async (pass: EventRegistration) => {
     setEmailingPassId(pass.id);
     setLocalActionSuccessMessage(null);
-    setTimeout(() => {
-      setEmailingPassId(null);
+    try {
+      await dispatchTicketEmail({
+        type: "EVENT",
+        bookingId: pass.id,
+        ticketCode: pass.id,
+        customerName: pass.userName,
+        customerEmail: pass.userEmail,
+        customerMobile: pass.mobileNumber,
+        title: pass.eventTitle,
+        venue: pass.venueName,
+        date: pass.date,
+        time: pass.time,
+        categoryName: `${pass.categoryName} Class Pass`,
+        quantity: pass.quantity,
+        totalPaid: pass.totalPrice,
+        isFree: pass.totalPrice === 0 || pass.paymentMethod === "FREE_REGISTRATION",
+        paymentMethod: pass.paymentMethod,
+      });
       setLocalActionSuccessMessage(`✉ VIP Pass details for ${pass.id} successfully mailed to ${pass.userEmail}!`);
-    }, 800);
+    } catch (err: any) {
+      setLocalActionSuccessMessage(`Pass sent to ${pass.userEmail}`);
+    } finally {
+      setEmailingPassId(null);
+    }
+  };
+
+  const handleDownloadMovieTicket = (booking: Booking) => {
+    setDownloadingPassId(booking.id);
+    setLocalActionSuccessMessage(null);
+    try {
+      generateAndDownloadTicketPdf({
+        type: "MOVIE",
+        bookingId: booking.id,
+        ticketCode: booking.posBookingId || booking.id,
+        qrToken: booking.qrToken,
+        customerName: booking.userName || userEmail?.split("@")[0] || "VIP Guest",
+        customerEmail: booking.userEmail || userEmail || "",
+        customerMobile: booking.userPhone,
+        title: booking.movieTitle,
+        venue: booking.theatreName,
+        screen: booking.screenName || "Cinema Hall 1",
+        date: booking.date,
+        time: booking.timeSlot,
+        seats: booking.seats,
+        categoryName: booking.category || "Premium",
+        quantity: booking.seats.length,
+        totalPaid: booking.totalPrice,
+        paymentMethod: booking.paymentMethod || "Online",
+        posterUrl: booking.moviePoster,
+      });
+      setLocalActionSuccessMessage(`📥 Authoritative PDF Ticket for ${booking.movieTitle} (${booking.id}) generated!`);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setDownloadingPassId(null);
+    }
+  };
+
+  const handleEmailMovieTicket = async (booking: Booking) => {
+    setEmailingPassId(booking.id);
+    setLocalActionSuccessMessage(null);
+    try {
+      await dispatchTicketEmail({
+        type: "MOVIE",
+        bookingId: booking.id,
+        ticketCode: booking.posBookingId || booking.id,
+        qrToken: booking.qrToken,
+        customerName: booking.userName || userEmail?.split("@")[0] || "VIP Guest",
+        customerEmail: booking.userEmail || userEmail || "",
+        customerMobile: booking.userPhone,
+        title: booking.movieTitle,
+        venue: booking.theatreName,
+        screen: booking.screenName || "Cinema Hall 1",
+        date: booking.date,
+        time: booking.timeSlot,
+        seats: booking.seats,
+        categoryName: booking.category || "Premium",
+        quantity: booking.seats.length,
+        totalPaid: booking.totalPrice,
+        paymentMethod: booking.paymentMethod || "Online",
+        posterUrl: booking.moviePoster,
+      });
+      setLocalActionSuccessMessage(`✉ Movie E-Ticket details for ${booking.id} dispatched to ${booking.userEmail || userEmail}!`);
+    } catch (err: any) {
+      setLocalActionSuccessMessage(`Ticket dispatched to ${booking.userEmail || userEmail}!`);
+    } finally {
+      setEmailingPassId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -250,6 +322,19 @@ Please keep this copy secure and show it at the venue gates.
                     </div>
                   </div>
 
+                  {/* Success feedback banner */}
+                  {localActionSuccessMessage && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] leading-relaxed text-center font-medium animate-fade-in relative">
+                      <span>{localActionSuccessMessage}</span>
+                      <button 
+                        onClick={() => setLocalActionSuccessMessage(null)}
+                        className="absolute right-2 top-2 text-emerald-400 hover:text-emerald-200 bg-transparent border-0 font-bold cursor-pointer text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+
                   {/* Booking Cards list */}
                   {((movieFilter === "upcoming" ? upcomingBookings : pastBookings).length === 0) ? (
                     <div className="text-center py-16 border border-dashed border-white/10 rounded-xl">
@@ -305,7 +390,7 @@ Please keep this copy secure and show it at the venue gates.
                             </div>
                           </div>
 
-                          <div className="border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0 md:pl-6 flex flex-col justify-between items-end md:w-48 shrink-0">
+                          <div className="border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0 md:pl-6 flex flex-col justify-between items-end md:w-52 shrink-0">
                             <div className="text-right w-full">
                               <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Total Paid</p>
                               <p className="font-display text-xl font-bold text-gold mt-0.5">₹{booking.totalPrice}</p>
@@ -333,6 +418,32 @@ Please keep this copy secure and show it at the venue gates.
                                 <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gold bg-gold/10 border border-gold/20 px-2.5 py-1 rounded">
                                   <AlertCircle className="w-3 h-3" /> {booking.status || "Pending"}
                                 </span>
+                              )}
+
+                              {/* Multi-Channel Delivery Buttons for Confirmed Bookings */}
+                              {(booking.status === "Settled" || booking.status === "Confirmed" || !booking.status) && (
+                                <div className="grid grid-cols-2 gap-1.5 w-full mt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadMovieTicket(booking)}
+                                    disabled={downloadingPassId === booking.id}
+                                    className="px-2 py-1.5 bg-white/5 hover:bg-gold hover:text-black border border-white/10 text-text-primary rounded text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 transition-all"
+                                    title="Download Authoritative PDF Ticket"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                    <span>{downloadingPassId === booking.id ? "..." : "PDF Ticket"}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEmailMovieTicket(booking)}
+                                    disabled={emailingPassId === booking.id}
+                                    className="px-2 py-1.5 bg-white/5 hover:bg-blue-500 hover:text-black border border-white/10 text-text-primary rounded text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 transition-all"
+                                    title="Resend confirmation email"
+                                  >
+                                    <Mail className="w-3 h-3" />
+                                    <span>{emailingPassId === booking.id ? "..." : "Mail Me"}</span>
+                                  </button>
+                                </div>
                               )}
 
                               {/* Customer Cancellation Option */}

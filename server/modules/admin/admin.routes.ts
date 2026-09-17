@@ -138,6 +138,31 @@ router.get("/audit-logs", async (req: Request, res: Response, next: NextFunction
   }
 });
 
+// 4B. List All Confirmed Bookings (Authoritative Single Source of Truth for Admin Panel)
+router.get("/bookings", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      include: {
+        user: { select: { id: true, name: true, email: true, mobile: true } },
+        show: { include: { movie: true, theatre: true, screen: true } },
+        items: { include: { showSeat: { include: { seat: true } } } },
+        payment: true,
+        ticket: true
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200
+    });
+
+    return res.json({
+      success: true,
+      count: bookings.length,
+      data: { bookings }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // 5. System Platform Settings (Global ON/OFF, Maintenance Mode)
 router.get("/settings", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -467,8 +492,8 @@ router.post("/settings/subwebsite", async (req: Request, res: Response, next: Ne
   }
 });
 
-// 8. Canonical Module & Global Maintenance Toggle Route (PUT & POST /admin/settings/maintenance)
-const handleMaintenanceToggle = async (req: Request, res: Response, next: NextFunction) => {
+// 8. Canonical Settings & Global Maintenance Routes (/admin/settings/global, /admin/settings/subwebsite, /admin/settings/maintenance)
+const handleGlobalSettingsUpdate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -476,123 +501,160 @@ const handleMaintenanceToggle = async (req: Request, res: Response, next: NextFu
     res.setHeader("Surrogate-Control", "no-store");
     res.setHeader("X-Accel-Expires", "0");
 
-    const { module, enabled, maintenance, message, title, endTime } = req.body;
-    const isMaintenance = typeof maintenance === "boolean" ? maintenance : (typeof enabled === "boolean" ? !enabled : false);
+    const body = req.body || {};
+    const { module, enabled, maintenance, message, title, endTime } = body;
 
     const existing = await prisma.appSettings.findUnique({
       where: { id: "global_default" }
     }).catch(() => null);
 
-    const currentControls: any = (existing?.serviceControls as any) || {};
+    const currentControls: any = {
+      ...((existing?.serviceControls as any) || {})
+    };
 
-    let updatedMaintenanceMode = existing?.maintenanceMode ?? false;
-    let updatedGlobalSubwebsite = existing?.globalSubwebsiteEnabled ?? true;
-
-    if (!module || module === "global" || module === "website" || module === "all") {
-      updatedMaintenanceMode = isMaintenance;
-      currentControls.website = {
-        ...(currentControls.website || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-      currentControls.movieBooking = {
-        ...(currentControls.movieBooking || {}),
-        status: !isMaintenance
-      };
-    } else if (module === "movieBooking" || module === "movies") {
-      currentControls.movieBooking = {
-        ...(currentControls.movieBooking || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-      updatedMaintenanceMode = isMaintenance;
-    } else if (module === "cineCoins" || module === "cinecoins" || module === "cineCoinsLoyalty") {
-      currentControls.cinecoins = {
-        ...(currentControls.cinecoins || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-      currentControls.cineCoinsLoyalty = { ...currentControls.cinecoins };
-    } else if (module === "events" || module === "eventBooking") {
-      currentControls.eventBooking = {
-        ...(currentControls.eventBooking || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-    } else if (module === "filmProduction" || module === "productions") {
-      currentControls.filmProduction = {
-        ...(currentControls.filmProduction || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-    } else if (module === "eventManagement") {
-      currentControls.eventManagement = {
-        ...(currentControls.eventManagement || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-    } else if (module === "brandPromotion" || module === "mediaPromotions") {
-      currentControls.brandPromotion = {
-        ...(currentControls.brandPromotion || {}),
-        status: !isMaintenance,
-        ...(title && { title }),
-        ...(message && { message })
-      };
-    } else if (module === "subwebsites" || module === "subwebsite") {
-      updatedGlobalSubwebsite = !isMaintenance;
+    if (body.serviceControls && typeof body.serviceControls === "object") {
+      Object.assign(currentControls, body.serviceControls);
     }
+
+    let updatedMaintenanceMode = typeof body.maintenanceMode === "boolean"
+      ? body.maintenanceMode
+      : (typeof maintenance === "boolean" ? maintenance : (existing?.maintenanceMode ?? false));
+
+    let updatedGlobalSubwebsite = typeof body.globalSubwebsiteEnabled === "boolean"
+      ? body.globalSubwebsiteEnabled
+      : (existing?.globalSubwebsiteEnabled ?? true);
+
+    // Module-specific overrides if provided
+    if (module) {
+      const isMaint = typeof maintenance === "boolean"
+        ? maintenance
+        : (typeof enabled === "boolean" ? !enabled : updatedMaintenanceMode);
+
+      if (module === "global" || module === "website" || module === "all") {
+        updatedMaintenanceMode = isMaint;
+        currentControls.website = {
+          ...(currentControls.website || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+        currentControls.movieBooking = {
+          ...(currentControls.movieBooking || {}),
+          status: !isMaint
+        };
+      } else if (module === "movieBooking" || module === "movies") {
+        currentControls.movieBooking = {
+          ...(currentControls.movieBooking || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+        updatedMaintenanceMode = isMaint;
+      } else if (module === "cineCoins" || module === "cinecoins" || module === "cineCoinsLoyalty") {
+        currentControls.cinecoins = {
+          ...(currentControls.cinecoins || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+        currentControls.cineCoinsLoyalty = { ...currentControls.cinecoins };
+      } else if (module === "events" || module === "eventBooking") {
+        currentControls.eventBooking = {
+          ...(currentControls.eventBooking || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+      } else if (module === "filmProduction" || module === "productions") {
+        currentControls.filmProduction = {
+          ...(currentControls.filmProduction || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+      } else if (module === "eventManagement") {
+        currentControls.eventManagement = {
+          ...(currentControls.eventManagement || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+      } else if (module === "brandPromotion" || module === "mediaPromotions") {
+        currentControls.brandPromotion = {
+          ...(currentControls.brandPromotion || {}),
+          status: !isMaint,
+          ...(title && { title }),
+          ...(message && { message })
+        };
+      } else if (module === "subwebsites" || module === "subwebsite") {
+        updatedGlobalSubwebsite = !isMaint;
+      }
+    } else if (typeof enabled === "boolean" && (req.path.includes("subwebsite") || body.globalSubwebsiteEnabled !== undefined)) {
+      updatedGlobalSubwebsite = enabled;
+    }
+
+    // If website status is explicitly false, ensure global maintenanceMode is true
+    if (currentControls.website?.status === false) {
+      updatedMaintenanceMode = true;
+    }
+
+    const updatedTitle = title || body.maintenanceTitle || existing?.maintenanceTitle || "CineVenue Under Maintenance";
+    const updatedMessage = message || body.maintenanceMessage || existing?.maintenanceMessage || "Our platform is currently undergoing scheduled updates. We'll be back online shortly.";
+    const updatedSubMsg = body.subwebsiteMaintenanceMessage || (message && req.path.includes("subwebsite") ? message : existing?.subwebsiteMaintenanceMessage) || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.";
+    const updatedEndTime = body.maintenanceEndTime ? new Date(body.maintenanceEndTime) : (endTime ? new Date(endTime) : existing?.maintenanceEndTime);
+    const updatedCountdown = typeof body.maintenanceCountdownEnabled === "boolean" ? body.maintenanceCountdownEnabled : (existing?.maintenanceCountdownEnabled ?? false);
 
     const updated = await prisma.appSettings.upsert({
       where: { id: "global_default" },
       update: {
         maintenanceMode: updatedMaintenanceMode,
+        maintenanceTitle: updatedTitle,
+        maintenanceMessage: updatedMessage,
+        maintenanceCountdownEnabled: updatedCountdown,
+        ...(updatedEndTime && { maintenanceEndTime: updatedEndTime }),
         globalSubwebsiteEnabled: updatedGlobalSubwebsite,
+        subwebsiteMaintenanceMessage: updatedSubMsg,
         serviceControls: currentControls,
-        ...(title && { maintenanceTitle: title }),
-        ...(message && { maintenanceMessage: message }),
-        ...(endTime && { maintenanceEndTime: new Date(endTime) }),
         updatedBy: req.user?.email || "admin",
         updatedAt: new Date()
       },
       create: {
         id: "global_default",
         maintenanceMode: updatedMaintenanceMode,
+        maintenanceTitle: updatedTitle,
+        maintenanceMessage: updatedMessage,
+        maintenanceCountdownEnabled: updatedCountdown,
+        maintenanceEndTime: updatedEndTime,
         globalSubwebsiteEnabled: updatedGlobalSubwebsite,
+        subwebsiteMaintenanceMessage: updatedSubMsg,
         serviceControls: currentControls,
-        maintenanceTitle: title || "Maintenance Mode Active",
-        maintenanceMessage: message || "Service temporarily unavailable.",
         updatedBy: req.user?.email || "admin"
       }
     });
 
-    // Invalidate server cache
-    const { setTestMaintenanceState, invalidateMaintenanceCache } = await import("../../middleware/maintenance");
-    invalidateMaintenanceCache();
-    setTestMaintenanceState({
-      maintenanceMode: updated.maintenanceMode,
-      globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
-      serviceControls: updated.serviceControls
-    });
-
-    // Financial / Security Audit Log
-    await prisma.financialAuditLog.create({
-      data: {
-        eventType: "MODULE_MAINTENANCE_TOGGLED",
-        actorEmail: req.user?.email || "admin",
-        description: `Admin toggled maintenance for [${module || "global"}]: ${isMaintenance ? "MAINTENANCE (OFFLINE)" : "LIVE (ONLINE)"}`,
-        metadata: {
-          module: module || "global",
-          maintenance: isMaintenance,
-          timestamp: new Date().toISOString()
-        }
-      }
-    }).catch(() => {});
+    // Write to persisted JSON config file and invalidate server cache
+    try {
+      const { writePersistedFileSettings, invalidateMaintenanceCache, setTestMaintenanceState } = await import("../../middleware/maintenance");
+      writePersistedFileSettings({
+        maintenanceMode: updated.maintenanceMode,
+        maintenanceTitle: updated.maintenanceTitle,
+        maintenanceMessage: updated.maintenanceMessage,
+        maintenanceCountdownEnabled: updated.maintenanceCountdownEnabled,
+        maintenanceEndTime: updated.maintenanceEndTime ? updated.maintenanceEndTime.toISOString() : null,
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+        subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+        serviceControls: updated.serviceControls,
+        updatedAt: updated.updatedAt ? updated.updatedAt.toISOString() : new Date().toISOString()
+      });
+      invalidateMaintenanceCache();
+      setTestMaintenanceState({
+        maintenanceMode: updated.maintenanceMode,
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+        serviceControls: updated.serviceControls
+      });
+    } catch (fsErr) {
+      // ignore
+    }
 
     // Authoritative Cloud Sync to Supabase (bypasses RLS with secret key, broadcasts realtime to all worldwide devices)
     try {
@@ -610,17 +672,24 @@ const handleMaintenanceToggle = async (req: Request, res: Response, next: NextFu
         updatedAt: updated.updatedAt || new Date()
       });
     } catch (sbSyncErr: any) {
-      console.warn("[AdminSettings] Supabase cloud sync notice for maintenance toggle:", sbSyncErr?.message || sbSyncErr);
+      console.warn("[AdminSettings] Supabase sync notice:", sbSyncErr?.message || sbSyncErr);
     }
 
     return res.json({
       success: true,
-      message: `Maintenance state for module '${module || "global"}' updated to ${isMaintenance ? "MAINTENANCE" : "LIVE"}.`,
+      message: `Global settings updated successfully. Maintenance is ${updated.maintenanceMode ? "ACTIVE (OFFLINE)" : "OFF (ONLINE)"}.`,
       data: {
-        module: module || "global",
-        maintenance: isMaintenance,
-        updatedAt: updated.updatedAt.toISOString(),
-        settings: updated
+        settings: {
+          maintenanceMode: updated.maintenanceMode,
+          maintenanceTitle: updated.maintenanceTitle,
+          maintenanceMessage: updated.maintenanceMessage,
+          maintenanceCountdownEnabled: updated.maintenanceCountdownEnabled,
+          maintenanceEndTime: updated.maintenanceEndTime,
+          globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+          subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+          serviceControls: updated.serviceControls,
+          updatedAt: updated.updatedAt ? updated.updatedAt.toISOString() : new Date().toISOString()
+        }
       }
     });
   } catch (error) {
@@ -628,7 +697,11 @@ const handleMaintenanceToggle = async (req: Request, res: Response, next: NextFu
   }
 };
 
-router.put("/settings/maintenance", handleMaintenanceToggle);
-router.post("/settings/maintenance", handleMaintenanceToggle);
+router.put("/settings/global", handleGlobalSettingsUpdate);
+router.post("/settings/global", handleGlobalSettingsUpdate);
+router.put("/settings/subwebsite", handleGlobalSettingsUpdate);
+router.post("/settings/subwebsite", handleGlobalSettingsUpdate);
+router.put("/settings/maintenance", handleGlobalSettingsUpdate);
+router.post("/settings/maintenance", handleGlobalSettingsUpdate);
 
 export default router;

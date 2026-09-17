@@ -103,15 +103,41 @@ router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Re
 router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const updateData: any = { ...req.body };
+    if (updateData.rating !== undefined) {
+      const num = Number(updateData.rating);
+      updateData.rating = !isNaN(num) ? num : null;
+    }
     const movie = await prisma.movie.update({
       where: { id },
-      data: req.body
+      data: updateData
     });
 
     return res.json({
       success: true,
       message: "Movie updated successfully",
       data: { movie }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 5. Admin: Delete / Unpublish Movie
+router.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    // Attempt delete or mark inactive
+    await prisma.movie.update({
+      where: { id },
+      data: { isActive: false }
+    }).catch(async () => {
+      await prisma.movie.delete({ where: { id } });
+    });
+
+    return res.json({
+      success: true,
+      message: "Movie removed successfully"
     });
   } catch (error) {
     next(error);

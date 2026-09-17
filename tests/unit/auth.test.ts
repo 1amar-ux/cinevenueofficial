@@ -59,7 +59,7 @@ export async function runAuthTests(): Promise<{ name: string; passed: boolean; e
     const regResult = await authService.register({
       name: "Amar Test",
       email: testEmail,
-      mobile: "9491336999",
+      mobile: "94" + Math.floor(10000000 + Math.random() * 90000000),
       password: "Password@123"
     });
 
