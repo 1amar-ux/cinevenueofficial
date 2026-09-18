@@ -3,7 +3,7 @@
   "name": "CineVenue – Movies, Events & Production",
   "icons": [
     {
-      "src": "/logo.jpg",
+      "src": "/logo.jpg?v=2",
       "type": "image/jpeg",
       "sizes": "192x192 512x512",
       "purpose": "any maskable"
