@@ -22,7 +22,52 @@ function sanitizeRecord(data: any) {
   return clean;
 }
 
+function applyWhereClause(query: any, where: any) {
+  if (!where || typeof where !== "object") return query;
+  let q = query;
+  for (const [k, v] of Object.entries(where)) {
+    if (k === "OR") continue;
+    if (v === null) {
+      q = q.is(k, null);
+    } else if (v !== undefined) {
+      if (typeof v === "object") {
+        if ("in" in (v as any) && Array.isArray((v as any).in)) {
+          q = q.in(k, (v as any).in);
+        } else if ("gt" in (v as any)) {
+          q = q.gt(k, (v as any).gt);
+        } else if ("gte" in (v as any)) {
+          q = q.gte(k, (v as any).gte);
+        } else if ("lt" in (v as any)) {
+          q = q.lt(k, (v as any).lt);
+        } else if ("lte" in (v as any)) {
+          q = q.lte(k, (v as any).lte);
+        } else {
+          // Compound unique constraint object like provider_providerAccountId: { provider: "google", providerAccountId: "123" }
+          for (const [subK, subV] of Object.entries(v as any)) {
+            if (subV !== undefined && subV !== null && typeof subV !== "object") {
+              q = q.eq(subK, subV);
+            }
+          }
+        }
+      } else {
+        q = q.eq(k, v);
+      }
+    }
+  }
+  return q;
+}
+
+const TABLES_WITHOUT_UPDATED_AT = new Set([
+  "PasswordResetToken",
+  "RefreshToken",
+  "EmailVerificationToken",
+  "EventTicketType",
+  "AuthProvider"
+]);
+
 function createSupabaseTableProxy(tableName: string) {
+  const hasUpdatedAt = !TABLES_WITHOUT_UPDATED_AT.has(tableName);
+
   return {
     async findMany(args?: any) {
       if (!supabaseAdmin) return [];
@@ -39,13 +84,7 @@ function createSupabaseTableProxy(tableName: string) {
           }
           if (orParts.length > 0) query = query.or(orParts.join(","));
         }
-        if (args?.where) {
-          for (const [k, v] of Object.entries(args.where)) {
-            if (k !== "OR" && v !== undefined && v !== null && typeof v !== "object") {
-              query = query.eq(k, v);
-            }
-          }
-        }
+        query = applyWhereClause(query, args?.where);
         if (args?.orderBy) {
           for (const [k, v] of Object.entries(args.orderBy)) {
             query = query.order(k, { ascending: v === "asc" });
@@ -69,13 +108,8 @@ function createSupabaseTableProxy(tableName: string) {
     async findUnique(args: any) {
       if (!supabaseAdmin) return null;
       try {
-        const where = args?.where || {};
         let query = supabaseAdmin.from(tableName).select("*");
-        for (const [k, v] of Object.entries(where)) {
-          if (v !== undefined && v !== null && typeof v !== "object") {
-            query = query.eq(k, v);
-          }
-        }
+        query = applyWhereClause(query, args?.where);
         const { data, error } = await query.limit(1).maybeSingle();
         if (error) {
           return null;
@@ -101,13 +135,7 @@ function createSupabaseTableProxy(tableName: string) {
           }
           if (orParts.length > 0) query = query.or(orParts.join(","));
         }
-        if (args?.where) {
-          for (const [k, v] of Object.entries(args.where)) {
-            if (k !== "OR" && v !== undefined && v !== null && typeof v !== "object") {
-              query = query.eq(k, v);
-            }
-          }
-        }
+        query = applyWhereClause(query, args?.where);
         const { data, error } = await query.limit(1).maybeSingle();
         if (error) {
           return null;
@@ -124,7 +152,7 @@ function createSupabaseTableProxy(tableName: string) {
       if (!dataToInsert.id) {
         dataToInsert.id = `${tableName.toLowerCase().slice(0, 3)}_${Math.random().toString(36).substring(2, 10)}`;
       }
-      if (['User', 'Movie', 'Theatre', 'Screen', 'Seat', 'Show', 'Booking', 'Payment', 'Ticket', 'Event'].includes(tableName)) {
+      if (hasUpdatedAt && ['User', 'Movie', 'Theatre', 'Screen', 'Seat', 'Show', 'Booking', 'Payment', 'Ticket', 'Event'].includes(tableName)) {
         dataToInsert.updatedAt = dataToInsert.updatedAt || new Date().toISOString();
       }
       const { data, error } = await supabaseAdmin.from(tableName).insert(dataToInsert).select().single();
@@ -136,8 +164,6 @@ function createSupabaseTableProxy(tableName: string) {
 
     async createMany(args: any) {
       if (!supabaseAdmin) return { count: 0 };
-      const tablesWithoutUpdatedAt = new Set(["PasswordResetToken", "RefreshToken", "EmailVerificationToken", "EventTicketType"]);
-      const hasUpdatedAt = !tablesWithoutUpdatedAt.has(tableName);
       const records = (args.data || []).map((d: any) => {
         const clean = sanitizeRecord(d);
         const rec: any = {
@@ -159,18 +185,12 @@ function createSupabaseTableProxy(tableName: string) {
 
     async update(args: any) {
       if (!supabaseAdmin) throw new Error(`Database offline: cannot update ${tableName}`);
-      const where = args?.where || {};
       const cleanData = sanitizeRecord(args.data);
-      const tablesWithoutUpdatedAt = new Set(["PasswordResetToken", "RefreshToken", "EmailVerificationToken", "EventTicketType"]);
-      const updatePayload = tablesWithoutUpdatedAt.has(tableName)
-        ? { ...cleanData }
-        : { ...cleanData, updatedAt: new Date().toISOString() };
+      const updatePayload = hasUpdatedAt
+        ? { ...cleanData, updatedAt: new Date().toISOString() }
+        : { ...cleanData };
       let query = supabaseAdmin.from(tableName).update(updatePayload);
-      for (const [k, v] of Object.entries(where)) {
-        if (v !== undefined && v !== null) {
-          query = query.eq(k, v);
-        }
-      }
+      query = applyWhereClause(query, args?.where);
       const { data, error } = await query.select().single();
       if (error) {
         throw new Error(`[SupabaseProxy:${tableName}] update error: ${error.message}`);
@@ -183,13 +203,9 @@ function createSupabaseTableProxy(tableName: string) {
       const where = args?.where || {};
       let existing: any = null;
       try {
-        let query = supabaseAdmin.from(tableName).select("*");
-        for (const [k, v] of Object.entries(where)) {
-          if (v !== undefined && v !== null && typeof v !== "object") {
-            query = query.eq(k, v);
-          }
-        }
-        const { data } = await query.maybeSingle();
+        let checkQuery = supabaseAdmin.from(tableName).select("*");
+        checkQuery = applyWhereClause(checkQuery, where);
+        const { data } = await checkQuery.maybeSingle();
         existing = data;
       } catch {
         existing = null;
@@ -197,12 +213,11 @@ function createSupabaseTableProxy(tableName: string) {
 
       if (existing) {
         const cleanUpdate = sanitizeRecord(args.update);
-        let updateQuery = supabaseAdmin.from(tableName).update({ ...cleanUpdate, updatedAt: new Date().toISOString() });
-        for (const [k, v] of Object.entries(where)) {
-          if (v !== undefined && v !== null && typeof v !== "object") {
-            updateQuery = updateQuery.eq(k, v);
-          }
-        }
+        const updatePayload = hasUpdatedAt
+          ? { ...cleanUpdate, updatedAt: new Date().toISOString() }
+          : { ...cleanUpdate };
+        let updateQuery = supabaseAdmin.from(tableName).update(updatePayload);
+        updateQuery = applyWhereClause(updateQuery, where);
         const { data, error } = await updateQuery.select().single();
         if (error) {
           logger.warn(`[SupabaseProxy:${tableName}] upsert(update) error: ${error.message}`);
@@ -211,12 +226,14 @@ function createSupabaseTableProxy(tableName: string) {
         return data || { ...existing, ...cleanUpdate };
       } else {
         const cleanCreate = sanitizeRecord(args.create);
-        const record = {
+        const record: any = {
           id: cleanCreate.id || crypto.randomUUID(),
           ...cleanCreate,
-          createdAt: cleanCreate.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          createdAt: cleanCreate.createdAt || new Date().toISOString()
         };
+        if (hasUpdatedAt) {
+          record.updatedAt = new Date().toISOString();
+        }
         const { data, error } = await supabaseAdmin.from(tableName).insert(record).select().single();
         if (error) {
           logger.warn(`[SupabaseProxy:${tableName}] upsert(create) error: ${error.message}`);
@@ -228,20 +245,12 @@ function createSupabaseTableProxy(tableName: string) {
 
     async updateMany(args: any) {
       if (!supabaseAdmin) return { count: 0 };
-      const where = args?.where || {};
       const cleanData = sanitizeRecord(args.data);
-      const tablesWithoutUpdatedAt = new Set(["PasswordResetToken", "RefreshToken", "EmailVerificationToken", "EventTicketType"]);
-      const updatePayload = tablesWithoutUpdatedAt.has(tableName)
-        ? { ...cleanData }
-        : { ...cleanData, updatedAt: new Date().toISOString() };
+      const updatePayload = hasUpdatedAt
+        ? { ...cleanData, updatedAt: new Date().toISOString() }
+        : { ...cleanData };
       let query = supabaseAdmin.from(tableName).update(updatePayload);
-      for (const [k, v] of Object.entries(where)) {
-        if (v && typeof v === "object" && "in" in (v as any)) {
-          query = query.in(k, (v as any).in);
-        } else if (v !== undefined && v !== null) {
-          query = query.eq(k, v);
-        }
-      }
+      query = applyWhereClause(query, args?.where);
       const { data, error } = await query.select();
       if (error) {
         logger.warn(`[SupabaseProxy:${tableName}] updateMany error: ${error.message}`);
@@ -252,22 +261,16 @@ function createSupabaseTableProxy(tableName: string) {
 
     async delete(args: any) {
       if (!supabaseAdmin) return null;
-      const where = args?.where || {};
       let query = supabaseAdmin.from(tableName).delete();
-      for (const [k, v] of Object.entries(where)) {
-        query = query.eq(k, v);
-      }
+      query = applyWhereClause(query, args?.where);
       const { data } = await query.select().maybeSingle();
       return data || null;
     },
 
     async deleteMany(args?: any) {
       if (!supabaseAdmin) return { count: 0 };
-      const where = args?.where || {};
       let query = supabaseAdmin.from(tableName).delete();
-      for (const [k, v] of Object.entries(where)) {
-        query = query.eq(k, v);
-      }
+      query = applyWhereClause(query, args?.where);
       const { data } = await query.select();
       return { count: data?.length || 0 };
     },
