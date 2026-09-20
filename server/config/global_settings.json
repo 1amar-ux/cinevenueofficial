@@ -1,18 +1,18 @@
 {
   "globalSubwebsiteEnabled": true,
   "subwebsiteMaintenanceMessage": "All CineVenue sub-websites are temporarily paused by management.",
-  "maintenanceMode": true,
+  "maintenanceMode": false,
   "maintenanceTitle": "CineVenue Platform Under Scheduled Upgrade",
   "maintenanceMessage": "We are improving our servers. All public services are temporarily offline.",
   "serviceControls": {
     "website": {
-      "status": false
+      "status": true
     },
     "eventBooking": {
       "status": true
     },
     "movieBooking": {
-      "status": false
+      "status": true
     },
     "filmProduction": {
       "title": "Film Production Division Scheduled Maintenance",
@@ -24,5 +24,5 @@
       "message": "Device A triggered event maintenance."
     }
   },
-  "updatedAt": "2026-09-20T07:27:14.628Z"
+  "updatedAt": "2026-09-20T08:16:37.863Z"
 }

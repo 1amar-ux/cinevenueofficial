@@ -228,7 +228,7 @@ export default function AdminPanel({
   cineCoinsTransactions,
   onUpdateCineCoinsTransactions,
 }: AdminPanelProps) {
-  const { settings: globalAppSettings, updateGlobalSettings, setGlobalSubwebsiteEnabled } = useAppSettings();
+  const { settings: globalAppSettings, updateGlobalSettings, setGlobalSubwebsiteEnabled, setSubsiteMaintenance } = useAppSettings();
 
   // Global Sub-Website Control State
   const [subwebsiteConfirmModalOpen, setSubwebsiteConfirmModalOpen] = useState(false);
@@ -6499,16 +6499,21 @@ export default function AdminPanel({
 
                                 {/* Fast 1-Click Quick Toggles — persists globally to all devices */}
                                 <button
-                                  onClick={() => {
-                                    const current = globalAppSettings.serviceControls || {};
-                                    updateGlobalSettings({
-                                      serviceControls: {
-                                        ...current,
-                                        [pillar.key]: { ...(current[pillar.key] || {}), status: true },
-                                        // keep cineCoinsLoyalty in sync
-                                        ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: true } })
-                                      }
-                                    });
+                                  onClick={async () => {
+                                    if (setSubsiteMaintenance && pillar.key !== "website") {
+                                      await setSubsiteMaintenance(pillar.key, false);
+                                    } else {
+                                      const current = (globalAppSettings.serviceControls as any) || {};
+                                      updateGlobalSettings({
+                                        serviceControls: {
+                                          ...current,
+                                          [pillar.key]: { ...(current[pillar.key] || {}), status: true },
+                                          ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: true } }),
+                                          ...(pillar.key === "website" && { globalWebsite: { ...(current.globalWebsite || {}), status: true } })
+                                        },
+                                        ...(pillar.key === "website" && { maintenanceMode: false })
+                                      });
+                                    }
                                     if (setServiceControlLogs) {
                                       setServiceControlLogs((prevLogs: any[]) => [
                                         {
@@ -6530,16 +6535,21 @@ export default function AdminPanel({
                                   ON
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    const current = globalAppSettings.serviceControls || {};
-                                    updateGlobalSettings({
-                                      serviceControls: {
-                                        ...current,
-                                        [pillar.key]: { ...(current[pillar.key] || {}), status: false },
-                                        // keep cineCoinsLoyalty in sync
-                                        ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: false } })
-                                      }
-                                    });
+                                  onClick={async () => {
+                                    if (setSubsiteMaintenance && pillar.key !== "website") {
+                                      await setSubsiteMaintenance(pillar.key, true);
+                                    } else {
+                                      const current = (globalAppSettings.serviceControls as any) || {};
+                                      updateGlobalSettings({
+                                        serviceControls: {
+                                          ...current,
+                                          [pillar.key]: { ...(current[pillar.key] || {}), status: false },
+                                          ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: false } }),
+                                          ...(pillar.key === "website" && { globalWebsite: { ...(current.globalWebsite || {}), status: false } })
+                                        },
+                                        ...(pillar.key === "website" && { maintenanceMode: true })
+                                      });
+                                    }
                                     if (setServiceControlLogs) {
                                       setServiceControlLogs((prevLogs: any[]) => [
                                         {
@@ -6985,8 +6995,9 @@ export default function AdminPanel({
                     desc: "Theatre ad space buyouts & media PR campaigns"
                   }
                 ].map((col) => {
-                  const state = serviceControl?.[col.key];
-                  const isLive = state?.status !== false;
+                  const subControls = (globalAppSettings.serviceControls as any) || {};
+                  const isIndividuallyLive = subControls[col.key]?.status !== false;
+                  const isLive = isIndividuallyLive && globalAppSettings.globalSubwebsiteEnabled !== false && !globalAppSettings.maintenanceMode;
                   const proposals = serviceProposals.filter(p => p.subWebsiteKey === col.key);
 
                   return (
@@ -6998,9 +7009,9 @@ export default function AdminPanel({
                         <div className="flex items-center justify-between border-b border-white/5 pb-3">
                           <span className="text-2xl">{col.icon}</span>
                           <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase border ${
-                            isLive ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : "text-rose-400 bg-rose-400/10 border-rose-400/20"
+                            isIndividuallyLive ? "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" : "text-rose-400 bg-rose-400/10 border-rose-400/20"
                           }`}>
-                            {isLive ? "🟢 LIVE" : "🔴 OFF"}
+                            {isIndividuallyLive ? "🟢 LIVE" : "🔴 OFF"}
                           </span>
                         </div>
 
@@ -7016,7 +7027,7 @@ export default function AdminPanel({
                           </div>
                           <div className="flex justify-between text-white/60">
                             <span>Status Message:</span>
-                            <span className="text-white truncate max-w-[100px]">{state?.title || "Operational"}</span>
+                            <span className="text-white truncate max-w-[100px]">{subControls[col.key]?.title || "Operational"}</span>
                           </div>
                         </div>
                       </div>
@@ -7043,28 +7054,48 @@ export default function AdminPanel({
                           {/* TOGGLE BUTTON */}
                           <button
                             onClick={() => {
-                              if (!setServiceControl) return;
-                              const toggleAction = () => {
-                                setServiceControl((prev: any) => ({
-                                  ...prev,
-                                  [col.key]: {
-                                    ...prev[col.key],
-                                    status: !isLive
-                                  }
-                                }));
+                              const toggleAction = async () => {
+                                const targetState = !isIndividuallyLive;
+                                if (setSubsiteMaintenance) {
+                                  await setSubsiteMaintenance(col.key, !targetState);
+                                } else {
+                                  const current = (globalAppSettings.serviceControls as any) || {};
+                                  await updateGlobalSettings({
+                                    serviceControls: {
+                                      ...current,
+                                      [col.key]: {
+                                        ...(current[col.key] || {}),
+                                        status: targetState
+                                      }
+                                    }
+                                  });
+                                }
+                                if (setServiceControlLogs) {
+                                  setServiceControlLogs((prevLogs: any[]) => [
+                                    {
+                                      id: `LOG-${Math.floor(1000 + Math.random() * 9000)}`,
+                                      timestamp: new Date().toISOString(),
+                                      actor: "SUPER ADMIN",
+                                      action: "SUBSITE_TOGGLED",
+                                      service: col.name,
+                                      details: `${targetState ? "Turned ON" : "Turned OFF"} sub-website: ${col.name}`
+                                    },
+                                    ...(prevLogs || [])
+                                  ]);
+                                }
                               };
                               executeProtectedAction(
                                 toggleAction,
-                                `${isLive ? "Turn OFF" : "Turn ON"} ${col.name} Sub-Website`
+                                `${isIndividuallyLive ? "Turn OFF" : "Turn ON"} ${col.name} Sub-Website`
                               );
                             }}
                             className={`py-2 text-[10px] font-extrabold uppercase rounded-lg transition-all cursor-pointer ${
-                              isLive
+                              isIndividuallyLive
                                 ? "bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30"
                                 : "bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30"
                             }`}
                           >
-                            {isLive ? "Turn OFF" : "Turn ON"}
+                            {isIndividuallyLive ? "Turn OFF" : "Turn ON"}
                           </button>
 
                           {/* CONFIG BUTTON */}

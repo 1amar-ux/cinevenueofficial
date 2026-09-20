@@ -557,7 +557,6 @@ const handleGlobalSettingsUpdate = async (req: Request, res: Response, next: Nex
           ...(title && { title }),
           ...(message && { message })
         };
-        updatedMaintenanceMode = isMaint;
       } else if (module === "cineCoins" || module === "cinecoins" || module === "cineCoinsLoyalty") {
         currentControls.cinecoins = {
           ...(currentControls.cinecoins || {}),

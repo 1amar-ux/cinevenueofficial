@@ -255,7 +255,6 @@ export default function App() {
 
   const setIsMovieBookingSystemActive = async (active: boolean) => {
     await updateGlobalSettings({
-      maintenanceMode: !active,
       serviceControls: {
         ...(globalAppSettings.serviceControls || {}),
         movieBooking: {
@@ -279,9 +278,10 @@ export default function App() {
   };
 
   const setServiceControl = async (updater: any) => {
-    const updated = typeof updater === "function" ? updater(serviceControl) : updater;
+    const current = (globalAppSettings.serviceControls as any) || {};
+    const updated = typeof updater === "function" ? updater(current) : updater;
     const mergedControls = {
-      ...serviceControl,
+      ...current,
       ...updated
     };
     
@@ -292,13 +292,11 @@ export default function App() {
       mergedControls.cineCoinsLoyalty = { ...activeState };
     }
 
-    const isMaintenance = globalAppSettings.maintenanceMode === true || mergedControls.website?.status === false;
-
+    // Only update maintenanceMode if website itself was specifically updated
     await updateGlobalSettings({
-      maintenanceMode: isMaintenance,
-      maintenanceTitle: mergedControls.movieBooking?.title || mergedControls.website?.title || globalAppSettings.maintenanceTitle,
-      maintenanceMessage: mergedControls.movieBooking?.message || mergedControls.website?.message || globalAppSettings.maintenanceMessage,
-      maintenanceEndTime: mergedControls.movieBooking?.expectedTime || mergedControls.website?.expectedTime || globalAppSettings.maintenanceEndTime,
+      ...(updated?.website?.status !== undefined && {
+        maintenanceMode: updated.website.status === false
+      }),
       serviceControls: mergedControls
     });
   };
