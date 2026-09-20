@@ -12,7 +12,7 @@ export interface ProjectionScreen {
 }
 
 interface ScreensProps {
-  theatreId: number;
+  theatreId: number | string;
 }
 
 export default function Screens({ theatreId }: ScreensProps) {

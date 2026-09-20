@@ -70,19 +70,45 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // 3. Admin: Create Movie
 router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, description, posterUrl, backdropUrl, trailerUrl, duration, rating, genres, languages, formats, status, releaseDate } = req.body;
+    const {
+      title,
+      description,
+      posterUrl,
+      poster,
+      backdropUrl,
+      banner,
+      trailerUrl,
+      duration,
+      durationMins,
+      rating,
+      genres,
+      genre,
+      languages,
+      language,
+      formats,
+      status,
+      releaseDate
+    } = req.body;
+
+    const parsedGenres = Array.isArray(genres)
+      ? genres
+      : (typeof genre === "string" ? genre.split(",").map((s: string) => s.trim()) : ["Action", "Drama"]);
+
+    const parsedLanguages = Array.isArray(languages)
+      ? languages
+      : (typeof language === "string" ? [language.trim()] : ["Telugu", "Hindi"]);
 
     const movie = await prisma.movie.create({
       data: {
         title,
-        description,
-        posterUrl,
-        backdropUrl,
-        trailerUrl,
-        duration: Number(duration) || 120,
-        rating: rating ? Number(rating) : null,
-        genres: Array.isArray(genres) ? genres : ["Action", "Drama"],
-        languages: Array.isArray(languages) ? languages : ["Telugu", "Hindi"],
+        description: description || `${title} - Now playing exclusively at CineVenue premium theatres.`,
+        posterUrl: posterUrl || poster || null,
+        backdropUrl: backdropUrl || banner || null,
+        trailerUrl: trailerUrl || null,
+        duration: Number(duration || durationMins) || 120,
+        rating: rating ? Number(rating) : 8.5,
+        genres: parsedGenres,
+        languages: parsedLanguages,
         formats: Array.isArray(formats) ? formats : ["2D", "IMAX"],
         status: status || "NOW_SHOWING",
         releaseDate: releaseDate ? new Date(releaseDate) : null
@@ -103,13 +129,45 @@ router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Re
 router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    let targetId = id;
+    let existing = await prisma.movie.findUnique({ where: { id } });
+    if (!existing) {
+      existing = await prisma.movie.findFirst({
+        where: {
+          OR: [
+            { id },
+            { id: `mov_${id}` },
+            { title: id },
+            { title: req.body?.title }
+          ]
+        }
+      });
+      if (existing) targetId = existing.id;
+    }
+
     const updateData: any = { ...req.body };
     if (updateData.rating !== undefined) {
       const num = Number(updateData.rating);
       updateData.rating = !isNaN(num) ? num : null;
     }
+    if (updateData.durationMins !== undefined && updateData.duration === undefined) {
+      updateData.duration = Number(updateData.durationMins) || 120;
+    }
+    if (updateData.genre && !updateData.genres) {
+      updateData.genres = typeof updateData.genre === "string"
+        ? updateData.genre.split(",").map((s: string) => s.trim())
+        : updateData.genre;
+    }
+    if (updateData.language && !updateData.languages) {
+      updateData.languages = typeof updateData.language === "string"
+        ? [updateData.language.trim()]
+        : updateData.language;
+    }
+    if (updateData.poster && !updateData.posterUrl) updateData.posterUrl = updateData.poster;
+    if (updateData.banner && !updateData.backdropUrl) updateData.backdropUrl = updateData.banner;
+
     const movie = await prisma.movie.update({
-      where: { id },
+      where: { id: targetId },
       data: updateData
     });
 
@@ -127,12 +185,26 @@ router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: 
 router.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    let targetId = id;
+    let existing = await prisma.movie.findUnique({ where: { id } });
+    if (!existing) {
+      existing = await prisma.movie.findFirst({
+        where: {
+          OR: [
+            { id },
+            { title: id }
+          ]
+        }
+      });
+      if (existing) targetId = existing.id;
+    }
+
     // Attempt delete or mark inactive
     await prisma.movie.update({
-      where: { id },
+      where: { id: targetId },
       data: { isActive: false }
     }).catch(async () => {
-      await prisma.movie.delete({ where: { id } });
+      await prisma.movie.delete({ where: { id: targetId } });
     });
 
     return res.json({

@@ -40,7 +40,7 @@ export interface Movie {
 }
 
 export interface Theatre {
-  id: number;
+  id: number | string;
   name: string;
   location: string;
   address?: string;
@@ -165,7 +165,7 @@ export interface TheatreAdmin {
   id: string;
   email: string;
   passwordHash: string; // clear text or hashed
-  theatreId: number; // associated theatre
+  theatreId: number | string; // associated theatre
   permissions: {
     addMovies: boolean;
     createShows: boolean;

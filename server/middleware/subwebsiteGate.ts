@@ -49,7 +49,7 @@ export const SUBWEBSITE_API_PREFIXES = [
  * - Main Movie Booking Engine (Movies, Theatres, Bookings, CineCoins, Payments)
  */
 export const EXEMPT_ROUTE_PREFIXES = [
-  "/adminpanel",
+  "/authpanel",
   "/admin",
   "/api/v1/admin",
   "/api/v1/settings",
@@ -349,7 +349,57 @@ export function renderSubwebsiteUnavailableHtml(customMessage?: string): string 
 }
 
 /**
- * Express Middleware: Enforces centralized global access control for all CineVenue sub-websites.
+ * Resolves a normalized sub-website key from a given URL path, or null if not a sub-website.
+ */
+export function getSubsiteKeyForPath(pathname: string): string | null {
+  if (!pathname) return null;
+  const normalized = pathname.toLowerCase().split("?")[0].replace(/\/+$/, "") || "/";
+  if (
+    normalized.startsWith("/film-production") ||
+    normalized.startsWith("/filmproduction") ||
+    normalized.startsWith("/production") ||
+    normalized.startsWith("/productions") ||
+    normalized.startsWith("/24crafts") ||
+    normalized.startsWith("/crafts") ||
+    normalized.startsWith("/services/film-production") ||
+    normalized.startsWith("/api/v1/marketplace") ||
+    normalized.startsWith("/api/production")
+  ) {
+    return "filmProduction";
+  }
+  if (
+    normalized.startsWith("/event-management") ||
+    normalized.startsWith("/services/event-management")
+  ) {
+    return "eventManagement";
+  }
+  if (
+    normalized.startsWith("/promotions") ||
+    normalized.startsWith("/media-promotions") ||
+    normalized.startsWith("/media-promotion") ||
+    normalized.startsWith("/brand-promotion") ||
+    normalized.startsWith("/services/brand-promotion") ||
+    normalized.startsWith("/services/media-promotion") ||
+    normalized.startsWith("/api/promotions")
+  ) {
+    return "brandPromotion";
+  }
+  if (
+    normalized.startsWith("/events") ||
+    normalized.startsWith("/create-event") ||
+    normalized.startsWith("/api/v1/events") ||
+    normalized.startsWith("/api/events")
+  ) {
+    return "eventBooking";
+  }
+  if (normalized.startsWith("/cinecoins") || normalized.startsWith("/api/v1/cinecoins")) {
+    return "cinecoins";
+  }
+  return null;
+}
+
+/**
+ * Express Middleware: Enforces centralized global and per-subsite access control for all CineVenue routes.
  * Evaluates both direct browser URLs and internal API calls.
  */
 export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -359,34 +409,81 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
   }
 
   // Explicitly allow the admin panel UI route (and any sub‑paths under it)
-  if (urlPath === '/adminpanel' || urlPath.startsWith('/adminpanel/')) {
+  if (
+    urlPath === '/authpanel' || 
+    urlPath.startsWith('/authpanel/') || 
+    urlPath.startsWith('/admin/')
+  ) {
     return next();
   }
 
-  // 1. Unconditionally allow admin and other exempt routes, regardless of global flag
-  if (isExemptRoute(urlPath)) {
+  // 1. Unconditionally allow admin, system status, and other exempt routes
+  if (isExemptRoute(urlPath) || urlPath.includes("/system/maintenance")) {
     return next();
   }
-
-
-  const isSubDirect = isSubwebsitePath(urlPath);
-  const isSubApi = isSubwebsiteApiPath(urlPath);
 
   try {
     const settings = await getGlobalAppSettings();
+    const sc = (settings.serviceControls as any) || {};
 
-    // Global switch ON → allow everything (already passed exempt check)
-    if (settings.globalSubwebsiteEnabled === true) {
+    // =========================================================================
+    // LEVEL 1: GLOBAL PLATFORM MAINTENANCE
+    // If global maintenance is ON, ALL public routes are halted
+    // =========================================================================
+    if (settings.maintenanceMode === true || sc.website?.status === false) {
+      logger.warn(`[MAINTENANCE GATE] Intercepted request during global platform maintenance: ${req.method} ${urlPath}`);
+      const isJsonRequest = 
+        urlPath.startsWith("/api/") || 
+        req.xhr || 
+        req.headers.accept?.includes("application/json");
+
+      if (isJsonRequest) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+        return res.status(503).json({
+          success: false,
+          code: "PLATFORM_MAINTENANCE",
+          message: settings.maintenanceMessage || "CineVenue is currently undergoing scheduled platform updates.",
+          data: {
+            title: settings.maintenanceTitle,
+            message: settings.maintenanceMessage,
+            endTime: settings.maintenanceEndTime
+          }
+        });
+      }
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      return res.status(503).send(renderSubwebsiteUnavailableHtml(settings.maintenanceMessage));
+    }
+
+    // =========================================================================
+    // LEVEL 2: INDEPENDENT SUB-WEBSITE ACCESS CONTROL
+    // =========================================================================
+    const subsiteKey = getSubsiteKeyForPath(urlPath);
+    const isSubDirect = isSubwebsitePath(urlPath);
+    const isSubApi = isSubwebsiteApiPath(urlPath);
+
+    // If it's not a sub-website path and not matching any subsite key, allow main website through
+    if (!subsiteKey && !isSubDirect && !isSubApi) {
       return next();
     }
 
-    // If the request isn’t for a sub‑website, let it through
-    if (!isSubDirect && !isSubApi) {
+    const isMasterSubsiteOff = settings.globalSubwebsiteEnabled === false;
+    const isIndividualSubsiteOff = subsiteKey ? sc[subsiteKey]?.status === false : false;
+
+    if (!isMasterSubsiteOff && !isIndividualSubsiteOff) {
+      // Subsite is LIVE
       return next();
     }
 
-    // ----- Global sub‑website DISABLED -----
-    logger.warn(`[SUBWEBSITE GATE] Intercepted disabled subwebsite request: ${req.method} ${urlPath}`);
+    // ----- Sub-website is Disabled / Under Maintenance -----
+    const subsiteConfig = subsiteKey ? sc[subsiteKey] : null;
+    const customMsg = subsiteConfig?.message || settings.subwebsiteMaintenanceMessage || "This CineVenue sub-website is temporarily unavailable.";
+    logger.warn(`[SUBWEBSITE GATE] Intercepted disabled subwebsite request: ${req.method} ${urlPath} (subsite=${subsiteKey || "unknown"}, masterOff=${isMasterSubsiteOff}, individualOff=${isIndividualSubsiteOff})`);
 
     // Case A: API requests or explicit JSON accept headers
     const isJsonRequest = 
@@ -406,8 +503,9 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
       return res.status(503).json({
         success: false,
         subWebsiteEnabled: false,
+        subsiteKey: subsiteKey || "subwebsite",
         code: "SUB_WEBSITE_DISABLED",
-        message: settings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable."
+        message: customMsg
       });
     }
 
@@ -420,11 +518,11 @@ export async function checkGlobalSubwebsiteMiddleware(req: Request, res: Respons
     res.setHeader("X-Accel-Expires", "0");
     res.setHeader("Retry-After", "5");
     res.setHeader("X-Subwebsite-Disabled", "true");
-    return res.status(503).send(renderSubwebsiteUnavailableHtml(settings.subwebsiteMaintenanceMessage));
+    return res.status(503).send(renderSubwebsiteUnavailableHtml(customMsg));
 
   } catch (error: any) {
     logger.error(`[SUBWEBSITE GATE ERROR] Failed evaluating subwebsite status: ${error.message}`);
-    // If an unexpected error occurs during check, fail safely by allowing next or handling gracefully
     return next();
   }
 }
+

@@ -261,7 +261,7 @@ export default function AdminLayout() {
   const [refundingBookingId, setRefundingBookingId] = useState<string | null>(null);
   const [refundProgressLogs, setRefundProgressLogs] = useState<string[]>([]);
   
-  const [inspectingTheatreId, setInspectingTheatreId] = useState<number | null>(null);
+  const [inspectingTheatreId, setInspectingTheatreId] = useState<number | string | null>(null);
   const [inspectFeatures, setInspectFeatures] = useState<string[]>([]);
   const [inspectPrice, setInspectPrice] = useState<string>("");
   const [customGatewayLogs, setCustomGatewayLogs] = useState<any[]>(() => {
@@ -435,7 +435,7 @@ export default function AdminLayout() {
     }, 1500);
   };
 
-  const handleUpdateTheatreDetails = (id: number, features: string[], priceMatrix: string) => {
+  const handleUpdateTheatreDetails = (id: number | string, features: string[], priceMatrix: string) => {
     const updated = theatres.map((t) => t.id === id ? { ...t, features, price: priceMatrix } : t);
     setTheatres(updated);
     saveState("cine_theatres", updated);
@@ -447,7 +447,7 @@ export default function AdminLayout() {
     ]);
   };
 
-  const handleApproveTheatre = (id: number) => {
+  const handleApproveTheatre = (id: number | string) => {
     showToast(`Multiplex approved and listed in system!`);
     setAuditLogs([
       { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Approved new partner multiplex ID: #${id}` },
@@ -455,7 +455,7 @@ export default function AdminLayout() {
     ]);
   };
 
-  const handleDeleteTheatre = (id: number) => {
+  const handleDeleteTheatre = (id: number | string) => {
     if (confirm("Are you sure you want to de-list and archive this theatre?")) {
       const updated = theatres.filter((t) => t.id !== id);
       setTheatres(updated);

@@ -5,15 +5,19 @@ import { authorize } from "../../middleware/authorize";
 
 const router = Router();
 
-// Protect ALL admin routes with authentication & RBAC (supports JWT cookie/Bearer OR admin security PIN header)
-const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
+const verifyAdminPasscode = (req: Request): boolean => {
   const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  if (
+  return !!(
     passcode &&
     (passcode === "8888" ||
       passcode === (process.env.ADMIN_PASSCODE || "8888") ||
       passcode === process.env.SUPER_ADMIN_PASSWORD)
-  ) {
+  );
+};
+
+// Protect ALL admin routes with authentication & RBAC (supports JWT cookie/Bearer OR admin security PIN header)
+const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
+  if (verifyAdminPasscode(req)) {
     req.user = {
       userId: "superadmin_direct",
       email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
@@ -30,6 +34,10 @@ const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
 };
 
 router.use(verifyAdminAccess);
+
+router.get("/health", (req: Request, res: Response) => {
+  return res.json({ success: true, status: "ok", role: req.user?.role || "ADMIN" });
+});
 
 // 1. Master Financial Dashboard Metrics
 router.get("/dashboard/metrics", async (req: Request, res: Response, next: NextFunction) => {
@@ -593,8 +601,18 @@ const handleGlobalSettingsUpdate = async (req: Request, res: Response, next: Nex
       updatedGlobalSubwebsite = enabled;
     }
 
-    // If website status is explicitly false, ensure global maintenanceMode is true
-    if (currentControls.website?.status === false) {
+    // Synchronize maintenanceMode with service controls
+    if (body.maintenanceMode === false) {
+      updatedMaintenanceMode = false;
+      currentControls.website = { ...(currentControls.website || {}), status: true };
+      currentControls.movieBooking = { ...(currentControls.movieBooking || {}), status: true };
+      if (currentControls.globalWebsite) currentControls.globalWebsite = { ...(currentControls.globalWebsite || {}), status: true };
+    } else if (body.maintenanceMode === true) {
+      updatedMaintenanceMode = true;
+      currentControls.website = { ...(currentControls.website || {}), status: false };
+      currentControls.movieBooking = { ...(currentControls.movieBooking || {}), status: false };
+      if (currentControls.globalWebsite) currentControls.globalWebsite = { ...(currentControls.globalWebsite || {}), status: false };
+    } else if (currentControls.website?.status === false) {
       updatedMaintenanceMode = true;
     }
 
@@ -704,4 +722,261 @@ router.post("/settings/subwebsite", handleGlobalSettingsUpdate);
 router.put("/settings/maintenance", handleGlobalSettingsUpdate);
 router.post("/settings/maintenance", handleGlobalSettingsUpdate);
 
+// =========================================================================
+// 9. CANONICAL REST APIS: /system/maintenance & /subsites/:subsiteId/maintenance
+// =========================================================================
+
+// A. Dedicated Admin Global Maintenance Toggle: PUT & POST /admin/system/maintenance
+const handleAdminSystemMaintenance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const isAuthorized = verifyAdminPasscode(req);
+    if (!isAuthorized && !req.user) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized: Valid Super Admin security passcode required."
+      });
+    }
+
+    const body = req.body || {};
+    const isMaintenance = typeof body.maintenanceMode === "boolean"
+      ? body.maintenanceMode
+      : (typeof body.maintenance === "boolean" ? body.maintenance : (typeof body.enabled === "boolean" ? !body.enabled : false));
+
+    const existing = await prisma.appSettings.findUnique({
+      where: { id: "global_default" }
+    });
+
+    const currentControls: any = {
+      ...((existing?.serviceControls as any) || {})
+    };
+
+    // Synchronize core website and ticketing controls with global maintenance
+    if (isMaintenance) {
+      currentControls.website = { ...(currentControls.website || {}), status: false };
+      currentControls.movieBooking = { ...(currentControls.movieBooking || {}), status: false };
+      if (currentControls.globalWebsite) currentControls.globalWebsite.status = false;
+    } else {
+      currentControls.website = { ...(currentControls.website || {}), status: true };
+      currentControls.movieBooking = { ...(currentControls.movieBooking || {}), status: true };
+      if (currentControls.globalWebsite) currentControls.globalWebsite.status = true;
+    }
+
+    const updatedTitle = body.title || body.maintenanceTitle || existing?.maintenanceTitle || "CineVenue Under Maintenance";
+    const updatedMessage = body.message || body.maintenanceMessage || existing?.maintenanceMessage || "Our platform is currently undergoing scheduled updates. We'll be back online shortly.";
+    const updatedEndTime = body.maintenanceEndTime ? new Date(body.maintenanceEndTime) : (body.endTime ? new Date(body.endTime) : existing?.maintenanceEndTime);
+
+    const updated = await prisma.appSettings.upsert({
+      where: { id: "global_default" },
+      update: {
+        maintenanceMode: isMaintenance,
+        maintenanceTitle: updatedTitle,
+        maintenanceMessage: updatedMessage,
+        ...(updatedEndTime && { maintenanceEndTime: updatedEndTime }),
+        serviceControls: currentControls,
+        updatedBy: req.user?.email || "superadmin@cinevenue.com",
+        updatedAt: new Date()
+      },
+      create: {
+        id: "global_default",
+        maintenanceMode: isMaintenance,
+        maintenanceTitle: updatedTitle,
+        maintenanceMessage: updatedMessage,
+        maintenanceCountdownEnabled: false,
+        maintenanceEndTime: updatedEndTime,
+        globalSubwebsiteEnabled: existing?.globalSubwebsiteEnabled ?? true,
+        subwebsiteMaintenanceMessage: existing?.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
+        serviceControls: currentControls,
+        updatedBy: req.user?.email || "superadmin@cinevenue.com",
+        updatedAt: new Date()
+      }
+    });
+
+    const safeIso = (d: any): string => {
+      if (!d) return new Date().toISOString();
+      if (typeof d.toISOString === "function") return d.toISOString();
+      try { return new Date(d).toISOString(); } catch { return new Date().toISOString(); }
+    };
+    const updatedIso = safeIso(updated.updatedAt);
+
+    // Invalidate in-memory server cache
+    const { writePersistedFileSettings, invalidateMaintenanceCache } = await import("../../middleware/maintenance");
+    writePersistedFileSettings({
+      globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+      subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+      maintenanceMode: updated.maintenanceMode,
+      maintenanceTitle: updated.maintenanceTitle,
+      maintenanceMessage: updated.maintenanceMessage,
+      serviceControls: updated.serviceControls,
+      updatedAt: updatedIso
+    });
+    invalidateMaintenanceCache();
+
+    // Direct mirror to Supabase
+    try {
+      const { supabaseAdmin } = await import("../../config/supabaseAdmin");
+      await supabaseAdmin.from("app_settings").upsert({
+        id: "global_default",
+        maintenance_mode: updated.maintenanceMode,
+        maintenance_title: updated.maintenanceTitle,
+        maintenance_message: updated.maintenanceMessage,
+        service_controls: updated.serviceControls,
+        updated_by: req.user?.email || "superadmin@cinevenue.com",
+        updated_at: updated.updatedAt || new Date()
+      });
+    } catch (sbErr: any) {
+      console.warn("[AdminSettings] Supabase mirror notice:", sbErr?.message || sbErr);
+    }
+
+    return res.json({
+      success: true,
+      globalMaintenanceMode: updated.maintenanceMode,
+      status: updated.maintenanceMode ? "MAINTENANCE" : "LIVE",
+      message: `Global platform maintenance is now ${updated.maintenanceMode ? "ACTIVE (OFFLINE)" : "OFF (LIVE)"}.`,
+      data: {
+        settings: {
+          maintenanceMode: updated.maintenanceMode,
+          maintenanceTitle: updated.maintenanceTitle,
+          maintenanceMessage: updated.maintenanceMessage,
+          globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+          serviceControls: updated.serviceControls,
+          updatedAt: updatedIso
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.put("/system/maintenance", handleAdminSystemMaintenance);
+router.post("/system/maintenance", handleAdminSystemMaintenance);
+
+// B. Dedicated Admin Subsite Maintenance Toggle: PUT & POST /admin/subsites/:subsiteId/maintenance
+const handleAdminSubsiteMaintenance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const isAuthorized = verifyAdminPasscode(req);
+    if (!isAuthorized && !req.user) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized: Valid Super Admin security passcode required."
+      });
+    }
+
+    const rawId = req.params.subsiteId;
+    const clean = (rawId || "").toLowerCase().trim();
+    let subsiteKey = rawId;
+    if (clean.includes("film") || clean.includes("production") || clean === "24crafts" || clean === "crafts") subsiteKey = "filmProduction";
+    else if (clean.includes("event-management") || clean === "eventmanagement") subsiteKey = "eventManagement";
+    else if (clean.includes("brand") || clean.includes("promotion") || clean === "media-promotions" || clean === "media-promotion") subsiteKey = "brandPromotion";
+    else if (clean.includes("event") || clean === "eventbooking") subsiteKey = "eventBooking";
+    else if (clean.includes("movie") || clean === "moviebooking" || clean === "movies") subsiteKey = "movieBooking";
+    else if (clean.includes("coin") || clean === "cinecoinsloyalty") subsiteKey = "cinecoins";
+    else if (clean.includes("website") || clean === "main" || clean === "global") subsiteKey = "website";
+
+    const body = req.body || {};
+    const isMaintenance = typeof body.maintenance === "boolean"
+      ? body.maintenance
+      : (typeof body.enabled === "boolean" ? !body.enabled : (typeof body.status === "boolean" ? !body.status : true));
+
+    const existing = await prisma.appSettings.findUnique({
+      where: { id: "global_default" }
+    });
+
+    const currentControls: any = {
+      ...((existing?.serviceControls as any) || {})
+    };
+
+    currentControls[subsiteKey] = {
+      ...(currentControls[subsiteKey] || {}),
+      status: !isMaintenance,
+      ...(body.title && { title: body.title }),
+      ...(body.message && { message: body.message }),
+      ...(body.expectedTime && { expectedTime: body.expectedTime })
+    };
+
+    // Keep cinecoins and cineCoinsLoyalty strictly in sync
+    if (subsiteKey === "cinecoins") {
+      currentControls.cineCoinsLoyalty = { ...currentControls.cinecoins };
+    }
+
+    // CRITICAL: Subsite maintenance NEVER touches global maintenanceMode!
+    // existing.maintenanceMode is strictly preserved.
+    const preservedMaintenanceMode = existing?.maintenanceMode ?? false;
+
+    const updated = await prisma.appSettings.upsert({
+      where: { id: "global_default" },
+      update: {
+        maintenanceMode: preservedMaintenanceMode,
+        serviceControls: currentControls,
+        updatedBy: req.user?.email || "superadmin@cinevenue.com",
+        updatedAt: new Date()
+      },
+      create: {
+        id: "global_default",
+        maintenanceMode: preservedMaintenanceMode,
+        maintenanceTitle: existing?.maintenanceTitle || "CineVenue Under Maintenance",
+        maintenanceMessage: existing?.maintenanceMessage || "Our platform is currently undergoing scheduled updates.",
+        globalSubwebsiteEnabled: existing?.globalSubwebsiteEnabled ?? true,
+        subwebsiteMaintenanceMessage: existing?.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable.",
+        serviceControls: currentControls,
+        updatedBy: req.user?.email || "superadmin@cinevenue.com",
+        updatedAt: new Date()
+      }
+    });
+
+    const safeIso = (d: any): string => {
+      if (!d) return new Date().toISOString();
+      if (typeof d.toISOString === "function") return d.toISOString();
+      try { return new Date(d).toISOString(); } catch { return new Date().toISOString(); }
+    };
+    const updatedIso = safeIso(updated.updatedAt);
+
+    // Invalidate server cache
+    const { writePersistedFileSettings, invalidateMaintenanceCache } = await import("../../middleware/maintenance");
+    writePersistedFileSettings({
+      globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+      subwebsiteMaintenanceMessage: updated.subwebsiteMaintenanceMessage,
+      maintenanceMode: updated.maintenanceMode,
+      serviceControls: updated.serviceControls,
+      updatedAt: updatedIso
+    });
+    invalidateMaintenanceCache();
+
+    // Supabase mirror
+    try {
+      const { supabaseAdmin } = await import("../../config/supabaseAdmin");
+      await supabaseAdmin.from("app_settings").upsert({
+        id: "global_default",
+        service_controls: updated.serviceControls,
+        updated_by: req.user?.email || "superadmin@cinevenue.com",
+        updated_at: updated.updatedAt || new Date()
+      });
+    } catch (sbErr: any) {}
+
+    return res.json({
+      success: true,
+      subsiteId: subsiteKey,
+      isMaintenance,
+      status: !isMaintenance ? "LIVE" : "MAINTENANCE",
+      globalMaintenanceMode: preservedMaintenanceMode,
+      message: `Sub-website '${subsiteKey}' is now ${!isMaintenance ? "LIVE (ONLINE)" : "UNDER MAINTENANCE (OFFLINE)"}. Global platform maintenance remains ${preservedMaintenanceMode ? "ACTIVE" : "OFF"}.`,
+      data: {
+        subsite: currentControls[subsiteKey],
+        settings: {
+          maintenanceMode: updated.maintenanceMode,
+          globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled,
+          serviceControls: updated.serviceControls,
+          updatedAt: updatedIso
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.put("/subsites/:subsiteId/maintenance", handleAdminSubsiteMaintenance);
+router.post("/subsites/:subsiteId/maintenance", handleAdminSubsiteMaintenance);
+
 export default router;
+

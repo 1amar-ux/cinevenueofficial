@@ -1,19 +1,28 @@
 {
   "globalSubwebsiteEnabled": true,
-  "subwebsiteMaintenanceMessage": "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
-  "maintenanceMode": false,
-  "maintenanceTitle": "Movie Booking Temporarily Unavailable",
-  "maintenanceMessage": "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
+  "subwebsiteMaintenanceMessage": "All CineVenue sub-websites are temporarily paused by management.",
+  "maintenanceMode": true,
+  "maintenanceTitle": "CineVenue Platform Under Scheduled Upgrade",
+  "maintenanceMessage": "We are improving our servers. All public services are temporarily offline.",
   "serviceControls": {
     "website": {
-      "status": true
-    },
-    "movieBooking": {
-      "status": true
+      "status": false
     },
     "eventBooking": {
       "status": true
+    },
+    "movieBooking": {
+      "status": false
+    },
+    "filmProduction": {
+      "title": "Film Production Division Scheduled Maintenance",
+      "status": true,
+      "message": "Casting portal and auditions are offline for updates."
+    },
+    "eventManagement": {
+      "status": true,
+      "message": "Device A triggered event maintenance."
     }
   },
-  "updatedAt": "2026-09-18T03:00:51.397Z"
+  "updatedAt": "2026-09-20T07:27:14.628Z"
 }

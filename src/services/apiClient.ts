@@ -1,13 +1,20 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
-function resolveApiBaseUrl(): string {
+import { Capacitor } from "@capacitor/core";
+
+export function resolveApiBaseUrl(): string {
   const envUrl = (import.meta as any).env?.VITE_API_URL;
   if (envUrl && typeof envUrl === "string" && envUrl.trim().length > 0) {
     return envUrl.replace(/\/+$/, "") + "/api/v1";
   }
   if (typeof window !== "undefined") {
-    const origin = window.location.origin;
-    if (origin.startsWith("capacitor://") || (origin.startsWith("http://localhost") && window.location.port !== "3000")) {
+    const isNative = (typeof Capacitor !== "undefined" && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) ||
+      (window as any).Capacitor?.isNativePlatform?.() ||
+      window.location.origin.startsWith("capacitor://") ||
+      window.location.origin.startsWith("ionic://") ||
+      (window.location.hostname === "localhost" && window.location.port === "");
+
+    if (isNative) {
       return "https://cinevenue.com/api/v1";
     }
   }
@@ -24,7 +31,9 @@ class ApiClient {
       baseURL: API_BASE_URL,
       withCredentials: true,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache"
       },
       timeout: 15000
     });

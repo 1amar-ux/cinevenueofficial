@@ -15,7 +15,7 @@ export interface VenueStaff {
 }
 
 interface StaffProps {
-  theatreId: number;
+  theatreId: number | string;
 }
 
 export default function Staff({ theatreId }: StaffProps) {

@@ -11,7 +11,7 @@ export interface PromoCoupon {
 }
 
 interface CouponsProps {
-  theatreId: number;
+  theatreId: number | string;
 }
 
 export default function Coupons({ theatreId }: CouponsProps) {

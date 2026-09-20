@@ -39,7 +39,7 @@ export default function RentalModal({
 
   // Location & Theatre selection state
   const [selectedCity, setSelectedCity] = useState("Hyderabad");
-  const [selectedTheatreId, setSelectedTheatreId] = useState<number>(1);
+  const [selectedTheatreId, setSelectedTheatreId] = useState<number | string>(1);
 
   // Available unique cities based on theatres data
   const cities = Array.from(

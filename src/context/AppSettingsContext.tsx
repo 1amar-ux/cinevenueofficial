@@ -25,6 +25,8 @@ interface AppSettingsContextType {
   refreshSettings: () => Promise<void>;
   updateGlobalSettings: (newSettings: Partial<GlobalAppSettings>) => Promise<boolean>;
   setGlobalSubwebsiteEnabled: (enabled: boolean, message?: string) => Promise<boolean>;
+  setGlobalMaintenance: (isMaintenance: boolean, config?: { title?: string; message?: string; expectedTime?: string }) => Promise<boolean>;
+  setSubsiteMaintenance: (subsiteId: string, isMaintenance: boolean, config?: { title?: string; message?: string; expectedTime?: string }) => Promise<boolean>;
 }
 
 const DEFAULT_SETTINGS: GlobalAppSettings = {
@@ -57,7 +59,9 @@ const AppSettingsContext = createContext<AppSettingsContextType>({
   lastUpdated: null,
   refreshSettings: async () => {},
   updateGlobalSettings: async () => false,
-  setGlobalSubwebsiteEnabled: async () => false
+  setGlobalSubwebsiteEnabled: async () => false,
+  setGlobalMaintenance: async () => false,
+  setSubsiteMaintenance: async () => false
 });
 
 export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -67,7 +71,8 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const cached = localStorage.getItem("cine_app_settings");
         if (cached) {
           const parsed = JSON.parse(cached);
-          return {
+          const isMaint = parsed.maintenanceMode === true;
+          const merged = {
             ...DEFAULT_SETTINGS,
             ...parsed,
             serviceControls: {
@@ -75,6 +80,12 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
               ...(parsed.serviceControls || {})
             }
           };
+          // Auto-heal on startup: if maintenance is OFF, website and globalWebsite must be live
+          if (!isMaint) {
+            if (merged.serviceControls?.website) merged.serviceControls.website.status = true;
+            if (merged.serviceControls?.globalWebsite) merged.serviceControls.globalWebsite.status = true;
+          }
+          return merged;
         }
       }
     } catch (e) {}
@@ -85,6 +96,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const isMountedRef = useRef<boolean>(true);
   const isFetchingRef = useRef<boolean>(false);
+  const lastAdminActionRef = useRef<number>(0);
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 
   const applySettingsRecord = useCallback((data: any, shouldBroadcast: boolean = false) => {
@@ -92,13 +104,20 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let hasChanged = false;
 
     setSettings((prev) => {
+      // Guard against stale asynchronous responses overwriting newer local state
+      const currentUpdatedTime = prev.updatedAt ? new Date(prev.updatedAt).getTime() : 0;
+      const incomingUpdatedTime = (data.updated_at || data.updatedAt) ? new Date(data.updated_at || data.updatedAt).getTime() : 0;
+      if (incomingUpdatedTime && currentUpdatedTime && incomingUpdatedTime < currentUpdatedTime) {
+        return prev;
+      }
+
       const incomingControls = data.service_controls ?? data.serviceControls;
-      const mergedControls = incomingControls
+      let mergedControls = incomingControls
         ? {
             ...(prev.serviceControls || DEFAULT_SETTINGS.serviceControls || {}),
             ...incomingControls
           }
-        : prev.serviceControls;
+        : { ...(prev.serviceControls || DEFAULT_SETTINGS.serviceControls || {}) };
 
       const rawGlobalSubwebsite = data.global_subwebsite_enabled ?? data.globalSubwebsiteEnabled;
       const globalSubwebsiteEnabled = typeof rawGlobalSubwebsite === "boolean"
@@ -110,6 +129,18 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const newMaintenanceMode = typeof (data.maintenance_mode ?? data.maintenanceMode) === "boolean"
         ? (data.maintenance_mode ?? data.maintenanceMode)
         : prev.maintenanceMode;
+
+      // Auto-reconcile serviceControls with master maintenanceMode:
+      // When maintenanceMode is OFF (LIVE), ensure website and globalWebsite are NOT stuck offline
+      if (!newMaintenanceMode) {
+        if (mergedControls.website) mergedControls.website.status = true;
+        if (mergedControls.globalWebsite) mergedControls.globalWebsite.status = true;
+        if (mergedControls.movieBooking) mergedControls.movieBooking.status = true;
+      } else if (newMaintenanceMode) {
+        if (mergedControls.website) mergedControls.website.status = false;
+        if (mergedControls.globalWebsite) mergedControls.globalWebsite.status = false;
+        if (mergedControls.movieBooking) mergedControls.movieBooking.status = false;
+      }
 
       // Smart Equality check: if nothing changed, preserve object identity to avoid re-rendering entire app
       const isControlsSame = JSON.stringify(prev.serviceControls) === JSON.stringify(mergedControls);
@@ -190,18 +221,22 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const sbData = (sbRes && !sbRes.error && sbRes.data) ? sbRes.data : null;
       const httpData = (httpRes?.data?.success && httpRes.data?.data) ? httpRes.data.data : null;
 
+      let chosenData: any = null;
       if (sbData && httpData) {
         const sbTime = new Date(sbData.updated_at || sbData.updatedAt || 0).getTime();
         const httpTime = new Date(httpData.updatedAt || httpData.updated_at || 0).getTime();
-        if (httpTime > sbTime) {
-          applySettingsRecord(httpData, false);
-        } else {
-          applySettingsRecord(sbData, false);
+        chosenData = httpTime > sbTime ? httpData : sbData;
+      } else {
+        chosenData = sbData || httpData;
+      }
+
+      if (chosenData) {
+        const incomingTime = new Date(chosenData.updated_at || chosenData.updatedAt || 0).getTime();
+        // Guard against polling race condition: if an admin mutation was made within 5 seconds and incoming data is older, ignore the stale read!
+        if (Date.now() - lastAdminActionRef.current < 5000 && incomingTime < lastAdminActionRef.current) {
+          return;
         }
-      } else if (sbData) {
-        applySettingsRecord(sbData, false);
-      } else if (httpData) {
-        applySettingsRecord(httpData, false);
+        applySettingsRecord(chosenData, false);
       }
     } catch (err: any) {
       console.warn("[AppSettings] Resilient fetch notice:", err?.message || err);
@@ -215,6 +250,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Dedicated Global Sub-Website ON/OFF Switch (Admin Operation)
   const setGlobalSubwebsiteEnabled = useCallback(async (enabled: boolean, message?: string): Promise<boolean> => {
+    lastAdminActionRef.current = Date.now();
     const nowIso = new Date().toISOString();
     // 1. Instant Optimistic Local & Inter-Tab Broadcast
     applySettingsRecord({
@@ -267,12 +303,29 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Update Global Settings (Admin Operation)
   const updateGlobalSettings = useCallback(async (newSettings: Partial<GlobalAppSettings>): Promise<boolean> => {
+    lastAdminActionRef.current = Date.now();
     const nowIso = new Date().toISOString();
-    // 1. Instant Optimistic Update to UI, LocalStorage, and Inter-Tab Broadcast
-    applySettingsRecord({
+
+    // Reconcile serviceControls if maintenanceMode is explicitly passed
+    let effectiveControls = newSettings.serviceControls;
+    if (typeof newSettings.maintenanceMode === "boolean") {
+      const isMaint = newSettings.maintenanceMode;
+      effectiveControls = {
+        ...(effectiveControls || settings.serviceControls || DEFAULT_SETTINGS.serviceControls || {}),
+        website: { ...((effectiveControls || settings.serviceControls)?.website || {}), status: !isMaint },
+        globalWebsite: { ...((effectiveControls || settings.serviceControls)?.globalWebsite || {}), status: !isMaint },
+        movieBooking: { ...((effectiveControls || settings.serviceControls)?.movieBooking || {}), status: !isMaint }
+      };
+    }
+
+    const payloadSettings: Partial<GlobalAppSettings> = {
       ...newSettings,
+      ...(effectiveControls && { serviceControls: effectiveControls }),
       updatedAt: nowIso
-    }, true);
+    };
+
+    // 1. Instant Optimistic Update to UI, LocalStorage, and Inter-Tab Broadcast
+    applySettingsRecord(payloadSettings, true);
 
     try {
       // 2. Send authoritative update to backend admin route (persists to DB & writes audit logs)
@@ -286,7 +339,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (newSettings.maintenanceEndTime !== undefined) payload.maintenanceEndTime = newSettings.maintenanceEndTime;
       if (newSettings.globalSubwebsiteEnabled !== undefined) payload.globalSubwebsiteEnabled = newSettings.globalSubwebsiteEnabled;
       if (newSettings.subwebsiteMaintenanceMessage !== undefined) payload.subwebsiteMaintenanceMessage = newSettings.subwebsiteMaintenanceMessage;
-      if (newSettings.serviceControls !== undefined) payload.serviceControls = newSettings.serviceControls;
+      if (effectiveControls !== undefined) payload.serviceControls = effectiveControls;
 
       const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "8888") : "8888";
       
@@ -314,7 +367,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 ...(newSettings.maintenanceEndTime !== undefined && { maintenance_end_time: newSettings.maintenanceEndTime }),
                 ...(newSettings.globalSubwebsiteEnabled !== undefined && { global_subwebsite_enabled: newSettings.globalSubwebsiteEnabled }),
                 ...(newSettings.subwebsiteMaintenanceMessage !== undefined && { subwebsite_maintenance_message: newSettings.subwebsiteMaintenanceMessage }),
-                ...(newSettings.serviceControls !== undefined && { service_controls: newSettings.serviceControls }),
+                ...(effectiveControls !== undefined && { service_controls: effectiveControls }),
                 updated_at: nowIso
               })
           ).catch((sbErr: any) => {
@@ -334,7 +387,102 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.warn("[AppSettings] Backend update notice (local optimistic state active):", err?.message || err);
       return true;
     }
-  }, [applySettingsRecord]);
+  }, [applySettingsRecord, settings.serviceControls]);
+
+  // Dedicated Global Platform Maintenance Toggle (Admin Operation)
+  const setGlobalMaintenance = useCallback(async (isMaintenance: boolean, config?: { title?: string; message?: string; expectedTime?: string }): Promise<boolean> => {
+    lastAdminActionRef.current = Date.now();
+    const nowIso = new Date().toISOString();
+
+    const currentControls = settings.serviceControls || DEFAULT_SETTINGS.serviceControls || {};
+    const effectiveControls = {
+      ...currentControls,
+      website: { ...(currentControls.website || {}), status: !isMaintenance, ...(config?.title && { title: config.title }), ...(config?.message && { message: config.message }) },
+      globalWebsite: { ...(currentControls.globalWebsite || {}), status: !isMaintenance },
+      movieBooking: { ...(currentControls.movieBooking || {}), status: !isMaintenance }
+    };
+
+    // Optimistic Update
+    applySettingsRecord({
+      maintenanceMode: isMaintenance,
+      ...(config?.title && { maintenanceTitle: config.title }),
+      ...(config?.message && { maintenanceMessage: config.message }),
+      ...(config?.expectedTime && { maintenanceEndTime: config.expectedTime }),
+      serviceControls: effectiveControls,
+      updatedAt: nowIso
+    }, true);
+
+    try {
+      const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "8888") : "8888";
+      const res = await apiClient.post("/admin/system/maintenance", {
+        maintenanceMode: isMaintenance,
+        ...config,
+        updatedAt: nowIso
+      }, {
+        headers: {
+          "x-admin-passcode": adminPasscode,
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
+      });
+
+      if (res?.data?.success && res.data?.data?.settings) {
+        applySettingsRecord(res.data.data.settings, true);
+      }
+      return true;
+    } catch (err: any) {
+      console.warn("[AppSettings] Global maintenance update notice:", err?.message || err);
+      return true;
+    }
+  }, [applySettingsRecord, settings.serviceControls]);
+
+  // Dedicated Sub-Website Maintenance Toggle (Admin Operation - NEVER touches global maintenance!)
+  const setSubsiteMaintenance = useCallback(async (subsiteId: string, isMaintenance: boolean, config?: { title?: string; message?: string; expectedTime?: string }): Promise<boolean> => {
+    lastAdminActionRef.current = Date.now();
+    const nowIso = new Date().toISOString();
+
+    const currentControls = settings.serviceControls || DEFAULT_SETTINGS.serviceControls || {};
+    const effectiveControls = {
+      ...currentControls,
+      [subsiteId]: {
+        ...(currentControls[subsiteId] || {}),
+        status: !isMaintenance,
+        ...(config?.title && { title: config.title }),
+        ...(config?.message && { message: config.message }),
+        ...(config?.expectedTime && { expectedTime: config.expectedTime })
+      }
+    };
+    if (subsiteId === "cinecoins") {
+      effectiveControls.cineCoinsLoyalty = { ...effectiveControls.cinecoins };
+    }
+
+    // Optimistic update: subsite only!
+    applySettingsRecord({
+      serviceControls: effectiveControls,
+      updatedAt: nowIso
+    }, true);
+
+    try {
+      const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "8888") : "8888";
+      const res = await apiClient.post(`/admin/subsites/${subsiteId}/maintenance`, {
+        maintenance: isMaintenance,
+        ...config,
+        updatedAt: nowIso
+      }, {
+        headers: {
+          "x-admin-passcode": adminPasscode,
+          "Cache-Control": "no-cache, no-store, must-revalidate"
+        }
+      });
+
+      if (res?.data?.success && res.data?.data?.settings) {
+        applySettingsRecord(res.data.data.settings, true);
+      }
+      return true;
+    } catch (err: any) {
+      console.warn("[AppSettings] Subsite maintenance update notice:", err?.message || err);
+      return true;
+    }
+  }, [applySettingsRecord, settings.serviceControls]);
 
   // Initial Authoritative Load + Supabase Realtime Subscription + Inter-Tab Broadcast + Heartbeat
   useEffect(() => {
@@ -442,7 +590,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     lastUpdated,
     refreshSettings,
     updateGlobalSettings,
-    setGlobalSubwebsiteEnabled
+    setGlobalSubwebsiteEnabled,
+    setGlobalMaintenance,
+    setSubsiteMaintenance
   }), [
     settings,
     isMaintenanceActive,
@@ -452,7 +602,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     lastUpdated,
     refreshSettings,
     updateGlobalSettings,
-    setGlobalSubwebsiteEnabled
+    setGlobalSubwebsiteEnabled,
+    setGlobalMaintenance,
+    setSubsiteMaintenance
   ]);
 
   return (

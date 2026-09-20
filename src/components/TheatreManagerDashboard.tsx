@@ -39,7 +39,7 @@ import SettingsSubpage from "../pages/theatre-admin/Settings";
 import QRScannerSubpage from "../pages/theatre-admin/QRScanner";
 
 interface TheatreManagerDashboardProps {
-  theatreId: number;
+  theatreId: number | string;
   theatres: Theatre[];
   bookings: Booking[];
   schedules: MovieSchedule[];

@@ -176,4 +176,132 @@ router.get("/settings/subwebsite", async (req, res, next) => {
   }
 });
 
+// ==========================================
+// 4. CANONICAL SYSTEM & SUBSITE MAINTENANCE ROUTES
+// ==========================================
+export function normalizeSubsiteId(id: string): string {
+  const clean = (id || "").toLowerCase().trim();
+  if (clean.includes("film") || clean.includes("production") || clean === "24crafts" || clean === "crafts") return "filmProduction";
+  if (clean.includes("event-management") || clean === "eventmanagement") return "eventManagement";
+  if (clean.includes("brand") || clean.includes("promotion") || clean === "media-promotions" || clean === "media-promotion") return "brandPromotion";
+  if (clean.includes("event") || clean === "eventbooking") return "eventBooking";
+  if (clean.includes("movie") || clean === "moviebooking" || clean === "movies") return "movieBooking";
+  if (clean.includes("coin") || clean === "cinecoinsloyalty") return "cinecoins";
+  if (clean.includes("website") || clean === "main" || clean === "global") return "website";
+  return id;
+}
+
+router.get("/system/maintenance-status", async (req, res, next) => {
+  try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
+    const { getGlobalAppSettings } = await import("./middleware/maintenance");
+    const settings = await getGlobalAppSettings();
+    const sc = (settings.serviceControls as any) || {};
+
+    const isGlobalMaint = settings.maintenanceMode === true || sc.website?.status === false;
+
+    return res.json({
+      success: true,
+      globalMaintenanceMode: isGlobalMaint,
+      globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled !== false,
+      maintenanceTitle: settings.maintenanceTitle,
+      maintenanceMessage: settings.maintenanceMessage,
+      subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage,
+      serviceControls: sc,
+      subsites: {
+        filmProduction: {
+          isMaintenance: isGlobalMaint || settings.globalSubwebsiteEnabled === false || sc.filmProduction?.status === false,
+          status: !isGlobalMaint && settings.globalSubwebsiteEnabled !== false && sc.filmProduction?.status !== false,
+          title: sc.filmProduction?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.filmProduction?.message || settings.subwebsiteMaintenanceMessage
+        },
+        eventManagement: {
+          isMaintenance: isGlobalMaint || settings.globalSubwebsiteEnabled === false || sc.eventManagement?.status === false,
+          status: !isGlobalMaint && settings.globalSubwebsiteEnabled !== false && sc.eventManagement?.status !== false,
+          title: sc.eventManagement?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.eventManagement?.message || settings.subwebsiteMaintenanceMessage
+        },
+        brandPromotion: {
+          isMaintenance: isGlobalMaint || settings.globalSubwebsiteEnabled === false || sc.brandPromotion?.status === false,
+          status: !isGlobalMaint && settings.globalSubwebsiteEnabled !== false && sc.brandPromotion?.status !== false,
+          title: sc.brandPromotion?.title || "SUB-WEBSITE TEMPORARILY UNAVAILABLE",
+          message: sc.brandPromotion?.message || settings.subwebsiteMaintenanceMessage
+        },
+        eventBooking: {
+          isMaintenance: isGlobalMaint || settings.globalSubwebsiteEnabled === false || sc.eventBooking?.status === false,
+          status: !isGlobalMaint && settings.globalSubwebsiteEnabled !== false && sc.eventBooking?.status !== false,
+          title: sc.eventBooking?.title || "Event Booking Temporarily Unavailable",
+          message: sc.eventBooking?.message || "Concerts, celebrity shows and live events are currently unavailable."
+        },
+        movieBooking: {
+          isMaintenance: isGlobalMaint || sc.movieBooking?.status === false,
+          status: !isGlobalMaint && sc.movieBooking?.status !== false,
+          title: sc.movieBooking?.title || settings.maintenanceTitle,
+          message: sc.movieBooking?.message || settings.maintenanceMessage
+        },
+        cinecoins: {
+          isMaintenance: isGlobalMaint || sc.cinecoins?.status === false || sc.cineCoinsLoyalty?.status === false,
+          status: !isGlobalMaint && sc.cinecoins?.status !== false && sc.cineCoinsLoyalty?.status !== false,
+          title: sc.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance",
+          message: sc.cinecoins?.message || "CineCoins operations are undergoing scheduled updates."
+        }
+      },
+      updatedAt: (settings as any).updatedAt || new Date().toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/system/subsites/:subsiteId/maintenance", async (req, res, next) => {
+  try {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("X-Accel-Expires", "0");
+
+    const rawId = req.params.subsiteId;
+    const subsiteId = normalizeSubsiteId(rawId);
+
+    const { getGlobalAppSettings } = await import("./middleware/maintenance");
+    const settings = await getGlobalAppSettings();
+    const sc = (settings.serviceControls as any) || {};
+
+    const isGlobalMaint = settings.maintenanceMode === true || sc.website?.status === false;
+    const isMasterSubsiteOff = settings.globalSubwebsiteEnabled === false && ["filmProduction", "eventManagement", "brandPromotion", "eventBooking"].includes(subsiteId);
+    const isIndividualOff = sc[subsiteId]?.status === false;
+
+    const isMaintenance = isGlobalMaint || isMasterSubsiteOff || isIndividualOff;
+    let reason = "LIVE";
+    if (isGlobalMaint) reason = "GLOBAL_PLATFORM_MAINTENANCE";
+    else if (isMasterSubsiteOff) reason = "ALL_SUBWEBSITES_DISABLED";
+    else if (isIndividualOff) reason = "INDIVIDUAL_SUBSITE_MAINTENANCE";
+
+    const config = sc[subsiteId] || {};
+
+    return res.json({
+      success: true,
+      subsiteId,
+      rawId,
+      status: !isMaintenance,
+      isMaintenance,
+      isGloballyBlocked: isGlobalMaint || isMasterSubsiteOff,
+      reason,
+      title: config.title || (isGlobalMaint ? settings.maintenanceTitle : "SUB-WEBSITE TEMPORARILY UNAVAILABLE"),
+      message: config.message || (isGlobalMaint ? settings.maintenanceMessage : settings.subwebsiteMaintenanceMessage),
+      expectedTime: config.expectedTime || null,
+      updatedAt: (settings as any).updatedAt || new Date().toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
+

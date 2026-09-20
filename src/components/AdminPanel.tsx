@@ -62,7 +62,7 @@ interface AdminPanelProps {
   onAddMovie: (movie: Movie) => void;
   onAddTheatre: (theatre: Theatre) => void;
   onDeleteMovie: (title: string) => void;
-  onDeleteTheatre: (id: number) => void;
+  onDeleteTheatre: (id: number | string) => void;
   onUpdateTheatre: (theatre: Theatre) => void;
   onUpdateRentalStatus: (id: string, status: "Approved" | "Declined") => void;
   onScheduleShow: (newSchedule: MovieSchedule) => void;
@@ -80,7 +80,7 @@ interface AdminPanelProps {
     city?: string;
     userEmail?: string;
   }) => void;
-  onOpenManagerDashboard: (theatreId: number) => void;
+  onOpenManagerDashboard: (theatreId: number | string) => void;
   onUpdateMovie?: (oldTitle: string, updatedMovie: Movie) => void;
   onUpdateSchedule?: (id: string, updatedSchedule: MovieSchedule) => void;
   onUpdateBooking?: (id: string, updatedBooking: Booking) => void;
@@ -390,8 +390,8 @@ export default function AdminPanel({
     // Persist to database — propagates globally to all devices, incognito tabs, other apps
     updateGlobalSettings({
       serviceControls: newControls,
-      // movieBooking off = global maintenanceMode on
-      ...((emergencyTargetKey === "movieBooking" || emergencyTargetKey === "all" || emergencyTargetKey === "website") && {
+      // Only platform-wide targets (all or website) toggle global maintenanceMode
+      ...((emergencyTargetKey === "all" || emergencyTargetKey === "website") && {
         maintenanceMode: !isRestore,
         ...(!isRestore && {
           maintenanceTitle: emergencyNoticeTitle,
@@ -431,7 +431,7 @@ export default function AdminPanel({
   );
   const [lockAuthMode, setLockAuthMode] = useState<"passcode" | "password">("passcode");
   const [quickPinVal, setQuickPinVal] = useState("");
-  const [unlockEmail, setUnlockEmail] = useState(superAdminEmail);
+  const [unlockEmail, setUnlockEmail] = useState("");
   const [unlockPassword, setUnlockPassword] = useState("");
   const [unlockError, setUnlockError] = useState("");
 
@@ -628,7 +628,7 @@ export default function AdminPanel({
   }, [spotlight]);
 
   // Theatre Editor State
-  const [editingTheatreId, setEditingTheatreId] = useState<number | null>(null);
+  const [editingTheatreId, setEditingTheatreId] = useState<number | string | null>(null);
   const [etName, setEtName] = useState("");
   const [etCity, setEtCity] = useState("");
   const [etPrice, setEtPrice] = useState("");
@@ -639,7 +639,7 @@ export default function AdminPanel({
   const [etAllocPercent, setEtAllocPercent] = useState(30);
 
   useEffect(() => {
-    setUnlockEmail(superAdminEmail);
+    setUnlockEmail("");
     setEditAdminEmail(superAdminEmail);
     setEditAdminPassword(superAdminPassword);
   }, [superAdminEmail, superAdminPassword]);
@@ -809,7 +809,7 @@ export default function AdminPanel({
   // State: Access Management (Super Admin creating/editing theatre admins)
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
-  const [adminTheatreId, setAdminTheatreId] = useState<number>(theatres[0]?.id || 1);
+  const [adminTheatreId, setAdminTheatreId] = useState<number | string>(theatres[0]?.id || 1);
   const [adminPermAddMovies, setAdminPermAddMovies] = useState(true);
   const [adminPermCreateShows, setAdminPermCreateShows] = useState(true);
   const [adminPermConfigureSeats, setAdminPermConfigureSeats] = useState(true);
@@ -831,6 +831,7 @@ export default function AdminPanel({
   const [movieCertificate, setMovieCertificate] = useState<'U' | 'UA' | 'A'>("UA");
   const [movieDistributor, setMovieDistributor] = useState("");
   const [editingMovieTitle, setEditingMovieTitle] = useState<string | null>(null);
+  const [editingMovieId, setEditingMovieId] = useState<string | null>(null);
 
   // State: Event Management & Client Requests
   const [adminEventRequests, setAdminEventRequests] = useState<EventManagementRequest[]>(() => { try { const raw = localStorage.getItem("cine_event_requests") || localStorage.getItem("cinevenue_event_requests"); if (raw) return JSON.parse(raw); } catch (e) {} return INITIAL_EVENT_MANAGEMENT_REQUESTS; });
@@ -865,7 +866,7 @@ export default function AdminPanel({
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
 
   // State: Seat Layout Configurator
-  const [layoutTheatreId, setLayoutTheatreId] = useState<number>(() => {
+  const [layoutTheatreId, setLayoutTheatreId] = useState<number | string>(() => {
     if (isTheatreAdmin && assignedTheatreId) return assignedTheatreId;
     return theatres[0]?.id || 1;
   });
@@ -1314,7 +1315,7 @@ export default function AdminPanel({
       return;
     }
 
-    const newTheatreId = theatres.length > 0 ? Math.max(...theatres.map(t => t.id)) + 1 : 1;
+    const newTheatreId = theatres.length > 0 ? Math.max(...theatres.map(t => Number(t.id) || 0)) + 1 : 1;
     
     const newTheatre: Theatre = {
       id: newTheatreId,
@@ -1428,6 +1429,7 @@ export default function AdminPanel({
     if (editingMovieTitle) {
       if (onUpdateMovie) {
         onUpdateMovie(editingMovieTitle, {
+          id: editingMovieId || undefined,
           title: movieTitle,
           genre: movieGenre,
           lang: movieLang,
@@ -1444,6 +1446,7 @@ export default function AdminPanel({
         alert(`Successfully updated movie "${movieTitle}"!`);
       }
       setEditingMovieTitle(null);
+      setEditingMovieId(null);
     } else {
       onAddMovie({
         title: movieTitle,
@@ -2374,11 +2377,10 @@ export default function AdminPanel({
             <div className="p-4 border-t border-white/10 bg-black/20 shrink-0">
               <div className="flex items-center justify-between gap-3 text-xs">
                 <div className="truncate text-left">
-                  <span className="text-[9px] text-text-muted font-bold block uppercase tracking-wider">LOGGED AS STAFF</span>
-                  <span className="text-text-primary font-bold truncate block max-w-[150px]">{activeTheatreAdmin?.email || "superadmin@cinevenue.com"}</span>
-                  {isTheatreAdmin && assignedTheatre && (
-                    <span className="text-[9px] text-gold font-semibold block truncate mt-0.5">{assignedTheatre.name}</span>
-                  )}
+                  <span className="text-[9px] text-text-muted font-bold block uppercase tracking-wider">SECURITY CLEARANCE</span>
+                  <span className="text-text-primary font-bold truncate block max-w-[150px]">
+                    {isTheatreAdmin && assignedTheatre ? assignedTheatre.name : "Authorized Administrator"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -3896,6 +3898,7 @@ export default function AdminPanel({
                           onClick={() => {
                             setMovieTitle("");
                             setEditingMovieTitle(null);
+                            setEditingMovieId(null);
                           }}
                           className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 text-xs text-text-secondary rounded font-bold border-0 cursor-pointer"
                         >
@@ -3934,7 +3937,7 @@ export default function AdminPanel({
                             
                             {/* Display Formats & Trailer & Actors */}
                             <div className="space-y-0.5 mt-1 border-t border-white/5 pt-1">
-                              <div className="flex flex-wrap gap-1 items-center">
+                              <div className="flex wrap gap-1 items-center">
                                 {(m.formats || ["2D"]).map((fmt) => (
                                   <span key={fmt} className="text-[8px] font-bold text-gold bg-gold/5 border border-gold/20 px-1 rounded">
                                     {fmt}
@@ -3990,6 +3993,7 @@ export default function AdminPanel({
                               <button
                                 onClick={() => {
                                   setEditingMovieTitle(m.title);
+                                  setEditingMovieId(m.id ? String(m.id) : null);
                                   setMovieTitle(m.title);
                                   setMovieGenre(m.genre);
                                   setMovieLang(m.lang);
@@ -6503,9 +6507,7 @@ export default function AdminPanel({
                                         [pillar.key]: { ...(current[pillar.key] || {}), status: true },
                                         // keep cineCoinsLoyalty in sync
                                         ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: true } })
-                                      },
-                                      // turning movieBooking ON clears global maintenance mode
-                                      ...(pillar.key === "movieBooking" && { maintenanceMode: false })
+                                      }
                                     });
                                     if (setServiceControlLogs) {
                                       setServiceControlLogs((prevLogs: any[]) => [
@@ -6536,9 +6538,7 @@ export default function AdminPanel({
                                         [pillar.key]: { ...(current[pillar.key] || {}), status: false },
                                         // keep cineCoinsLoyalty in sync
                                         ...(pillar.key === "cinecoins" && { cineCoinsLoyalty: { ...(current.cineCoinsLoyalty || {}), status: false } })
-                                      },
-                                      // turning movieBooking OFF triggers global maintenance mode
-                                      ...(pillar.key === "movieBooking" && { maintenanceMode: true })
+                                      }
                                     });
                                     if (setServiceControlLogs) {
                                       setServiceControlLogs((prevLogs: any[]) => [

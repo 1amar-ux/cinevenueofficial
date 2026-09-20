@@ -132,13 +132,6 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
             >
               Host Your Screen
             </button>
-            <button
-              onClick={onOpenAdmin}
-              className="hover:text-gold transition-colors cursor-pointer text-text-secondary flex items-center justify-center p-1.5 bg-white/[0.02] border border-white/10 rounded-full hover:border-gold/30 hover:bg-gold/10"
-              title="Administrator Portal"
-            >
-              <Shield className="w-3.5 h-3.5 text-gold" />
-            </button>
           </div>
         </div>
       </div>

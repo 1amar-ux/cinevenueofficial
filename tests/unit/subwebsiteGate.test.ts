@@ -103,7 +103,7 @@ export async function runSubwebsiteGateTests(): Promise<{ name: string; passed: 
   // Test 3: isExemptRoute safeguards admin, auth, and static assets from interception
   try {
     const exemptRoutes = [
-      "/adminpanel",
+      "/authpanel",
       "/admin",
       "/admin/movies",
       "/api/v1/admin/dashboard",
@@ -299,7 +299,7 @@ export async function runSubwebsiteGateTests(): Promise<{ name: string; passed: 
       "/movie/kalki-2898",
       "/theatres",
       "/theatre-selection",
-      "/adminpanel",
+      "/authpanel",
       "/api/v1/movies",
       "/api/v1/theatres"
     ];

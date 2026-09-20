@@ -11,7 +11,7 @@ export interface ConcessionItem {
 }
 
 interface FoodProps {
-  theatreId: number;
+  theatreId: number | string;
 }
 
 export default function Food({ theatreId }: FoodProps) {

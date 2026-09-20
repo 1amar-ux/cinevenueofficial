@@ -115,7 +115,7 @@ export default function TheatresAdmin() {
     alert("Theatre Added Successfully!");
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     if (!window.confirm("Are you sure you want to delete this theatre?")) return;
 
     try {

@@ -66,18 +66,32 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // 3. Admin: Create Theatre
 router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, address, city, state, phone, status } = req.body;
+    const { name, address, city, state, phone, status, totalScreens } = req.body;
 
     const theatre = await prisma.theatre.create({
       data: {
         name,
-        address,
-        city,
+        address: address || `${name}, ${city || "Hyderabad"}`,
+        city: city || "Hyderabad",
         state: state || "Telangana",
         phone: phone || null,
         status: status || "ACTIVE"
       }
     });
+
+    // Create default screens if requested
+    const numScreens = Math.max(1, Number(totalScreens) || 3);
+    for (let i = 1; i <= numScreens; i++) {
+      try {
+        await prisma.screen.create({
+          data: {
+            theatreId: theatre.id,
+            name: `Screen ${i}`,
+            capacity: 150
+          }
+        });
+      } catch {}
+    }
 
     return res.status(201).json({
       success: true,
@@ -134,8 +148,22 @@ router.get("/:theatreId/bank-accounts", authenticate, authorize("SUPER_ADMIN", "
 router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    let targetId = id;
+    let existing = await prisma.theatre.findUnique({ where: { id } });
+    if (!existing) {
+      existing = await prisma.theatre.findFirst({
+        where: {
+          OR: [
+            { id: `th_${id}` },
+            { name: req.body?.name || id }
+          ]
+        }
+      });
+      if (existing) targetId = existing.id;
+    }
+
     const theatre = await prisma.theatre.update({
-      where: { id },
+      where: { id: targetId },
       data: req.body
     });
 
@@ -153,8 +181,22 @@ router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: 
 router.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    await prisma.theatre.delete({ where: { id } }).catch(async () => {
-      await prisma.theatre.update({ where: { id }, data: { status: "INACTIVE" } });
+    let targetId = id;
+    let existing = await prisma.theatre.findUnique({ where: { id } });
+    if (!existing) {
+      existing = await prisma.theatre.findFirst({
+        where: {
+          OR: [
+            { id: `th_${id}` },
+            { name: id }
+          ]
+        }
+      });
+      if (existing) targetId = existing.id;
+    }
+
+    await prisma.theatre.delete({ where: { id: targetId } }).catch(async () => {
+      await prisma.theatre.update({ where: { id: targetId }, data: { status: "INACTIVE" } });
     });
 
     return res.json({

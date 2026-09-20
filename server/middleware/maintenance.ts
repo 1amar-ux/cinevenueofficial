@@ -130,16 +130,29 @@ export async function getGlobalAppSettings(): Promise<CachedMaintenanceState> {
     const settings: any = await Promise.race([dbPromise, timeoutPromise]);
 
     if (settings) {
+      const isMaint = settings.maintenance_mode !== undefined 
+        ? settings.maintenance_mode === true 
+        : settings.maintenanceMode === true;
+      const isSubEnabled = settings.global_subwebsite_enabled !== undefined 
+        ? settings.global_subwebsite_enabled !== false 
+        : settings.globalSubwebsiteEnabled !== false;
+      const title = settings.maintenance_title || settings.maintenanceTitle || fileSettings.maintenanceTitle;
+      const msg = settings.maintenance_message || settings.maintenanceMessage || fileSettings.maintenanceMessage;
+      const subMsg = settings.subwebsite_maintenance_message || settings.subwebsiteMaintenanceMessage || fileSettings.subwebsiteMaintenanceMessage;
+      const countdown = settings.maintenance_countdown_enabled ?? settings.maintenanceCountdownEnabled;
+      const endTime = settings.maintenance_end_time || settings.maintenanceEndTime;
+      const controls = settings.service_controls || settings.serviceControls || {};
+
       cachedState = {
-        maintenanceMode: settings.maintenanceMode === true,
-        maintenanceTitle: settings.maintenanceTitle || "Movie Booking Temporarily Unavailable",
-        maintenanceMessage: settings.maintenanceMessage || "We are upgrading our ticket booking experience. Movie booking will be available shortly.",
-        maintenanceCountdownEnabled: !!settings.maintenanceCountdownEnabled,
-        maintenanceEndTime: settings.maintenanceEndTime,
-        globalSubwebsiteEnabled: settings.globalSubwebsiteEnabled !== false,
-        subwebsiteMaintenanceMessage: settings.subwebsiteMaintenanceMessage || fileSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
-        serviceControls: settings.serviceControls || {},
-        updatedAt: settings.updatedAt ? settings.updatedAt.toISOString() : new Date().toISOString(),
+        maintenanceMode: isMaint,
+        maintenanceTitle: title,
+        maintenanceMessage: msg,
+        maintenanceCountdownEnabled: !!countdown,
+        maintenanceEndTime: endTime || null,
+        globalSubwebsiteEnabled: isSubEnabled,
+        subwebsiteMaintenanceMessage: subMsg,
+        serviceControls: controls,
+        updatedAt: settings.updated_at || (settings.updatedAt ? (typeof settings.updatedAt.toISOString === 'function' ? settings.updatedAt.toISOString() : settings.updatedAt) : new Date().toISOString()),
         cachedAt: now
       };
       return cachedState;
@@ -189,7 +202,13 @@ export async function checkMovieBookingMaintenance(req: Request, res: Response, 
   try {
     const settings = await getGlobalAppSettings();
 
-    if (settings.maintenanceMode) {
+    const sc = (settings.serviceControls as any) || {};
+    const isMovieBookingDisabled = 
+      settings.maintenanceMode === true || 
+      sc.website?.status === false || 
+      sc.movieBooking?.status === false;
+
+    if (isMovieBookingDisabled) {
       logger.warn(`[MAINTENANCE GATE] Blocked booking request to ${req.method} ${req.originalUrl}`);
       if (typeof res.setHeader === "function") {
         res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
@@ -198,16 +217,20 @@ export async function checkMovieBookingMaintenance(req: Request, res: Response, 
         res.setHeader("Surrogate-Control", "no-store");
         res.setHeader("X-Accel-Expires", "0");
       }
+      const title = sc.movieBooking?.title || settings.maintenanceTitle || "Movie Booking Temporarily Unavailable";
+      const message = sc.movieBooking?.message || settings.maintenanceMessage || "Movie booking is temporarily unavailable due to scheduled maintenance. Please check again shortly.";
+      const endTime = sc.movieBooking?.expectedTime || settings.maintenanceEndTime;
+
       return res.status(503).json({
         success: false,
         code: "MOVIE_BOOKING_MAINTENANCE",
-        message: settings.maintenanceMessage || "Movie booking is temporarily unavailable due to scheduled maintenance. Please check again shortly.",
+        message,
         data: {
           maintenanceMode: true,
-          title: settings.maintenanceTitle,
-          message: settings.maintenanceMessage,
+          title,
+          message,
           countdownEnabled: settings.maintenanceCountdownEnabled,
-          endTime: settings.maintenanceEndTime
+          endTime
         }
       });
     }

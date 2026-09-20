@@ -12,9 +12,32 @@ export function createApp(): Express {
 
   // 1. Basic Security & Correlation Middleware
   app.use(requestIdMiddleware);
+  const allowedOrigins = [
+    "https://cinevenue.com",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "capacitor://localhost",
+    "https://localhost",
+    "http://localhost"
+  ];
+
   app.use(
     cors({
-      origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN.split(","),
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (env.CORS_ORIGIN === "*") return callback(null, true);
+        const configured = env.CORS_ORIGIN.split(",").map((s) => s.trim());
+        if (
+          configured.includes(origin) ||
+          allowedOrigins.includes(origin) ||
+          origin.startsWith("capacitor://") ||
+          origin.startsWith("http://localhost") ||
+          origin.startsWith("https://localhost")
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       credentials: true
     })
   );
@@ -51,12 +74,13 @@ export function createApp(): Express {
     );
   });
 
-  // 4B. Strict No-Cache Middleware for settings, health, and admin routes to guarantee global real-time synchronization
+  // 4B. Strict No-Cache Middleware for all API and admin routes to guarantee global real-time synchronization
   app.use((req, res, next) => {
     const p = req.path.toLowerCase();
     if (
+      p.startsWith("/api") ||
       p.includes("/settings") ||
-      p.includes("/admin/settings") ||
+      p.includes("/admin") ||
       p.includes("/health") ||
       p.includes("/ready")
     ) {

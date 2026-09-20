@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppSettings } from "./context/AppSettingsContext";
 import Navbar from "./components/Navbar";
@@ -178,13 +178,14 @@ export default function App() {
   // Authoritative serviceControl derived from global Supabase settings
   const serviceControl = useMemo(() => {
     const remote = globalAppSettings.serviceControls || {};
-    const isMaintenance = globalAppSettings.maintenanceMode === true || remote.website?.status === false || remote.globalWebsite?.status === false;
+    // Authoritative single-source-of-truth: platform maintenance is strictly governed by maintenanceMode or website.status
+    const isMaintenance = globalAppSettings.maintenanceMode === true || remote.website?.status === false;
     const isSubwebsiteEnabled = globalAppSettings.globalSubwebsiteEnabled !== false && !isMaintenance;
     const subwebsiteNotice = globalAppSettings.subwebsiteMaintenanceMessage || "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.";
 
     return {
       website: {
-        status: !isMaintenance && (remote.website?.status !== false) && (remote.globalWebsite?.status !== false),
+        status: !isMaintenance && (remote.website?.status !== false),
         title: remote.website?.title || globalAppSettings.maintenanceTitle || "CineVenue Under Maintenance",
         message: remote.website?.message || globalAppSettings.maintenanceMessage || "Our platform is currently undergoing scheduled updates. We'll be back online shortly.",
         expectedTime: remote.website?.expectedTime || (typeof globalAppSettings.maintenanceEndTime === "string" ? globalAppSettings.maintenanceEndTime : "30 July 2026, 06:00 PM")
@@ -291,7 +292,7 @@ export default function App() {
       mergedControls.cineCoinsLoyalty = { ...activeState };
     }
 
-    const isMaintenance = mergedControls.movieBooking?.status === false || mergedControls.website?.status === false || mergedControls.globalWebsite?.status === false;
+    const isMaintenance = globalAppSettings.maintenanceMode === true || mergedControls.website?.status === false;
 
     await updateGlobalSettings({
       maintenanceMode: isMaintenance,
@@ -507,7 +508,7 @@ export default function App() {
   const [rentalOpen, setRentalOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
-  const [activeTheatreId, setActiveTheatreId] = useState<number | null>(null);
+  const [activeTheatreId, setActiveTheatreId] = useState<number | string | null>(null);
   const [activeOrganizerId, setActiveOrganizerId] = useState<string | null>(null);
 
   // Sync states to localStorage
@@ -567,144 +568,188 @@ export default function App() {
   }, [metricOverrides]);
 
   // Synchronize authoritative master data from backend database on startup
-  useEffect(() => {
-    let isMounted = true;
-    async function loadMasterData() {
-      try {
-        const [moviesRes, theatresRes, showsRes, eventsRes] = await Promise.allSettled([
-          apiClient.get<any>('/movies'),
-          apiClient.get<any>('/theatres'),
-          apiClient.get<any>('/shows'),
-          apiClient.get<any>('/events'),
-        ]);
+  // Synchronize authoritative master data from backend database on startup and continuously
+  const loadMasterData = useCallback(async () => {
+    try {
+      const [moviesRes, theatresRes, showsRes, eventsRes] = await Promise.allSettled([
+        apiClient.get<any>('/movies'),
+        apiClient.get<any>('/theatres'),
+        apiClient.get<any>('/shows'),
+        apiClient.get<any>('/events'),
+      ]);
 
-        if (!isMounted) return;
+      // 1. Authoritative Movies Sync from Database
+      const rawMovies = moviesRes.status === 'fulfilled' 
+        ? (moviesRes.value.data?.data?.movies || (moviesRes.value.data as any)?.movies || moviesRes.value.data?.data || moviesRes.value.data) 
+        : null;
+      if (Array.isArray(rawMovies) && rawMovies.length > 0) {
+        const apiMovies: Movie[] = rawMovies.map((m: any, idx: number) => ({
+          id: m.id || (idx + 1),
+          title: m.title || '',
+          description: m.description || '',
+          poster: m.posterUrl || m.poster || '',
+          banner: m.backdropUrl || m.banner || m.posterUrl || '',
+          img: m.posterUrl || m.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&q=80',
+          lang: m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi'),
+          langKey: (m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi')).toLowerCase(),
+          duration: `${m.duration || m.durationMins || 150} mins`,
+          genre: Array.isArray(m.genres) ? m.genres.join(', ') : (m.genre || 'Action, Drama'),
+          language: m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi'),
+          rating: String(m.rating || '4.5'),
+          releaseDate: m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '2026-09-01',
+          status: m.isActive === false ? 'Upcoming' : (m.status === 'NOW_SHOWING' ? 'Now Showing' : (m.status || 'Now Showing')),
+          trailerUrl: m.trailerUrl || '',
+          cast: Array.isArray(m.cast) ? m.cast : (typeof m.cast === 'string' ? m.cast.split(',') : []),
+          director: m.director || '',
+          isSpotlight: idx === 0,
+        }));
+        setMovies(apiMovies);
+      }
 
-        // 1. Authoritative Movies Sync from Database
-        const rawMovies = moviesRes.status === 'fulfilled' 
-          ? (moviesRes.value.data?.data?.movies || (moviesRes.value.data as any)?.movies || moviesRes.value.data?.data || moviesRes.value.data) 
-          : null;
-        if (Array.isArray(rawMovies) && rawMovies.length > 0) {
-          const apiMovies: Movie[] = rawMovies.map((m: any, idx: number) => ({
-            id: typeof m.id === 'number' ? m.id : (idx + 1),
-            title: m.title || '',
-            description: m.description || '',
-            poster: m.posterUrl || m.poster || '',
-            banner: m.backdropUrl || m.banner || m.posterUrl || '',
-            img: m.posterUrl || m.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&q=80',
-            lang: m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi'),
-            langKey: (m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi')).toLowerCase(),
-            duration: `${m.duration || m.durationMins || 150} mins`,
-            genre: Array.isArray(m.genres) ? m.genres.join(', ') : (m.genre || 'Action, Drama'),
-            language: m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi'),
-            rating: String(m.rating || '4.5'),
-            releaseDate: m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '2026-09-01',
-            status: m.isActive === false ? 'Upcoming' : (m.status === 'NOW_SHOWING' ? 'Now Showing' : (m.status || 'Now Showing')),
-            trailerUrl: m.trailerUrl || '',
-            cast: Array.isArray(m.cast) ? m.cast : (typeof m.cast === 'string' ? m.cast.split(',') : []),
-            director: m.director || '',
-            isSpotlight: idx === 0,
-          }));
-          setMovies(apiMovies);
-        }
+      // 2. Authoritative Theatres Sync from Database
+      const rawTheatres = theatresRes.status === 'fulfilled' 
+        ? (theatresRes.value.data?.data?.theatres || (theatresRes.value.data as any)?.theatres || theatresRes.value.data?.data || theatresRes.value.data) 
+        : null;
+      if (Array.isArray(rawTheatres) && rawTheatres.length > 0) {
+        const apiTheatres: Theatre[] = rawTheatres.map((t: any, idx: number) => ({
+          id: t.id || (idx + 1),
+          name: t.name || '',
+          location: t.address || t.location || '',
+          city: t.city || 'Hyderabad',
+          features: Array.isArray(t.amenities) ? t.amenities : (Array.isArray(t.facilities) ? t.facilities : ['Dolby Atmos', '4K Projection', 'Recliner Seats', 'Cafeteria']),
+          price: '₹250 - ₹500',
+          img: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
+          screens: t.totalScreens || (t.screens?.length ?? 3),
+          facilities: Array.isArray(t.amenities) ? t.amenities : (Array.isArray(t.facilities) ? t.facilities : ['Dolby Atmos', '4K Projection', 'Recliner Seats', 'Cafeteria']),
+          image: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
+          rating: t.rating || 4.6,
+        }));
+        setTheatres(apiTheatres);
+      }
 
-        // 2. Authoritative Theatres Sync from Database
-        const rawTheatres = theatresRes.status === 'fulfilled' 
-          ? (theatresRes.value.data?.data?.theatres || (theatresRes.value.data as any)?.theatres || theatresRes.value.data?.data || theatresRes.value.data) 
-          : null;
-        if (Array.isArray(rawTheatres) && rawTheatres.length > 0) {
-          const apiTheatres: Theatre[] = rawTheatres.map((t: any, idx: number) => ({
-            id: typeof t.id === 'number' ? t.id : (idx + 1),
-            name: t.name || '',
-            location: t.address || t.location || '',
-            city: t.city || 'Hyderabad',
-            features: Array.isArray(t.amenities) ? t.amenities : (Array.isArray(t.facilities) ? t.facilities : ['Dolby Atmos', '4K Projection', 'Recliner Seats', 'Cafeteria']),
-            price: '₹250 - ₹500',
-            img: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
-            screens: t.totalScreens || (t.screens?.length ?? 3),
-            facilities: Array.isArray(t.amenities) ? t.amenities : (Array.isArray(t.facilities) ? t.facilities : ['Dolby Atmos', '4K Projection', 'Recliner Seats', 'Cafeteria']),
-            image: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
-            rating: t.rating || 4.6,
-          }));
-          setTheatres(apiTheatres);
-        }
-
-        // 3. Authoritative Show Schedules Sync from Database
-        const rawShows = showsRes.status === 'fulfilled' 
-          ? (showsRes.value.data?.data?.shows || (showsRes.value.data as any)?.shows || showsRes.value.data?.data || showsRes.value.data) 
-          : null;
-        if (Array.isArray(rawShows) && rawShows.length > 0) {
-          const apiShows: MovieSchedule[] = rawShows.map((s: any) => ({
+      // 3. Authoritative Show Schedules Sync from Database
+      const rawShows = showsRes.status === 'fulfilled' 
+        ? (showsRes.value.data?.data?.shows || (showsRes.value.data as any)?.shows || showsRes.value.data?.data || showsRes.value.data) 
+        : null;
+      if (Array.isArray(rawShows) && rawShows.length > 0) {
+        const apiShows: MovieSchedule[] = rawShows.map((s: any) => {
+          let formattedTime = s.timeSlot || '7:30 PM';
+          if (s.startTime) {
+            try {
+              const dt = new Date(s.startTime);
+              if (!isNaN(dt.getTime())) {
+                formattedTime = dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+              }
+            } catch {}
+          }
+          return {
             id: s.id || `SCH-${Math.random()}`,
             movieTitle: s.movie?.title || s.movieTitle || 'Movie',
             theatreName: s.theatre?.name || s.theatreName || 'Theatre',
-            timeSlot: s.startTime || s.timeSlot || '7:30 PM',
+            timeSlot: formattedTime,
             pricePerSeat: s.price || s.pricePerSeat || 250,
             date: s.date || 'Today',
-            isDeployed: s.isActive !== false,
-          }));
-          setSchedules(apiShows);
-        }
-
-        // 4. Authoritative Events Sync from Database
-        const rawEvents = eventsRes.status === 'fulfilled' 
-          ? (eventsRes.value.data?.data?.events || (eventsRes.value.data as any)?.events || eventsRes.value.data?.data || eventsRes.value.data) 
-          : null;
-        if (Array.isArray(rawEvents) && rawEvents.length > 0) {
-          const apiEvents: Event[] = rawEvents.map((e: any, idx: number) => ({
-            id: e.id || `EVT-${idx + 1}`,
-            title: e.title || '',
-            description: e.description || '',
-            image: e.bannerUrl || e.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800',
-            venueName: e.venue || e.venueName || '',
-            venueAddress: e.venueAddress || e.venue || '',
-            city: e.city || 'Hyderabad',
-            date: e.startTime ? new Date(e.startTime).toISOString().split('T')[0] : (e.date || '2026-10-25'),
-            time: e.startTime ? new Date(e.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (e.time || '07:00 PM'),
-            categories: Array.isArray(e.ticketTypes) ? e.ticketTypes.map((t: any) => ({
-              id: t.id,
-              name: t.name,
-              price: Number(t.price) || 0,
-              availableSeats: t.availableQuantity ?? (t.capacity || 100),
-            })) : (e.categories || []),
-            reviews: e.reviews || [],
-            isActive: e.status === 'PUBLISHED' || e.status === 'Published',
-          }));
-          setEvents(apiEvents);
-        }
-
-        // 5. Authoritative Bookings Sync from Database
-        const bookingsRes = await apiClient.get('/admin/bookings').catch(() => null);
-        const rawBookings = bookingsRes?.data?.data?.bookings || (bookingsRes?.data as any)?.bookings;
-        if (Array.isArray(rawBookings) && rawBookings.length > 0) {
-          const apiBookings: Booking[] = rawBookings.map((b: any) => ({
-            id: b.id || b.bookingNumber,
-            movieTitle: b.show?.movie?.title || b.movieTitle || 'Movie',
-            theatreName: b.show?.theatre?.name || b.theatreName || 'Theatre',
-            seats: Array.isArray(b.seats) ? b.seats : (b.items?.map((i: any) => (i.showSeat?.seat?.row || 'A') + (i.showSeat?.seat?.number || '1')) || ['A1']),
-            totalPrice: Number(b.totalAmount) || 250,
-            totalAmount: Number(b.totalAmount) || 250,
-            date: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : 'Today',
-            timeSlot: b.show?.startTime || '7:30 PM',
-            userEmail: b.user?.email || 'guest@cinevenue.com',
-            userName: b.user?.name || 'Valued Patron',
-            userPhone: b.user?.mobile || '',
-            paymentStatus: (b.status === 'CONFIRMED' ? 'Confirmed' : 'Pending') as any,
-            bookingNumber: b.bookingNumber || b.id,
-            qrCode: b.ticket?.qrToken || `QR_${b.id}`,
-            ticketId: b.ticket?.id,
-            showId: b.showId
-          }));
-          setBookings(apiBookings);
-        }
-      } catch (err) {
-        console.warn('Live master data synchronization notice:', err);
+            isDeployed: s.status === 'ACTIVE' || s.isActive !== false,
+          };
+        });
+        setSchedules(apiShows);
       }
-    }
 
-    loadMasterData();
-    return () => { isMounted = false; };
+      // 4. Authoritative Events Sync from Database
+      const rawEvents = eventsRes.status === 'fulfilled' 
+        ? (eventsRes.value.data?.data?.events || (eventsRes.value.data as any)?.events || eventsRes.value.data?.data || eventsRes.value.data) 
+        : null;
+      if (Array.isArray(rawEvents) && rawEvents.length > 0) {
+        const apiEvents: Event[] = rawEvents.map((e: any, idx: number) => ({
+          id: e.id || `EVT-${idx + 1}`,
+          title: e.title || '',
+          description: e.description || '',
+          image: e.bannerUrl || e.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800',
+          venueName: e.venue || e.venueName || '',
+          venueAddress: e.venueAddress || e.venue || '',
+          city: e.city || 'Hyderabad',
+          date: e.startTime ? new Date(e.startTime).toISOString().split('T')[0] : (e.date || '2026-10-25'),
+          time: e.startTime ? new Date(e.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (e.time || '07:00 PM'),
+          categories: Array.isArray(e.ticketTypes) ? e.ticketTypes.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            price: Number(t.price) || 0,
+            availableSeats: t.availableQuantity ?? (t.capacity || 100),
+          })) : (e.categories || []),
+          reviews: e.reviews || [],
+          isActive: e.status === 'PUBLISHED' || e.status === 'Published',
+        }));
+        setEvents(apiEvents);
+      }
+
+      // 5. Authoritative Bookings Sync from Database
+      const bookingsRes = await apiClient.get('/admin/bookings').catch(() => null);
+      const rawBookings = bookingsRes?.data?.data?.bookings || (bookingsRes?.data as any)?.bookings;
+      if (Array.isArray(rawBookings) && rawBookings.length > 0) {
+        const apiBookings: Booking[] = rawBookings.map((b: any) => ({
+          id: b.id || b.bookingNumber,
+          movieTitle: b.show?.movie?.title || b.movieTitle || 'Movie',
+          theatreName: b.show?.theatre?.name || b.theatreName || 'Theatre',
+          seats: Array.isArray(b.seats) ? b.seats : (b.items?.map((i: any) => (i.showSeat?.seat?.row || 'A') + (i.showSeat?.seat?.number || '1')) || ['A1']),
+          totalPrice: Number(b.totalAmount) || 250,
+          totalAmount: Number(b.totalAmount) || 250,
+          date: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : 'Today',
+          timeSlot: b.show?.startTime || '7:30 PM',
+          userEmail: b.user?.email || 'guest@cinevenue.com',
+          userName: b.user?.name || 'Valued Patron',
+          userPhone: b.user?.mobile || '',
+          paymentStatus: (b.status === 'CONFIRMED' ? 'Confirmed' : 'Pending') as any,
+          bookingNumber: b.bookingNumber || b.id,
+          qrCode: b.ticket?.qrToken || `QR_${b.id}`,
+          ticketId: b.ticket?.id,
+          showId: b.showId
+        }));
+        setBookings(apiBookings);
+      }
+    } catch (err) {
+      console.warn('Live master data synchronization notice:', err);
+    }
   }, []);
+
+  const triggerMasterDataSync = useCallback(() => {
+    loadMasterData();
+    if (typeof window !== "undefined") {
+      try {
+        const bc = new BroadcastChannel("cinevenue_master_data_sync");
+        bc.postMessage({ type: "SYNC", timestamp: Date.now() });
+        bc.close();
+      } catch {}
+      window.dispatchEvent(new CustomEvent("cinevenue_master_data_sync"));
+    }
+  }, [loadMasterData]);
+
+  useEffect(() => {
+    loadMasterData();
+
+    // Periodic sync every 25 seconds
+    const interval = setInterval(loadMasterData, 25000);
+
+    // Sync on window focus
+    const handleFocus = () => loadMasterData();
+    window.addEventListener("focus", handleFocus);
+
+    // Sync across browser tabs via BroadcastChannel
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("cinevenue_master_data_sync");
+      bc.onmessage = () => loadMasterData();
+    } catch {}
+
+    const handleCustomSync = () => loadMasterData();
+    window.addEventListener("cinevenue_master_data_sync", handleCustomSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("cinevenue_master_data_sync", handleCustomSync);
+      if (bc) bc.close();
+    };
+  }, [loadMasterData]);
 
   // CineCoins Loyalty System State
   const [cineCoinsSettings, setCineCoinsSettings] = useState<CineCoinsSettings>(() => {
@@ -818,7 +863,7 @@ export default function App() {
     setAdminOpen(true);
   };
 
-  const handleOpenManagerDashboard = (theatreId: number) => {
+  const handleOpenManagerDashboard = (theatreId: number | string) => {
     setAdminOpen(false);
     setActiveTheatreId(theatreId);
     try {
@@ -880,13 +925,17 @@ export default function App() {
         setActiveOrganizerId(orgIdParam);
       }
       if (thIdParam) {
-        setActiveTheatreId(Number(thIdParam));
+        setActiveTheatreId(thIdParam);
       } else if (path === "/theatre-admin") {
         const savedUserEmail = localStorage.getItem("cine_user_email");
         const matchedTa = theatreAdmins.find(a => a.email.toLowerCase() === savedUserEmail?.toLowerCase());
         setActiveTheatreId(matchedTa?.theatreId || theatres[0]?.id || 1);
       }
-      if (adminParam === "true" || hash === "#admin" || path === "/admin-dashboard") {
+      if (
+        path === "/authpanel" ||
+        path.startsWith("/authpanel/") ||
+        hash === "#authpanel"
+      ) {
         setAdminOpen(true);
       }
     };
@@ -899,6 +948,50 @@ export default function App() {
       window.removeEventListener("hashchange", checkAdminUrl);
     };
   }, [theatreAdmins, theatres]);
+
+  // Global Secret Keystroke Listener: Open Admin Panel on typing "authpanel" anywhere on the site
+  useEffect(() => {
+    let typedBuffer = "";
+    let resetTimer: any = null;
+
+    const handleSecretTyping = (e: KeyboardEvent) => {
+      // Do not trigger if typing inside an input, textarea or contenteditable element
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("input, textarea, [contenteditable='true']"))
+      ) {
+        return;
+      }
+
+      if (e.key && e.key.length === 1) {
+        typedBuffer += e.key.toLowerCase();
+        if (typedBuffer.length > 25) {
+          typedBuffer = typedBuffer.slice(-25);
+        }
+
+        // When the user types "authpanel", immediately open the Admin Panel
+        if (typedBuffer.endsWith("authpanel")) {
+          typedBuffer = "";
+          setAdminOpen(true);
+        }
+
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => {
+          typedBuffer = "";
+        }, 3500);
+      }
+    };
+
+    window.addEventListener("keydown", handleSecretTyping);
+    return () => {
+      window.removeEventListener("keydown", handleSecretTyping);
+      clearTimeout(resetTimer);
+    };
+  }, []);
 
   // Handlers for state updates
   const handleLoginSuccess = (email: string) => {
@@ -1076,37 +1169,38 @@ export default function App() {
       await apiClient.post('/movies', {
         title: m.title,
         description: m.description,
-        durationMins: parseInt(m.duration) || 150,
-        language: m.language,
-        genre: m.genre,
+        duration: parseInt(m.duration || "150") || 150,
+        durationMins: parseInt(m.duration || "150") || 150,
+        language: m.language || m.lang || "Hindi",
+        genre: m.genre || "Action",
         releaseDate: m.releaseDate ? new Date(m.releaseDate).toISOString() : new Date().toISOString(),
-        posterUrl: m.poster,
+        posterUrl: m.poster || m.img,
         trailerUrl: m.trailerUrl,
-        backdropUrl: m.banner,
-        cast: m.cast,
-        director: m.director,
-        rating: m.rating || 4.5,
+        backdropUrl: m.banner || m.poster || m.img,
+        rating: Number(m.rating) || 8.5,
       });
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend movie create notice:', e);
     }
   };
 
   const handleUpdateMovie = async (oldTitle: string, m: Movie) => {
-    setMovies(prev => prev.map(item => item.title === oldTitle ? m : item));
+    setMovies(prev => prev.map(item => (item.title === oldTitle || item.id === m.id) ? m : item));
     try {
-      await apiClient.put(`/movies/${m.id}`, {
+      await apiClient.put(`/movies/${m.id || oldTitle}`, {
         title: m.title,
         description: m.description,
-        durationMins: parseInt(m.duration) || 150,
-        language: m.language,
-        genre: m.genre,
-        posterUrl: m.poster,
+        duration: parseInt(m.duration || "150") || 150,
+        durationMins: parseInt(m.duration || "150") || 150,
+        language: m.language || m.lang || "Hindi",
+        genre: m.genre || "Action",
+        posterUrl: m.poster || m.img,
         trailerUrl: m.trailerUrl,
-        backdropUrl: m.banner,
-        cast: m.cast,
-        director: m.director,
+        backdropUrl: m.banner || m.poster || m.img,
+        rating: Number(m.rating) || 8.5,
       });
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend movie update notice:', e);
     }
@@ -1115,12 +1209,12 @@ export default function App() {
   const handleDeleteMovie = async (title: string) => {
     const target = movies.find(m => m.title === title);
     setMovies(prev => prev.filter(m => m.title !== title));
-    if (target) {
-      try {
-        await apiClient.delete(`/movies/${target.id}`);
-      } catch (e) {
-        console.warn('Backend movie delete notice:', e);
-      }
+    const targetId = target?.id || title;
+    try {
+      await apiClient.delete(`/movies/${targetId}`);
+      triggerMasterDataSync();
+    } catch (e) {
+      console.warn('Backend movie delete notice:', e);
     }
   };
 
@@ -1130,11 +1224,12 @@ export default function App() {
       await apiClient.post('/theatres', {
         name: t.name,
         city: t.city,
-        address: t.location,
+        address: t.location || t.address,
         totalScreens: t.screens || 3,
-        facilities: t.facilities,
-        images: [t.image],
+        facilities: t.facilities || t.features,
+        images: [t.image || t.img],
       });
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend theatre create notice:', e);
     }
@@ -1146,20 +1241,22 @@ export default function App() {
       await apiClient.put(`/theatres/${t.id}`, {
         name: t.name,
         city: t.city,
-        address: t.location,
+        address: t.location || t.address,
         totalScreens: t.screens,
-        facilities: t.facilities,
-        images: [t.image],
+        facilities: t.facilities || t.features,
+        images: [t.image || t.img],
       });
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend theatre update notice:', e);
     }
   };
 
-  const handleDeleteTheatre = async (id: number) => {
+  const handleDeleteTheatre = async (id: number | string) => {
     setTheatres(prev => prev.filter(t => t.id !== id));
     try {
       await apiClient.delete(`/theatres/${id}`);
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend theatre delete notice:', e);
     }
@@ -1172,9 +1269,11 @@ export default function App() {
         movieTitle: sch.movieTitle,
         theatreName: sch.theatreName,
         startTime: sch.timeSlot,
+        timeSlot: sch.timeSlot,
         price: sch.pricePerSeat,
         date: sch.date,
       });
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend show create notice:', e);
     }
@@ -1184,8 +1283,26 @@ export default function App() {
     setSchedules(prev => prev.filter(s => s.id !== id));
     try {
       await apiClient.delete(`/shows/${id}`);
+      triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend show delete notice:', e);
+    }
+  };
+
+  const handleUpdateSchedule = async (id: string, sch: MovieSchedule) => {
+    setSchedules(prev => prev.map(item => item.id === id ? sch : item));
+    try {
+      await apiClient.put(`/shows/${id}`, {
+        movieTitle: sch.movieTitle,
+        theatreName: sch.theatreName,
+        startTime: sch.timeSlot,
+        timeSlot: sch.timeSlot,
+        price: sch.pricePerSeat,
+        date: sch.date,
+      });
+      triggerMasterDataSync();
+    } catch (e) {
+      console.warn('Backend show update notice:', e);
     }
   };
 
@@ -1201,9 +1318,12 @@ export default function App() {
         venueAddress: e.venueAddress,
         city: e.city,
         date: e.date,
+        time: e.time,
         startTime: e.time,
+        price: e.categories?.[0]?.price || 0,
         ticketTypes: e.categories,
       });
+      triggerMasterDataSync();
     } catch (err) {
       console.warn('Backend event create notice:', err);
     }
@@ -1213,6 +1333,7 @@ export default function App() {
     setEvents(prev => prev.filter(e => e.id !== id));
     try {
       await apiClient.delete(`/events/${id}`);
+      triggerMasterDataSync();
     } catch (err) {
       console.warn('Backend event delete notice:', err);
     }
@@ -1305,8 +1426,8 @@ export default function App() {
   // Admin panel & authentication must ALWAYS be accessible — even when the global website is switched off.
   const currentPath = typeof window !== "undefined" ? window.location.pathname.toLowerCase() : "";
   const isAdminRoute = 
-    currentPath.startsWith('/adminpanel') || 
-    currentPath.startsWith('/admin') || 
+    currentPath.startsWith('/authpanel') ||
+    (currentPath.startsWith('/admin') && !currentPath.startsWith('/adminpanel')) || 
     currentPath.startsWith('/admin-login') || 
     currentPath.startsWith('/auth') ||
     currentPath === '/login' ||
@@ -1400,8 +1521,8 @@ export default function App() {
               schedules={schedules}
               events={events}
               eventRegistrations={eventRegistrations}
-              onAddEvent={(e) => setEvents([...events, e])}
-              onDeleteEvent={(id) => setEvents(events.filter(e => e.id !== id))}
+              onAddEvent={handleAddEvent}
+              onDeleteEvent={handleDeleteEvent}
               onUpdateEventRegistrationStatus={(regId, status) => {
                 const updated = eventRegistrations.map(r => {
                   if (r.id === regId) {
@@ -1420,16 +1541,16 @@ export default function App() {
               onUpdateNotifyMeRequestStatus={(id, status) => {
                 setNotifyMeRequests(notifyMeRequests.map(r => r.id === id ? { ...r, status, notifiedAt: new Date().toLocaleString() } : r));
               }}
-              onAddMovie={(m) => setMovies([...movies, m])}
-              onAddTheatre={(t) => setTheatres([...theatres, t])}
-              onDeleteMovie={(title) => setMovies(movies.filter(m => m.title !== title))}
-              onDeleteTheatre={(id) => setTheatres(theatres.filter(t => t.id !== id))}
-              onUpdateTheatre={(t) => setTheatres(theatres.map(item => item.id === t.id ? t : item))}
+              onAddMovie={handleAddMovie}
+              onAddTheatre={handleAddTheatre}
+              onDeleteMovie={handleDeleteMovie}
+              onDeleteTheatre={handleDeleteTheatre}
+              onUpdateTheatre={handleUpdateTheatre}
               onUpdateRentalStatus={(id, status) => {
                 setRentalRequests(rentalRequests.map(r => r.id === id ? { ...r, status } : r));
               }}
-              onScheduleShow={(sch) => setSchedules([...schedules, sch])}
-              onDeleteSchedule={(id) => setSchedules(schedules.filter(s => s.id !== id))}
+              onScheduleShow={handleScheduleShow}
+              onDeleteSchedule={handleDeleteSchedule}
               onDeploySchedule={(id) => setSchedules(schedules.map(s => s.id === id ? { ...s, isDeployed: true } : s))}
               onSettleVenueBookings={(name) => {
                 setBookings(bookings.map(b => b.theatreName === name ? { ...b, status: "Settled" as const } : b));
@@ -1452,12 +1573,12 @@ export default function App() {
                 setRentalRequests([newRental, ...rentalRequests]);
               }}
               onOpenManagerDashboard={handleOpenManagerDashboard}
-              onUpdateMovie={(oldTitle, m) => setMovies(movies.map(item => item.title === oldTitle ? m : item))}
-              onUpdateSchedule={(id, sch) => setSchedules(schedules.map(item => item.id === id ? sch : item))}
+              onUpdateMovie={handleUpdateMovie}
+              onUpdateSchedule={handleUpdateSchedule}
               onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
               onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
               
-              isSuperAdmin={userEmail?.toLowerCase() === superAdminEmail.toLowerCase()}
+              isSuperAdmin={Boolean(userEmail?.toLowerCase() === superAdminEmail.toLowerCase() || (!userEmail && localStorage.getItem("cine_user_email")?.toLowerCase() === superAdminEmail.toLowerCase()))}
               isTheatreAdmin={theatreAdmins.some(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
               activeTheatreAdmin={theatreAdmins.find(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
               theatreAdmins={theatreAdmins}
@@ -1766,7 +1887,7 @@ export default function App() {
               }}
               onOpenManagerDashboard={handleOpenManagerDashboard}
               onUpdateMovie={handleUpdateMovie}
-              onUpdateSchedule={(id, sch) => setSchedules(schedules.map(item => item.id === id ? sch : item))}
+              onUpdateSchedule={handleUpdateSchedule}
               onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
               onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
               
@@ -1823,9 +1944,10 @@ export default function App() {
         }
       />
 
-      {/* Admin Panel — secret URL, not linked publicly */}
+      {/* Admin Panel — secret /authpanel route, not linked publicly */}
+      <Route path="/adminpanel" element={<Navigate to="/" replace />} />
       <Route
-        path="/adminpanel"
+        path="/authpanel"
         element={
           <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
             <AdminPanel
@@ -1896,7 +2018,7 @@ export default function App() {
               }}
               onOpenManagerDashboard={handleOpenManagerDashboard}
               onUpdateMovie={handleUpdateMovie}
-              onUpdateSchedule={(id, sch) => setSchedules(schedules.map(item => item.id === id ? sch : item))}
+              onUpdateSchedule={handleUpdateSchedule}
               onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
               onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
               
@@ -2369,7 +2491,7 @@ export default function App() {
         element={
           <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
             <TheatreManagerDashboard
-              theatreId={activeTheatreId || Number(new URLSearchParams(window.location.search).get("theatreId")) || theatres[0]?.id || 1}
+              theatreId={activeTheatreId || (new URLSearchParams(window.location.search).get("theatreId")) || theatres[0]?.id || 1}
               theatres={theatres}
               bookings={bookings}
               schedules={schedules}
