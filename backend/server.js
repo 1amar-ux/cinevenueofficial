@@ -31,6 +31,22 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 
+// ==========================================
+// Event Subwebsite & Ticketing Engine Routes
+// ==========================================
+app.use("/api/v1/events", require("./routes/eventRoutes"));
+app.use("/api/events", require("./routes/eventRoutes"));
+
+app.use("/api/v1/event-bookings", require("./routes/eventBookingRoutes"));
+app.use("/api/event-bookings", require("./routes/eventBookingRoutes"));
+app.use("/api/v1/event-payments", require("./routes/eventBookingRoutes"));
+
+app.use("/api/v1/event-tickets", require("./routes/eventTicketRoutes"));
+app.use("/api/event-tickets", require("./routes/eventTicketRoutes"));
+
+app.use("/api/v1/ticket-verification", require("./routes/ticketVerificationRoutes"));
+app.use("/api/ticket-verification", require("./routes/ticketVerificationRoutes"));
+
 // =========================
 // Swagger API Docs
 // =========================
