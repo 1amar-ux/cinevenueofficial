@@ -1,5 +1,6 @@
 const Show = require("../models/Show");
 const Screen = require("../models/Screen");
+const { getShowLockedSeats } = require("../services/seatLockService");
 
 // Create Show
 exports.createShow = async (req, res) => {
@@ -100,14 +101,38 @@ exports.getMovieShows = async (req, res) => {
   }
 };
 
-// Get Seat Layout
+// Get Seat Layout with Real-Time Lock Status
 exports.getSeats = async (req, res) => {
   try {
     const show = await Show.findById(req.params.id);
 
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        message: "Show not found",
+      });
+    }
+
+    const lockedMap = await getShowLockedSeats(req.params.id);
+
+    const enrichedSeats = (show.seats || []).map((seat) => {
+      const plainSeat = seat.toObject ? seat.toObject() : { ...seat };
+      const lockInfo = lockedMap[plainSeat.seatNumber];
+
+      if (plainSeat.status === "available" && lockInfo) {
+        return {
+          ...plainSeat,
+          status: "locked",
+          lockedUntil: lockInfo.expiresAt,
+          remainingSeconds: lockInfo.remainingTtl,
+        };
+      }
+      return plainSeat;
+    });
+
     res.json({
       success: true,
-      seats: show.seats,
+      seats: enrichedSeats,
     });
   } catch (error) {
     res.status(500).json({

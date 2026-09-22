@@ -7,6 +7,7 @@ const User = require("../models/User");
 const { createOrder } = require("../services/paymentService");
 const { generateQR } = require("../services/ticketService");
 const { sendTicketEmail } = require("../services/emailService");
+const { unlockSeat } = require("../services/seatLockService");
 
 // Create Payment Order
 exports.createPayment = async (req, res) => {
@@ -118,6 +119,13 @@ exports.verifyPayment = async (req, res) => {
         ],
       }
     );
+
+    // Clean up temporary locks now that seats are permanently booked in DB
+    try {
+      await unlockSeat(booking.show, booking.seats);
+    } catch (cleanErr) {
+      console.warn("Post-payment lock cleanup note:", cleanErr.message);
+    }
 
     res.json({
       success: true,
