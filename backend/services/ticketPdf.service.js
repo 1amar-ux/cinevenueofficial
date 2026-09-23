@@ -43,15 +43,25 @@ async function generateTicketPDF(ticket, event, qrDataOrToken) {
     doc.rect(20, 20, 555, 802).fill("#0B0F17");
 
     // Header Accent Bar
-    doc.rect(20, 20, 555, 10).fill("#E50914");
+    const isComplimentary = ticket.ticketTypeClassification === "COMPLIMENTARY_PASS" || !!ticket.passCategory;
+    doc.rect(20, 20, 555, 10).fill(isComplimentary ? "#F59E0B" : "#E50914");
 
     // CineVenue Brand Logo
-    doc.fillColor("#E50914").fontSize(26).font("Helvetica-Bold").text("CINEVENUE", 44, 48);
-    doc.fillColor("#94A3B8").fontSize(11).font("Helvetica").text("OFFICIAL EVENT PASS", 44, 78);
+    doc.fillColor(isComplimentary ? "#F59E0B" : "#E50914").fontSize(26).font("Helvetica-Bold").text("CINEVENUE", 44, 48);
+    doc.fillColor("#94A3B8").fontSize(11).font("Helvetica").text(
+      isComplimentary ? "OFFICIAL COMPLIMENTARY PASS" : "OFFICIAL EVENT PASS",
+      44,
+      78
+    );
 
     // Status Badge
-    doc.roundedRect(440, 48, 100, 28, 4).fill("#1E293B");
-    doc.fillColor("#10B981").fontSize(11).font("Helvetica-Bold").text(ticket.status || "VALID", 470, 56);
+    doc.roundedRect(380, 48, 160, 28, 4).fill("#1E293B");
+    doc.fillColor(isComplimentary ? "#F59E0B" : "#10B981").fontSize(10).font("Helvetica-Bold").text(
+      isComplimentary ? (ticket.passCategory ? `${ticket.passCategory} PASS` : "COMPLIMENTARY") : (ticket.status || "VALID"),
+      390,
+      56,
+      { width: 140, align: "center" }
+    );
 
     // Separator line
     doc.moveTo(44, 105).lineTo(550, 105).strokeColor("#334155").lineWidth(1).stroke();
@@ -72,41 +82,63 @@ async function generateTicketPDF(ticket, event, qrDataOrToken) {
       : "Date TBA";
 
     doc.moveDown(0.5);
-    doc.fillColor("#94A3B8").fontSize(12).font("Helvetica").text(`📅  Date: ${formattedDate}`, 44, 175);
-    doc.text(`⏰  Time: ${event.startTime || "07:00 PM"}${event.endTime ? ` - ${event.endTime}` : ""}`, 44, 195);
-    doc.text(`📍  Venue: ${event.venue?.name || "Main Arena"}`, 44, 215);
+    doc.fillColor("#94A3B8").fontSize(12).font("Helvetica").text(`📅  Date: ${formattedDate}`, 44, 170);
+    doc.text(`⏰  Time: ${event.startTime || "07:00 PM"}${event.endTime ? ` - ${event.endTime}` : ""}`, 44, 190);
+    doc.text(`📍  Venue: ${event.venue?.name || "Main Arena"}`, 44, 210);
     if (event.venue?.address) {
-      doc.text(`     Address: ${event.venue.address}, ${event.venue.city || ""}`, 44, 235);
+      doc.text(`     Address: ${event.venue.address}, ${event.venue.city || ""}`, 44, 230);
     }
 
-    // Ticket Box
-    doc.roundedRect(44, 270, 506, 80, 8).fill("#161E2E");
-    doc.fillColor("#94A3B8").fontSize(10).font("Helvetica").text("ATTENDEE", 64, 286);
-    doc.fillColor("#FFFFFF").fontSize(14).font("Helvetica-Bold").text(ticket.customer?.name || "Valued Guest", 64, 302);
-    doc.fillColor("#94A3B8").fontSize(11).font("Helvetica").text(ticket.customer?.email || "", 64, 322);
+    // Attendee / Recipient Box
+    doc.roundedRect(44, 260, 506, 95, 8).fill("#161E2E");
+    doc.fillColor("#94A3B8").fontSize(9).font("Helvetica").text(isComplimentary ? "INVITED GUEST / RECIPIENT" : "ATTENDEE", 64, 274);
+    
+    const recipientName = ticket.recipient?.name || ticket.customer?.name || "Valued Guest";
+    doc.fillColor("#FFFFFF").fontSize(13).font("Helvetica-Bold").text(recipientName, 64, 290);
+    
+    if (isComplimentary && (ticket.recipient?.organisation || ticket.recipient?.designation)) {
+      const orgInfo = [ticket.recipient.designation, ticket.recipient.organisation].filter(Boolean).join(" • ");
+      doc.fillColor("#F59E0B").fontSize(10).font("Helvetica-Bold").text(orgInfo, 64, 308);
+      doc.fillColor("#94A3B8").fontSize(9).font("Helvetica").text(ticket.recipient?.email || ticket.customer?.email || "", 64, 326);
+    } else {
+      doc.fillColor("#94A3B8").fontSize(10).font("Helvetica").text(ticket.customer?.email || "", 64, 312);
+      if (ticket.customer?.phone) {
+        doc.fillColor("#64748B").fontSize(9).font("Helvetica").text(`Phone: ${ticket.customer.phone}`, 64, 328);
+      }
+    }
 
-    doc.fillColor("#94A3B8").fontSize(10).font("Helvetica").text("TICKET ID", 340, 286);
-    doc.fillColor("#E50914").fontSize(16).font("Helvetica-Bold").text(ticket.ticketId, 340, 302);
-    doc.fillColor("#10B981").fontSize(11).font("Helvetica-Bold").text(`Pass #${ticket.ticketNumber || 1}`, 340, 324);
+    doc.fillColor("#94A3B8").fontSize(9).font("Helvetica").text(isComplimentary ? "PASS TYPE / ID" : "TICKET ID", 340, 274);
+    doc.fillColor(isComplimentary ? "#F59E0B" : "#E50914").fontSize(14).font("Helvetica-Bold").text(ticket.ticketId, 340, 290);
+    doc.fillColor("#10B981").fontSize(10).font("Helvetica-Bold").text(
+      isComplimentary ? `Admission: Complimentary (Pass #${ticket.ticketNumber || 1})` : `Pass #${ticket.ticketNumber || 1}`,
+      340,
+      310
+    );
+    if (ticket.passCategory) {
+      doc.fillColor("#94A3B8").fontSize(9).font("Helvetica").text(`Category: ${ticket.passCategory}`, 340, 328);
+    }
 
     // QR Code Section
-    doc.roundedRect(185, 380, 225, 225, 12).fill("#FFFFFF");
-    doc.image(qrBuffer, 195, 390, { fit: [205, 205], align: "center" });
+    doc.roundedRect(185, 375, 225, 225, 12).fill("#FFFFFF");
+    doc.image(qrBuffer, 195, 385, { fit: [205, 205], align: "center" });
 
     // Gate Entry Notice
-    doc.fillColor("#F8FAFC").fontSize(12).font("Helvetica-Bold").text("SCAN AT VENUE ENTRANCE TO ENTER", 44, 630, {
-      align: "center",
-      width: 506,
-    });
+    doc.fillColor("#F8FAFC").fontSize(12).font("Helvetica-Bold").text(
+      isComplimentary ? "COMPLIMENTARY ACCESS PASS - SCAN AT GATES" : "SCAN AT VENUE ENTRANCE TO ENTER",
+      44,
+      620,
+      { align: "center", width: 506 }
+    );
 
-    doc.fillColor("#64748B").fontSize(9).font("Helvetica").text("Cryptographically signed with CineVenue Zero-Trust QR Verification", 44, 650, {
+    doc.fillColor("#64748B").fontSize(9).font("Helvetica").text("Cryptographically signed with CineVenue Zero-Trust QR Verification", 44, 638, {
       align: "center",
       width: 506,
     });
 
     // Terms & Conditions Snippet
-    doc.moveTo(44, 680).lineTo(550, 680).strokeColor("#334155").lineWidth(1).stroke();
-    doc.fillColor("#94A3B8").fontSize(10).font("Helvetica-Bold").text("ENTRY TERMS & CONDITIONS", 44, 695);
+    doc.moveTo(44, 665).lineTo(550, 665).strokeColor("#334155").lineWidth(1).stroke();
+    doc.fillColor("#94A3B8").fontSize(10).font("Helvetica-Bold").text("ENTRY TERMS & CONDITIONS", 44, 680);
+
 
     const terms = event.termsAndConditions && event.termsAndConditions.length > 0
       ? event.termsAndConditions

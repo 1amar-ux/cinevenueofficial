@@ -121,17 +121,57 @@ exports.adminGetEventTickets = async (req, res) => {
 exports.adminCancelTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const ticket = await EventTicket.findOneAndUpdate(
-      { ticketId },
-      { $set: { status: "CANCELLED" } },
-      { new: true }
-    );
+    const ticket = await EventTicket.findOne({ ticketId });
 
     if (!ticket) {
       return res.status(404).json({ success: false, message: "Ticket not found" });
     }
+    if (ticket.status === "CANCELLED") {
+      return res.status(400).json({ success: false, message: "Ticket is already cancelled" });
+    }
 
-    res.json({ success: true, message: "Ticket cancelled successfully", ticket });
+    const previousStatus = ticket.status;
+    ticket.status = "CANCELLED";
+    await ticket.save();
+
+    // Only restore capacity if ticket was previously confirmed/valid
+    if (previousStatus === "VALID") {
+      if (ticket.ticketTypeClassification === "COMPLIMENTARY_PASS" || ticket.passCategory) {
+        await Event.updateOne(
+          { _id: ticket.eventId },
+          {
+            $inc: { availableTicketCount: 1, freePassesIssuedCount: -1 },
+            $set: { bookingStatus: "OPEN" },
+          }
+        );
+        if (ticket.passCategory) {
+          await Event.updateOne(
+            { _id: ticket.eventId, "freePassCategories.name": ticket.passCategory },
+            { $inc: { "freePassCategories.$.issuedCount": -1 }, $set: { "freePassCategories.$.status": "ACTIVE" } }
+          );
+        }
+      } else {
+        await Event.updateOne(
+          { _id: ticket.eventId },
+          {
+            $inc: { availableTicketCount: 1, soldTicketCount: -1 },
+            $set: { bookingStatus: "OPEN" },
+          }
+        );
+        if (ticket.ticketTypeId) {
+          const EventTicketType = require("../models/EventTicketType");
+          await EventTicketType.updateOne(
+            { _id: ticket.ticketTypeId },
+            {
+              $inc: { availableQuantity: 1, soldQuantity: -1 },
+              $set: { status: "ACTIVE" },
+            }
+          );
+        }
+      }
+    }
+
+    res.json({ success: true, message: "Ticket cancelled successfully and capacity restored", ticket });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -141,18 +181,42 @@ exports.adminCancelTicket = async (req, res) => {
 exports.adminRefundTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const ticket = await EventTicket.findOneAndUpdate(
-      { ticketId },
-      { $set: { status: "REFUNDED" } },
-      { new: true }
-    );
+    const ticket = await EventTicket.findOne({ ticketId });
 
     if (!ticket) {
       return res.status(404).json({ success: false, message: "Ticket not found" });
     }
+    if (ticket.status === "REFUNDED") {
+      return res.status(400).json({ success: false, message: "Ticket is already refunded" });
+    }
 
-    res.json({ success: true, message: "Ticket marked as refunded", ticket });
+    const previousStatus = ticket.status;
+    ticket.status = "REFUNDED";
+    await ticket.save();
+
+    if (previousStatus === "VALID") {
+      await Event.updateOne(
+        { _id: ticket.eventId },
+        {
+          $inc: { availableTicketCount: 1, soldTicketCount: -1 },
+          $set: { bookingStatus: "OPEN" },
+        }
+      );
+      if (ticket.ticketTypeId) {
+        const EventTicketType = require("../models/EventTicketType");
+        await EventTicketType.updateOne(
+          { _id: ticket.ticketTypeId },
+          {
+            $inc: { availableQuantity: 1, soldQuantity: -1 },
+            $set: { status: "ACTIVE" },
+          }
+        );
+      }
+    }
+
+    res.json({ success: true, message: "Ticket marked as refunded and capacity restored", ticket });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+

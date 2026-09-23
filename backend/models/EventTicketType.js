@@ -22,6 +22,11 @@ const eventTicketTypeSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    totalQuantity: {
+      type: Number,
+      default: 100,
+      min: 0,
+    },
     availableQuantity: {
       type: Number,
       required: true,
@@ -32,9 +37,19 @@ const eventTicketTypeSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    reservedQuantity: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     maxPerBooking: {
       type: Number,
       default: 10,
+      min: 1,
+    },
+    minPerBooking: {
+      type: Number,
+      default: 1,
       min: 1,
     },
     status: {
@@ -50,5 +65,6 @@ const eventTicketTypeSchema = new mongoose.Schema(
 
 // Indexes
 eventTicketTypeSchema.index({ eventId: 1, status: 1 });
+eventTicketTypeSchema.index({ eventId: 1, status: 1, availableQuantity: 1 });
 
 module.exports = mongoose.model("EventTicketType", eventTicketTypeSchema);

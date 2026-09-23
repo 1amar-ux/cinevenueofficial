@@ -51,13 +51,18 @@ exports.verifyTicket = async (req, res) => {
       status: "VALID",
       ticket: {
         ticketId: ticket.ticketId,
-        customerName: ticket.customer?.name,
-        category: ticket.ticketTypeId?.name || "General Admission",
+        customerName: ticket.recipient?.name || ticket.customer?.name,
+        category: ticket.passCategory || ticket.ticketTypeId?.name || "General Admission",
+        passType: ticket.passCategory || "PAID TICKET",
+        organisation: ticket.recipient?.organisation || "",
+        designation: ticket.recipient?.designation || "",
+        classification: ticket.ticketTypeClassification || "PAID_TICKET",
       },
     });
   } catch (error) {
     res.status(500).json({ valid: false, status: "ERROR", message: error.message });
   }
+
 };
 
 // 2. POST /api/v1/ticket-verification/check-in (Atomic transition VALID -> USED)
@@ -134,14 +139,17 @@ exports.checkInTicket = async (req, res) => {
       message: "Check-in successful! Welcome to the event.",
       ticket: {
         ticketId: ticket.ticketId,
-        customerName: ticket.customer?.name,
-        category: ticket.ticketTypeId?.name || "General",
+        customerName: ticket.recipient?.name || ticket.customer?.name,
+        category: ticket.passCategory || ticket.ticketTypeId?.name || "General",
+        passType: ticket.passCategory || "PAID TICKET",
+        organisation: ticket.recipient?.organisation || "",
         checkedInAt: ticket.checkedInAt,
       },
     });
   } catch (error) {
     res.status(500).json({ success: false, status: "ERROR", message: error.message });
   }
+
 };
 
 // 3. GET /api/v1/admin/events/:eventId/check-ins (Audit trail)

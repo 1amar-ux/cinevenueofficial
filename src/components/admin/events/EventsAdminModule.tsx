@@ -5,10 +5,11 @@ import EventRegistrations from './EventRegistrations';
 import EventSettlements from './EventSettlements';
 import EventAnalytics from './EventAnalytics';
 import QRScanner from './QRScanner';
-import { Sparkles, Calendar, PlusCircle, Users, Receipt, BarChart3, QrCode } from 'lucide-react';
+import FreePassManager from './FreePassManager';
+import { Sparkles, Calendar, PlusCircle, Users, Receipt, BarChart3, QrCode, Award } from 'lucide-react';
 
 export default function EventsAdminModule() {
-  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'create' | 'registrations' | 'settlements' | 'analytics' | 'scanner'>('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'create' | 'freepasses' | 'registrations' | 'settlements' | 'analytics' | 'scanner'>('dashboard');
 
   return (
     <div className="space-y-6">
@@ -16,10 +17,10 @@ export default function EventsAdminModule() {
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-text-primary tracking-wide flex items-center gap-2">
             <span>Event</span>
-            <span className="text-gold">Booking</span>
+            <span className="text-gold">Booking & Passes</span>
           </h2>
           <p className="text-xs text-text-secondary mt-0.5">
-            Manage movie pre-releases, audio launches, fan meets, and generate secure passes.
+            Manage movie pre-releases, audio launches, fan meets, press passes, and generate secure passes.
           </p>
         </div>
       </div>
@@ -36,6 +37,12 @@ export default function EventsAdminModule() {
           className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors whitespace-nowrap ${activeSubTab === 'create' ? 'text-gold border-b-2 border-gold bg-gold/5' : 'text-text-secondary hover:text-white'}`}
         >
           <PlusCircle className="w-4 h-4" /> Create Event
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('freepasses')} 
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors whitespace-nowrap ${activeSubTab === 'freepasses' ? 'text-gold border-b-2 border-gold bg-gold/5' : 'text-text-secondary hover:text-white'}`}
+        >
+          <Award className="w-4 h-4" /> Free Passes & Capacity
         </button>
         <button 
           onClick={() => setActiveSubTab('registrations')} 
@@ -66,6 +73,7 @@ export default function EventsAdminModule() {
       <div className="mt-6">
         {activeSubTab === 'dashboard' && <EventsList />}
         {activeSubTab === 'create' && <EventCreator onCreated={() => setActiveSubTab('dashboard')} />}
+        {activeSubTab === 'freepasses' && <FreePassManager />}
         {activeSubTab === 'registrations' && <EventRegistrations />}
         {activeSubTab === 'scanner' && <QRScanner />}
         {activeSubTab === 'settlements' && <EventSettlements />}
@@ -74,3 +82,4 @@ export default function EventsAdminModule() {
     </div>
   );
 }
+

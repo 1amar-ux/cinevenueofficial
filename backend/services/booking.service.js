@@ -9,7 +9,7 @@ const { sendTicketEmail } = require("./email.service");
 const { createRazorpayOrder, verifyPaymentSignature } = require("./payment.service");
 
 /**
- * 1. Create Event Booking with Authoritative Server Pricing & Razorpay Order
+ * 1. Create Event Booking with Authoritative Server Pricing, Capacity Enforcement & Razorpay Order
  */
 async function createBooking({
   eventId,
@@ -34,11 +34,40 @@ async function createBooking({
   if (event.status !== "PUBLISHED") {
     throw new Error("This event is not published or currently accepting bookings");
   }
+  if (event.bookingStatus === "SOLD_OUT" || event.availableTicketCount <= 0) {
+    throw new Error("This event is completely SOLD OUT");
+  }
   if (event.bookingStatus !== "OPEN") {
     throw new Error("Ticket booking for this event is closed");
   }
 
-  // 2. Validate Ticket Types & Check Availability
+  // Booking Date Window Validation
+  const now = new Date();
+  if (event.bookingStartDate && now < new Date(event.bookingStartDate)) {
+    throw new Error(`Booking opens on ${new Date(event.bookingStartDate).toLocaleString("en-IN")}`);
+  }
+  if (event.bookingEndDate && now > new Date(event.bookingEndDate)) {
+    throw new Error(`Booking closed on ${new Date(event.bookingEndDate).toLocaleString("en-IN")}`);
+  }
+
+  // 2. Validate Overall Requested Quantities
+  const totalRequestedQuantity = tickets.reduce(
+    (sum, t) => sum + (parseInt(t.quantity, 10) || 0),
+    0
+  );
+
+  if (event.maxTicketsPerBooking && totalRequestedQuantity > event.maxTicketsPerBooking) {
+    throw new Error(`You can book a maximum of ${event.maxTicketsPerBooking} tickets per booking.`);
+  }
+  if (event.minTicketsPerBooking && totalRequestedQuantity < event.minTicketsPerBooking) {
+    throw new Error(`Minimum ${event.minTicketsPerBooking} ticket(s) required per booking.`);
+  }
+
+  if (event.availableTicketCount < totalRequestedQuantity) {
+    throw new Error(`Only ${event.availableTicketCount} tickets are currently available.`);
+  }
+
+  // 3. Validate Ticket Types & Check Availability
   const ticketBreakdown = [];
   let subtotal = 0;
 
@@ -51,6 +80,10 @@ async function createBooking({
     const ticketType = await EventTicketType.findById(item.ticketTypeId);
     if (!ticketType || ticketType.eventId.toString() !== eventId.toString()) {
       throw new Error(`Invalid ticket category: ${item.ticketTypeId}`);
+    }
+
+    if (ticketType.status === "SOLD_OUT" || ticketType.availableQuantity <= 0) {
+      throw new Error(`Ticket category '${ticketType.name}' is SOLD OUT`);
     }
 
     if (ticketType.status !== "ACTIVE") {
@@ -81,12 +114,78 @@ async function createBooking({
     });
   }
 
-  // 4. Calculate Price on the Server (Never trust frontend amount)
+  // 4. Calculate Authoritative Price on the Server
   const bookingFee = Math.max(20, Math.round(subtotal * 0.05));
   const tax = Math.round(bookingFee * 0.18);
   const cineCoinsDiscount = Math.min(subtotal, Math.round(Number(cineCoinsUsed) || 0));
   const appliedDiscount = Math.min(subtotal, Math.round(Number(discount) || 0));
   const total = Math.max(0, subtotal + bookingFee + tax - appliedDiscount - cineCoinsDiscount);
+
+  // 5. Atomic Reservation (Event-level & Category-level with rollback compensation)
+  const reservedEvent = await Event.findOneAndUpdate(
+    {
+      _id: event._id,
+      availableTicketCount: { $gte: totalRequestedQuantity },
+      bookingStatus: "OPEN",
+    },
+    {
+      $inc: {
+        availableTicketCount: -totalRequestedQuantity,
+        reservedTicketCount: totalRequestedQuantity,
+      },
+    },
+    { new: true }
+  );
+
+  if (!reservedEvent) {
+    const cur = await Event.findById(event._id);
+    const available = cur ? cur.availableTicketCount : 0;
+    throw new Error(`Only ${available} tickets are currently available.`);
+  }
+
+  const reservedTicketTypes = [];
+  try {
+    for (const item of ticketBreakdown) {
+      const reservedType = await EventTicketType.findOneAndUpdate(
+        {
+          _id: item.ticketTypeId,
+          availableQuantity: { $gte: item.quantity },
+          status: "ACTIVE",
+        },
+        {
+          $inc: {
+            availableQuantity: -item.quantity,
+            reservedQuantity: item.quantity,
+          },
+        },
+        { new: true }
+      );
+
+      if (!reservedType) {
+        throw new Error(`Only remaining quantity for '${item.name}' is insufficient.`);
+      }
+      reservedTicketTypes.push({ id: item.ticketTypeId, qty: item.quantity });
+    }
+  } catch (reservationErr) {
+    // Rollback partial ticket type reservations
+    for (const r of reservedTicketTypes) {
+      await EventTicketType.updateOne(
+        { _id: r.id },
+        { $inc: { availableQuantity: r.qty, reservedQuantity: -r.qty } }
+      );
+    }
+    // Rollback event capacity reservation
+    await Event.updateOne(
+      { _id: event._id },
+      {
+        $inc: {
+          availableTicketCount: totalRequestedQuantity,
+          reservedTicketCount: -totalRequestedQuantity,
+        },
+      }
+    );
+    throw reservationErr;
+  }
 
   // 6. Create Razorpay Order
   const receipt = `CVB-${Date.now()}`;
@@ -95,20 +194,7 @@ async function createBooking({
     customerEmail: customer.email,
   });
 
-  // Hold / Decrement Inventory
-  for (const item of ticketBreakdown) {
-    await EventTicketType.updateOne(
-      { _id: item.ticketTypeId, availableQuantity: { $gte: item.quantity } },
-      {
-        $inc: {
-          availableQuantity: -item.quantity,
-          soldQuantity: item.quantity,
-        },
-      }
-    );
-  }
-
-  // 7. Create Booking
+  // 7. Create Booking Record
   const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const bookingId = `CVB-${todayStr}-${uuid().substring(0, 5).toUpperCase()}`;
 
@@ -147,7 +233,7 @@ async function createBooking({
 }
 
 /**
- * 2. Complete Confirmation Flow (Idempotent for both API verify & Webhook safety)
+ * 2. Complete Confirmation Flow (Idempotent for API verify & Webhook safety)
  */
 async function confirmEventBooking({
   bookingId,
@@ -190,6 +276,8 @@ async function confirmEventBooking({
     if (!isValid) {
       booking.payment.status = "FAILED";
       await booking.save();
+      // Release reservation on signature mismatch
+      await releaseBookingReservation(booking.bookingId);
       const error = new Error("Payment verification failed");
       error.status = 400;
       throw error;
@@ -201,12 +289,46 @@ async function confirmEventBooking({
   if (razorpay_payment_id) booking.payment.paymentId = razorpay_payment_id;
   if (razorpay_signature) booking.payment.signature = razorpay_signature;
   booking.status = "CONFIRMED";
+  booking.ticketGenerated = true;
   await booking.save();
 
-  // 5. Generate Individual Tickets
+  // 5. Convert Reserved Capacity to Confirmed/Sold Inventory Atomically
+  const totalQty = booking.tickets.reduce((sum, t) => sum + t.quantity, 0);
+  const updatedEvent = await Event.findOneAndUpdate(
+    { _id: booking.eventId },
+    {
+      $inc: {
+        reservedTicketCount: -totalQty,
+        soldTicketCount: totalQty,
+      },
+    },
+    { new: true }
+  );
+
+  for (const item of booking.tickets) {
+    const updatedTt = await EventTicketType.findOneAndUpdate(
+      { _id: item.ticketTypeId },
+      {
+        $inc: {
+          reservedQuantity: -item.quantity,
+          soldQuantity: item.quantity,
+        },
+      },
+      { new: true }
+    );
+    if (updatedTt && updatedTt.availableQuantity <= 0) {
+      await EventTicketType.updateOne({ _id: item.ticketTypeId }, { $set: { status: "SOLD_OUT" } });
+    }
+  }
+
+  if (updatedEvent && updatedEvent.availableTicketCount <= 0) {
+    await Event.updateOne({ _id: booking.eventId }, { $set: { bookingStatus: "SOLD_OUT" } });
+  }
+
+  // 6. Generate Individual Tickets
   const ticketEntries = await generateTicketsForBooking(booking);
 
-  // 6. Generate PDFs & Save References
+  // 7. Generate PDFs & Save References
   const event = await Event.findById(booking.eventId);
   const pdfPaths = [];
 
@@ -219,7 +341,7 @@ async function confirmEventBooking({
     }
   }
 
-  // 7. Send Email asynchronously with PDF attachments
+  // 8. Send Email asynchronously with PDF attachments
   setImmediate(async () => {
     try {
       await sendTicketEmail({
@@ -243,7 +365,50 @@ async function confirmEventBooking({
   };
 }
 
+/**
+ * 3. Release Temporary Booking Reservation (On payment failure, timeout, or cancellation)
+ */
+async function releaseBookingReservation(bookingId) {
+  const booking = await EventBooking.findOne({ bookingId });
+  if (!booking || booking.status !== "PENDING") return;
+
+  const totalQty = booking.tickets.reduce((sum, t) => sum + t.quantity, 0);
+
+  // Return capacity to Event
+  await Event.updateOne(
+    { _id: booking.eventId },
+    {
+      $inc: {
+        reservedTicketCount: -totalQty,
+        availableTicketCount: totalQty,
+      },
+      $set: { bookingStatus: "OPEN" },
+    }
+  );
+
+  // Return capacity to EventTicketTypes
+  for (const item of booking.tickets) {
+    await EventTicketType.updateOne(
+      { _id: item.ticketTypeId },
+      {
+        $inc: {
+          reservedQuantity: -item.quantity,
+          availableQuantity: item.quantity,
+        },
+        $set: { status: "ACTIVE" },
+      }
+    );
+  }
+
+  booking.status = "CANCELLED";
+  booking.payment.status = "FAILED";
+  await booking.save();
+
+  return { success: true, releasedQuantity: totalQty };
+}
+
 module.exports = {
   createBooking,
   confirmEventBooking,
+  releaseBookingReservation,
 };

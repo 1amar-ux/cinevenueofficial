@@ -5,12 +5,32 @@ const eventController = require("../controllers/event.controller");
 const bookingController = require("../controllers/eventBooking.controller");
 const ticketController = require("../controllers/eventTicket.controller");
 const verificationController = require("../controllers/ticketVerification.controller");
+const freePassController = require("../controllers/freePass.controller");
 
 // Admin Events
 router.post("/events", eventController.createEvent);
 router.patch("/events/:eventId", eventController.updateEvent);
 router.post("/events/:eventId/publish", eventController.publishEvent);
 router.post("/events/:eventId/close-booking", eventController.closeBooking);
+
+// Admin Event Capacity & Ticket Limits
+router.get("/events/:eventId/capacity", eventController.getEventCapacity);
+router.patch("/events/:eventId/capacity", eventController.updateEventCapacity);
+router.patch("/events/:eventId/ticket-types/:ticketTypeId", eventController.updateTicketType);
+router.get("/events/:eventId/ticket-sales", eventController.getEventTicketSales);
+
+// Admin Complimentary / Free Passes
+router.post("/events/:eventId/free-passes", freePassController.adminIssueFreePass);
+router.post("/events/:eventId/free-passes/bulk", freePassController.adminBulkIssueFreePasses);
+router.get("/events/:eventId/free-passes", freePassController.adminGetFreePasses);
+router.get("/events/:eventId/free-pass-capacity", freePassController.adminGetFreePassCapacity);
+router.post("/events/:eventId/free-passes/:ticketId/cancel", freePassController.adminCancelFreePass);
+router.post("/events/:eventId/free-passes/:ticketId/resend", freePassController.adminResendFreePass);
+
+// Admin Pass Requests & Approvals
+router.get("/events/:eventId/free-pass-requests", freePassController.adminGetPassRequests);
+router.post("/free-pass-requests/:requestId/approve", freePassController.adminApprovePassRequest);
+router.post("/free-pass-requests/:requestId/reject", freePassController.adminRejectPassRequest);
 
 // Admin Event Tickets & Check-Ins
 router.get("/events/:eventId/tickets", ticketController.adminGetEventTickets);

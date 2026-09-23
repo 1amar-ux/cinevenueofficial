@@ -24,7 +24,23 @@ const eventTicketSchema = new mongoose.Schema(
     ticketTypeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "EventTicketType",
-      required: true,
+      default: null,
+    },
+    ticketTypeClassification: {
+      type: String,
+      enum: ["PAID_TICKET", "COMPLIMENTARY_PASS"],
+      default: "PAID_TICKET",
+    },
+    passCategory: {
+      type: String,
+      default: "",
+    },
+    recipient: {
+      name: { type: String, default: "" },
+      email: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      organisation: { type: String, default: "" },
+      designation: { type: String, default: "" },
     },
     ticketNumber: {
       type: Number,

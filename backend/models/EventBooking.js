@@ -42,6 +42,28 @@ const eventBookingSchema = new mongoose.Schema(
       cineCoinsDiscount: { type: Number, default: 0, min: 0 },
       total: { type: Number, required: true, min: 0 },
     },
+    bookingType: {
+      type: String,
+      enum: ["PAID", "FREE_PASS"],
+      default: "PAID",
+    },
+    passCategory: {
+      type: String,
+      default: "",
+    },
+    recipient: {
+      name: { type: String, default: "" },
+      email: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      organisation: { type: String, default: "" },
+      designation: { type: String, default: "" },
+      notes: { type: String, default: "" },
+    },
+    approvalStatus: {
+      type: String,
+      enum: ["NOT_REQUIRED", "PENDING", "APPROVED", "REJECTED"],
+      default: "NOT_REQUIRED",
+    },
     payment: {
       provider: {
         type: String,
@@ -57,7 +79,7 @@ const eventBookingSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ["CREATED", "PENDING", "SUCCESS", "FAILED", "REFUNDED"],
+        enum: ["NOT_REQUIRED", "CREATED", "PENDING", "SUCCESS", "FAILED", "REFUNDED"],
         default: "CREATED",
       },
     },

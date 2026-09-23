@@ -31,9 +31,33 @@ export default function EventCreator({ onCreated }: { onCreated: () => void }) {
     { name: 'VIP Front Tier', tier: 'VIP', price: 1499, quantity: 200, isFree: false }
   ]);
 
+  const [maxTicketsPerBooking, setMaxTicketsPerBooking] = useState(10);
+  const [minTicketsPerBooking, setMinTicketsPerBooking] = useState(1);
+  const [allowOverbooking, setAllowOverbooking] = useState(false);
+  const [bookingStartDate, setBookingStartDate] = useState('');
+  const [bookingEndDate, setBookingEndDate] = useState('');
+
+  // Free pass categories configuration
+  const [freePassCategories, setFreePassCategories] = useState<{
+    name: string;
+    allocatedCapacity: number;
+    maxPerPerson: number;
+    maxPerOrganisation: number;
+    approvalRequired: boolean;
+  }[]>([
+    { name: 'PRESS / MEDIA', allocatedCapacity: 50, maxPerPerson: 2, maxPerOrganisation: 5, approvalRequired: true },
+    { name: 'GUEST & VIP', allocatedCapacity: 50, maxPerPerson: 2, maxPerOrganisation: 4, approvalRequired: false },
+  ]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const totalPaidAllocated = passCategories.reduce((s, p) => s + (Number(p.quantity) || 0), 0);
+  const totalFreeAllocated = freePassCategories.reduce((s, c) => s + (Number(c.allocatedCapacity) || 0), 0);
+  const totalAllocated = totalPaidAllocated + totalFreeAllocated;
+  const isOverAllocated = !allowOverbooking && totalAllocated > totalCapacity;
+
 
   // When eventType changes to FREE, update all pass prices to 0
   const handleEventTypeChange = (type: EventType) => {
@@ -87,6 +111,11 @@ export default function EventCreator({ onCreated }: { onCreated: () => void }) {
       return;
     }
 
+    if (isOverAllocated) {
+      setErrorMessage(`Total allocated capacity (${totalAllocated}) exceeds event's total capacity (${totalCapacity}). Enable 'Allow Overbooking' or reduce category quantities.`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -102,8 +131,8 @@ export default function EventCreator({ onCreated }: { onCreated: () => void }) {
         price: p.isFree ? 0 : Number(p.price) || 0,
         availableQuantity: Number(p.quantity) || 100,
         soldQuantity: 0,
-        maxPerUser: p.isFree ? 2 : 6,
-        minPerUser: 1,
+        maxPerUser: p.isFree ? 2 : (maxTicketsPerBooking || 6),
+        minPerUser: minTicketsPerBooking || 1,
         status: 'Active',
         isRefundable: !p.isFree && p.price > 0,
         isFree: p.isFree || Number(p.price) === 0
@@ -153,6 +182,7 @@ export default function EventCreator({ onCreated }: { onCreated: () => void }) {
         updatedAt: new Date().toISOString(),
         ticketTypes
       };
+
 
       saveEvent(newEvent);
       setSuccessMessage(`✅ Event "${title}" published successfully! Synchronized across Web, Android, and iOS.`);
@@ -318,6 +348,70 @@ export default function EventCreator({ onCreated }: { onCreated: () => void }) {
                 />
               </div>
             </div>
+
+            {/* CAPACITY LIMITS & BOOKING WINDOW CONTROLS */}
+            <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-3">
+              <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider text-gold">
+                Capacity Limits & Booking Window
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-white/50 uppercase font-mono mb-1">Max Per Booking</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={maxTicketsPerBooking}
+                    onChange={(e) => setMaxTicketsPerBooking(Number(e.target.value))}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-white/50 uppercase font-mono mb-1">Min Per Booking</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={minTicketsPerBooking}
+                    onChange={(e) => setMinTicketsPerBooking(Number(e.target.value))}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-white/50 uppercase font-mono mb-1">Booking Opens (Optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={bookingStartDate}
+                    onChange={(e) => setBookingStartDate(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-white/50 uppercase font-mono mb-1">Booking Closes (Optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={bookingEndDate}
+                    onChange={(e) => setBookingEndDate(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="allowOverbooking"
+                  checked={allowOverbooking}
+                  onChange={(e) => setAllowOverbooking(e.target.checked)}
+                  className="rounded border-white/20 bg-black/40 text-gold focus:ring-0 cursor-pointer"
+                />
+                <label htmlFor="allowOverbooking" className="text-xs text-white/70 cursor-pointer">
+                  Allow Overbooking (Disable strict sum validation)
+                </label>
+              </div>
+            </div>
+
           </div>
           
           <div className="space-y-4">
