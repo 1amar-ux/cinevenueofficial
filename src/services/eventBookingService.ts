@@ -690,6 +690,17 @@ function saveStorage<T>(key: string, data: T): void {
 export function getEvents(): EventItem[] {
   const isInitialized = typeof window !== 'undefined' ? localStorage.getItem('cv_ticketed_events_initialized') : null;
   const events = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
+
+  // Background fetch to ensure local cache stays fresh from authoritative MongoDB backend
+  if (typeof window !== 'undefined') {
+    apiClient.get('/events').then((res) => {
+      const live = res.data?.events || res.data?.data?.events;
+      if (Array.isArray(live) && live.length > 0) {
+        saveStorage(STORAGE_KEYS.EVENTS, live);
+      }
+    }).catch(() => {});
+  }
+
   if (!isInitialized && events.length === 0) {
     if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
     saveStorage(STORAGE_KEYS.EVENTS, INITIAL_TICKETED_EVENTS);
@@ -698,14 +709,28 @@ export function getEvents(): EventItem[] {
   return events;
 }
 
+export async function fetchLiveEvents(): Promise<EventItem[]> {
+  try {
+    const res = await apiClient.get('/events');
+    const live = res.data?.events || res.data?.data?.events;
+    if (Array.isArray(live) && live.length > 0) {
+      saveStorage(STORAGE_KEYS.EVENTS, live);
+      return live;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch live events from API, falling back to cache:', err);
+  }
+  return getEvents();
+}
+
 export function getEventById(id: string): EventItem | undefined {
   const events = getEvents();
-  return events.find((e) => e.id === id);
+  return events.find((e) => e.id === id || (e as any)._id === id);
 }
 
 export function saveEvent(event: EventItem): EventItem {
   const events = getEvents();
-  const existingIdx = events.findIndex((e) => e.id === event.id);
+  const existingIdx = events.findIndex((e) => e.id === event.id || (e as any)._id === event.id);
   let updatedEvents: EventItem[];
 
   if (existingIdx >= 0) {
@@ -729,9 +754,12 @@ export function saveEvent(event: EventItem): EventItem {
   saveStorage(STORAGE_KEYS.EVENTS, updatedEvents);
   if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
 
-  // Authoritative sync to backend API
-  apiClient.post('/events', event).catch((err) => {
-    console.warn('Syncing event to backend API notice:', err);
+  // Authoritative sync to backend admin API
+  apiClient.post('/admin/events', event).catch((err) => {
+    // If admin endpoint fails, try public /events
+    apiClient.post('/events', event).catch((e) => {
+      console.warn('Syncing event to backend API notice:', e);
+    });
   });
 
   return event;
@@ -739,14 +767,16 @@ export function saveEvent(event: EventItem): EventItem {
 
 export function deleteEvent(id: string): boolean {
   const events = getEvents();
-  const filtered = events.filter((e) => e.id !== id);
+  const filtered = events.filter((e) => e.id !== id && (e as any)._id !== id);
   if (filtered.length === events.length) return false;
   saveStorage(STORAGE_KEYS.EVENTS, filtered);
   if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
 
-  // Authoritative delete from backend API
-  apiClient.delete(`/events/${id}`).catch((err) => {
-    console.warn('Deleting event from backend API notice:', err);
+  // Authoritative delete from backend admin API
+  apiClient.delete(`/admin/events/${id}`).catch((err) => {
+    apiClient.delete(`/events/${id}`).catch((e) => {
+      console.warn('Deleting event from backend API notice:', e);
+    });
   });
 
   return true;

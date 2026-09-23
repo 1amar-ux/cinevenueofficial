@@ -7,8 +7,16 @@ import { Event } from "../../types";
 import apiClient from "../../services/apiClient";
 
 export default function EventsHome() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  const displayedEvents = React.useMemo(() => {
+    if (selectedCategory === 'All') return events;
+    if (selectedCategory === 'Free') return events.filter((e) => e.eventType === 'FREE' || !e.isPaid);
+    if (selectedCategory === 'Paid') return events.filter((e) => e.eventType === 'PAID' && e.isPaid);
+    return events.filter((e) => e.category?.toLowerCase() === selectedCategory.toLowerCase());
+  }, [events, selectedCategory]);
 
   useEffect(() => {
     let isMounted = true;
@@ -16,28 +24,37 @@ export default function EventsHome() {
     async function loadEvents() {
       try {
         const res = await apiClient.get("/events");
-        const apiEvents = res.data?.data?.events;
+        const apiEvents = res.data?.events || res.data?.data?.events;
         if (apiEvents && Array.isArray(apiEvents) && apiEvents.length > 0) {
-          const mapped: Event[] = apiEvents.map((e: any) => ({
-            id: e.id,
-            title: e.title,
-            description: e.description || "",
-            venueName: e.venue || "Convention Arena",
-            venueAddress: e.venue || "",
-            city: e.city || "All Cities",
-            date: e.date ? new Date(e.date).toISOString().split("T")[0] : "2026-10-15",
-            time: e.time || "18:00",
-            image: e.bannerUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
-            categories: (e.ticketTypes || []).map((t: any) => ({
-              name: t.name,
-              price: Number(t.price),
-              availableSeats: t.available
-            })),
-            reviews: [],
-            featured: true,
-            isPaid: Number(e.price) > 0,
-            isActive: e.status === "PUBLISHED"
-          }));
+          const mapped: any[] = apiEvents.map((e: any) => {
+            const rawDate = e.date ? new Date(e.date) : new Date();
+            const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : "2026-10-15";
+            const lowestPrice = typeof e.minPrice === "number" ? e.minPrice : (e.categories && e.categories.length > 0 ? Math.min(...e.categories.map((c: any) => Number(c.price) || 0)) : 0);
+
+            return {
+              id: e.id || e._id,
+              title: e.title,
+              description: e.description || "",
+              venueName: e.venueName || e.venue?.name || (typeof e.venue === "string" ? e.venue : "Convention Arena"),
+              venueAddress: e.venueAddress || e.venue?.address || "",
+              city: e.city || e.venue?.city || "All Cities",
+              date: dateStr,
+              time: e.time || e.startTime || "18:00",
+              image: e.posterUrl || (typeof e.poster === "object" ? e.poster?.url : e.poster) || e.bannerUrl || (typeof e.banner === "object" ? e.banner?.url : e.banner) || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+              category: e.category || "Concerts",
+              eventType: e.eventType || (lowestPrice === 0 ? "FREE" : "PAID"),
+              passMode: e.passMode || "PAID",
+              categories: (e.ticketTypes || []).map((t: any) => ({
+                name: t.name || t.typeId?.name || "Standard",
+                price: Number(t.price ?? t.typeId?.price ?? 0),
+                availableSeats: t.availableQuantity ?? t.availableSeats ?? 100,
+              })),
+              reviews: [],
+              featured: true,
+              isPaid: e.eventType === "PAID" && lowestPrice > 0,
+              isActive: e.status === "PUBLISHED" || e.status === "UPCOMING" || e.status === "ONGOING",
+            };
+          });
           if (isMounted) {
             setEvents(mapped);
             setLoading(false);
@@ -209,10 +226,21 @@ export default function EventsHome() {
       {/* Categories & Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-white font-display">Upcoming Events</h2>
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white font-display">Upcoming & Live Events</h2>
+            <p className="text-xs text-text-secondary mt-1">Concerts, film pre-releases, live comedy, and workshops</p>
+          </div>
           <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-            {['All', 'Movies', 'Concerts', 'Corporate', 'Free'].map((cat, idx) => (
-              <button key={cat} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${idx === 0 ? 'bg-white text-black' : 'bg-white/5 text-text-secondary hover:text-white border border-white/10'}`}>
+            {['All', 'Concerts', 'Film Events', 'Workshops', 'Free', 'Paid'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider font-mono whitespace-nowrap transition-colors cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-gold text-black font-bold shadow-md'
+                    : 'bg-white/5 text-text-secondary hover:text-white border border-white/10'
+                }`}
+              >
                 {cat}
               </button>
             ))}
@@ -220,35 +248,80 @@ export default function EventsHome() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {events.map(event => (
-            <Link key={event.id} to={`/events/${event.id}`} className="group bg-[#111113] rounded-2xl border border-white/5 overflow-hidden hover:border-gold/30 transition-colors flex flex-col h-full">
-              <div className="relative aspect-video overflow-hidden">
-                <img src={event.image} alt={event.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs font-semibold text-white border border-white/10">
-                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </div>
-              </div>
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-gold transition-colors">{event.title}</h3>
-                <div className="space-y-2 mb-4 flex-1">
-                  <div className="flex items-center text-sm text-text-secondary gap-2">
-                    <MapPin className="w-4 h-4" /> <span className="line-clamp-1">{event.venueName}, {event.city}</span>
+          {displayedEvents.map((event: any) => {
+            const minCatPrice = event.categories && event.categories.length > 0
+              ? Math.min(...event.categories.map((c: any) => c.price))
+              : 0;
+
+            return (
+              <Link
+                key={event.id}
+                to={`/events/${event.id}`}
+                className="group bg-[#111113] rounded-2xl border border-white/5 overflow-hidden hover:border-gold/30 transition-colors flex flex-col h-full"
+              >
+                <div className="relative aspect-video overflow-hidden">
+                  <img
+                    src={event.image}
+                    alt={event.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800';
+                    }}
+                  />
+                  <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[11px] font-semibold text-white border border-white/10 font-mono">
+                    {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
-                  <div className="flex items-center text-sm text-text-secondary gap-2">
-                    <Calendar className="w-4 h-4" /> <span>{event.time}</span>
+                </div>
+                <div className="p-5 flex-1 flex flex-col">
+                  {/* Event Type & Category Badges */}
+                  <div className="flex items-center gap-1.5 mb-2">
+                    {event.eventType === 'FREE' ? (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        FREE EVENT
+                      </span>
+                    ) : event.passMode === 'BOTH' ? (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        PAID & FREE PASSES
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono uppercase bg-gold/20 text-gold border border-gold/30">
+                        PAID EVENT
+                      </span>
+                    )}
+                    <span className="text-[10px] text-white/40 font-mono">{event.category}</span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-gold transition-colors">
+                    {event.title}
+                  </h3>
+
+                  <div className="space-y-1.5 mb-4 flex-1">
+                    <div className="flex items-center text-xs text-text-secondary gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-white/40 shrink-0" />
+                      <span className="line-clamp-1">{event.venueName}, {event.city}</span>
+                    </div>
+                    <div className="flex items-center text-xs text-text-secondary gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-gold shrink-0" />
+                      <span>{event.time}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex justify-between items-center mt-auto">
+                    <div>
+                      <span className="text-[10px] text-white/40 block font-mono">Starting</span>
+                      <span className="font-bold text-white text-sm font-mono">
+                        {event.eventType === 'FREE' || minCatPrice === 0 ? 'FREE' : `₹${minCatPrice}`}
+                      </span>
+                    </div>
+                    <button className="text-gold text-xs font-semibold uppercase tracking-wider hover:text-amber-400 transition-colors">
+                      {event.eventType === 'FREE' ? 'Claim Pass' : 'Book Pass'}
+                    </button>
                   </div>
                 </div>
-                <div className="pt-4 border-t border-white/10 flex justify-between items-center mt-auto">
-                  <span className="font-bold text-white text-lg">
-                    {event.isPaid ? `₹${Math.min(...event.categories.map(c => c.price))}` : 'FREE'}
-                  </span>
-                  <button className="text-gold text-sm font-semibold uppercase tracking-wider hover:text-amber-400 transition-colors">
-                    Get Tickets
-                  </button>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

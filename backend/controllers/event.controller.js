@@ -12,34 +12,105 @@ const slugify = (text) =>
     .replace(/[^\w\-]+/g, "")
     .replace(/\-\-+/g, "-");
 
+function formatEventResponse(event) {
+  if (!event) return null;
+  const doc = event.toObject ? event.toObject() : { ...event };
+  const posterUrl =
+    typeof doc.poster === "object" && doc.poster && doc.poster.url
+      ? doc.poster.url
+      : typeof doc.poster === "string"
+      ? doc.poster
+      : "";
+
+  const bannerUrl =
+    typeof doc.banner === "object" && doc.banner && doc.banner.url
+      ? doc.banner.url
+      : typeof doc.banner === "string"
+      ? doc.banner
+      : posterUrl;
+
+  let minPrice = doc.eventType === "FREE" ? 0 : 499;
+  if (Array.isArray(doc.ticketTypes) && doc.ticketTypes.length > 0) {
+    const prices = doc.ticketTypes
+      .map((t) => (t.typeId && typeof t.typeId.price === "number" ? t.typeId.price : (typeof t.price === "number" ? t.price : null)))
+      .filter((p) => p !== null);
+    if (prices.length > 0) {
+      minPrice = Math.min(...prices);
+    }
+  }
+
+  return {
+    ...doc,
+    id: doc._id ? doc._id.toString() : doc.id,
+    _id: doc._id,
+    poster: typeof doc.poster === "object" && doc.poster ? doc.poster : { url: posterUrl, publicId: "", alt: `${doc.title || "Event"} poster` },
+    banner: typeof doc.banner === "object" && doc.banner ? doc.banner : { url: bannerUrl, publicId: "", alt: `${doc.title || "Event"} banner` },
+    posterUrl,
+    bannerUrl,
+    venueName: doc.venue?.name || "",
+    venueAddress: doc.venue?.address || "",
+    city: doc.venue?.city || "",
+    state: doc.venue?.state || "",
+    time: doc.startTime || "",
+    minPrice,
+    isPaid: doc.eventType === "PAID" && minPrice > 0,
+    isFree: doc.eventType === "FREE" || doc.passMode === "FREE" || minPrice === 0,
+  };
+}
+
 // 1. GET /api/v1/events
 exports.getEvents = async (req, res) => {
   try {
-    const { city, search, page = 1, limit = 20 } = req.query;
+    const { city, category, eventType, passMode, status, search, page = 1, limit = 20 } = req.query;
 
-    const query = { status: "PUBLISHED" };
-    if (city) query["venue.city"] = new RegExp(`^${city}$`, "i");
+    const query = {};
+    if (status) {
+      query.status = status.toUpperCase();
+    } else {
+      // By default, public query exposes published, upcoming, and ongoing events
+      query.status = { $in: ["PUBLISHED", "UPCOMING", "ONGOING"] };
+    }
+
+    if (eventType) {
+      query.eventType = eventType.toUpperCase();
+    }
+    if (passMode) {
+      query.passMode = passMode.toUpperCase();
+    }
+    if (category && category.toUpperCase() !== "ALL") {
+      query.category = new RegExp(`^${category.replace(/_/g, " ")}$`, "i");
+    }
+    if (city && city.toUpperCase() !== "ALL") {
+      query["venue.city"] = new RegExp(`^${city}$`, "i");
+    }
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
         { "venue.name": { $regex: search, $options: "i" } },
+        { "venue.city": { $regex: search, $options: "i" } },
       ];
     }
 
     const events = await Event.find(query)
       .populate("ticketTypes.typeId")
-      .sort({ date: 1 })
+      .sort({ date: 1, createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit, 10));
 
     const total = await Event.countDocuments(query);
+    const formattedEvents = events.map(formatEventResponse);
 
     res.json({
       success: true,
-      count: events.length,
+      count: formattedEvents.length,
       total,
-      events,
+      events: formattedEvents,
+      data: {
+        events: formattedEvents,
+        total,
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -58,7 +129,12 @@ exports.getEvent = async (req, res) => {
       return res.status(404).json({ success: false, message: "Event not found" });
     }
 
-    res.json({ success: true, event });
+    const formatted = formatEventResponse(event);
+    res.json({
+      success: true,
+      event: formatted,
+      data: { event: formatted },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -119,14 +195,24 @@ exports.createEvent = async (req, res) => {
     const {
       title,
       description,
+      category = "Concerts",
+      eventType = "PAID",
+      passMode = "PAID",
       poster,
       banner,
       venue,
+      venueName,
+      venueAddress,
+      city,
+      state,
+      pincode,
       date,
       startTime,
       endTime,
+      status = "PUBLISHED",
+      bookingStatus = "OPEN",
       termsAndConditions,
-      ticketTypes,
+      ticketTypes = [],
       totalTicketCapacity = 1000,
       maxTicketsPerBooking = 10,
       minTicketsPerBooking = 1,
@@ -134,13 +220,67 @@ exports.createEvent = async (req, res) => {
       bookingEndDate,
       allowOverbooking = false,
       freePassCategories = [],
+      organizerContact,
     } = req.body;
 
-    if (!title || !venue || !date || !startTime) {
+    if (!title || (!venue && !venueName) || !date || !startTime) {
       return res.status(400).json({
         success: false,
-        message: "title, venue, date, and startTime are required",
+        message: "title, venue/venueName, date, and startTime are required",
       });
+    }
+
+    // Normalize venue
+    let normalizedVenue = {};
+    if (typeof venue === "string") {
+      normalizedVenue = {
+        name: venue,
+        address: venueAddress || venue,
+        city: city || "Hyderabad",
+        state: state || "",
+        pincode: pincode || "",
+      };
+    } else if (venue && typeof venue === "object") {
+      normalizedVenue = {
+        name: venue.name || venue.venueName || venueName || "Venue",
+        address: venue.address || venue.venueAddress || venueAddress || "",
+        city: venue.city || city || "Hyderabad",
+        state: venue.state || state || "",
+        pincode: venue.pincode || pincode || "",
+      };
+    } else {
+      normalizedVenue = {
+        name: venueName || "Venue",
+        address: venueAddress || "",
+        city: city || "Hyderabad",
+        state: state || "",
+        pincode: pincode || "",
+      };
+    }
+
+    // Normalize poster and banner
+    let normalizedPoster = { url: "", publicId: "", alt: `${title} poster` };
+    if (typeof poster === "string" && poster) {
+      normalizedPoster = { url: poster, publicId: "", alt: `${title} poster` };
+    } else if (typeof poster === "object" && poster) {
+      normalizedPoster = {
+        url: poster.url || "",
+        publicId: poster.publicId || "",
+        alt: poster.alt || `${title} poster`,
+      };
+    }
+
+    let normalizedBanner = { url: "", publicId: "", alt: `${title} banner` };
+    if (typeof banner === "string" && banner) {
+      normalizedBanner = { url: banner, publicId: "", alt: `${title} banner` };
+    } else if (typeof banner === "object" && banner) {
+      normalizedBanner = {
+        url: banner.url || normalizedPoster.url || "",
+        publicId: banner.publicId || "",
+        alt: banner.alt || `${title} banner`,
+      };
+    } else {
+      normalizedBanner = { ...normalizedPoster, alt: `${title} banner` };
     }
 
     const totalCapacity = Number(totalTicketCapacity) || 1000;
@@ -193,19 +333,25 @@ exports.createEvent = async (req, res) => {
         }))
       : [];
 
+    const normStatus = (status || "PUBLISHED").toUpperCase();
     const event = await Event.create({
       title,
       slug,
-      description,
-      poster,
-      banner,
+      description: description || "",
+      category: category || "Concerts",
+      eventType: (eventType || "PAID").toUpperCase(),
+      passMode: (passMode || "PAID").toUpperCase(),
+      poster: normalizedPoster,
+      banner: normalizedBanner,
       organizerId: req.user?.id || null,
-      venue,
+      organizerContact: organizerContact || undefined,
+      venue: normalizedVenue,
       date: new Date(date),
       startTime,
-      endTime,
-      status: "PUBLISHED",
-      bookingStatus: "OPEN",
+      endTime: endTime || "",
+      status: normStatus,
+      bookingStatus: (bookingStatus || "OPEN").toUpperCase(),
+      publishedAt: normStatus === "PUBLISHED" ? new Date() : null,
       totalTicketCapacity: totalCapacity,
       soldTicketCount: 0,
       freePassesIssuedCount: 0,
@@ -224,11 +370,12 @@ exports.createEvent = async (req, res) => {
       const createdTypes = [];
       for (const tt of ticketTypes) {
         const qty = Number(tt.totalQuantity) || Number(tt.availableQuantity) || 100;
+        const price = eventType === "FREE" ? 0 : Number(tt.price) || 0;
         const typeDoc = await EventTicketType.create({
           eventId: event._id,
           name: tt.name,
           description: tt.description || "",
-          price: Number(tt.price) || 0,
+          price,
           totalQuantity: qty,
           availableQuantity: qty,
           soldQuantity: 0,
@@ -243,10 +390,13 @@ exports.createEvent = async (req, res) => {
       await event.save();
     }
 
+    const populated = await Event.findById(event._id).populate("ticketTypes.typeId");
+    const formatted = formatEventResponse(populated);
+
     res.status(201).json({
       success: true,
       message: "Event created successfully",
-      event,
+      event: formatted,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -257,13 +407,41 @@ exports.createEvent = async (req, res) => {
 exports.updateEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const event = await Event.findByIdAndUpdate(eventId, req.body, { new: true });
+    const updateData = { ...req.body };
+
+    // If venue is sent as flat fields or string, normalize it
+    if (updateData.venueName || updateData.venueAddress || updateData.city) {
+      updateData.venue = {
+        name: updateData.venueName || updateData.venue?.name || "Venue",
+        address: updateData.venueAddress || updateData.venue?.address || "",
+        city: updateData.city || updateData.venue?.city || "Hyderabad",
+        state: updateData.state || updateData.venue?.state || "",
+        pincode: updateData.pincode || updateData.venue?.pincode || "",
+      };
+    }
+
+    if (updateData.status) {
+      updateData.status = updateData.status.toUpperCase();
+      if (updateData.status === "PUBLISHED" && !updateData.publishedAt) {
+        updateData.publishedAt = new Date();
+      }
+    }
+
+    if (updateData.bookingStatus) {
+      updateData.bookingStatus = updateData.bookingStatus.toUpperCase();
+    }
+
+    const event = await Event.findByIdAndUpdate(eventId, updateData, { new: true }).populate("ticketTypes.typeId");
 
     if (!event) {
       return res.status(404).json({ success: false, message: "Event not found" });
     }
 
-    res.json({ success: true, message: "Event updated successfully", event });
+    res.json({
+      success: true,
+      message: "Event updated successfully",
+      event: formatEventResponse(event),
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -510,17 +688,96 @@ exports.publishEvent = async (req, res) => {
     const { eventId } = req.params;
     const event = await Event.findByIdAndUpdate(
       eventId,
-      { status: "PUBLISHED", bookingStatus: "OPEN" },
+      { status: "PUBLISHED", bookingStatus: "OPEN", publishedAt: new Date() },
       { new: true }
-    );
+    ).populate("ticketTypes.typeId");
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
-    res.json({ success: true, message: "Event published successfully", event });
+    res.json({ success: true, message: "Event published successfully", event: formatEventResponse(event) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 11. POST /api/v1/admin/events/:eventId/close-booking
+// 11. POST /api/v1/admin/events/:eventId/unpublish
+exports.unpublishEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findByIdAndUpdate(
+      eventId,
+      { status: "DRAFT", bookingStatus: "NOT_OPEN" },
+      { new: true }
+    ).populate("ticketTypes.typeId");
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    res.json({ success: true, message: "Event unpublished and saved as draft", event: formatEventResponse(event) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 12. PATCH /api/v1/admin/events/:eventId/status
+exports.changeEventStatus = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { status, bookingStatus } = req.body;
+    const update = {};
+    if (status) update.status = status.toUpperCase();
+    if (bookingStatus) update.bookingStatus = bookingStatus.toUpperCase();
+    if (status && status.toUpperCase() === "PUBLISHED") update.publishedAt = new Date();
+
+    const event = await Event.findByIdAndUpdate(eventId, update, { new: true }).populate("ticketTypes.typeId");
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    res.json({ success: true, message: `Event status updated to ${event.status}`, event: formatEventResponse(event) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 13. POST /api/v1/admin/events/:eventId/cancel
+exports.cancelEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findByIdAndUpdate(
+      eventId,
+      { status: "CANCELLED", bookingStatus: "CLOSED" },
+      { new: true }
+    ).populate("ticketTypes.typeId");
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    res.json({ success: true, message: "Event cancelled", event: formatEventResponse(event) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 14. DELETE /api/v1/admin/events/:eventId
+exports.deleteEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+
+    // Ensure safe delete: no confirmed bookings
+    const confirmedCount = await EventBooking.countDocuments({
+      eventId: event._id,
+      status: "CONFIRMED",
+    });
+
+    if (confirmedCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete event with ${confirmedCount} confirmed bookings. Please cancel the event instead.`,
+      });
+    }
+
+    await EventTicketType.deleteMany({ eventId: event._id });
+    await Event.findByIdAndDelete(eventId);
+
+    res.json({ success: true, message: "Event deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 15. POST /api/v1/admin/events/:eventId/close-booking
 exports.closeBooking = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -528,9 +785,151 @@ exports.closeBooking = async (req, res) => {
       eventId,
       { bookingStatus: "CLOSED" },
       { new: true }
-    );
+    ).populate("ticketTypes.typeId");
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
-    res.json({ success: true, message: "Event booking closed", event });
+    res.json({ success: true, message: "Event booking closed", event: formatEventResponse(event) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 16. GET /api/v1/admin/events (Authoritative Admin Event List)
+exports.adminGetEvents = async (req, res) => {
+  try {
+    const { status, eventType, passMode, category, search, city, page = 1, limit = 100 } = req.query;
+    const query = {};
+
+    if (status && status !== "ALL") {
+      query.status = status.toUpperCase();
+    }
+    if (eventType && eventType !== "ALL") {
+      query.eventType = eventType.toUpperCase();
+    }
+    if (passMode && passMode !== "ALL") {
+      query.passMode = passMode.toUpperCase();
+    }
+    if (category && category !== "ALL") {
+      query.category = new RegExp(`^${category}$`, "i");
+    }
+    if (city && city !== "ALL") {
+      query["venue.city"] = new RegExp(`^${city}$`, "i");
+    }
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { "venue.name": { $regex: search, $options: "i" } },
+        { "venue.city": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const events = await Event.find(query)
+      .populate("ticketTypes.typeId")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit, 10));
+
+    const total = await Event.countDocuments(query);
+    const formatted = events.map(formatEventResponse);
+
+    res.json({
+      success: true,
+      count: formatted.length,
+      total,
+      events: formatted,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 17. GET /api/v1/events/upcoming
+exports.getUpcomingEvents = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const query = {
+      status: { $in: ["UPCOMING", "PUBLISHED"] },
+      date: { $gte: today },
+    };
+    if (req.query.city && req.query.city !== "ALL") query["venue.city"] = new RegExp(`^${req.query.city}$`, "i");
+    if (req.query.category && req.query.category !== "ALL") query.category = new RegExp(`^${req.query.category}$`, "i");
+
+    const events = await Event.find(query)
+      .populate("ticketTypes.typeId")
+      .sort({ date: 1 });
+    const formatted = events.map(formatEventResponse);
+    res.json({ success: true, count: formatted.length, events: formatted, data: { events: formatted } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 18. GET /api/v1/events/ongoing
+exports.getOngoingEvents = async (req, res) => {
+  try {
+    const query = { status: "ONGOING" };
+    if (req.query.city && req.query.city !== "ALL") query["venue.city"] = new RegExp(`^${req.query.city}$`, "i");
+    const events = await Event.find(query)
+      .populate("ticketTypes.typeId")
+      .sort({ date: 1 });
+    const formatted = events.map(formatEventResponse);
+    res.json({ success: true, count: formatted.length, events: formatted, data: { events: formatted } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 19. GET /api/v1/events/completed
+exports.getCompletedEvents = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const query = {
+      $or: [{ status: "COMPLETED" }, { date: { $lt: today }, status: { $ne: "CANCELLED" } }],
+    };
+    const events = await Event.find(query)
+      .populate("ticketTypes.typeId")
+      .sort({ date: -1 });
+    const formatted = events.map(formatEventResponse);
+    res.json({ success: true, count: formatted.length, events: formatted, data: { events: formatted } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 20. GET /api/v1/events/free
+exports.getFreeEvents = async (req, res) => {
+  try {
+    const query = {
+      status: { $in: ["PUBLISHED", "UPCOMING", "ONGOING"] },
+      $or: [{ eventType: "FREE" }, { passMode: { $in: ["FREE", "BOTH"] } }],
+    };
+    if (req.query.city && req.query.city !== "ALL") query["venue.city"] = new RegExp(`^${req.query.city}$`, "i");
+    const events = await Event.find(query)
+      .populate("ticketTypes.typeId")
+      .sort({ date: 1 });
+    const formatted = events.map(formatEventResponse);
+    res.json({ success: true, count: formatted.length, events: formatted, data: { events: formatted } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 21. GET /api/v1/events/paid
+exports.getPaidEvents = async (req, res) => {
+  try {
+    const query = {
+      status: { $in: ["PUBLISHED", "UPCOMING", "ONGOING"] },
+      eventType: "PAID",
+    };
+    if (req.query.city && req.query.city !== "ALL") query["venue.city"] = new RegExp(`^${req.query.city}$`, "i");
+    const events = await Event.find(query)
+      .populate("ticketTypes.typeId")
+      .sort({ date: 1 });
+    const formatted = events.map(formatEventResponse);
+    res.json({ success: true, count: formatted.length, events: formatted, data: { events: formatted } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

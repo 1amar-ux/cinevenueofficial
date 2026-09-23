@@ -17,17 +17,40 @@ const eventSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    poster: {
+    category: {
       type: String,
-      default: "",
+      default: "Concerts",
+      index: true,
+    },
+    eventType: {
+      type: String,
+      enum: ["PAID", "FREE"],
+      default: "PAID",
+      index: true,
+    },
+    passMode: {
+      type: String,
+      enum: ["PAID", "FREE", "BOTH"],
+      default: "PAID",
+      index: true,
+    },
+    poster: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({ url: "", publicId: "", alt: "Event poster" }),
     },
     banner: {
-      type: String,
-      default: "",
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({ url: "", publicId: "", alt: "Event banner" }),
     },
     organizerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    organizerContact: {
+      name: { type: String, default: "" },
+      email: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      company: { type: String, default: "" },
     },
     venue: {
       name: { type: String, required: true },
@@ -50,13 +73,19 @@ const eventSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["DRAFT", "PUBLISHED", "ONGOING", "COMPLETED", "CANCELLED"],
+      enum: ["DRAFT", "UPCOMING", "PUBLISHED", "ONGOING", "COMPLETED", "CANCELLED", "SOLD_OUT"],
       default: "DRAFT",
+      index: true,
     },
     bookingStatus: {
       type: String,
-      enum: ["OPEN", "CLOSED", "SOLD_OUT"],
+      enum: ["NOT_OPEN", "OPEN", "CLOSED", "SOLD_OUT"],
       default: "OPEN",
+      index: true,
+    },
+    publishedAt: {
+      type: Date,
+      default: null,
     },
     // Capacity & Limits
     totalTicketCapacity: {

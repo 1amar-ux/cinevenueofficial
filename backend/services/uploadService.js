@@ -32,3 +32,52 @@ exports.uploadImage = async (file) => {
   fs.writeFileSync(filePath, file.buffer);
   return `/uploads/images/${filename}`;
 };
+
+exports.uploadMediaDetailed = async (file, folder = "cinevenue/events", alt = "") => {
+  const defaultAlt = alt || (file.originalname ? path.parse(file.originalname).name : "Event media");
+
+  // If Cloudinary credentials are provided, attempt cloud upload
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
+    try {
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+        {
+          folder,
+        }
+      );
+      return {
+        url: result.secure_url,
+        publicId: result.public_id,
+        alt: defaultAlt,
+      };
+    } catch (err) {
+      console.warn("Cloudinary upload failed, falling back to local file storage:", err.message);
+    }
+  }
+
+  // Local fallback: save to uploads/images directory
+  const uploadsDir = path.join(process.cwd(), "uploads", "images");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  let extension = "png";
+  if (file.mimetype) {
+    const ext = file.mimetype.split("/")[1];
+    if (ext === "jpeg" || ext === "jpg") extension = "jpg";
+    else if (ext === "webp") extension = "webp";
+    else if (ext === "png") extension = "png";
+  }
+
+  const publicId = `img_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+  const filename = `${publicId}.${extension}`;
+  const filePath = path.join(uploadsDir, filename);
+
+  fs.writeFileSync(filePath, file.buffer);
+
+  return {
+    url: `/uploads/images/${filename}`,
+    publicId,
+    alt: defaultAlt,
+  };
+};

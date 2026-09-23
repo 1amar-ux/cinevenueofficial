@@ -7,10 +7,23 @@ const ticketController = require("../controllers/eventTicket.controller");
 const verificationController = require("../controllers/ticketVerification.controller");
 const freePassController = require("../controllers/freePass.controller");
 
-// Admin Events
+const upload = require("../middleware/upload");
+const uploadController = require("../controllers/upload.controller");
+
+// Admin Media Uploads
+router.post("/uploads/event-poster", upload.single("poster"), uploadController.uploadEventPoster);
+router.post("/uploads/event-banner", upload.single("banner"), uploadController.uploadEventBanner);
+router.post("/uploads/image", upload.single("image"), uploadController.uploadGenericImage);
+
+// Admin Events Management
+router.get("/events", eventController.adminGetEvents);
 router.post("/events", eventController.createEvent);
 router.patch("/events/:eventId", eventController.updateEvent);
 router.post("/events/:eventId/publish", eventController.publishEvent);
+router.post("/events/:eventId/unpublish", eventController.unpublishEvent);
+router.patch("/events/:eventId/status", eventController.changeEventStatus);
+router.post("/events/:eventId/cancel", eventController.cancelEvent);
+router.delete("/events/:eventId", eventController.deleteEvent);
 router.post("/events/:eventId/close-booking", eventController.closeBooking);
 
 // Admin Event Capacity & Ticket Limits

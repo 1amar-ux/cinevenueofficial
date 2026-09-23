@@ -11,4 +11,6 @@ uploads/tickets/**/*.pdf
 uploads/tickets/**/*.png
 uploads/tickets/*.pdf
 uploads/tickets/*.png
+uploads/images/*
+!uploads/images/.gitkeep
 !uploads/.gitkeep
