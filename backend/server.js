@@ -32,20 +32,28 @@ app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 
 // ==========================================
-// Event Subwebsite & Ticketing Engine Routes
+// Event Subwebsite & Ticketing Engine (API v1)
 // ==========================================
-app.use("/api/v1/events", require("./routes/eventRoutes"));
-app.use("/api/events", require("./routes/eventRoutes"));
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use("/api/v1/event-bookings", require("./routes/eventBookingRoutes"));
-app.use("/api/event-bookings", require("./routes/eventBookingRoutes"));
-app.use("/api/v1/event-payments", require("./routes/eventBookingRoutes"));
+app.use("/api/v1/events", require("./routes/event.routes"));
+app.use("/api/events", require("./routes/event.routes"));
 
-app.use("/api/v1/event-tickets", require("./routes/eventTicketRoutes"));
-app.use("/api/event-tickets", require("./routes/eventTicketRoutes"));
+app.use("/api/v1/event-bookings", require("./routes/eventBooking.routes"));
+app.use("/api/v1/my", require("./routes/eventBooking.routes"));
+app.use("/api/event-bookings", require("./routes/eventBooking.routes"));
 
-app.use("/api/v1/ticket-verification", require("./routes/ticketVerificationRoutes"));
-app.use("/api/ticket-verification", require("./routes/ticketVerificationRoutes"));
+app.use("/api/v1/event-payments", require("./routes/eventPayment.routes"));
+app.use("/api/v1/webhooks", require("./routes/webhook.routes"));
+
+app.use("/api/v1/event-tickets", require("./routes/eventTicket.routes"));
+app.use("/api/event-tickets", require("./routes/eventTicket.routes"));
+
+app.use("/api/v1/ticket-verification", require("./routes/ticketVerification.routes"));
+app.use("/api/ticket-verification", require("./routes/ticketVerification.routes"));
+
+app.use("/api/v1/admin", require("./routes/adminEvent.routes"));
 
 // =========================
 // Swagger API Docs

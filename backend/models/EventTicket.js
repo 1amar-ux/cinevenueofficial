@@ -37,13 +37,17 @@ const eventTicketSchema = new mongoose.Schema(
     },
     qrToken: {
       type: String,
-      required: true,
+      default: undefined,
     },
     qrHash: {
       type: String,
       required: true,
     },
     pdfUrl: {
+      type: String,
+      default: "",
+    },
+    pdfPath: {
       type: String,
       default: "",
     },
