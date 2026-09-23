@@ -50,6 +50,7 @@ import EditMovie from "./admin/EditMovie";
 import Shows from "./admin/Shows";
 import TheatresAdmin from "./admin/Theatres";
 import SeatLayoutGenerator from "./admin/SeatLayoutGenerator";
+import EventsAdminModule from "./components/admin/events/EventsAdminModule";
 
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -2189,7 +2190,9 @@ export default function App() {
         <Route path="shows" element={<Shows />} />
         <Route path="theatres" element={<TheatresAdmin />} />
         <Route path="seat-layout-generator" element={<SeatLayoutGenerator />} />
+        <Route path="events" element={<EventsAdminModule />} />
       </Route>
+
 
       {/* CineCoins Standalone Loyalty Sub-website */}
       <Route 

@@ -45,11 +45,14 @@ import {
   FileSpreadsheet,
   FileCode,
   Shield,
-  HelpCircle
+  HelpCircle,
+  Award
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
+import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
+
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -185,6 +188,13 @@ export default function AdminLayout() {
         { id: "shows", label: "Show Master List", icon: CalendarRange }
       ]
     },
+    {
+      title: "EVENTS & PRE-RELEASES",
+      items: [
+        { id: "events", label: "Event Passes & Capacity", icon: Award }
+      ]
+    },
+
     {
       title: "OPERATIONS & COMMERCIALS",
       items: [
@@ -864,8 +874,16 @@ export default function AdminLayout() {
         <main className="flex-1 overflow-y-auto bg-[#0A0A0B] p-6 md:p-8">
           <div className="max-w-6xl mx-auto space-y-6 text-left">
             
+            {/* EVENT PASSES & CAPACITY MODULE */}
+            {activeTab === "events" && (
+              <div className="space-y-6">
+                <EventsAdminModule />
+              </div>
+            )}
+
             {/* 1. DASHBOARD OVERVIEW */}
             {activeTab === "dashboard" && (
+
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
