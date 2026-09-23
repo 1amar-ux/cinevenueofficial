@@ -55,6 +55,17 @@ app.use("/api/ticket-verification", require("./routes/ticketVerification.routes"
 
 app.use("/api/v1/admin", require("./routes/adminEvent.routes"));
 
+// ==========================================
+// Movie Ticketing Engine (API v1)
+// ==========================================
+app.use("/api/v1/movies", require("./routes/movie.routes"));
+app.use("/api/v1/theatres", require("./routes/theatre.routes"));
+app.use("/api/v1/showtimes", require("./routes/showtime.routes"));
+app.use("/api/v1/movie-bookings", require("./routes/movieBooking.routes"));
+app.use("/api/v1/my/movie-bookings", require("./routes/movieBooking.routes"));
+app.use("/api/v1/movie-payments", require("./routes/moviePayment.routes"));
+app.use("/api/v1/movie-tickets", require("./routes/movieTicket.routes"));
+
 // =========================
 // Swagger API Docs
 // =========================

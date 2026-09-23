@@ -125,15 +125,29 @@ exports.handleRazorpayWebhook = async (req, res) => {
         return res.status(200).json({ status: "ignored_missing_order_reference" });
       }
 
-      // Idempotently confirm booking without requiring client signature check
-      const result = await bookingService.confirmEventBooking({
-        bookingId,
-        razorpay_order_id: orderId,
-        razorpay_payment_id: paymentId,
-        skipSignatureCheck: true,
+      // Idempotently confirm either movie booking or event booking
+      const movieBookingService = require("../services/movieBooking.service");
+      const isMovieBooking = (bookingId && bookingId.startsWith("CVB-MOV-")) || await Booking.findOne({
+        $or: [{ bookingId }, { "payment.orderId": orderId }],
       });
 
-      console.log(`[RazorpayWebhook] Booking ${result.bookingId} confirmed (Already processed: ${result.alreadyProcessed})`);
+      if (isMovieBooking) {
+        const result = await movieBookingService.confirmMovieBooking({
+          bookingId,
+          razorpay_order_id: orderId,
+          razorpay_payment_id: paymentId,
+          skipSignatureCheck: true,
+        });
+        console.log(`[RazorpayWebhook] Movie Booking ${result.bookingId} confirmed (Already processed: ${result.alreadyProcessed})`);
+      } else {
+        const result = await bookingService.confirmEventBooking({
+          bookingId,
+          razorpay_order_id: orderId,
+          razorpay_payment_id: paymentId,
+          skipSignatureCheck: true,
+        });
+        console.log(`[RazorpayWebhook] Event Booking ${result.bookingId} confirmed (Already processed: ${result.alreadyProcessed})`);
+      }
     }
 
     // Razorpay requires standard HTTP 200 acknowledgment
