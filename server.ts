@@ -1339,12 +1339,36 @@ Keep your recommendations concise (under 250 words) and focused purely on provid
   });
 
   // 4. SERVER-SIDE AUTHORITATIVE PRICE CALCULATION (Fee Engine Driven)
-  app.post("/api/bookings/calculate-price", (req, res) => {
+  app.post(["/api/bookings/calculate-price", "/api/booking/calculate-price"], (req, res) => {
     try {
       const { 
         theatreName = "PVR Nexus", date = "2026-08-28", timeSlot = "07:00 PM", 
-        seatNumbers, couponCode, movieTitle, city = "Hyderabad", paymentMethod = "UPI"
+        seatNumbers, couponCode, movieTitle, city = "Hyderabad", paymentMethod = "UPI",
+        ticketPrice, quantity, isEvent
       } = req.body;
+
+      // Handle Event Ticketing Price Calculation
+      if (isEvent || (ticketPrice !== undefined && ticketPrice !== null)) {
+        const price = Number(ticketPrice) || 0;
+        const qty = Number(quantity) || 1;
+        const subtotal = price * qty;
+        const platformFee = price > 0 ? Math.max(20, Math.round(subtotal * 0.05)) : 0;
+        const taxAmount = Math.round(platformFee * 0.18);
+        const totalAmount = subtotal + platformFee + taxAmount;
+
+        return res.json({
+          success: true,
+          breakdown: {
+            ticketAmount: subtotal,
+            platformFee,
+            convenienceFee: platformFee,
+            taxes: taxAmount,
+            taxAmount,
+            totalAmount,
+            finalAmount: totalAmount,
+          },
+        });
+      }
 
       if (!Array.isArray(seatNumbers) || seatNumbers.length === 0) {
         return res.status(400).json({ success: false, message: "No seats provided." });

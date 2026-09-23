@@ -11,9 +11,10 @@ module.exports = (req, res, next) => {
   }
 
   try {
+    const secret = process.env.JWT_SECRET || "cinevenue_default_jwt_secret_token_2026";
     const decoded = jwt.verify(
-      token.replace("Bearer ", ""),
-      process.env.JWT_SECRET
+      token.replace("Bearer ", "").trim(),
+      secret
     );
     req.user = decoded;
     next();
