@@ -179,13 +179,13 @@ export default function ApplicationFormsHubModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-2xl overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-4xl bg-[#0C0D12] border border-amber-500/40 rounded-3xl shadow-2xl p-6 sm:p-8 my-6 text-white space-y-6">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-5 md:p-6 bg-black/95 backdrop-blur-2xl overflow-y-auto animate-fade-in cv-modal-overlay">
+      <div className="relative w-full max-w-4xl bg-[#0C0D12] border border-amber-500/40 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 my-auto text-white space-y-6 cv-modal-card">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-gold to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-gold/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-gold to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-gold/20 shrink-0">
               <div className="w-full h-full bg-black rounded-[14px] flex items-center justify-center">
                 <FileText className="w-5 h-5 text-gold" />
               </div>
@@ -194,7 +194,7 @@ export default function ApplicationFormsHubModal({
               <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-widest">
                 CineVenue Official Portal
               </span>
-              <h2 className="text-xl sm:text-2xl font-serif font-extrabold text-white tracking-tight">
+              <h2 className="text-lg sm:text-2xl font-serif font-extrabold text-white tracking-tight break-words">
                 SUBMISSION & APPLICATION FORMS HUB
               </h2>
             </div>

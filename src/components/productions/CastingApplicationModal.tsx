@@ -63,8 +63,8 @@ export default function CastingApplicationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-2xl bg-[#0F0F12] border border-gold/30 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 my-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-5 md:p-6 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in cv-modal-overlay">
+      <div className="relative w-full max-w-2xl bg-[#0F0F12] border border-gold/30 rounded-2xl shadow-2xl p-5 sm:p-8 space-y-6 my-auto cv-modal-card">
         
         {/* Close Button */}
         <button

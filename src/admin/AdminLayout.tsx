@@ -46,7 +46,8 @@ import {
   FileCode,
   Shield,
   HelpCircle,
-  Award
+  Award,
+  Menu
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
@@ -56,6 +57,7 @@ import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // -------------------------------------------------------------
   // Load and sync all global persistent states from localStorage
@@ -771,22 +773,32 @@ export default function AdminLayout() {
       )}
 
       {/* TOP COMPILER PANEL BAR */}
-      <header className="h-16 bg-[#121213] border-b border-white/5 px-6 flex justify-between items-center shrink-0">
+      <header className="h-16 bg-[#121213] border-b border-white/5 px-4 sm:px-6 flex justify-between items-center shrink-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center">
+          {/* Mobile sidebar toggle button */}
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="p-2 rounded-lg bg-white/5 text-white/70 hover:text-white hover:bg-white/10 lg:hidden cursor-pointer shrink-0"
+            title="Toggle Sidebar"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu className="w-5 h-5 text-gold" />
+          </button>
+
+          <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
             <Shield className="w-4.5 h-4.5 text-gold" />
           </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-wider uppercase text-white">
+          <div className="min-w-0">
+            <h1 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-white truncate">
               CINEVENUE PLATFORM SYSTEM CONTROL
             </h1>
-            <p className="text-[9px] font-mono text-text-secondary">
+            <p className="text-[9px] font-mono text-text-secondary truncate hidden xs:block">
               LEVEL-10 HYPER-PROTECTED SUPER-ADMIN SECURE PORTAL
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-3 sm:gap-4 text-xs shrink-0">
           <div className="hidden md:flex items-center gap-2 text-[10px] font-mono text-text-muted">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>NODE ACTIVE</span>
@@ -799,7 +811,7 @@ export default function AdminLayout() {
               localStorage.removeItem("adminToken");
               navigate("/");
             }}
-            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-400 font-bold uppercase text-[9px] tracking-wider rounded-lg transition-colors border border-red-500/20 cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-400 font-bold uppercase text-[9px] tracking-wider rounded-lg transition-colors border border-red-500/20 cursor-pointer"
           >
             Exit System Control
           </button>
@@ -807,10 +819,22 @@ export default function AdminLayout() {
       </header>
 
       {/* WORKSPACE SIDEBAR LAYOUT */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         
+        {/* Mobile sidebar overlay backdrop */}
+        {isMobileSidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/75 backdrop-blur-xs lg:hidden"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
         {/* SIDEBAR NAVIGATION PANEL */}
-        <aside className="w-64 bg-[#121213] border-r border-white/5 flex flex-col justify-between shrink-0 select-none">
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#121213] border-r border-white/5 flex flex-col justify-between shrink-0 select-none transform transition-transform duration-200 lg:static lg:translate-x-0 ${
+            isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
+        >
           
           <div className="p-4 border-b border-white/5 space-y-3 shrink-0">
             <div className="relative">
@@ -839,7 +863,10 @@ export default function AdminLayout() {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => setActiveTab(item.id)}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setIsMobileSidebarOpen(false);
+                        }}
                         className={`w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-between border-0 cursor-pointer ${
                           isActive
                             ? "bg-gold/10 text-gold shadow-md"
@@ -871,7 +898,7 @@ export default function AdminLayout() {
         </aside>
 
         {/* COMPILER CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto bg-[#0A0A0B] p-6 md:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto bg-[#0A0A0B] p-4 sm:p-6 md:p-8">
           <div className="max-w-6xl mx-auto space-y-6 text-left">
             
             {/* EVENT PASSES & CAPACITY MODULE */}
@@ -1369,7 +1396,7 @@ export default function AdminLayout() {
                     />
                   </div>
 
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto table-container">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="text-text-secondary border-b border-white/5">
@@ -1611,7 +1638,7 @@ export default function AdminLayout() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2">
                     Live Schedules Ledger ({schedules.length} runs)
                   </h3>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto table-container">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="text-text-secondary border-b border-white/5">
@@ -1669,7 +1696,7 @@ export default function AdminLayout() {
                     />
                   </div>
 
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto table-container">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="text-text-secondary border-b border-white/5">
@@ -1734,7 +1761,7 @@ export default function AdminLayout() {
                     />
                   </div>
 
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto table-container">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="text-text-secondary border-b border-white/5">

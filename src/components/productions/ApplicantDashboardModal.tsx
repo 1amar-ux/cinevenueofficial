@@ -75,8 +75,8 @@ export default function ApplicantDashboardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-4xl bg-[#0C0D11] border border-gold/30 rounded-2xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-5 md:p-6 bg-black/95 backdrop-blur-xl overflow-y-auto animate-fade-in cv-modal-overlay">
+      <div className="relative w-full max-w-4xl bg-[#0C0D11] border border-gold/30 rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh] cv-modal-card">
         
         {/* Header */}
         <div className="bg-[#12131A] border-b border-white/10 px-6 py-4 flex items-center justify-between">

@@ -274,21 +274,21 @@ export default function FilmProductionSubWebsite({
       )}
 
       {/* Sub-Website Top Bar / Header Branding */}
-      <header className="sticky top-0 z-40 bg-[#0B0B0E]/95 backdrop-blur-lg border-b border-white/10 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-[#0B0B0E]/95 backdrop-blur-lg border-b border-white/10 px-3 sm:px-6 py-2.5 sm:py-3">
+        <div className="max-w-7xl mx-auto flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
           
           <div 
             onClick={() => window.location.href = "/"}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
             title="Return to Main Website"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-gold to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-gold/20 group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-gold to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-gold/20 group-hover:scale-105 transition-transform shrink-0">
               <div className="w-full h-full bg-black rounded-[10px] flex items-center justify-center">
-                <Clapperboard className="w-5 h-5 text-gold" />
+                <Clapperboard className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
               </div>
             </div>
             <div>
-              <h1 className="text-sm font-extrabold tracking-wider font-serif uppercase text-white flex items-center gap-1.5 group-hover:text-gold transition-colors">
+              <h1 className="text-xs sm:text-sm font-extrabold tracking-wider font-serif uppercase text-white flex items-center gap-1.5 group-hover:text-gold transition-colors">
                 CINEVENUE <span className="text-gold">PRODUCTIONS</span>
               </h1>
               <p className="text-[9px] text-white/50 tracking-widest uppercase hidden sm:block">
@@ -298,10 +298,10 @@ export default function FilmProductionSubWebsite({
           </div>
 
           {/* Sub-Website Section Switcher */}
-          <div className="flex items-center gap-1.5 bg-black/60 p-1 rounded-xl border border-white/10">
+          <div className="flex items-center gap-1 sm:gap-1.5 bg-black/60 p-1 rounded-xl border border-white/10 overflow-x-auto scrollbar-none max-w-full">
             <button
               onClick={() => setActiveModule("film")}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeModule === "film"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
                   : "text-white/60 hover:text-white"
@@ -313,7 +313,7 @@ export default function FilmProductionSubWebsite({
 
             <button
               onClick={() => setActiveModule("events")}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeModule === "events"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
                   : "text-white/60 hover:text-white"
@@ -325,7 +325,7 @@ export default function FilmProductionSubWebsite({
 
             <button
               onClick={() => setActiveModule("media")}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeModule === "media"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
                   : "text-white/60 hover:text-white"
@@ -337,10 +337,10 @@ export default function FilmProductionSubWebsite({
           </div>
 
           {/* Header Action Buttons */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
             <button
               onClick={() => setIsAppHubModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-300 text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
+              className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-300 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
             >
               <FileText className="w-3.5 h-3.5 text-gold" />
               <span>APPLICATION FORMS</span>
@@ -356,7 +356,7 @@ export default function FilmProductionSubWebsite({
 
             <button
               onClick={() => setIsFilmAppModalOpen(true)}
-              className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 via-gold to-yellow-500 text-black text-[11px] font-extrabold uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md shadow-gold/20 flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 via-gold to-yellow-500 text-black text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md shadow-gold/20 flex items-center gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
               <span>SUBMIT PROJECT</span>

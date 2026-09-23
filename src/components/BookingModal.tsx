@@ -548,9 +548,9 @@ export default function BookingModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in" id="booking-modal-overlay">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in cv-modal-overlay" id="booking-modal-overlay">
       <div 
-        className="bg-[#0A0A0B] border border-white/10 w-full max-w-2xl rounded-xl relative shadow-2xl overflow-hidden p-6 md:p-8 text-left my-8 backdrop-blur-md"
+        className="bg-[#0A0A0B] border border-white/10 w-full max-w-2xl rounded-xl relative shadow-2xl overflow-hidden p-5 sm:p-8 text-left my-auto backdrop-blur-md cv-modal-card"
         onClick={(e) => e.stopPropagation()}
         id="booking-modal-content"
       >

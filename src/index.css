@@ -140,19 +140,103 @@ html[data-theme="light"],
   scrollbar-width: none;
 }
 
-html,
-body,
-#root {
-  max-width: 100%;
-  overflow-x: hidden;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-button,
-a,
-input,
-select,
-textarea {
-  box-sizing: border-box;
+html {
+  min-height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 100vw;
+  overflow-x: hidden;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 100vw;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+/* =========================================================
+   UNIVERSAL MODAL SCROLLING & NON-CLIPPING ARCHITECTURE
+   ========================================================= */
+/* Prevents negative Y coordinate clipping when modal content exceeds viewport height */
+.fixed.inset-0.overflow-y-auto,
+[class*="fixed"][class*="inset-0"][class*="overflow-y-auto"],
+.cv-modal-overlay {
+  align-items: flex-start !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Auto-margins vertically center modals when shorter than viewport, but collapse to 0 when taller */
+.fixed.inset-0.overflow-y-auto > *,
+[class*="fixed"][class*="inset-0"][class*="overflow-y-auto"] > *,
+.cv-modal-overlay > * {
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+
+/* =========================================================
+   CONTROLLED TABLE & CONTENT CONTAINERS
+   ========================================================= */
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Media Constraints */
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+/* Page Layout Shell Standards */
+:root {
+  --cv-header-height: 72px;
+  --cv-header-height-mobile: 64px;
+}
+
+.cv-page-wrapper {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+.cv-page-main {
+  flex: 1 0 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.cv-page-container {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(16px, 3vw, 40px);
+  padding-right: clamp(16px, 3vw, 40px);
 }
 
 .mobile-bottom-nav {
@@ -160,7 +244,7 @@ textarea {
 }
 
 @media (max-width: 767px) {
-  body {
+  body:has(.mobile-bottom-nav) {
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 

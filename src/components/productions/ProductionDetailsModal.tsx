@@ -30,8 +30,8 @@ export default function ProductionDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-5xl bg-[#0F0F12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-5 md:p-6 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in cv-modal-overlay">
+      <div className="relative w-full max-w-5xl bg-[#0F0F12] border border-white/10 rounded-2xl shadow-2xl overflow-hidden my-auto cv-modal-card">
         
         {/* Close Button */}
         <button
