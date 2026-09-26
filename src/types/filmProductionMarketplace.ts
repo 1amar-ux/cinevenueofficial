@@ -727,28 +727,40 @@ export interface IndianCastingCall {
 // 14. PROPOSALS MANAGEMENT SYSTEM
 // ----------------------------------------------------
 export type ProposalType =
-  | "Acting Proposal"
+  | "Project Proposal"
+  | "Talent Proposal"
   | "Crew Proposal"
+  | "Production Service Proposal"
+  | "Casting Proposal"
+  | "Music Proposal"
+  | "Technical Proposal"
+  | "Vendor Proposal"
+  | "Distribution Proposal"
+  | "Brand/Promotion Proposal"
+  | "Acting Proposal"
   | "Production Proposal"
   | "Direction Proposal"
   | "Cinematography Proposal"
   | "Editing Proposal"
-  | "Music Proposal"
   | "VFX Proposal"
   | "Service Proposal"
   | "Collaboration Proposal"
-  | "Other"
   | "Film Co-Production"
   | "Investor & Financing Pitch"
   | "HOD Crew Services"
-  | "VFX & CGI Services"
-  | "Music & Sound Design"
-  | "Camera & Equipment Rental"
-  | "Post-Production Suite"
-  | "Theatrical / OTT Distribution"
-  | "Brand Placement / In-Film";
+  | "Other";
 
 export type ProposalStatus =
+  | "DRAFT"
+  | "SENT"
+  | "RECEIVED"
+  | "UNDER_REVIEW"
+  | "NEGOTIATION"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "WITHDRAWN"
+  | "EXPIRED"
+  | "CANCELLED"
   | "Draft"
   | "Drafts"
   | "Sent"
@@ -777,16 +789,46 @@ export interface ProposalMilestone {
   estimatedDate?: string;
 }
 
-export interface Proposal {
+export interface ProposalMessage {
   id: string;
-  projectId?: string;
-  projectTitle: string;
-  type: ProposalType;
-  title: string;
+  proposalId: string;
   senderId: string;
   senderName: string;
   senderEmail: string;
-  senderRole: "Producer" | "Director" | "HOD / Crew" | "Studio" | "Investor" | "Vendor";
+  senderRole?: string;
+  senderAvatar?: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface ProposalNotification {
+  id: string;
+  userId: string;
+  userEmail: string;
+  proposalId: string;
+  proposalNumber?: string;
+  title: string;
+  message: string;
+  type: "NEW_PROPOSAL" | "UNDER_REVIEW" | "NEGOTIATION_MESSAGE" | "ACCEPTED" | "REJECTED" | "EXPIRING";
+  read: boolean;
+  createdAt: string;
+}
+
+export interface Proposal {
+  id: string;
+  proposalNumber?: string;
+  projectId?: string;
+  projectName?: string;
+  projectTitle: string;
+  type: ProposalType;
+  title: string;
+  craftId?: string;
+  craftName?: string;
+  role?: string;
+  senderId: string;
+  senderName: string;
+  senderEmail: string;
+  senderRole?: "Producer" | "Director" | "HOD / Crew" | "Studio" | "Investor" | "Vendor" | string;
   senderAvatar?: string;
   senderCompany?: string;
   recipientId?: string;
@@ -796,21 +838,28 @@ export interface Proposal {
   recipientCompany?: string;
   introduction: string;
   projectDescription: string;
-  scopeOfWork: string[];
+  scopeOfWork: string[] | string;
   deliverables: string[];
-  timelineWeeks: number;
-  proposedStartDate: string;
-  proposedCompletionDate: string;
-  budgetTotal: number;
-  currency: "INR" | "USD";
-  paymentMilestones: ProposalMilestone[];
-  termsAndConditions: string;
+  duration?: string;
+  timelineWeeks?: number;
+  startDate?: string;
+  endDate?: string;
+  proposedStartDate?: string;
+  proposedCompletionDate?: string;
+  location?: string;
+  proposedFee?: number | string;
+  budgetTotal?: number;
+  currency?: "INR" | "USD" | string;
+  paymentTerms?: "Advance" | "Milestone" | "Completion" | "Custom" | string;
+  paymentMilestones?: ProposalMilestone[];
+  additionalTerms?: string;
+  termsAndConditions?: string;
   pitchDeckUrl?: string;
   budgetBreakdownUrl?: string;
-  attachments?: { name: string; url: string; size?: string }[];
+  attachments?: { name: string; url?: string; type?: string; size?: string }[];
   status: ProposalStatus;
-  revisions: ProposalRevision[];
-  currentRevisionNumber: number;
+  revisions?: ProposalRevision[];
+  currentRevisionNumber?: number;
   reviewNotes?: string;
   acceptedAt?: string;
   acceptedBySignature?: string;

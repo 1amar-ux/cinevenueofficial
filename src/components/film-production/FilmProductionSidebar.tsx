@@ -4,9 +4,9 @@ import {
   User, Building2, Briefcase, Users, Clapperboard, Award,
   CheckCircle2, ArrowRight, ShieldCheck, ChevronRight,
   LayoutDashboard, FileText, FolderKanban, UserCheck, 
-  ArrowLeft, X, Menu, Shield, ExternalLink, Video
+  ArrowLeft, X, Menu, Shield, ExternalLink, Video,
+  Compass, Layers
 } from "lucide-react";
-import CineVenueLogo from "../CineVenueLogo";
 
 interface FilmProductionSidebarProps {
   activeTab: string;
@@ -18,11 +18,8 @@ interface FilmProductionSidebarProps {
   onOpenAdmin?: () => void;
   negotiationsCount?: number;
   myProjectsCount?: number;
-  agreementsCount?: number;
-  castingCallsCount?: number;
-  auditionsCount?: number;
   proposalsCount?: number;
-  myApplicationsCount?: number;
+  pendingProposalsCount?: number;
   isOpenMobile: boolean;
   setIsOpenMobile: (open: boolean) => void;
 }
@@ -37,11 +34,8 @@ export default function FilmProductionSidebar({
   onOpenAdmin,
   negotiationsCount = 0,
   myProjectsCount = 0,
-  agreementsCount = 0,
-  castingCallsCount = 0,
-  auditionsCount = 0,
   proposalsCount = 0,
-  myApplicationsCount = 0,
+  pendingProposalsCount = 0,
   isOpenMobile,
   setIsOpenMobile
 }: FilmProductionSidebarProps) {
@@ -61,13 +55,33 @@ export default function FilmProductionSidebar({
 
   const navSections = [
     {
-      title: "FILM PRODUCTION",
+      title: "MOVIE PRODUCTION",
       items: [
         { 
           id: "overview", 
           label: "Production Home", 
           icon: LayoutDashboard, 
-          desc: "Main Production Dashboard" 
+          desc: "Dashboard & Proposal Overview" 
+        },
+        { 
+          id: "crafts", 
+          label: "24 Production Crafts", 
+          icon: Layers, 
+          badge: "24",
+          desc: "Standard Film Industry Crafts" 
+        },
+        { 
+          id: "proposals", 
+          label: "Proposals", 
+          icon: FileText, 
+          badge: pendingProposalsCount > 0 ? `${pendingProposalsCount} Pending` : (proposalsCount > 0 ? proposalsCount : undefined),
+          desc: "Sent, Received & Negotiation" 
+        },
+        { 
+          id: "professionals", 
+          label: "Discover Professionals", 
+          icon: Users, 
+          desc: "Search 24 Crafts Professionals" 
         },
         { 
           id: "my-projects", 
@@ -75,27 +89,6 @@ export default function FilmProductionSidebar({
           icon: Film, 
           badge: myProjectsCount > 0 ? myProjectsCount : undefined,
           desc: "Slates, Pre-Prod & Releases" 
-        },
-        { 
-          id: "casting", 
-          label: "Casting Calls", 
-          icon: Award, 
-          badge: castingCallsCount > 0 ? castingCallsCount : undefined,
-          desc: "Actors, Crew & Other Roles" 
-        },
-        { 
-          id: "auditions", 
-          label: "My Auditions", 
-          icon: Video, 
-          badge: auditionsCount > 0 ? auditionsCount : undefined,
-          desc: "Screen Tests & Review Desk" 
-        },
-        { 
-          id: "proposals", 
-          label: "Proposal Form", 
-          icon: FileText, 
-          badge: proposalsCount > 0 ? proposalsCount : undefined,
-          desc: "Proposals & Commercial Terms" 
         },
         { 
           id: "my-profile", 
@@ -114,18 +107,18 @@ export default function FilmProductionSidebar({
       <div className="p-4 sm:p-5 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-gold to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-gold/20">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 p-0.5 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <div className="w-full h-full bg-black rounded-[9px] flex items-center justify-center">
-                <Clapperboard className="w-4 h-4 text-gold" />
+                <Clapperboard className="w-4 h-4 text-amber-400" />
               </div>
             </div>
             <div>
               <div className="text-xs font-black tracking-wider uppercase text-white flex items-center gap-1">
                 <span>CINEVENUE</span>
-                <span className="text-gold">STUDIO</span>
+                <span className="text-amber-400">PRODUCTION</span>
               </div>
               <div className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest">
-                24 Crafts Marketplace
+                24 Crafts Collaboration
               </div>
             </div>
           </div>
@@ -152,14 +145,14 @@ export default function FilmProductionSidebar({
         </button>
       </div>
 
-      {/* Main Post Project Call-To-Action in Sidebar */}
+      {/* Main Action in Sidebar */}
       <div className="p-4 pb-2">
         <button
-          onClick={() => handleNavClick("create-project")}
-          className="w-full py-2.5 px-3.5 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center justify-center gap-2 cursor-pointer group"
+          onClick={() => handleNavClick("proposals")}
+          className="w-full py-2.5 px-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 hover:from-amber-400 hover:to-yellow-200 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer group"
         >
           <PlusCircle className="w-4 h-4 text-black group-hover:rotate-90 transition-transform" />
-          <span>Post Film Project</span>
+          <span>+ Create Proposal</span>
         </button>
       </div>
 
@@ -233,7 +226,7 @@ export default function FilmProductionSidebar({
                 <div className="text-xs font-bold text-white truncate">{userEmail.split("@")[0]}</div>
                 <div className="text-[9px] text-amber-400 font-semibold truncate flex items-center gap-1">
                   <CheckCircle2 className="w-2.5 h-2.5" />
-                  <span>Verified Filmmaker</span>
+                  <span>Verified User</span>
                 </div>
               </div>
             </div>
@@ -250,13 +243,13 @@ export default function FilmProductionSidebar({
           <div className="space-y-2">
             <button
               onClick={onOpenAuth}
-              className="w-full py-2 bg-white/10 hover:bg-white/15 text-white font-bold text-xs rounded-xl border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <User className="w-3.5 h-3.5 text-amber-400" />
-              <span>Sign In / Join Hub</span>
+              <span>Sign In / Join</span>
             </button>
             <div className="text-center text-[9px] text-white/40">
-              Connect with 24 Crafts & post casting
+              CineVenue Movie Production & 24 Crafts
             </div>
           </div>
         )}

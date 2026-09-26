@@ -19,7 +19,10 @@ import {
   IndianCastingCall,
   AuditionSubmission,
   Proposal,
+  ProposalStatus,
   ProposalRevision,
+  ProposalMessage,
+  ProposalNotification,
   DiscoverProfessionalsFilterState,
   CastingConsideration,
   ProfileReport
@@ -37,7 +40,9 @@ import {
   INITIAL_REVIEWS,
   INITIAL_INDIAN_CASTING_CALLS,
   INITIAL_AUDITIONS,
-  INITIAL_PROPOSALS
+  INITIAL_PROPOSALS,
+  INITIAL_PROPOSAL_MESSAGES,
+  INITIAL_PROPOSAL_NOTIFICATIONS
 } from "../data/filmProductionData";
 import { FilmProjectApplication } from "../types/productions";
 import { INITIAL_FILM_APPLICATIONS } from "../data/productionsData";
@@ -60,6 +65,8 @@ const STORAGE_KEYS = {
   INDIAN_CASTING_CALLS: "cv_film_indian_casting_calls",
   AUDITIONS: "cv_film_auditions",
   PROPOSALS: "cv_film_proposals",
+  PROPOSAL_MESSAGES: "cv_film_proposal_messages",
+  PROPOSAL_NOTIFICATIONS: "cv_film_proposal_notifications",
   CONSIDERATIONS: "cv_film_considerations"
 };
 
@@ -1384,11 +1391,25 @@ export const deleteAudition = (id: string): void => {
 // ----------------------------------------------------
 // 15. PROPOSALS MANAGEMENT SERVICE
 // ----------------------------------------------------
+// Generate unique automatic proposal ID: CV-PROP-YYYY-XXXXX
+export const generateProposalId = (): string => {
+  const year = new Date().getFullYear();
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+  const count = list.length + 1;
+  const numStr = String(count).padStart(5, "0");
+  const candidate = `CV-PROP-${year}-${numStr}`;
+  if (!list.some(p => p.id === candidate || p.proposalNumber === candidate)) {
+    return candidate;
+  }
+  return `CV-PROP-${year}-${String(count + 1).padStart(5, "0")}`;
+};
+
 export const getProposals = (filters?: {
   userEmail?: string;
+  projectId?: string;
+  craftId?: string;
   type?: string;
   status?: string;
-  projectId?: string;
   search?: string;
 }): Proposal[] => {
   let list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
@@ -1398,9 +1419,13 @@ export const getProposals = (filters?: {
   if (filters.userEmail) {
     const email = filters.userEmail.toLowerCase();
     list = list.filter(p =>
-      p.senderEmail.toLowerCase() === email ||
-      p.recipientEmail.toLowerCase() === email
+      (p.senderEmail && p.senderEmail.toLowerCase() === email) ||
+      (p.recipientEmail && p.recipientEmail.toLowerCase() === email)
     );
+  }
+
+  if (filters.craftId && filters.craftId !== "all") {
+    list = list.filter(p => p.craftId === filters.craftId);
   }
 
   if (filters.projectId) {
@@ -1418,11 +1443,15 @@ export const getProposals = (filters?: {
   if (filters.search) {
     const q = filters.search.toLowerCase();
     list = list.filter(p =>
-      p.title.toLowerCase().includes(q) ||
-      p.projectTitle.toLowerCase().includes(q) ||
-      p.senderName.toLowerCase().includes(q) ||
-      p.recipientName.toLowerCase().includes(q) ||
-      p.introduction.toLowerCase().includes(q)
+      (p.title && p.title.toLowerCase().includes(q)) ||
+      (p.proposalNumber && p.proposalNumber.toLowerCase().includes(q)) ||
+      (p.projectName && p.projectName.toLowerCase().includes(q)) ||
+      (p.projectTitle && p.projectTitle.toLowerCase().includes(q)) ||
+      (p.craftName && p.craftName.toLowerCase().includes(q)) ||
+      (p.role && p.role.toLowerCase().includes(q)) ||
+      (p.senderName && p.senderName.toLowerCase().includes(q)) ||
+      (p.recipientName && p.recipientName.toLowerCase().includes(q)) ||
+      (p.introduction && p.introduction.toLowerCase().includes(q))
     );
   }
 
@@ -1431,14 +1460,14 @@ export const getProposals = (filters?: {
 
 export const getProposalById = (id: string): Proposal | undefined => {
   const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
-  return list.find(p => p.id === id);
+  return list.find(p => p.id === id || p.proposalNumber === id);
 };
 
 export const saveProposal = (proposal: Partial<Proposal>): Proposal => {
   const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
 
   if (proposal.id) {
-    const index = list.findIndex(p => p.id === proposal.id);
+    const index = list.findIndex(p => p.id === proposal.id || p.proposalNumber === proposal.id);
     if (index >= 0) {
       list[index] = {
         ...list[index],
@@ -1453,38 +1482,53 @@ export const saveProposal = (proposal: Partial<Proposal>): Proposal => {
     }
   }
 
+  const generatedId = generateProposalId();
+  const proposalNum = proposal.proposalNumber || generatedId;
+
   const newProposal: Proposal = {
-    id: `prop-${Date.now()}`,
-    projectId: proposal.projectId || "proj-1",
-    projectTitle: proposal.projectTitle || "Cinema Project",
-    type: proposal.type || "Film Co-Production",
-    title: proposal.title || "Cinema Production Collaboration Proposal",
+    id: proposal.id || generatedId,
+    proposalNumber: proposalNum,
+    projectId: proposal.projectId || "proj-general",
+    projectName: proposal.projectName || proposal.projectTitle || "Cinema Project",
+    projectTitle: proposal.projectTitle || proposal.projectName || "Cinema Project",
+    type: proposal.type || "Project Proposal",
+    craftId: proposal.craftId || "craft-8",
+    craftName: proposal.craftName || "Cinematography",
+    role: proposal.role || "Director of Photography",
+    title: proposal.title || `${proposal.craftName || "Production"} Proposal: ${proposal.projectName || "Film Project"}`,
     senderId: proposal.senderId || `user-${Date.now()}`,
-    senderName: proposal.senderName || "Filmmaker / Studio Lead",
-    senderEmail: proposal.senderEmail || "producer@cinevenue.com",
+    senderName: proposal.senderName || "Filmmaker Lead",
+    senderEmail: proposal.senderEmail || "filmmaker@cinevenue.com",
     senderRole: proposal.senderRole || "Producer",
     senderAvatar: proposal.senderAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80",
-    senderCompany: proposal.senderCompany || "Production Studio",
+    senderCompany: proposal.senderCompany || "CineVenue Production",
     recipientId: proposal.recipientId,
-    recipientName: proposal.recipientName || "Prospective Partner / Studio",
-    recipientEmail: proposal.recipientEmail || "partner@cinevenue.com",
-    recipientRole: proposal.recipientRole || "Studio / Investor",
+    recipientName: proposal.recipientName || "Prospective Creative Partner",
+    recipientEmail: proposal.recipientEmail || "talent@cinevenue.com",
+    recipientRole: proposal.recipientRole || proposal.role || "Professional",
     recipientCompany: proposal.recipientCompany,
     introduction: proposal.introduction || "",
     projectDescription: proposal.projectDescription || "",
     scopeOfWork: proposal.scopeOfWork || [],
     deliverables: proposal.deliverables || [],
-    timelineWeeks: proposal.timelineWeeks || 12,
-    proposedStartDate: proposal.proposedStartDate || new Date().toISOString().split("T")[0],
-    proposedCompletionDate: proposal.proposedCompletionDate || "",
-    budgetTotal: proposal.budgetTotal || 5000000,
+    duration: proposal.duration || `${proposal.timelineWeeks || 8} Weeks`,
+    timelineWeeks: proposal.timelineWeeks || 8,
+    startDate: proposal.startDate || proposal.proposedStartDate || new Date().toISOString().split("T")[0],
+    endDate: proposal.endDate || proposal.proposedCompletionDate || "",
+    proposedStartDate: proposal.proposedStartDate || proposal.startDate || new Date().toISOString().split("T")[0],
+    proposedCompletionDate: proposal.proposedCompletionDate || proposal.endDate || "",
+    location: proposal.location || "Hyderabad / On Location",
+    proposedFee: proposal.proposedFee || proposal.budgetTotal || 0,
+    budgetTotal: Number(proposal.budgetTotal || proposal.proposedFee || 0),
     currency: proposal.currency || "INR",
+    paymentTerms: proposal.paymentTerms || "Milestone",
     paymentMilestones: proposal.paymentMilestones || [],
-    termsAndConditions: proposal.termsAndConditions || "Standard film production contract and escrow milestone protection terms apply.",
+    additionalTerms: proposal.additionalTerms || "",
+    termsAndConditions: proposal.termsAndConditions || "Informational proposal terms. CineVenue does not process financial transactions for movie proposals.",
     pitchDeckUrl: proposal.pitchDeckUrl,
     budgetBreakdownUrl: proposal.budgetBreakdownUrl,
     attachments: proposal.attachments || [],
-    status: proposal.status || "Draft",
+    status: proposal.status || "DRAFT",
     revisions: [],
     currentRevisionNumber: 1,
     createdAt: new Date().toISOString().split("T")[0],
@@ -1495,15 +1539,48 @@ export const saveProposal = (proposal: Partial<Proposal>): Proposal => {
 
   list.unshift(newProposal);
   setStored(STORAGE_KEYS.PROPOSALS, list);
+
+  // If sent, trigger proposal notification for recipient
+  if (newProposal.status === "SENT" || newProposal.status === "Sent") {
+    createProposalNotification({
+      userId: newProposal.recipientId || "recipient",
+      userEmail: newProposal.recipientEmail,
+      proposalId: newProposal.id,
+      proposalNumber: newProposal.proposalNumber,
+      title: "New Proposal Received",
+      message: `${newProposal.senderName} sent you a proposal for ${newProposal.projectName} (${newProposal.craftName || "Craft"})`,
+      type: "NEW_PROPOSAL"
+    });
+  }
+
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
   }
   return newProposal;
 };
 
+export const deleteProposalDraft = (id: string): boolean => {
+  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+  const target = list.find(p => p.id === id || p.proposalNumber === id);
+  if (!target) return false;
+
+  // Only allow deleting proposals in DRAFT status
+  const normStatus = String(target.status).toUpperCase();
+  if (normStatus !== "DRAFT") {
+    return false;
+  }
+
+  const updated = list.filter(p => p.id !== id && p.proposalNumber !== id);
+  setStored(STORAGE_KEYS.PROPOSALS, updated);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: updated }));
+  }
+  return true;
+};
+
 export const updateProposalStatus = (
   id: string,
-  status: Proposal["status"],
+  status: ProposalStatus,
   extra?: {
     reviewNotes?: string;
     signature?: string;
@@ -1511,19 +1588,55 @@ export const updateProposalStatus = (
   }
 ): Proposal | undefined => {
   const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
-  const index = list.findIndex(p => p.id === id);
+  const index = list.findIndex(p => p.id === id || p.proposalNumber === id);
   if (index < 0) return undefined;
 
+  const prevStatus = list[index].status;
   list[index].status = status;
   list[index].updatedAt = new Date().toISOString().split("T")[0];
 
   if (extra?.reviewNotes) list[index].reviewNotes = extra.reviewNotes;
-  if (extra?.signature && status === "Accepted") {
+  if (status === "ACCEPTED" || status === "Accepted") {
     list[index].acceptedAt = new Date().toISOString().split("T")[0];
-    list[index].acceptedBySignature = extra.signature;
+    if (extra?.signature) list[index].acceptedBySignature = extra.signature;
+
+    // Notify sender that proposal was accepted
+    createProposalNotification({
+      userId: list[index].senderId,
+      userEmail: list[index].senderEmail,
+      proposalId: list[index].id,
+      proposalNumber: list[index].proposalNumber,
+      title: "Proposal Accepted",
+      message: `${list[index].recipientName} accepted your proposal for ${list[index].projectName}`,
+      type: "ACCEPTED"
+    });
   }
-  if (extra?.rejectedReason && status === "Rejected") {
-    list[index].rejectedReason = extra.rejectedReason;
+
+  if (status === "REJECTED" || status === "Rejected") {
+    if (extra?.rejectedReason) list[index].rejectedReason = extra.rejectedReason;
+    
+    // Notify sender that proposal was rejected
+    createProposalNotification({
+      userId: list[index].senderId,
+      userEmail: list[index].senderEmail,
+      proposalId: list[index].id,
+      proposalNumber: list[index].proposalNumber,
+      title: "Proposal Declined",
+      message: `${list[index].recipientName} declined proposal ${list[index].proposalNumber || list[index].id}${extra?.rejectedReason ? `: "${extra.rejectedReason}"` : ""}`,
+      type: "REJECTED"
+    });
+  }
+
+  if (status === "UNDER_REVIEW" || status === "Under Review") {
+    createProposalNotification({
+      userId: list[index].senderId,
+      userEmail: list[index].senderEmail,
+      proposalId: list[index].id,
+      proposalNumber: list[index].proposalNumber,
+      title: "Proposal Under Review",
+      message: `Your proposal for ${list[index].projectName} is currently under review by ${list[index].recipientName}`,
+      type: "UNDER_REVIEW"
+    });
   }
 
   setStored(STORAGE_KEYS.PROPOSALS, list);
@@ -1533,44 +1646,116 @@ export const updateProposalStatus = (
   return list[index];
 };
 
-export const addProposalRevision = (
-  proposalId: string,
-  revision: {
-    revisedBy: string;
-    changeSummary: string;
-    proposedBudget?: string;
-    notes?: string;
-    updatedData?: Partial<Proposal>;
-  }
-): Proposal | undefined => {
-  const list = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
-  const index = list.findIndex(p => p.id === proposalId);
-  if (index < 0) return undefined;
+// ----------------------------------------------------
+// PROPOSAL-SPECIFIC NEGOTIATION / MESSAGING
+// ----------------------------------------------------
+export const getProposalMessages = (proposalId: string): ProposalMessage[] => {
+  const allMessages = getStored<ProposalMessage[]>(STORAGE_KEYS.PROPOSAL_MESSAGES, INITIAL_PROPOSAL_MESSAGES);
+  return allMessages.filter(m => m.proposalId === proposalId);
+};
 
-  const currentRevNum = (list[index].currentRevisionNumber || 1) + 1;
-  const newRev: ProposalRevision = {
-    revisionNumber: currentRevNum,
-    revisedBy: revision.revisedBy,
-    revisedAt: new Date().toISOString().split("T")[0],
-    changeSummary: revision.changeSummary,
-    proposedBudget: revision.proposedBudget,
-    notes: revision.notes
+export const sendProposalMessage = (
+  proposalId: string,
+  message: {
+    senderId: string;
+    senderName: string;
+    senderEmail: string;
+    senderRole?: string;
+    senderAvatar?: string;
+    message: string;
+  }
+): ProposalMessage => {
+  const allMessages = getStored<ProposalMessage[]>(STORAGE_KEYS.PROPOSAL_MESSAGES, INITIAL_PROPOSAL_MESSAGES);
+  
+  const newMsg: ProposalMessage = {
+    id: `pmsg-${Date.now()}`,
+    proposalId,
+    senderId: message.senderId,
+    senderName: message.senderName,
+    senderEmail: message.senderEmail,
+    senderRole: message.senderRole,
+    senderAvatar: message.senderAvatar,
+    message: message.message.trim(),
+    createdAt: new Date().toISOString()
   };
 
-  list[index].revisions = [...(list[index].revisions || []), newRev];
-  list[index].currentRevisionNumber = currentRevNum;
-  list[index].status = "Changes Requested";
-  list[index].updatedAt = new Date().toISOString().split("T")[0];
+  allMessages.push(newMsg);
+  setStored(STORAGE_KEYS.PROPOSAL_MESSAGES, allMessages);
 
-  if (revision.updatedData) {
-    list[index] = { ...list[index], ...revision.updatedData };
+  // When a message is sent, update proposal status to NEGOTIATION if it is currently pending / review
+  const proposals = getStored<Proposal[]>(STORAGE_KEYS.PROPOSALS, INITIAL_PROPOSALS);
+  const targetIndex = proposals.findIndex(p => p.id === proposalId || p.proposalNumber === proposalId);
+  if (targetIndex >= 0) {
+    const curStatus = String(proposals[targetIndex].status).toUpperCase();
+    if (curStatus === "SENT" || curStatus === "RECEIVED" || curStatus === "UNDER_REVIEW" || curStatus === "DRAFT") {
+      proposals[targetIndex].status = "NEGOTIATION";
+      proposals[targetIndex].updatedAt = new Date().toISOString().split("T")[0];
+      setStored(STORAGE_KEYS.PROPOSALS, proposals);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: proposals }));
+      }
+    }
+
+    // Determine recipient of the notification
+    const targetProp = proposals[targetIndex];
+    const isSender = message.senderEmail.toLowerCase() === targetProp.senderEmail.toLowerCase();
+    const notifyEmail = isSender ? targetProp.recipientEmail : targetProp.senderEmail;
+    const notifyUserId = isSender ? (targetProp.recipientId || "recipient") : targetProp.senderId;
+
+    createProposalNotification({
+      userId: notifyUserId,
+      userEmail: notifyEmail,
+      proposalId: targetProp.id,
+      proposalNumber: targetProp.proposalNumber,
+      title: "New Negotiation Message",
+      message: `${message.senderName} sent a message regarding ${targetProp.projectName} (${targetProp.proposalNumber || targetProp.id})`,
+      type: "NEGOTIATION_MESSAGE"
+    });
   }
 
-  setStored(STORAGE_KEYS.PROPOSALS, list);
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("cinevenue-proposals-updated", { detail: list }));
+    window.dispatchEvent(new CustomEvent("cinevenue-proposal-messages-updated", { detail: { proposalId, message: newMsg } }));
   }
-  return list[index];
+
+  return newMsg;
+};
+
+// ----------------------------------------------------
+// PROPOSAL NOTIFICATIONS
+// ----------------------------------------------------
+export const getProposalNotifications = (userEmail?: string): ProposalNotification[] => {
+  const allNotifs = getStored<ProposalNotification[]>(STORAGE_KEYS.PROPOSAL_NOTIFICATIONS, INITIAL_PROPOSAL_NOTIFICATIONS);
+  if (!userEmail) return allNotifs;
+  const email = userEmail.toLowerCase();
+  return allNotifs.filter(n => !n.userEmail || n.userEmail.toLowerCase() === email);
+};
+
+export const markProposalNotificationRead = (id: string): void => {
+  const allNotifs = getStored<ProposalNotification[]>(STORAGE_KEYS.PROPOSAL_NOTIFICATIONS, INITIAL_PROPOSAL_NOTIFICATIONS);
+  const index = allNotifs.findIndex(n => n.id === id);
+  if (index >= 0) {
+    allNotifs[index].read = true;
+    setStored(STORAGE_KEYS.PROPOSAL_NOTIFICATIONS, allNotifs);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cinevenue-proposal-notifications-updated", { detail: allNotifs }));
+    }
+  }
+};
+
+export const createProposalNotification = (notif: Omit<ProposalNotification, "id" | "read" | "createdAt">): ProposalNotification => {
+  const allNotifs = getStored<ProposalNotification[]>(STORAGE_KEYS.PROPOSAL_NOTIFICATIONS, INITIAL_PROPOSAL_NOTIFICATIONS);
+  const newNotif: ProposalNotification = {
+    ...notif,
+    id: `pnotif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  allNotifs.unshift(newNotif);
+  setStored(STORAGE_KEYS.PROPOSAL_NOTIFICATIONS, allNotifs);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("cinevenue-proposal-notifications-updated", { detail: allNotifs }));
+  }
+  return newNotif;
 };
 
 export const deleteProposal = (id: string): void => {

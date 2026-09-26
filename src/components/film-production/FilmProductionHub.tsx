@@ -32,15 +32,12 @@ import {
 
 import FilmProductionSidebar from "./FilmProductionSidebar";
 import ProductionHomeView from "./ProductionHomeView";
+import ExploreCraftsSection from "./ExploreCraftsSection";
 import MyProjectsDashboardView from "./MyProjectsDashboardView";
-import IndianCastingCallsView from "./IndianCastingCallsView";
-import MyAuditionsView from "./MyAuditionsView";
 import ProposalsView from "./ProposalsView";
 import MyProfileView from "./MyProfileView";
 import DiscoverProfessionalsView from "./DiscoverProfessionalsView";
 import PublicProfessionalProfileView from "./PublicProfessionalProfileView";
-import AuditionSubmissionModal from "./AuditionSubmissionModal";
-import CreateCastingCallModal from "./CreateCastingCallModal";
 import CreateProposalModal from "./CreateProposalModal";
 import ProposalDetailsModal from "./ProposalDetailsModal";
 import MyProfileEditorModal from "./MyProfileEditorModal";
@@ -100,13 +97,9 @@ export default function FilmProductionHub({
 
   const [isMyProfileEditorOpen, setIsMyProfileEditorOpen] = useState(false);
 
-  // Casting & Auditions modal state
-  const [selectedCallForAudition, setSelectedCallForAudition] = useState<IndianCastingCall | null>(null);
-  const [isSubmitAuditionModalOpen, setIsSubmitAuditionModalOpen] = useState(false);
-  const [isCreateCastingCallModalOpen, setIsCreateCastingCallModalOpen] = useState(false);
-
   // Proposal modal state
   const [isCreateProposalModalOpen, setIsCreateProposalModalOpen] = useState(false);
+  const [selectedCraftForProposal, setSelectedCraftForProposal] = useState<FilmCraft | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [isProposalDetailsModalOpen, setIsProposalDetailsModalOpen] = useState(false);
 
@@ -126,6 +119,12 @@ export default function FilmProductionHub({
 
   // Logged-in user's profile
   const myProfile = userEmail ? getProfessionalByEmail(userEmail) : undefined;
+
+  // Pending proposals count
+  const pendingProposalsCount = proposals.filter(p => {
+    const s = String(p.status).toUpperCase();
+    return s === "SENT" || s === "RECEIVED" || s === "UNDER_REVIEW";
+  }).length;
 
   useEffect(() => {
     const handlePopState = () => {
@@ -159,15 +158,14 @@ export default function FilmProductionHub({
   const getTabTitle = () => {
     switch (activeTab) {
       case "overview": return "Production Home";
+      case "crafts": return "24 Production Crafts";
       case "my-projects": return "My Film Projects";
-      case "casting": return "Casting Calls";
-      case "auditions": return "My Auditions";
-      case "proposals": return "Proposal Form";
+      case "proposals": return "Proposals";
       case "my-profile": return "My Profile";
       case "professionals": 
         return selectedUsername ? `${selectedUsername} | Film Profile` : "Discover Film Professionals";
       case "admin": return "Film Production Admin Console";
-      default: return "Film Production";
+      default: return "Movie Production";
     }
   };
 
@@ -187,16 +185,8 @@ export default function FilmProductionHub({
         onOpenAdmin={() => setActiveTab("admin")}
         negotiationsCount={negotiations.length}
         myProjectsCount={projects.length}
-        agreementsCount={agreements.length}
-        castingCallsCount={indianCastingCalls.length}
-        auditionsCount={auditions.length}
         proposalsCount={proposals.length}
-        myApplicationsCount={
-          userEmail 
-            ? auditions.filter(a => a.applicantEmail.toLowerCase() === userEmail.toLowerCase()).length +
-              jobApplications.filter(j => j.applicantEmail.toLowerCase() === userEmail.toLowerCase()).length
-            : auditions.length + jobApplications.length
-        }
+        pendingProposalsCount={pendingProposalsCount}
         isOpenMobile={isMobileSidebarOpen}
         setIsOpenMobile={setIsMobileSidebarOpen}
       />
@@ -221,7 +211,7 @@ export default function FilmProductionHub({
             {/* Breadcrumb / Title */}
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/40 font-bold">
-                <span>Production & Talent Hub</span>
+                <span>CineVenue Movie Production</span>
                 <span>/</span>
                 <span className="text-amber-400 font-extrabold">{getTabTitle()}</span>
               </div>
@@ -235,29 +225,20 @@ export default function FilmProductionHub({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => {
-                setActiveTab("casting");
-                setIsCreateCastingCallModalOpen(true);
+                setSelectedCraftForProposal(null);
+                setIsCreateProposalModalOpen(true);
               }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold border border-white/10 transition-all cursor-pointer"
-            >
-              <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>Post Casting Call</span>
-            </button>
-
-            <button
-              onClick={handleCreateProjectClick}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black rounded-xl transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black transition-all shadow-md shadow-amber-500/20 cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5 text-black" />
-              <span className="hidden sm:inline">+ Create Film Project</span>
-              <span className="sm:hidden">+ Project</span>
+              <span>+ Create Proposal</span>
             </button>
 
             {userEmail ? (
               <button
                 onClick={() => setIsMyProfileEditorOpen(true)}
                 className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-amber-500/30 text-amber-300 text-xs font-black flex items-center justify-center cursor-pointer hover:border-amber-400"
-                title="Edit My Talent Profile"
+                title="Edit My Film Profile"
               >
                 {userEmail.substring(0, 2).toUpperCase()}
               </button>
@@ -276,76 +257,46 @@ export default function FilmProductionHub({
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
           
           {/* ======================================================== */}
-          {/* 1. PRODUCTION HOME */}
+          {/* 1. PRODUCTION HOME (DASHBOARD) */}
           {/* ======================================================== */}
           {activeTab === "overview" && (
             <ProductionHomeView
               userEmail={userEmail}
               projects={projects}
-              castingCalls={indianCastingCalls}
-              auditions={auditions}
               proposals={proposals}
               myProfile={myProfile}
               onNavigateTab={setActiveTab}
-              onCreateProject={handleCreateProjectClick}
-              onCreateCastingCall={() => setIsCreateCastingCallModalOpen(true)}
-              onCreateProposal={() => setIsCreateProposalModalOpen(true)}
-              onOpenProfileEditor={() => setIsMyProfileEditorOpen(true)}
+              onCreateProposal={() => {
+                setSelectedCraftForProposal(null);
+                setIsCreateProposalModalOpen(true);
+              }}
+              onSelectProposal={(prop) => {
+                setSelectedProposal(prop);
+                setIsProposalDetailsModalOpen(true);
+              }}
             />
           )}
 
           {/* ======================================================== */}
-          {/* 2. MY FILM PROJECTS */}
+          {/* 2. 24 PRODUCTION CRAFTS */}
           {/* ======================================================== */}
-          {activeTab === "my-projects" && (
+          {activeTab === "crafts" && (
             <div className="max-w-7xl mx-auto">
-              <MyProjectsDashboardView
-                projects={projects}
-                userEmail={userEmail || "filmmaker@cinevenue.com"}
-                onRefreshProjects={refreshAllData}
-                onSelectProjectForCasting={() => {
-                  setActiveTab("casting");
-                  setIsCreateCastingCallModalOpen(true);
+              <ExploreCraftsSection
+                crafts={crafts}
+                onViewProfessionals={(craftName) => {
+                  setActiveTab("professionals");
+                }}
+                onCreateProposalForCraft={(craft) => {
+                  setSelectedCraftForProposal(craft);
+                  setIsCreateProposalModalOpen(true);
                 }}
               />
             </div>
           )}
 
           {/* ======================================================== */}
-          {/* 3. CASTING CALLS */}
-          {/* ======================================================== */}
-          {activeTab === "casting" && (
-            <div className="max-w-7xl mx-auto">
-              <IndianCastingCallsView
-                castingCalls={indianCastingCalls}
-                projects={projects}
-                userEmail={userEmail}
-                onOpenSubmitAudition={(call) => {
-                  setSelectedCallForAudition(call);
-                  setIsSubmitAuditionModalOpen(true);
-                }}
-                onOpenCreateCall={() => setIsCreateCastingCallModalOpen(true)}
-              />
-            </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* 4. MY AUDITIONS */}
-          {/* ======================================================== */}
-          {activeTab === "auditions" && (
-            <div className="max-w-7xl mx-auto">
-              <MyAuditionsView
-                auditions={auditions}
-                castingCalls={indianCastingCalls}
-                projects={projects}
-                userEmail={userEmail}
-                onAuditionsUpdated={refreshAllData}
-              />
-            </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* 5. PROPOSAL FORM & PROPOSALS DESK */}
+          {/* 3. PROPOSALS SECTION */}
           {/* ======================================================== */}
           {activeTab === "proposals" && (
             <div className="max-w-7xl mx-auto">
@@ -353,7 +304,10 @@ export default function FilmProductionHub({
                 proposals={proposals}
                 projects={projects}
                 userEmail={userEmail}
-                onOpenCreateProposal={() => setIsCreateProposalModalOpen(true)}
+                onOpenCreateProposal={() => {
+                  setSelectedCraftForProposal(null);
+                  setIsCreateProposalModalOpen(true);
+                }}
                 onSelectProposal={(prop) => {
                   setSelectedProposal(prop);
                   setIsProposalDetailsModalOpen(true);
@@ -364,25 +318,7 @@ export default function FilmProductionHub({
           )}
 
           {/* ======================================================== */}
-          {/* 6. MY PROFILE */}
-          {/* ======================================================== */}
-          {activeTab === "my-profile" && (
-            <div className="max-w-7xl mx-auto">
-              <MyProfileView
-                profile={myProfile}
-                userEmail={userEmail}
-                onOpenEditModal={() => setIsMyProfileEditorOpen(true)}
-                onDiscoverProfessionals={() => {
-                  setSelectedUsername(null);
-                  setActiveTab("professionals");
-                  window.history.pushState(null, "", "/film-production/professionals");
-                }}
-              />
-            </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* 7. DISCOVER PROFESSIONALS / PUBLIC TALENT PROFILE */}
+          {/* 4. DISCOVER PROFESSIONALS / PUBLIC TALENT PROFILE */}
           {/* ======================================================== */}
           {activeTab === "professionals" && (
             <div className="max-w-7xl mx-auto">
@@ -408,7 +344,42 @@ export default function FilmProductionHub({
           )}
 
           {/* ======================================================== */}
-          {/* 8. ADMIN MANAGEMENT (Restricted) */}
+          {/* 5. MY FILM PROJECTS */}
+          {/* ======================================================== */}
+          {activeTab === "my-projects" && (
+            <div className="max-w-7xl mx-auto">
+              <MyProjectsDashboardView
+                projects={projects}
+                userEmail={userEmail || "filmmaker@cinevenue.com"}
+                onRefreshProjects={refreshAllData}
+                onSelectProjectForCasting={() => {
+                  setActiveTab("proposals");
+                  setIsCreateProposalModalOpen(true);
+                }}
+              />
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 6. MY PROFILE */}
+          {/* ======================================================== */}
+          {activeTab === "my-profile" && (
+            <div className="max-w-7xl mx-auto">
+              <MyProfileView
+                profile={myProfile}
+                userEmail={userEmail}
+                onOpenEditModal={() => setIsMyProfileEditorOpen(true)}
+                onDiscoverProfessionals={() => {
+                  setSelectedUsername(null);
+                  setActiveTab("professionals");
+                  window.history.pushState(null, "", "/film-production/professionals");
+                }}
+              />
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 7. ADMIN MANAGEMENT (Restricted) */}
           {/* ======================================================== */}
           {activeTab === "admin" && (
             <div className="max-w-7xl mx-auto">
@@ -424,40 +395,25 @@ export default function FilmProductionHub({
       {/* MODALS */}
       {/* ======================================================== */}
 
-      {/* Indian Casting Call Audition Submission Modal */}
-      <AuditionSubmissionModal
-        isOpen={isSubmitAuditionModalOpen}
-        onClose={() => setIsSubmitAuditionModalOpen(false)}
-        castingCall={selectedCallForAudition}
-        userEmail={userEmail}
-        onAuditionSubmitted={() => {
-          refreshAllData();
-        }}
-      />
-
-      {/* Post Indian Casting Call Modal */}
-      <CreateCastingCallModal
-        isOpen={isCreateCastingCallModalOpen}
-        onClose={() => setIsCreateCastingCallModalOpen(false)}
-        projects={projects}
-        userEmail={userEmail}
-        onCastingCallCreated={() => {
-          refreshAllData();
-        }}
-      />
-
       {/* Create Production Proposal Modal */}
       <CreateProposalModal
         isOpen={isCreateProposalModalOpen}
-        onClose={() => setIsCreateProposalModalOpen(false)}
+        onClose={() => {
+          setIsCreateProposalModalOpen(false);
+          setSelectedCraftForProposal(null);
+        }}
         projects={projects}
         userEmail={userEmail}
+        initialCraft={selectedCraftForProposal}
         onProposalCreated={() => {
           refreshAllData();
+          setIsCreateProposalModalOpen(false);
+          setSelectedCraftForProposal(null);
+          setActiveTab("proposals");
         }}
       />
 
-      {/* Proposal Details & Execution Modal */}
+      {/* Proposal Details & Negotiation Modal */}
       <ProposalDetailsModal
         isOpen={isProposalDetailsModalOpen}
         onClose={() => setIsProposalDetailsModalOpen(false)}
@@ -465,6 +421,10 @@ export default function FilmProductionHub({
         userEmail={userEmail}
         onProposalUpdated={() => {
           refreshAllData();
+          if (selectedProposal) {
+            const updated = getProposals().find(p => p.id === selectedProposal.id || p.proposalNumber === selectedProposal.proposalNumber);
+            if (updated) setSelectedProposal(updated);
+          }
         }}
       />
 

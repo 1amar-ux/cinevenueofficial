@@ -1,440 +1,470 @@
 import React from "react";
 import { 
-  Film, Award, Video, FileText, User, PlusCircle, 
-  ChevronRight, ArrowRight, Sparkles, CheckCircle2, 
-  FolderKanban, Clock, Users, ShieldCheck, Eye, Layers
+  Film, FileText, PlusCircle, ArrowRight, Sparkles, 
+  Send, Inbox, Edit3, Clock, MessageSquare, CheckCircle2, 
+  XCircle, Layers, Users, Bell, ChevronRight, Calendar, MapPin
 } from "lucide-react";
 import { 
-  FilmProject, 
-  IndianCastingCall, 
-  AuditionSubmission, 
   Proposal, 
+  ProposalStatus,
   ProfessionalProfile,
-  AuditionStatus
+  FilmProject
 } from "../../types/filmProductionMarketplace";
+import { getProposalNotifications, markProposalNotificationRead } from "../../services/filmProductionService";
 
 interface ProductionHomeViewProps {
   userEmail?: string | null;
-  projects: FilmProject[];
-  castingCalls: IndianCastingCall[];
-  auditions: AuditionSubmission[];
+  projects?: FilmProject[];
   proposals: Proposal[];
   myProfile?: ProfessionalProfile;
   onNavigateTab: (tabId: string) => void;
-  onCreateProject: () => void;
-  onCreateCastingCall: () => void;
   onCreateProposal: () => void;
-  onOpenProfileEditor: () => void;
+  onSelectProposal?: (proposal: Proposal) => void;
+  // Optional compatibility props
+  castingCalls?: any[];
+  auditions?: any[];
+  onCreateProject?: () => void;
+  onCreateCastingCall?: () => void;
+  onOpenProfileEditor?: () => void;
 }
 
 export default function ProductionHomeView({
   userEmail,
-  projects,
-  castingCalls,
-  auditions,
   proposals,
   myProfile,
   onNavigateTab,
-  onCreateProject,
-  onCreateCastingCall,
   onCreateProposal,
-  onOpenProfileEditor
+  onSelectProposal
 }: ProductionHomeViewProps) {
-  // My owned projects
-  const myProjects = projects.filter(p => 
-    !userEmail || p.ownerEmail?.toLowerCase() === userEmail.toLowerCase() || !p.ownerEmail
-  );
+  const normEmail = (userEmail || "filmmaker@cinevenue.com").toLowerCase();
+  const userName = myProfile?.fullName || (userEmail ? userEmail.split("@")[0] : "Filmmaker");
 
-  // My casting calls
-  const myCastingCalls = castingCalls.filter(c =>
-    !userEmail || c.ownerEmail?.toLowerCase() === userEmail.toLowerCase()
-  );
+  // Filtered proposal counts
+  const sentCount = proposals.filter(p => 
+    p.senderEmail?.toLowerCase() === normEmail && 
+    !["DRAFT", "Draft", "Drafts"].includes(p.status)
+  ).length;
 
-  // My audition submissions (user as applicant)
-  const myAuditionSubmissions = auditions.filter(a =>
-    !userEmail || a.applicantEmail?.toLowerCase() === userEmail.toLowerCase()
-  );
+  const receivedCount = proposals.filter(p => 
+    p.recipientEmail?.toLowerCase() === normEmail && 
+    !["DRAFT", "Draft", "Drafts"].includes(p.status)
+  ).length;
 
-  // Count by audition statuses
-  const auditionCounts: Record<AuditionStatus | "All Submissions", number> = {
-    "All Submissions": myAuditionSubmissions.length,
-    "Submitted": myAuditionSubmissions.filter(a => a.status === "Submitted").length,
-    "Screened": myAuditionSubmissions.filter(a => a.status === "Screened").length,
-    "Shortlisted": myAuditionSubmissions.filter(a => a.status === "Shortlisted").length,
-    "Callback Scheduled": myAuditionSubmissions.filter(a => a.status === "Callback Scheduled").length,
-    "Selected": myAuditionSubmissions.filter(a => a.status === "Selected").length,
-    "Rejected": myAuditionSubmissions.filter(a => a.status === "Rejected").length,
+  const draftsCount = proposals.filter(p => 
+    ["DRAFT", "Draft", "Drafts"].includes(p.status) &&
+    (!p.senderEmail || p.senderEmail?.toLowerCase() === normEmail)
+  ).length;
+
+  const pendingCount = proposals.filter(p => {
+    const s = String(p.status).toUpperCase();
+    return s === "SENT" || s === "RECEIVED" || s === "UNDER_REVIEW" || s === "PENDING";
+  }).length;
+
+  const negotiationCount = proposals.filter(p => {
+    const s = String(p.status).toUpperCase();
+    return s === "NEGOTIATION" || s === "CHANGES REQUESTED" || p.status === "Changes Requested";
+  }).length;
+
+  const acceptedCount = proposals.filter(p => 
+    String(p.status).toUpperCase() === "ACCEPTED"
+  ).length;
+
+  const rejectedCount = proposals.filter(p => 
+    String(p.status).toUpperCase() === "REJECTED"
+  ).length;
+
+  // Recent proposals for user (sent, received, or all relevant)
+  const recentProposals = proposals
+    .filter(p => 
+      !userEmail || 
+      p.senderEmail?.toLowerCase() === normEmail || 
+      p.recipientEmail?.toLowerCase() === normEmail ||
+      ["DRAFT", "Draft", "Drafts"].includes(p.status)
+    )
+    .slice(0, 5);
+
+  const notifications = getProposalNotifications(userEmail || undefined);
+  const unreadNotifs = notifications.filter(n => !n.read);
+
+  const getStatusBadge = (status: ProposalStatus) => {
+    const s = String(status).toUpperCase();
+    switch (s) {
+      case "ACCEPTED":
+        return {
+          icon: "🟢",
+          label: "Accepted",
+          cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        };
+      case "NEGOTIATION":
+      case "CHANGES REQUESTED":
+        return {
+          icon: "🟠",
+          label: "Negotiation",
+          cls: "bg-amber-500/10 text-amber-400 border-amber-500/20"
+        };
+      case "UNDER_REVIEW":
+        return {
+          icon: "🔵",
+          label: "Under Review",
+          cls: "bg-sky-500/10 text-sky-400 border-sky-500/20"
+        };
+      case "SENT":
+      case "RECEIVED":
+      case "PENDING":
+        return {
+          icon: "🟡",
+          label: "Pending",
+          cls: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+        };
+      case "REJECTED":
+        return {
+          icon: "🔴",
+          label: "Rejected",
+          cls: "bg-rose-500/10 text-rose-400 border-rose-500/20"
+        };
+      case "DRAFT":
+      case "DRAFTS":
+        return {
+          icon: "⚪",
+          label: "Draft",
+          cls: "bg-white/10 text-white/60 border-white/10"
+        };
+      case "WITHDRAWN":
+        return {
+          icon: "⚪",
+          label: "Withdrawn",
+          cls: "bg-white/10 text-white/50 border-white/10"
+        };
+      default:
+        return {
+          icon: "🟡",
+          label: String(status),
+          cls: "bg-gold/10 text-gold border-gold/20"
+        };
+    }
   };
 
-  // Proposals
-  const myProposals = proposals.filter(p =>
-    !userEmail || p.senderEmail?.toLowerCase() === userEmail.toLowerCase() || p.recipientEmail?.toLowerCase() === userEmail.toLowerCase()
-  );
-
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-12 select-none">
       
-      {/* 1. HERO BANNER: Streamlined Production Dashboard */}
+      {/* 1. HERO HEADER: CineVenue Movie Production Dashboard */}
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#12131C] via-[#0E0F17] to-black border border-white/10 p-6 sm:p-8 md:p-10 shadow-2xl">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-0 bottom-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-0 bottom-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-widest">
-              <Film className="w-3.5 h-3.5 text-amber-400" />
-              <span>CineVenue Film Production</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-black uppercase tracking-widest">
+              <Film className="w-3.5 h-3.5" />
+              <span>CineVenue Movie Production</span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              Production Home
+              Welcome, <span className="text-gold capitalize">{userName}</span>
             </h1>
 
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
-              Welcome to the unified film production dashboard. Manage your film projects, post casting calls, track audition callbacks, exchange co-production proposals, and maintain your professional film profile.
+              Manage all departmental film proposals, track response statuses, negotiate project terms privately, and connect across all 24 professional movie crafts.
             </p>
           </div>
 
-          {/* Quick Action Badges */}
-          <div className="flex flex-wrap gap-2 shrink-0">
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap gap-2.5 shrink-0">
+            <button
+              onClick={onCreateProposal}
+              className="px-5 py-3 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center gap-2 cursor-pointer border-0"
+            >
+              <PlusCircle className="w-4 h-4 text-black stroke-[2.5]" />
+              <span>+ Create Proposal</span>
+            </button>
+
+            <button
+              onClick={() => onNavigateTab("crafts")}
+              className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/10 flex items-center gap-2 cursor-pointer"
+            >
+              <Layers className="w-4 h-4 text-gold" />
+              <span>24 Crafts</span>
+            </button>
+
             <button
               onClick={() => onNavigateTab("professionals")}
-              className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2 cursor-pointer"
+              className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/10 flex items-center gap-2 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>🔍 Discover Professionals</span>
-            </button>
-            <button
-              onClick={onCreateProject}
-              className="px-4 py-2.5 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center gap-2 cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4 text-black" />
-              <span>+ Create Film Project</span>
-            </button>
-            <button
-              onClick={onCreateCastingCall}
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/15 flex items-center gap-2 cursor-pointer"
-            >
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>+ Post Casting Call</span>
+              <Users className="w-4 h-4 text-gold" />
+              <span>Find Talent</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* DISCOVER PROFESSIONALS HIGHLIGHT BANNER */}
-      <div className="rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#121320] to-[#0A0B12] border border-purple-500/30 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-white">Discover Verified Film Professionals</h2>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase">
-                24 Crafts Directory
-              </span>
+      {/* 2. PROPOSAL NOTIFICATIONS BANNER (if unread) */}
+      {unreadNotifs.length > 0 && (
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Bell className="w-4 h-4" />
             </div>
-            <p className="text-xs text-white/70 mt-1 max-w-2xl leading-relaxed">
-              Find actors, directors, cinematographers, screenwriters, music directors, and technical crew with verified showreels and authentic portfolios.
-            </p>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                <span>{unreadNotifs[0].title}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
+              </div>
+              <p className="text-[11px] text-white/70 mt-0.5">
+                {unreadNotifs[0].message}
+              </p>
+            </div>
           </div>
+          <button
+            onClick={() => {
+              markProposalNotificationRead(unreadNotifs[0].id);
+              onNavigateTab("proposals");
+            }}
+            className="px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-light text-black text-xs font-bold transition-all cursor-pointer border-0 shrink-0"
+          >
+            View Proposal
+          </button>
+        </div>
+      )}
+
+      {/* 3. MY PROPOSALS SUMMARY CARDS */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-gold" />
+            <h2 className="text-sm font-black uppercase tracking-wider text-white">
+              My Proposals
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigateTab("proposals")}
+            className="text-xs font-bold text-gold hover:text-gold-light flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <span>View All</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        <button
-          onClick={() => onNavigateTab("professionals")}
-          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-purple-600/20 cursor-pointer shrink-0 transition-all"
-        >
-          <span>Explore Directory</span>
-          <ArrowRight className="w-4 h-4 text-amber-400" />
-        </button>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+          {/* Sent */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Send className="w-3.5 h-3.5 text-blue-400" />
+                <span>Sent</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-white mt-2 font-mono">
+              {sentCount}
+            </div>
+          </div>
+
+          {/* Received */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Inbox className="w-3.5 h-3.5 text-purple-400" />
+                <span>Received</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-white mt-2 font-mono">
+              {receivedCount}
+            </div>
+          </div>
+
+          {/* Drafts */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Edit3 className="w-3.5 h-3.5 text-gray-400" />
+                <span>Drafts</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-white mt-2 font-mono">
+              {draftsCount}
+            </div>
+          </div>
+
+          {/* Pending */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Clock className="w-3.5 h-3.5 text-yellow-400" />
+                <span>Pending</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-yellow-400 mt-2 font-mono">
+              {pendingCount}
+            </div>
+          </div>
+
+          {/* Negotiation */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+                <span>Negotiation</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-amber-400 mt-2 font-mono">
+              {negotiationCount}
+            </div>
+          </div>
+
+          {/* Accepted */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Accepted</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-emerald-400 mt-2 font-mono">
+              {acceptedCount}
+            </div>
+          </div>
+
+          {/* Rejected */}
+          <div 
+            onClick={() => onNavigateTab("proposals")}
+            className="p-4 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/30 transition-all cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span>Rejected</span>
+              </span>
+            </div>
+            <div className="text-2xl font-black text-rose-400 mt-2 font-mono">
+              {rejectedCount}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 2. THE 5 CORE PRODUCTION MODULES */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* MODULE 1: MY FILM PROJECTS */}
-        <div className="rounded-2xl bg-[#0F1017] border border-white/10 p-6 flex flex-col justify-between hover:border-amber-500/40 transition-all shadow-xl">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                  <Film className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-white">My Film Projects</h2>
-                  <p className="text-xs text-white/60">Create & oversee your productions</p>
-                </div>
-              </div>
-              <span className="text-xs font-mono font-black text-amber-400 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-                {myProjects.length} Projects
-              </span>
-            </div>
-
-            <p className="text-xs text-white/70 leading-relaxed">
-              Track project slates across Idea, Development, Pre-Production, Production, Post-Production, Completed, and Released stages with full ownership control.
-            </p>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-3 gap-2 pt-2">
-              <button
-                onClick={() => onNavigateTab("my-projects")}
-                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white text-center transition-all cursor-pointer"
-              >
-                View My Projects
-              </button>
-              <button
-                onClick={onCreateProject}
-                className="px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-xs font-bold text-amber-300 text-center transition-all cursor-pointer"
-              >
-                + Create Project
-              </button>
-              <button
-                onClick={() => onNavigateTab("my-projects")}
-                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white text-center transition-all cursor-pointer"
-              >
-                Manage Projects
-              </button>
-            </div>
+      {/* 4. RECENT PROPOSALS LIST */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gold" />
+            <h2 className="text-sm font-black uppercase tracking-wider text-white">
+              Recent Proposals
+            </h2>
           </div>
-
-          <div className="pt-5 border-t border-white/5 mt-5 flex items-center justify-between">
-            <span className="text-[11px] text-white/50">Restricted owner permissions</span>
-            <button
-              onClick={() => onNavigateTab("my-projects")}
-              className="text-xs text-amber-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>Go to My Projects</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={() => onNavigateTab("proposals")}
+            className="text-xs font-bold text-gold hover:text-gold-light flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <span>View All Proposals</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* MODULE 2: CASTING CALLS */}
-        <div className="rounded-2xl bg-[#0F1017] border border-white/10 p-6 flex flex-col justify-between hover:border-purple-500/40 transition-all shadow-xl">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300">
-                  <Award className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-white">Casting Calls</h2>
-                  <p className="text-xs text-white/60">Actors, Crew Members & Professionals</p>
-                </div>
-              </div>
-              <span className="text-xs font-mono font-black text-purple-300 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
-                {castingCalls.length} Open Calls
-              </span>
-            </div>
-
-            <p className="text-xs text-white/70 leading-relaxed">
-              Find and audition actors across 11 lead & character categories, hire technical crew across 24 crafts, or publish casting notices tied to your projects.
+        {recentProposals.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-[#111218] border border-white/10 text-center space-y-3">
+            <FileText className="w-10 h-10 text-white/20 mx-auto" />
+            <h3 className="text-sm font-bold text-white">No Proposals Yet</h3>
+            <p className="text-xs text-white/60 max-w-md mx-auto">
+              Start a new collaboration proposal for any of the 24 production crafts or select a verified professional.
             </p>
-
-            {/* Sub-links */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              <button
-                onClick={() => onNavigateTab("casting-calls")}
-                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white border border-white/10 cursor-pointer"
-              >
-                🎭 Required Actors
-              </button>
-              <button
-                onClick={() => onNavigateTab("casting-calls")}
-                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white border border-white/10 cursor-pointer"
-              >
-                🎬 Required Crew
-              </button>
-              <button
-                onClick={() => onNavigateTab("casting-calls")}
-                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white border border-white/10 cursor-pointer"
-              >
-                ⭐ Other Professionals
-              </button>
-              <button
-                onClick={onCreateCastingCall}
-                className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-[11px] font-bold text-purple-300 border border-purple-500/30 cursor-pointer"
-              >
-                + Create Casting Call
-              </button>
-              <button
-                onClick={() => onNavigateTab("casting-calls")}
-                className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white border border-white/10 cursor-pointer"
-              >
-                My Casting Calls ({myCastingCalls.length})
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-5 border-t border-white/5 mt-5 flex items-center justify-between">
-            <span className="text-[11px] text-white/50">Tollywood, Bollywood, Kollywood & more</span>
             <button
-              onClick={() => onNavigateTab("casting-calls")}
-              className="text-xs text-purple-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              onClick={onCreateProposal}
+              className="px-4 py-2 bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
             >
-              <span>Explore Casting Calls</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              + Create First Proposal
             </button>
           </div>
-        </div>
-
-        {/* MODULE 3: MY AUDITIONS */}
-        <div className="rounded-2xl bg-[#0F1017] border border-white/10 p-6 flex flex-col justify-between hover:border-blue-500/40 transition-all shadow-xl">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                  <Video className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-white">My Auditions</h2>
-                  <p className="text-xs text-white/60">Application & Callback desk</p>
-                </div>
-              </div>
-              <span className="text-xs font-mono font-black text-blue-400 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
-                {myAuditionSubmissions.length} Applied
-              </span>
-            </div>
-
-            <p className="text-xs text-white/70 leading-relaxed">
-              Track your audition status across official review gates. Project owners can review tapes, rate monologues, and schedule auditions.
-            </p>
-
-            {/* 7 Status Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {[
-                { label: "Submitted", count: auditionCounts["Submitted"], color: "text-amber-400 bg-amber-500/10" },
-                { label: "Screened", count: auditionCounts["Screened"], color: "text-blue-400 bg-blue-500/10" },
-                { label: "Shortlisted", count: auditionCounts["Shortlisted"], color: "text-purple-400 bg-purple-500/10" },
-                { label: "Callback", count: auditionCounts["Callback Scheduled"], color: "text-cyan-400 bg-cyan-500/10" },
-                { label: "Selected", count: auditionCounts["Selected"], color: "text-emerald-400 bg-emerald-500/10" },
-                { label: "Rejected", count: auditionCounts["Rejected"], color: "text-rose-400 bg-rose-500/10" },
-                { label: "All Total", count: auditionCounts["All Submissions"], color: "text-white bg-white/10" }
-              ].map(s => (
-                <div 
-                  key={s.label}
-                  onClick={() => onNavigateTab("my-auditions")}
-                  className={`px-2.5 py-1.5 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:border-white/20 transition-all ${s.color}`}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentProposals.map((prop) => {
+              const badge = getStatusBadge(prop.status);
+              return (
+                <div
+                  key={prop.id}
+                  onClick={() => {
+                    if (onSelectProposal) {
+                      onSelectProposal(prop);
+                    } else {
+                      onNavigateTab("proposals");
+                    }
+                  }}
+                  className="p-5 rounded-2xl bg-[#111218] border border-white/10 hover:border-gold/40 hover:bg-[#151720] transition-all cursor-pointer flex flex-col justify-between space-y-3 shadow-lg group"
                 >
-                  <span className="text-[10px] font-bold">{s.label}</span>
-                  <span className="text-xs font-black font-mono">{s.count}</span>
+                  <div className="space-y-2">
+                    {/* Top Row: Proposal ID & Status */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-mono font-bold text-gold/90">
+                        {prop.proposalNumber || prop.id}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 ${badge.cls}`}>
+                        <span>{badge.icon}</span>
+                        <span>{badge.label}</span>
+                      </span>
+                    </div>
+
+                    {/* Craft & Project */}
+                    <div>
+                      <div className="text-[10px] uppercase font-bold tracking-widest text-white/40">
+                        {prop.craftName || "Production"} {prop.role ? `• ${prop.role}` : ""}
+                      </div>
+                      <h3 className="text-sm font-bold text-white group-hover:text-gold transition-colors mt-0.5 line-clamp-1">
+                        {prop.projectName || prop.projectTitle}
+                      </h3>
+                    </div>
+
+                    {/* Recipient / Sender Info */}
+                    <div className="text-xs text-white/60 space-y-0.5 pt-2 border-t border-white/5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-white/40">From:</span>
+                        <span className="text-white/80 font-medium truncate max-w-[160px]">{prop.senderName}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-white/40">To:</span>
+                        <span className="text-white/80 font-medium truncate max-w-[160px]">{prop.recipientName}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-white/40">
+                    <span>{prop.createdAt}</span>
+                    <span className="text-gold font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                      <span>Open</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        )}
 
-          <div className="pt-5 border-t border-white/5 mt-5 flex items-center justify-between">
-            <span className="text-[11px] text-white/50">Official callback notifications</span>
-            <button
-              onClick={() => onNavigateTab("my-auditions")}
-              className="text-xs text-blue-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>Manage Auditions</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* MODULE 4: PROPOSALS */}
-        <div className="rounded-2xl bg-[#0F1017] border border-white/10 p-6 flex flex-col justify-between hover:border-gold/40 transition-all shadow-xl">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                  <FileText className="w-5 h-5 text-gold" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-white">Proposals</h2>
-                  <p className="text-xs text-white/60">Pitch, Scope & Escrow Milestones</p>
-                </div>
-              </div>
-              <span className="text-xs font-mono font-black text-gold px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-                {myProposals.length} Proposals
-              </span>
-            </div>
-
-            <p className="text-xs text-white/70 leading-relaxed">
-              Create professional acting, crew, direction, cinematography, music, VFX, and co-production proposals with milestones. Acceptance does not auto-bind a legal contract.
-            </p>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                onClick={onCreateProposal}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 border border-amber-500/40 text-xs font-bold text-amber-300 text-center transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-gold" />
-                <span>+ Proposal Form</span>
-              </button>
-              <button
-                onClick={() => onNavigateTab("proposals")}
-                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white text-center transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                <FileText className="w-3.5 h-3.5 text-white/60" />
-                <span>My Proposals ({myProposals.length})</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-5 border-t border-white/5 mt-5 flex items-center justify-between">
-            <span className="text-[11px] text-white/50">11 Canonical Proposal Types</span>
-            <button
-              onClick={() => onNavigateTab("proposals")}
-              className="text-xs text-gold font-bold hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>Go to Proposals</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* MODULE 5: MY PROFILE BAR */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#12131F] to-[#0A0B10] border border-white/10 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-amber-500/20 border border-amber-500/40 shrink-0 flex items-center justify-center text-amber-400 font-black text-xl">
-            {myProfile?.avatarUrl ? (
-              <img src={myProfile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-7 h-7" />
-            )}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-black text-white">
-                {myProfile?.fullName || (userEmail ? userEmail.split("@")[0] : "My Professional Profile")}
-              </h3>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">
-                Multiple Roles Active
-              </span>
-            </div>
-            <p className="text-xs text-white/60 mt-0.5">
-              {myProfile?.professionalHeadline || "Actor, Director, Cinematographer & Creative Producer"}
-            </p>
-            <p className="text-[11px] text-white/40 mt-1">
-              {myProfile?.languages?.join(", ") || "Telugu, Hindi, English"} • {myProfile?.location || "Hyderabad, India"}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0 w-full md:w-auto">
+        <div className="pt-2 text-center">
           <button
-            onClick={() => onNavigateTab("my-profile")}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold text-white transition-all cursor-pointer text-center"
+            onClick={() => onNavigateTab("proposals")}
+            className="px-6 py-2.5 rounded-xl bg-white/5 hover:bg-gold hover:text-black text-white text-xs font-bold uppercase tracking-wider border border-white/10 transition-all cursor-pointer"
           >
-            View Profile
-          </button>
-          <button
-            onClick={onOpenProfileEditor}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-center shadow-md shadow-amber-500/20"
-          >
-            Edit Profile
+            [View All Proposals]
           </button>
         </div>
       </div>
-
     </div>
   );
 }
