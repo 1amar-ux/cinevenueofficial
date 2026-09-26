@@ -118,6 +118,7 @@ async function runLiveVerification() {
 
   } finally {
     server.close();
+    process.exit(0);
   }
 }
 

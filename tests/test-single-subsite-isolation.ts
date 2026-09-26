@@ -163,6 +163,7 @@ async function runTest() {
     console.log("================================================================================");
   } finally {
     server.close();
+    process.exit(0);
   }
 }
 
