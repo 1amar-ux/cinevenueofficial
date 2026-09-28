@@ -336,32 +336,34 @@ export default function FilmProductionSubWebsite({
             </button>
           </div>
 
-          {/* Header Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
-            <button
-              onClick={() => setIsAppHubModalOpen(true)}
-              className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-300 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
-            >
-              <FileText className="w-3.5 h-3.5 text-gold" />
-              <span>APPLICATION FORMS</span>
-            </button>
+          {/* Header Action Buttons (Events & Media) */}
+          {activeModule !== "film" && (
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
+              <button
+                onClick={() => setIsAppHubModalOpen(true)}
+                className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-300 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
+              >
+                <FileText className="w-3.5 h-3.5 text-gold" />
+                <span>APPLICATION FORMS</span>
+              </button>
 
-            <button
-              onClick={() => setIsDashboardModalOpen(true)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all border border-white/15 cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5 text-gold" />
-              <span>My Applications</span>
-            </button>
+              <button
+                onClick={() => setIsDashboardModalOpen(true)}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all border border-white/15 cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-gold" />
+                <span>My Applications</span>
+              </button>
 
-            <button
-              onClick={() => setIsFilmAppModalOpen(true)}
-              className="px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 via-gold to-yellow-500 text-black text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md shadow-gold/20 flex items-center gap-1.5"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>SUBMIT PROJECT</span>
-            </button>
-          </div>
+              <button
+                onClick={() => setIsFilmAppModalOpen(true)}
+                className="px-3 sm:px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 via-gold to-yellow-500 text-black text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider hover:opacity-90 transition-all cursor-pointer shadow-md shadow-gold/20 flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>SUBMIT PROJECT</span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -397,47 +399,6 @@ export default function FilmProductionSubWebsite({
 
       {activeModule === "film" && (
         <>
-          {/* Film Section View Switcher Bar */}
-          <div className="bg-[#0B0B0F] border-b border-white/10 px-6 py-2.5">
-            <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setFilmViewMode("marketplace")}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                    filmViewMode === "marketplace"
-                      ? "bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-lg shadow-amber-500/20"
-                      : "bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>24 Crafts Film Marketplace</span>
-                </button>
-
-                <button
-                  onClick={() => setFilmViewMode("showcase")}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                    filmViewMode === "showcase"
-                      ? "bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-lg shadow-amber-500/20"
-                      : "bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
-                  }`}
-                >
-                  <Film className="w-3.5 h-3.5" />
-                  <span>Studio Slate & Showcase</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsFilmMarketplaceAdminOpen(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold border border-purple-500/40 cursor-pointer flex items-center gap-1.5 transition-all"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>24 Crafts Admin</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
           {filmViewMode === "marketplace" ? (
             <FilmProductionHub
               userEmail={userEmail}
@@ -1711,14 +1672,16 @@ export default function FilmProductionSubWebsite({
         userEmail={userEmail}
       />
 
-      {/* Floating Application Forms Button */}
-      <button
-        onClick={() => setIsAppHubModalOpen(true)}
-        className="fixed bottom-6 left-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-2xl shadow-gold/30 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 border border-gold/40"
-      >
-        <FileText className="w-4 h-4 fill-black" />
-        <span className="hidden sm:inline">📝 Application Forms</span>
-      </button>
+      {/* Floating Application Forms Button (Non-film modules only) */}
+      {activeModule !== "film" && (
+        <button
+          onClick={() => setIsAppHubModalOpen(true)}
+          className="fixed bottom-6 left-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-2xl shadow-gold/30 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 border border-gold/40"
+        >
+          <FileText className="w-4 h-4 fill-black" />
+          <span className="hidden sm:inline">📝 Application Forms</span>
+        </button>
+      )}
 
     </div>
   );

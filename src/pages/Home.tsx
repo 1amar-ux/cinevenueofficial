@@ -501,10 +501,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               </div>
               <div className="space-y-1.5 text-left">
                 <h3 className="font-display text-lg font-bold text-white group-hover:text-[#D4AF37] transition-colors">
-                  Film Production & 24 Crafts
+                  Film Production
                 </h3>
                 <p className="text-xs text-white/50 leading-relaxed font-light min-h-[60px]">
-                  Official 24 Crafts marketplace, verified cast & crew hiring, casting calls, deal memos, milestone escrow, and film slate.
+                  Official 24 Crafts platform, verified creative talent, production proposals, personal negotiations, and film collaborations.
                 </p>
               </div>
             </div>
@@ -518,22 +518,8 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{(serviceControl?.filmProduction?.status ?? true) ? "Open 24 Crafts Marketplace" : "Under Maintenance"}</span>
+                <span>{(serviceControl?.filmProduction?.status ?? true) ? "Film Production" : "Under Maintenance"}</span>
                 <ChevronRight className="w-3.5 h-3.5 text-black" />
-              </button>
-              <button
-                onClick={() => {
-                  if ((serviceControl?.filmProduction?.status ?? true)) {
-                    setActiveDivision("production");
-                    setFilmStudioTab("marketplace");
-                    setTimeout(() => document.getElementById("active-showcase")?.scrollIntoView({ behavior: "smooth" }), 100);
-                  } else {
-                    navigate("/productions");
-                  }
-                }}
-                className="w-full py-1.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
-              >
-                <span>Quick View Studio Division</span>
               </button>
             </div>
           </div>
