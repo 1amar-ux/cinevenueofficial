@@ -849,39 +849,39 @@ export default function CreateProposalModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="px-6 py-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 bg-[#111218] shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/10 flex items-center justify-between gap-2 bg-[#111218] shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-colors cursor-pointer border border-white/10"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-colors cursor-pointer border border-white/10"
           >
             Cancel
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => handleSubmit("DRAFT")}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-white/15"
+              className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-white/15"
             >
-              [Save Draft]
+              Draft
             </button>
 
             <button
               type="button"
               onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gold text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-gold/30"
+              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gold text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-gold/30"
             >
-              [Preview]
+              {isPreviewOpen ? "Edit" : "Preview"}
             </button>
 
             <button
               type="button"
               onClick={() => handleSubmit("SENT")}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-gold/20 cursor-pointer flex items-center gap-1.5 border-0"
+              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-gold/20 cursor-pointer flex items-center gap-1.5 border-0"
             >
               <Send className="w-3.5 h-3.5 text-black" />
-              <span>[Send Proposal]</span>
+              <span>Send</span>
             </button>
           </div>
         </div>

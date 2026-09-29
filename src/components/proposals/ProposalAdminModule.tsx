@@ -41,6 +41,7 @@ import {
 } from '../../types';
 import { DEFAULT_PROPOSALS } from '../../data';
 import { 
+  getProposals,
   getApplications, 
   getFilmProjectApplications, 
   updateApplicationStatus 
@@ -115,10 +116,60 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
   const [isRejectModalOpen, setIsRejectModalOpen] = useState<boolean>(false);
   const [rejectReason, setRejectReason] = useState<string>('');
 
-  // Convert 24 Crafts & Film Applications to Proposal shape
+  // Convert 24 Crafts Proposals, Pitches & Film Applications to Proposal shape
   const getMappedFilmProposals = (): Proposal[] => {
+    const rawProposals = getProposals();
     const rawApps = getApplications();
     const rawProjectPitches = getFilmProjectApplications();
+
+    const movieCraftProposals: Proposal[] = rawProposals.map(p => {
+      const normStatus = String(p.status).toUpperCase();
+      let adminStatus: ProposalStatus = 'NEW';
+      if (normStatus === 'ACCEPTED') adminStatus = 'APPROVED';
+      else if (normStatus === 'UNDER_REVIEW' || normStatus === 'UNDER REVIEW' || normStatus === 'NEGOTIATION' || normStatus === 'CHANGES REQUESTED') adminStatus = 'UNDER REVIEW';
+      else if (normStatus === 'REJECTED') adminStatus = 'REJECTED';
+      else if (normStatus === 'SENT' || normStatus === 'RECEIVED' || normStatus === 'PENDING') adminStatus = 'NEW';
+
+      const scopeText = Array.isArray(p.scopeOfWork) ? p.scopeOfWork.join(', ') : (p.scopeOfWork || '');
+      const deliverablesText = (p.deliverables || []).join(', ');
+
+      return {
+        proposalId: p.proposalNumber || p.id,
+        customerId: p.senderEmail || p.senderId,
+        customerType: 'Film Production',
+        fullName: p.senderName || 'Filmmaker',
+        companyName: `${p.craftName || '24 Crafts'} • ${p.senderCompany || p.projectName}`,
+        phone: '+91 98765 43210',
+        email: p.senderEmail || 'filmmaker@cinevenue.com',
+        city: p.location || 'Hyderabad',
+        contactMethod: 'Email',
+        serviceType: 'Film Production',
+        projectName: `[${p.craftName || 'Craft'}] ${p.projectName}: ${p.title}`,
+        location: p.location || 'Hyderabad',
+        preferredDate: p.startDate || p.createdAt,
+        estimatedBudget: Number(p.proposedFee || p.budgetTotal || 250000),
+        servicesRequired: [
+          `Craft: ${p.craftName || 'Production Craft'}`,
+          `Role: ${p.role || 'Specialist'}`,
+          `Recipient: ${p.recipientName} (${p.recipientEmail})`,
+          `Duration: ${p.duration || '8 Weeks'}`,
+          ...(p.deliverables || [])
+        ],
+        description: p.projectDescription 
+          ? `${p.projectDescription}\n\nScope of Work: ${scopeText}\nDeliverables: ${deliverablesText}\nRecipient: ${p.recipientName} (${p.recipientEmail})`
+          : `Proposal for ${p.craftName} (${p.role}) on project ${p.projectName}.`,
+        status: adminStatus,
+        internalNotes: (p as any).auditLog?.map((log: any, idx: number) => ({
+          id: `NOTE-${p.id}-${idx}`,
+          author: log.performedBy || 'System',
+          authorRole: 'Admin',
+          note: `${log.action}: ${log.notes || 'Status changed to ' + log.statusTo}`,
+          createdAt: log.timestamp
+        })) || [],
+        createdAt: p.createdAt ? (p.createdAt.includes('T') ? p.createdAt : new Date(p.createdAt).toISOString()) : new Date().toISOString(),
+        updatedAt: p.updatedAt ? (p.updatedAt.includes('T') ? p.updatedAt : new Date(p.updatedAt).toISOString()) : new Date().toISOString()
+      };
+    });
 
     const filmAppProposals: Proposal[] = rawApps.map(app => ({
       proposalId: `FILM-APP-${app.id}`,
@@ -192,7 +243,7 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
       updatedAt: pitch.lastUpdated || new Date().toISOString()
     }));
 
-    return [...filmAppProposals, ...projectPitchProposals];
+    return [...movieCraftProposals, ...filmAppProposals, ...projectPitchProposals];
   };
 
   // Fetch Proposals from API and Merge with Film Applications
@@ -235,9 +286,11 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
     const handleSync = () => {
       fetchProposals();
     };
+    window.addEventListener('cinevenue-proposals-updated', handleSync);
     window.addEventListener('cinevenue-film-applications-updated', handleSync);
     window.addEventListener('cinevenue-film-project-applications-updated', handleSync);
     return () => {
+      window.removeEventListener('cinevenue-proposals-updated', handleSync);
       window.removeEventListener('cinevenue-film-applications-updated', handleSync);
       window.removeEventListener('cinevenue-film-project-applications-updated', handleSync);
     };

@@ -36,6 +36,7 @@ import {
   deleteIndianCastingCall,
   getProposals,
   deleteProposal,
+  updateProposalStatus,
   getProfileReports
 } from "../../services/filmProductionService";
 
@@ -50,7 +51,7 @@ export default function CineVenueFilmAdminTab({
 }: CineVenueFilmAdminTabProps) {
   const [adminSubTab, setAdminSubTab] = useState<
     "crafts" | "projects" | "professionals" | "applications" | "casting-calls" | "proposals" | "contracts" | "reports" | "analytics"
-  >("applications");
+  >("proposals");
 
   // State
   const [craftsList, setCraftsList] = useState<FilmCraft[]>(() => getCrafts());
@@ -67,6 +68,10 @@ export default function CineVenueFilmAdminTab({
   const [appStatusFilter, setAppStatusFilter] = useState<string>("ALL");
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
   const [adminNoteInput, setAdminNoteInput] = useState("");
+
+  const [proposalStatusFilter, setProposalStatusFilter] = useState<string>("ALL");
+  const [selectedAdminProposal, setSelectedAdminProposal] = useState<Proposal | null>(null);
+  const [proposalAdminNote, setProposalAdminNote] = useState("");
 
   // Craft Editor Modal
   const [editingCraft, setEditingCraft] = useState<Partial<FilmCraft> | null>(null);
@@ -92,8 +97,21 @@ export default function CineVenueFilmAdminTab({
       handleRefresh();
     };
     window.addEventListener("cinevenue-film-applications-updated", handleSync);
-    return () => window.removeEventListener("cinevenue-film-applications-updated", handleSync);
+    window.addEventListener("cinevenue-proposals-updated", handleSync);
+    return () => {
+      window.removeEventListener("cinevenue-film-applications-updated", handleSync);
+      window.removeEventListener("cinevenue-proposals-updated", handleSync);
+    };
   }, []);
+
+  // Proposal Action handlers
+  const handleUpdateProposalStatus = (proposalId: string, status: Proposal["status"], notes?: string) => {
+    updateProposalStatus(proposalId, status, { reviewNotes: notes });
+    handleRefresh();
+    if (selectedAdminProposal && (selectedAdminProposal.id === proposalId || selectedAdminProposal.proposalNumber === proposalId)) {
+      setSelectedAdminProposal(prev => prev ? { ...prev, status, reviewNotes: notes || prev.reviewNotes } : null);
+    }
+  };
 
   // Application Action handlers
   const handleUpdateAppStatus = (appId: string, status: JobApplication["status"], notes?: string) => {
@@ -440,6 +458,350 @@ export default function CineVenueFilmAdminTab({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB: PROPOSALS LEDGER */}
+      {adminSubTab === "proposals" && (() => {
+        const filteredProposals = proposalsList.filter(p => {
+          const matchesSearch = searchQuery === "" || 
+            (p.proposalNumber && p.proposalNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.projectName && p.projectName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.projectTitle && p.projectTitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.craftName && p.craftName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.senderName && p.senderName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.recipientName && p.recipientName.toLowerCase().includes(searchQuery.toLowerCase()));
+
+          const s = String(p.status).toUpperCase();
+          const matchesStatus = proposalStatusFilter === "ALL" ||
+            (proposalStatusFilter === "PENDING" && (s === "SENT" || s === "RECEIVED" || s === "PENDING" || s === "UNDER_REVIEW")) ||
+            (proposalStatusFilter === "ACCEPTED" && s === "ACCEPTED") ||
+            (proposalStatusFilter === "NEGOTIATION" && (s === "NEGOTIATION" || s === "CHANGES REQUESTED")) ||
+            (proposalStatusFilter === "REJECTED" && s === "REJECTED");
+
+          return matchesSearch && matchesStatus;
+        });
+
+        const pendingCount = proposalsList.filter(p => ["SENT", "RECEIVED", "PENDING", "UNDER_REVIEW"].includes(String(p.status).toUpperCase())).length;
+        const acceptedCount = proposalsList.filter(p => String(p.status).toUpperCase() === "ACCEPTED").length;
+        const negotiationCount = proposalsList.filter(p => ["NEGOTIATION", "CHANGES REQUESTED"].includes(String(p.status).toUpperCase())).length;
+        const rejectedCount = proposalsList.filter(p => String(p.status).toUpperCase() === "REJECTED").length;
+
+        return (
+          <div className="space-y-4 animate-fade-in">
+            {/* Header & Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0D0E15] p-4 rounded-2xl border border-white/10">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-amber-400" />
+                  <span>24 Crafts Film Proposals Ledger</span>
+                </h3>
+                <p className="text-xs text-white/60 mt-0.5">
+                  Real-time incoming and active collaboration proposals submitted across all 24 filmmaking departments.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="Search proposal #, craft, title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-48 sm:w-60 bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <select
+                  value={proposalStatusFilter}
+                  onChange={(e) => setProposalStatusFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400 font-bold"
+                >
+                  <option value="ALL">All Statuses ({proposalsList.length})</option>
+                  <option value="PENDING">Pending Review ({pendingCount})</option>
+                  <option value="ACCEPTED">Accepted ({acceptedCount})</option>
+                  <option value="NEGOTIATION">In Negotiation ({negotiationCount})</option>
+                  <option value="REJECTED">Rejected ({rejectedCount})</option>
+                </select>
+
+                <button
+                  onClick={handleRefresh}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10"
+                  title="Refresh Proposals"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Quick Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-2xl bg-[#111218] border border-white/10">
+                <span className="text-[10px] uppercase font-bold text-white/40 block">Total Submissions</span>
+                <span className="text-xl font-black text-white font-mono">{proposalsList.length}</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#111218] border border-amber-500/20">
+                <span className="text-[10px] uppercase font-bold text-amber-400/80 block">Pending Review</span>
+                <span className="text-xl font-black text-amber-400 font-mono">{pendingCount}</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#111218] border border-emerald-500/20">
+                <span className="text-[10px] uppercase font-bold text-emerald-400/80 block">Accepted</span>
+                <span className="text-xl font-black text-emerald-400 font-mono">{acceptedCount}</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#111218] border border-rose-500/20">
+                <span className="text-[10px] uppercase font-bold text-rose-400/80 block">Rejected</span>
+                <span className="text-xl font-black text-rose-400 font-mono">{rejectedCount}</span>
+              </div>
+            </div>
+
+            {/* Proposals Cards / Table */}
+            {filteredProposals.length === 0 ? (
+              <div className="p-12 rounded-2xl bg-[#111218] border border-white/10 text-center space-y-3">
+                <FileText className="w-12 h-12 text-white/20 mx-auto" />
+                <h4 className="text-sm font-bold text-white">No Proposals Found</h4>
+                <p className="text-xs text-white/60 max-w-md mx-auto">
+                  Proposals submitted by users via the 24 Crafts Proposal forms will appear here in real-time.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredProposals.map(prop => {
+                  const s = String(prop.status).toUpperCase();
+                  const isAccepted = s === "ACCEPTED";
+                  const isPending = ["SENT", "RECEIVED", "PENDING", "UNDER_REVIEW"].includes(s);
+                  const isRejected = s === "REJECTED";
+
+                  return (
+                    <div 
+                      key={prop.id}
+                      className="p-5 rounded-2xl bg-[#111218] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between space-y-4 text-xs"
+                    >
+                      <div className="space-y-3">
+                        {/* Header: ID, Craft & Status */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-amber-400 text-xs">
+                                {prop.proposalNumber || prop.id}
+                              </span>
+                              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-black uppercase text-white/80">
+                                {prop.craftName || "24 Crafts"}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-extrabold text-white mt-1 line-clamp-1">
+                              {prop.projectName || prop.projectTitle || "Film Project"} • {prop.title}
+                            </h4>
+                          </div>
+
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                            isAccepted 
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : isRejected
+                              ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                              : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          }`}>
+                            {prop.status}
+                          </span>
+                        </div>
+
+                        {/* Parties Summary */}
+                        <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1 text-[11px]">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/40">From Sender:</span>
+                            <span className="text-white font-medium truncate max-w-[200px]">{prop.senderName} ({prop.senderEmail})</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/40">To Recipient:</span>
+                            <span className="text-white font-medium truncate max-w-[200px]">{prop.recipientName} ({prop.recipientEmail})</span>
+                          </div>
+                          <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                            <span className="text-white/40">Proposed Fee:</span>
+                            <span className="text-amber-400 font-bold font-mono">
+                              ₹{Number(prop.proposedFee || prop.budgetTotal || 0).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Deliverables Preview */}
+                        {prop.deliverables && prop.deliverables.length > 0 && (
+                          <div className="text-[11px] text-white/60 line-clamp-2">
+                            <span className="font-bold text-white/80">Deliverables: </span>
+                            {prop.deliverables.join(", ")}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Footer */}
+                      <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => setSelectedAdminProposal(prop)}
+                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/10"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Inspect Proposal</span>
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          {isPending && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateProposalStatus(prop.id, "ACCEPTED", "Approved by CineVenue Film Admin")}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs cursor-pointer transition-all shadow-sm"
+                                title="Approve and mark accepted"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleUpdateProposalStatus(prop.id, "REJECTED", "Declined by CineVenue Film Admin")}
+                                className="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 font-bold text-xs cursor-pointer transition-all"
+                                title="Reject proposal"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete proposal ${prop.proposalNumber || prop.id}?`)) {
+                                deleteProposal(prop.id);
+                                handleRefresh();
+                              }
+                            }}
+                            className="p-1.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 transition-all cursor-pointer"
+                            title="Delete record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* PROPOSAL DOSSIER INSPECTION MODAL */}
+      {selectedAdminProposal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-[#0D0E15] border border-amber-500/30 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-5 my-8 text-xs text-left">
+            <button
+              onClick={() => setSelectedAdminProposal(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center cursor-pointer"
+            >
+              ✕
+            </button>
+
+            {/* Top Proposal Header */}
+            <div className="flex items-start gap-4 border-b border-white/10 pb-5">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <FileCheck className="w-7 h-7" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono font-bold text-amber-400">
+                    {selectedAdminProposal.proposalNumber || selectedAdminProposal.id}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-black uppercase text-white/80">
+                    {selectedAdminProposal.craftName || "24 Crafts"}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    {selectedAdminProposal.status}
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-white mt-1">
+                  {selectedAdminProposal.title || selectedAdminProposal.projectName}
+                </h3>
+                <p className="text-white/60 text-xs">
+                  Project: <strong className="text-white">{selectedAdminProposal.projectName || selectedAdminProposal.projectTitle}</strong> • Role: <strong className="text-white">{selectedAdminProposal.role || "Lead"}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Parties & Financial Terms */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-bold text-white/40 block">Sender / Producer</span>
+                <p className="text-white font-bold">{selectedAdminProposal.senderName}</p>
+                <p className="text-white/60">{selectedAdminProposal.senderEmail}</p>
+                <p className="text-white/40 text-[10px]">{selectedAdminProposal.senderCompany || "CineVenue Production"}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-bold text-white/40 block">Recipient / Creative Lead</span>
+                <p className="text-white font-bold">{selectedAdminProposal.recipientName}</p>
+                <p className="text-white/60">{selectedAdminProposal.recipientEmail}</p>
+                <p className="text-amber-400 font-mono font-bold mt-1">
+                  Proposed Fee: ₹{Number(selectedAdminProposal.proposedFee || selectedAdminProposal.budgetTotal || 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
+
+            {/* Scope & Description */}
+            {selectedAdminProposal.projectDescription && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-white/40 uppercase">Project Description:</span>
+                <p className="text-white/80 p-3 rounded-xl bg-white/5 border border-white/5 leading-relaxed whitespace-pre-wrap">
+                  {selectedAdminProposal.projectDescription}
+                </p>
+              </div>
+            )}
+
+            {/* Deliverables List */}
+            {selectedAdminProposal.deliverables && selectedAdminProposal.deliverables.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-white/40 uppercase">Key Deliverables:</span>
+                <ul className="list-disc pl-5 text-white/80 space-y-0.5">
+                  {selectedAdminProposal.deliverables.map((d, i) => (
+                    <li key={i}>{d}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Status Actions */}
+            <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleUpdateProposalStatus(selectedAdminProposal.id, "ACCEPTED", "Accepted in Admin Review");
+                    setSelectedAdminProposal(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs cursor-pointer shadow-md"
+                >
+                  Accept & Approve
+                </button>
+                <button
+                  onClick={() => {
+                    handleUpdateProposalStatus(selectedAdminProposal.id, "UNDER_REVIEW", "Set Under Review by Admin");
+                    setSelectedAdminProposal(null);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs cursor-pointer"
+                >
+                  Mark Under Review
+                </button>
+                <button
+                  onClick={() => {
+                    handleUpdateProposalStatus(selectedAdminProposal.id, "REJECTED", "Declined in Admin Review");
+                    setSelectedAdminProposal(null);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 font-bold text-xs cursor-pointer"
+                >
+                  Reject
+                </button>
+              </div>
+
+              <button
+                onClick={() => setSelectedAdminProposal(null)}
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
