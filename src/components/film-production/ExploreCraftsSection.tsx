@@ -206,32 +206,21 @@ export default function ExploreCraftsSection({
               </div>
 
               {/* Actions Footer */}
-              <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-2">
+              <div className="pt-4 mt-4 border-t border-white/5">
                 <button
                   type="button"
                   onClick={() => {
-                    if (onViewProfessionals) {
-                      onViewProfessionals(craft.name);
+                    if (onCreateProposalForCraft) {
+                      onCreateProposalForCraft(craft);
                     } else if (onSelectCraft) {
                       onSelectCraft(craft.id);
                     }
                   }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-white/5 hover:bg-gold hover:text-black text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-white/10"
+                  className="w-full py-2.5 px-3 rounded-xl bg-gold/15 hover:bg-gold text-gold hover:text-black text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-gold/30 hover:border-gold shadow-sm group-hover:shadow-gold/20"
                 >
-                  <span>View Professionals</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Create Proposal</span>
                 </button>
-
-                {onCreateProposalForCraft && (
-                  <button
-                    type="button"
-                    onClick={() => onCreateProposalForCraft(craft)}
-                    className="p-2 rounded-xl bg-gold/10 hover:bg-gold hover:text-black text-gold border border-gold/20 transition-all cursor-pointer"
-                    title={`Create ${craft.name} Proposal`}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             </div>
           );

@@ -6,9 +6,9 @@ export default function GlobalBackButton() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide on the root / landing page
+  // Hide on the root / landing page and subwebsite dashboards with dedicated sidebars
   const pathname = location.pathname.trim();
-  if (pathname === "/" || pathname === "") {
+  if (pathname === "/" || pathname === "" || pathname.startsWith("/productions") || pathname.startsWith("/film-production")) {
     return null;
   }
 

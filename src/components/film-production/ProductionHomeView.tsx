@@ -183,15 +183,15 @@ export default function ProductionHomeView({
               className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/10 flex items-center gap-2 cursor-pointer"
             >
               <Layers className="w-4 h-4 text-gold" />
-              <span>24 Crafts</span>
+              <span>Explore 24 Crafts</span>
             </button>
 
             <button
-              onClick={() => onNavigateTab("professionals")}
+              onClick={() => onNavigateTab("proposals")}
               className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/10 flex items-center gap-2 cursor-pointer"
             >
-              <Users className="w-4 h-4 text-gold" />
-              <span>Find Talent</span>
+              <FileText className="w-4 h-4 text-gold" />
+              <span>View Proposals</span>
             </button>
           </div>
         </div>

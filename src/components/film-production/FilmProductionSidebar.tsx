@@ -1,11 +1,8 @@
 import React from "react";
 import { 
-  Film, Sparkles, PlusCircle, Search, MessageSquare, 
-  User, Building2, Briefcase, Users, Clapperboard, Award,
-  CheckCircle2, ArrowRight, ShieldCheck, ChevronRight,
-  LayoutDashboard, FileText, FolderKanban, UserCheck, 
-  ArrowLeft, X, Menu, Shield, ExternalLink, Video,
-  Compass, Layers
+  PlusCircle, User, Clapperboard,
+  CheckCircle2, LayoutDashboard, FileText, 
+  ArrowLeft, X, Layers
 } from "lucide-react";
 
 interface FilmProductionSidebarProps {
@@ -13,11 +10,6 @@ interface FilmProductionSidebarProps {
   setActiveTab: (tab: string) => void;
   userEmail?: string | null;
   onOpenAuth?: () => void;
-  onCreateProject: () => void;
-  onOpenMyProfile: () => void;
-  onOpenAdmin?: () => void;
-  negotiationsCount?: number;
-  myProjectsCount?: number;
   proposalsCount?: number;
   pendingProposalsCount?: number;
   isOpenMobile: boolean;
@@ -29,11 +21,6 @@ export default function FilmProductionSidebar({
   setActiveTab,
   userEmail,
   onOpenAuth,
-  onCreateProject,
-  onOpenMyProfile,
-  onOpenAdmin,
-  negotiationsCount = 0,
-  myProjectsCount = 0,
   proposalsCount = 0,
   pendingProposalsCount = 0,
   isOpenMobile,
@@ -41,60 +28,33 @@ export default function FilmProductionSidebar({
 }: FilmProductionSidebarProps) {
   
   const handleNavClick = (tabId: string) => {
-    if (tabId === "create-project") {
-      onCreateProject();
-    } else if (tabId === "my-profile") {
-      onOpenMyProfile();
-    } else if (tabId === "admin" && onOpenAdmin) {
-      onOpenAdmin();
-    } else {
-      setActiveTab(tabId);
-    }
+    setActiveTab(tabId);
     setIsOpenMobile(false);
   };
 
   const navSections = [
     {
-      title: "MOVIE PRODUCTION",
+      title: "FILM PRODUCTION",
       items: [
         { 
           id: "overview", 
-          label: "Production Home", 
+          label: "Dashboard", 
           icon: LayoutDashboard, 
-          desc: "Dashboard & Proposal Overview" 
+          desc: "Proposal Overview & Stats" 
         },
         { 
           id: "crafts", 
           label: "24 Production Crafts", 
           icon: Layers, 
           badge: "24",
-          desc: "Standard Film Industry Crafts" 
+          desc: "Film Industry Crafts" 
         },
         { 
           id: "proposals", 
           label: "Proposals", 
           icon: FileText, 
           badge: pendingProposalsCount > 0 ? `${pendingProposalsCount} Pending` : (proposalsCount > 0 ? proposalsCount : undefined),
-          desc: "Sent, Received & Negotiation" 
-        },
-        { 
-          id: "professionals", 
-          label: "Discover Professionals", 
-          icon: Users, 
-          desc: "Search 24 Crafts Professionals" 
-        },
-        { 
-          id: "my-projects", 
-          label: "My Film Projects", 
-          icon: Film, 
-          badge: myProjectsCount > 0 ? myProjectsCount : undefined,
-          desc: "Slates, Pre-Prod & Releases" 
-        },
-        { 
-          id: "my-profile", 
-          label: "My Profile", 
-          icon: UserCheck, 
-          desc: "Multi-Craft Film Profile" 
+          desc: "Create & Track Proposals" 
         }
       ]
     }
@@ -219,25 +179,17 @@ export default function FilmProductionSidebar({
         {userEmail ? (
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-black text-xs flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-black text-xs flex items-center justify-center shrink-0 select-none">
                 {userEmail.substring(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-bold text-white truncate">{userEmail.split("@")[0]}</div>
                 <div className="text-[9px] text-amber-400 font-semibold truncate flex items-center gap-1">
                   <CheckCircle2 className="w-2.5 h-2.5" />
-                  <span>Verified User</span>
+                  <span>Verified Filmmaker</span>
                 </div>
               </div>
             </div>
-            
-            <button
-              onClick={onOpenMyProfile}
-              title="Edit Profile"
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500 hover:text-black text-white/70 transition-all cursor-pointer"
-            >
-              <User className="w-3.5 h-3.5" />
-            </button>
           </div>
         ) : (
           <div className="space-y-2">
