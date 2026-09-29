@@ -262,6 +262,17 @@ export default function FilmProductionSubWebsite({
     }
   };
 
+  if (activeModule === "film") {
+    return (
+      <FilmProductionHub
+        userEmail={userEmail}
+        initialTab={initialTab}
+        onOpenAuth={onOpenAuth}
+        onNavigateHome={() => window.location.href = "/"}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#070709] text-white font-sans antialiased selection:bg-gold selection:text-black">
       
@@ -300,9 +311,9 @@ export default function FilmProductionSubWebsite({
           {/* Sub-Website Section Switcher */}
           <div className="flex items-center gap-1 sm:gap-1.5 bg-black/60 p-1 rounded-xl border border-white/10 overflow-x-auto scrollbar-none max-w-full">
             <button
-              onClick={() => setActiveModule("film")}
+              onClick={() => setActiveModule("film" as any)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                activeModule === "film"
+                (activeModule as string) === "film"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
                   : "text-white/60 hover:text-white"
               }`}
@@ -337,8 +348,7 @@ export default function FilmProductionSubWebsite({
           </div>
 
           {/* Header Action Buttons (Events & Media) */}
-          {activeModule !== "film" && (
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
               <button
                 onClick={() => setIsAppHubModalOpen(true)}
                 className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-300 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
@@ -363,7 +373,6 @@ export default function FilmProductionSubWebsite({
                 <span>SUBMIT PROJECT</span>
               </button>
             </div>
-          )}
         </div>
       </header>
 
@@ -397,7 +406,7 @@ export default function FilmProductionSubWebsite({
         />
       )}
 
-      {activeModule === "film" && (
+      {(activeModule as string) === "film" && (
         <>
           {filmViewMode === "marketplace" ? (
             <FilmProductionHub
@@ -1672,16 +1681,14 @@ export default function FilmProductionSubWebsite({
         userEmail={userEmail}
       />
 
-      {/* Floating Application Forms Button (Non-film modules only) */}
-      {activeModule !== "film" && (
-        <button
-          onClick={() => setIsAppHubModalOpen(true)}
-          className="fixed bottom-6 left-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-2xl shadow-gold/30 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 border border-gold/40"
-        >
-          <FileText className="w-4 h-4 fill-black" />
-          <span className="hidden sm:inline">📝 Application Forms</span>
-        </button>
-      )}
+      {/* Floating Application Forms Button (Events & Media only) */}
+      <button
+        onClick={() => setIsAppHubModalOpen(true)}
+        className="fixed bottom-6 left-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-2xl shadow-gold/30 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 border border-gold/40"
+      >
+        <FileText className="w-4 h-4 fill-black" />
+        <span className="hidden sm:inline">📝 Application Forms</span>
+      </button>
 
     </div>
   );
