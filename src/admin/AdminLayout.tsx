@@ -52,7 +52,9 @@ import {
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
+import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
+import { Server, Cpu } from "lucide-react";
 
 
 export default function AdminLayout() {
@@ -185,6 +187,7 @@ export default function AdminLayout() {
     {
       title: "CATALOGUE & SCHEDULING",
       items: [
+        { id: "pos_integrations", label: "POS Integration & Testing", icon: Server },
         { id: "theatres", label: "Theatre Approval", icon: Landmark },
         { id: "movies", label: "Movie Management", icon: Film },
         { id: "shows", label: "Show Master List", icon: CalendarRange }
@@ -901,6 +904,13 @@ export default function AdminLayout() {
         <main className="flex-1 min-w-0 overflow-y-auto bg-[#0A0A0B] p-4 sm:p-6 md:p-8">
           <div className="max-w-6xl mx-auto space-y-6 text-left">
             
+            {/* POS INTEGRATION & TESTING MODULE */}
+            {activeTab === "pos_integrations" && (
+              <div className="space-y-6">
+                <IntegrationTestingModule isSuperAdmin={true} />
+              </div>
+            )}
+
             {/* EVENT PASSES & CAPACITY MODULE */}
             {activeTab === "events" && (
               <div className="space-y-6">
