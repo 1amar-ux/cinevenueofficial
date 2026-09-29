@@ -2,6 +2,9 @@ import { CinemaAdapter } from "./interfaces/CinemaAdapter";
 import { NativeTheatreAdapter } from "./adapters/NativeTheatreAdapter";
 import { PvrInoxAdapter } from "./adapters/PvrInoxAdapter";
 import { EventVenueAdapter } from "./adapters/EventVenueAdapter";
+import { VistaConnectAdapter } from "./adapters/VistaConnectAdapter";
+import { VeeziPosAdapter } from "./adapters/VeeziPosAdapter";
+import { GenericRestPosAdapter } from "./adapters/GenericRestPosAdapter";
 
 export class IntegrationManager {
   private static instance: IntegrationManager;
@@ -11,6 +14,10 @@ export class IntegrationManager {
     this.registerAdapter("NATIVE", new NativeTheatreAdapter());
     this.registerAdapter("PVR_INOX", new PvrInoxAdapter());
     this.registerAdapter("EVENT_VENUE", new EventVenueAdapter());
+    this.registerAdapter("VISTA", new VistaConnectAdapter());
+    this.registerAdapter("VEEZI", new VeeziPosAdapter());
+    this.registerAdapter("REST_POS", new GenericRestPosAdapter());
+    this.registerAdapter("GENERIC_REST", new GenericRestPosAdapter());
   }
 
   public static getInstance(): IntegrationManager {

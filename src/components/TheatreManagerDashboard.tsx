@@ -19,7 +19,9 @@ import {
   Check,
   LogOut,
   ChevronRight,
-  Database
+  Database,
+  Cpu,
+  Server
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule } from "../types";
 
@@ -37,6 +39,7 @@ import CouponsSubpage from "../pages/theatre-admin/Coupons";
 import StaffSubpage from "../pages/theatre-admin/Staff";
 import SettingsSubpage from "../pages/theatre-admin/Settings";
 import QRScannerSubpage from "../pages/theatre-admin/QRScanner";
+import TheatreOnboardingWizard from "./theatre-admin/TheatreOnboardingWizard";
 
 interface TheatreManagerDashboardProps {
   theatreId: number | string;
@@ -89,6 +92,7 @@ export default function TheatreManagerDashboard({
   // Navigation Items Config
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "pos-integration", label: "POS Integration & Sync", icon: Cpu },
     { id: "profile", label: "Theatre Profile", icon: Landmark },
     { id: "screens", label: "Screens", icon: Layers },
     { id: "seat-layout", label: "Seat Layout", icon: Sliders },
@@ -122,6 +126,16 @@ export default function TheatreManagerDashboard({
             bookings={bookings}
             schedules={schedules}
             movies={movies}
+          />
+        );
+      case "pos-integration":
+        return (
+          <TheatreOnboardingWizard
+            theatre={theatre}
+            onComplete={(data) => {
+              console.log("POS Onboarding completed:", data);
+              setActiveTab("dashboard");
+            }}
           />
         );
       case "profile":
