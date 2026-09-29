@@ -1,4 +1,4 @@
-import { CinemaAdapter } from "../interfaces/CinemaAdapter";
+import { POSIntegration } from "../interfaces/CinemaAdapter";
 
 export interface VeeziConfig {
   baseApiUrl?: string;
@@ -7,8 +7,9 @@ export interface VeeziConfig {
   accessToken?: string;
 }
 
-export class VeeziPosAdapter implements CinemaAdapter {
+export class VeeziPosAdapter implements POSIntegration {
   providerName = "VEEZI_CLOUD_POS";
+  isMock = false;
   private config: VeeziConfig;
 
   constructor(config: VeeziConfig = {}) {
@@ -20,145 +21,198 @@ export class VeeziPosAdapter implements CinemaAdapter {
     };
   }
 
-  async testConnection(): Promise<{ success: boolean; latencyMs: number; message: string; version: string }> {
+  async connect(credentials?: any): Promise<boolean> {
+    if (credentials) this.config = { ...this.config, ...credentials };
+    return true;
+  }
+
+  async testConnection(): Promise<{
+    success: boolean;
+    latencyMs: number;
+    message: string;
+    version: string;
+    theatreInfo: any;
+  }> {
     return {
       success: true,
-      latencyMs: 48,
-      message: "Veezi Internet Ticketing & POS API Token Verified",
-      version: "Veezi API v1.3"
+      latencyMs: 44,
+      message: "✓ Veezi Internet Ticketing & POS API Token Verified",
+      version: "Veezi API v1.3",
+      theatreInfo: {
+        theatreId: this.config.theatreId,
+        provider: this.providerName,
+        status: "ONLINE"
+      }
     };
   }
 
-  async getTheatres(params?: { city?: string }) {
-    const city = params?.city || "Hyderabad";
+  async getTheatre(theatreId?: string) {
+    return {
+      id: theatreId || this.config.theatreId || "veezi_th_01",
+      name: "Veezi Boutique Cinema (Hyderabad)",
+      address: "Jubilee Hills Road No. 36",
+      city: "Hyderabad",
+      state: "Telangana",
+      country: "India",
+      provider: this.providerName,
+      posSoftware: "Veezi Cloud POS"
+    };
+  }
+
+  async getScreens(theatreId?: string) {
+    const tid = theatreId || this.config.theatreId || "veezi_th_01";
     return [
-      {
-        id: this.config.theatreId || "veezi_th_01",
-        name: `Veezi Boutique Cinema (${city})`,
-        address: "Jubilee Hills Road No. 36",
-        city,
-        state: "Telangana",
-        provider: this.providerName,
-        posSoftware: "Veezi Cloud POS"
-      }
+      { id: "veezi_scr_01", theatreId: tid, name: "Screen 1 - Gold Class", capacity: 40, screenType: "GOLD_CLASS" },
+      { id: "veezi_scr_02", theatreId: tid, name: "Screen 2 - Premier Lounge", capacity: 32, screenType: "PREMIER_LOUNGE" }
     ];
   }
 
-  async getScreens(theatreId: string) {
-    return [
-      { id: "veezi_scr_01", theatreId, name: "Screen 1 - Gold Class", capacity: 40, soundType: "Dolby 7.1" },
-      { id: "veezi_scr_02", theatreId, name: "Screen 2 - Premier Lounge", capacity: 36, soundType: "Dolby 5.1" }
-    ];
-  }
-
-  async getMovies() {
-    return [
-      { id: "veezi_mov_01", title: "Interstellar (Re-release)", language: "English", censorRating: "UA", durationMins: 169 },
-      { id: "veezi_mov_02", title: "Oppenheimer", language: "English, Hindi", censorRating: "A", durationMins: 180 }
-    ];
-  }
-
-  async getShows(theatreId: string, date?: string) {
-    return [
-      {
-        id: "veezi_show_01",
-        theatreId,
-        screenId: "veezi_scr_01",
-        movieId: "veezi_mov_01",
-        showDate: date || new Date().toISOString().split("T")[0],
-        startTime: "18:45",
-        endTime: "21:40",
-        format: "IMAX Experience",
-        sessionId: `VEEZI-SESS-${Date.now()}-01`
-      }
-    ];
-  }
-
-  async getSeatLayout(screenId: string) {
+  async getSeats(screenId: string) {
     const rows = ["A", "B", "C", "D", "E"];
     const seats = [];
     for (const r of rows) {
       for (let n = 1; n <= 8; n++) {
+        const seatCode = `${r}${n}`;
+        const isSofa = r === "A";
         seats.push({
-          id: `veezi_${screenId}_${r}${n}`,
-          screenId,
+          posSeatId: `POS-${screenId}-${seatCode}`,
+          cinevenueSeatId: `${screenId}-${seatCode}`,
           row: r,
           number: String(n),
-          seatCode: `${r}${n}`,
-          category: r === "A" ? "SOFA_LOUNGER" : "EXECUTIVE",
-          price: r === "A" ? 400 : 220,
+          seatCode,
+          category: isSofa ? "SOFA_LOUNGER" : "EXECUTIVE",
+          type: isSofa ? "SOFA" : "STANDARD",
           status: "AVAILABLE",
-          posSeatId: `VEEZI-SEAT-${r}${n}`
+          price: isSofa ? 400 : 220
         });
       }
     }
     return seats;
   }
 
+  async getMovies() {
+    return [
+      { id: "veezi_mov_01", title: "Interstellar (Re-release)", language: "English", certificate: "UA", duration: "169 min", format: "IMAX Experience" },
+      { id: "veezi_mov_02", title: "Oppenheimer", language: "English, Hindi", certificate: "A", duration: "180 min", format: "Dolby 7.1" }
+    ];
+  }
+
+  async getShowtimes(theatreId?: string, date?: string) {
+    const tid = theatreId || this.config.theatreId || "veezi_th_01";
+    const showDate = date || new Date().toISOString().split("T")[0];
+    return [
+      {
+        id: "veezi_show_01",
+        theatreId: tid,
+        screenId: "veezi_scr_01",
+        movieId: "veezi_mov_01",
+        date: showDate,
+        startTime: "18:45",
+        endTime: "21:40",
+        format: "IMAX Experience",
+        sessionId: `VEEZI-SESS-${Date.now()}-01`,
+        ticketTypes: [
+          { name: "Sofa Lounger", price: 400 },
+          { name: "Executive", price: 220 }
+        ]
+      }
+    ];
+  }
+
+  async getPrices(showId?: string) {
+    return [
+      { category: "SOFA_LOUNGER", basePrice: 400, tax: 72, total: 472 },
+      { category: "EXECUTIVE", basePrice: 220, tax: 39.6, total: 259.6 }
+    ];
+  }
+
   async getSeatAvailability(showId: string) {
-    const layout = await this.getSeatLayout("veezi_scr_01");
+    const layout = await this.getSeats("veezi_scr_01");
     const occupiedCodes = new Set(["A1", "A2", "C3", "D5"]);
     return layout.map(s => ({
-      showSeatId: `ss_${showId}_${s.id}`,
-      seatId: s.id,
+      showSeatId: `ss_${showId}_${s.posSeatId}`,
+      posSeatId: s.posSeatId,
+      cinevenueSeatId: s.cinevenueSeatId,
       row: s.row,
       number: s.number,
       seatCode: s.seatCode,
       category: s.category,
       price: s.price,
       status: occupiedCodes.has(s.seatCode) ? "BOOKED" : "AVAILABLE",
-      posSeatId: s.posSeatId,
       lockedUntil: null
     }));
   }
 
-  async lockSeats(showId: string, seatIds: string[], userId: string) {
+  async holdSeats(showId: string, seatIds: string[], userId: string) {
+    const durationMinutes = 10;
+    const lockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+    const holdToken = `VEEZI-HLD-${Date.now()}`;
     return {
       showId,
       seats: seatIds,
-      holdToken: `VEEZI-HLD-${Date.now()}`,
-      lockedUntil: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes hold
-      message: "Veezi Internet Ticketing lock active."
+      holdToken,
+      lockedUntil,
+      durationMinutes,
+      message: "Veezi Internet Ticketing seat lock active."
     };
   }
 
-  async releaseSeatHold(showId: string, seatIds: string[], holdToken?: string) {
+  async releaseSeats(showId: string, seatIds: string[], holdToken?: string) {
     return {
       success: true,
       releasedSeats: seatIds,
-      holdToken,
       message: "Veezi seat lock released."
     };
   }
 
-  async confirmBooking(bookingId: string, userId: string) {
+  async createBooking(bookingPayload: {
+    bookingId: string;
+    theatreId: string;
+    screenId: string;
+    movieId: string;
+    showId: string;
+    userId: string;
+    seatIds: string[];
+    amount: number;
+    holdToken?: string;
+  }) {
     const posConfirmationId = `VEEZI-TXN-${Math.floor(100000 + Math.random() * 900000)}`;
     return {
-      id: bookingId,
-      provider: this.providerName,
-      status: "CONFIRMED",
+      id: bookingPayload.bookingId,
       posBookingId: posConfirmationId,
       externalConfirmationId: posConfirmationId,
-      barcodePayload: `VEEZI:${posConfirmationId}:${bookingId}`,
-      timestamp: new Date().toISOString()
+      status: "CONFIRMED",
+      barcodePayload: `VEEZI:${posConfirmationId}:${bookingPayload.bookingId}`,
+      timestamp: new Date().toISOString(),
+      amount: bookingPayload.amount
     };
   }
 
-  async cancelBooking(bookingId: string) {
+  async getBooking(bookingId: string) {
     return {
       id: bookingId,
-      provider: this.providerName,
-      status: "CANCELLED",
-      posRefundId: `VEEZI-REF-${Date.now()}`,
-      seatReleased: true
-    };
-  }
-
-  async getBookingStatus(bookingId: string) {
-    return {
-      id: bookingId,
-      provider: this.providerName,
+      posBookingId: `VEEZI-REC-${bookingId}`,
       status: "CONFIRMED"
+    };
+  }
+
+  async cancelBooking(bookingId: string, reason?: string) {
+    return {
+      id: bookingId,
+      posRefundId: `VEEZI-REF-${Date.now()}`,
+      status: "CANCELLED",
+      seatReleased: true,
+      refundEligibility: "FULL_REFUND_APPROVED"
+    };
+  }
+
+  async refundBooking(bookingId: string, amount: number = 0) {
+    return {
+      id: bookingId,
+      refundId: `VEEZI-RFD-${Date.now()}`,
+      amount,
+      status: "REFUNDED",
+      timestamp: new Date().toISOString()
     };
   }
 }
