@@ -192,14 +192,36 @@ export const INITIAL_THEATRES: Theatre[] = [
   },
   {
     id: 6,
+    name: "Naaz Cinemas, Kothapet Main Road, Guntur",
+    location: "Guntur · Kothapet Main Road",
+    city: "Guntur",
+    latitude: 16.3067,
+    longitude: 80.4365,
+    features: ["4K Projection", "Dolby Digital 7.1", "M-Ticket"],
+    price: "₹2,200",
+    img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=60"
+  },
+  {
+    id: 7,
     name: "Cinepolis Sudarshan",
     location: "Guntur · Lakshmipuram",
     city: "Guntur",
     latitude: 16.3025,
     longitude: 80.4300,
-    features: ["Recliner", "Dolby Atmos"],
+    features: ["Recliner", "Dolby Atmos", "Food & Beverage"],
     price: "₹2,499",
     img: "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?w=600&q=60"
+  },
+  {
+    id: 8,
+    name: "Miraj Cinemas, Vidya Nagar",
+    location: "Guntur · Vidya Nagar",
+    city: "Guntur",
+    latitude: 16.3150,
+    longitude: 80.4420,
+    features: ["Dolby 7.1", "Laser 3D", "Recliner"],
+    price: "₹2,300",
+    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=60"
   }
 ];
 
