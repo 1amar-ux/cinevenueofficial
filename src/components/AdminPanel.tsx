@@ -18,6 +18,7 @@ import CineVenueLogo from "./CineVenueLogo";
 import ThemeToggle from "./ThemeToggle";
 import SubWebsiteCMSManager from "./cms/SubWebsiteCMSManager";
 import IntegrationTestingModule from "./admin/integration-testing/IntegrationTestingModule";
+import SystemMonitoringModule from "./admin/monitoring/SystemMonitoringModule";
 import FinanceModule from "./admin/finance/FinanceModule";
 import { PillarKey } from "./cms/types";
 import CineCoinsAdminControl from "./admin/CineCoinsAdminControl";
@@ -136,7 +137,7 @@ interface AdminPanelProps {
   onUpdateCineCoinsTransactions?: (txs: CineCoinsTransaction[]) => void;
 }
 
-type TabType = "integration_testing" | "overview" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
+type TabType = "integration_testing" | "system_monitoring" | "overview" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
 
 export default function AdminPanel({
   isOpen,
@@ -2005,6 +2006,20 @@ export default function AdminPanel({
                   </button>
                   <button
                     type="button"
+                    onClick={() => { setActiveTab("system_monitoring"); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between p-2 rounded-lg transition-all duration-200 group ${
+                      activeTab === "system_monitoring" ? "bg-white/10 text-gold" : "text-text-secondary hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-1.5 rounded-md ${activeTab === "system_monitoring" ? "bg-gold/20" : "bg-white/5 group-hover:bg-white/10"}`}>
+                        <Activity className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-semibold tracking-wide">System Monitoring & Health</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => { setActiveTab("access"); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       activeTab === "access" 
@@ -2395,6 +2410,13 @@ export default function AdminPanel({
           {/* ========================================================= */}
           {activeTab === "integration_testing" && (
             <IntegrationTestingModule isSuperAdmin={effectiveSuperAdmin} />
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: SYSTEM OPERATIONAL MONITORING MODULE */}
+          {/* ========================================================= */}
+          {activeTab === "system_monitoring" && (
+            <SystemMonitoringModule />
           )}
 
 {/* ========================================================= */}

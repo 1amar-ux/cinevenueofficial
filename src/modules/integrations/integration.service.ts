@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "../../utils/uuid";
 import { integrationDb } from "./integration.db";
 import { integrationManager } from "./IntegrationManager";
 import { POSIntegration } from "./interfaces/CinemaAdapter";

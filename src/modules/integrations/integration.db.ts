@@ -1,5 +1,3 @@
-import { randomUUID } from "crypto";
-
 export const integrationDb = {
   integrations: [] as any[],
   logs: [] as any[],

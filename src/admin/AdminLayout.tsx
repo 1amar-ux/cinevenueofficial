@@ -53,8 +53,9 @@ import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
+import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
-import { Server, Cpu } from "lucide-react";
+import { Server, Cpu, Activity } from "lucide-react";
 
 
 export default function AdminLayout() {
@@ -172,6 +173,7 @@ export default function AdminLayout() {
       title: "CORE CONTROL",
       items: [
         { id: "dashboard", label: "Dashboard Overview", icon: LayoutDashboard },
+        { id: "system_monitoring", label: "System Monitoring", icon: Activity },
         { id: "analytics", label: "Advanced Analytics", icon: TrendingUp },
         { id: "reports", label: "Platform Reports", icon: FileSpreadsheet }
       ]
@@ -904,6 +906,13 @@ export default function AdminLayout() {
         <main className="flex-1 min-w-0 overflow-y-auto bg-[#0A0A0B] p-4 sm:p-6 md:p-8">
           <div className="max-w-6xl mx-auto space-y-6 text-left">
             
+            {/* SYSTEM OPERATIONAL MONITORING MODULE */}
+            {activeTab === "system_monitoring" && (
+              <div className="space-y-6">
+                <SystemMonitoringModule />
+              </div>
+            )}
+
             {/* POS INTEGRATION & TESTING MODULE */}
             {activeTab === "pos_integrations" && (
               <div className="space-y-6">

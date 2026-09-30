@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { integrationDb } from "../integrations/integration.db";
-import { randomUUID } from "crypto";
+import { randomUUID } from "../../utils/uuid";
 
 const router = Router();
 

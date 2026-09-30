@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "../../utils/uuid";
 import Decimal from "decimal.js";
 import { financeDb } from "./finance.db";
 import { prisma } from "../../lib/prisma";
