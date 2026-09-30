@@ -471,13 +471,20 @@ export default function App() {
     return saved ? JSON.parse(saved) : CITIES;
   });
 
-  // Global App States
+  // Global App States & City Selection with URL & Persistence Support
   const [selectedCity, setSelectedCityState] = useState(() => {
-    return localStorage.getItem("cine_user_location") || "All Cities";
+    if (typeof window !== "undefined") {
+      const urlCity = new URLSearchParams(window.location.search).get("city");
+      if (urlCity) {
+        return urlCity;
+      }
+    }
+    return localStorage.getItem("cine_selected_city") || localStorage.getItem("cine_user_location") || "All Cities";
   });
   
   const setSelectedCity = (city: string) => {
     setSelectedCityState(city);
+    localStorage.setItem("cine_selected_city", city);
     localStorage.setItem("cine_user_location", city);
   };
   const [searchQuery, setSearchQuery] = useState("");
@@ -498,6 +505,11 @@ export default function App() {
       if (authParam === "signin" || authParam === "login" || authParam === "signup" || authParam === "forgot") {
         setAuthMode(authParam === "signup" ? "signup" : authParam === "forgot" ? "forgot" : "signin");
         setAuthOpen(true);
+      }
+      const cityParam = params.get("city");
+      if (cityParam) {
+        setSelectedCityState(cityParam);
+        localStorage.setItem("cine_selected_city", cityParam);
       }
     }
   }, []);
