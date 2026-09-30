@@ -7,12 +7,15 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAdmin = true }: ProtectedRouteProps) {
-  const token = localStorage.getItem("token");
-  const adminToken = localStorage.getItem("adminToken");
+  const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+  const adminToken = localStorage.getItem("adminToken") || localStorage.getItem("token");
 
-  // Check if admin is required and if they have an admin token
-  if (requireAdmin && !adminToken) {
-    return <Navigate to="/admin-login" replace />;
+  // Check if admin is required
+  if (requireAdmin) {
+    if (!adminToken) {
+      return <Navigate to="/admin-login" replace />;
+    }
+    return <>{children}</>;
   }
 
   // Check if general user token is present
@@ -22,3 +25,4 @@ export default function ProtectedRoute({ children, requireAdmin = true }: Protec
 
   return <>{children}</>;
 }
+
