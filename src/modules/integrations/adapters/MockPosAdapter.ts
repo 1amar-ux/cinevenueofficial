@@ -227,6 +227,10 @@ export class MockPosAdapter implements POSIntegration {
     amount: number;
     holdToken?: string;
   }) {
+    if (bookingPayload.showId?.includes("decline") || bookingPayload.seatIds?.includes("DECLINE_SEAT")) {
+      throw new Error("POS Gateway Error: Box office terminal conflict during commit");
+    }
+
     const posBookingId = `MOCK-POS-${Math.floor(100000 + Math.random() * 900000)}`;
     const record = {
       id: bookingPayload.bookingId,
