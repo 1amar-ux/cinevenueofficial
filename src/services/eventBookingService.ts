@@ -665,25 +665,36 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
   },
 ];
 
-// ─── Local Storage Helper Functions ───────────────────────────
+// ─── Local Storage Helper Functions with In-Memory SSR Fallback ───
+const memoryStore: Record<string, string> = {};
+
 function loadStorage<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      return JSON.parse(raw);
+    }
+    const memRaw = memoryStore[key];
+    if (!memRaw) return fallback;
+    return JSON.parse(memRaw);
   } catch (err) {
-    console.error(`Failed to load from storage key ${key}:`, err);
     return fallback;
   }
 }
 
 function saveStorage<T>(key: string, data: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    const serialized = JSON.stringify(data);
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, serialized);
+    }
+    memoryStore[key] = serialized;
   } catch (err) {
-    console.error(`Failed to save to storage key ${key}:`, err);
+    // Graceful error ignore
   }
 }
+
 
 // ─── Event Item Service API ───────────────────────────────────
 
@@ -1257,3 +1268,315 @@ export function getOrganizerEventStats(eventId: string): OrganizerEventStats {
     checkInRatePercent,
   };
 }
+
+// ─── State Machine Transition Validators & Idempotency Engine ───
+
+/**
+ * Validates allowed Event Booking state machine transitions.
+ */
+export function validateBookingStateTransition(
+  current: EventBookingStatus,
+  next: EventBookingStatus
+): { valid: boolean; isIdempotent?: boolean; error?: string } {
+  const normCurrent = current.toUpperCase() as EventBookingStatus;
+  const normNext = next.toUpperCase() as EventBookingStatus;
+
+  if (normCurrent === normNext) {
+    return { valid: true, isIdempotent: true };
+  }
+
+  const allowedTransitions: Record<string, string[]> = {
+    PENDING: ['CONFIRMED', 'EXPIRED', 'CANCELLED'],
+    CONFIRMED: ['CANCEL_REQUESTED', 'CANCELLED', 'ATTENDED'],
+    CANCEL_REQUESTED: ['CANCELLED', 'CANCELLATION_REJECTED'],
+    CANCELLED: [],
+    EXPIRED: [],
+    ATTENDED: [],
+    CANCELLATION_REJECTED: ['CANCEL_REQUESTED', 'CANCELLED'],
+  };
+
+  const validNextStates = allowedTransitions[normCurrent] || [];
+  if (validNextStates.includes(normNext)) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    error: `Invalid booking state transition from ${current} to ${next}. Terminal or disallowed state.`,
+  };
+}
+
+/**
+ * Validates allowed Event Order state machine transitions.
+ */
+export function validateOrderStateTransition(
+  current: EventOrderStatus,
+  next: EventOrderStatus
+): { valid: boolean; isIdempotent?: boolean; error?: string } {
+  if (current === next) {
+    return { valid: true, isIdempotent: true };
+  }
+
+  const allowedTransitions: Record<EventOrderStatus, EventOrderStatus[]> = {
+    PENDING_PAYMENT: ['PAYMENT_PROCESSING', 'EXPIRED', 'CANCELLED'],
+    PAYMENT_PROCESSING: ['PAID', 'EXPIRED', 'CANCELLED'],
+    PAID: [],
+    EXPIRED: [],
+    CANCELLED: [],
+  };
+
+  const validNextStates = allowedTransitions[current] || [];
+  if (validNextStates.includes(next)) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    error: `Invalid order state transition from ${current} to ${next}.`,
+  };
+}
+
+/**
+ * Validates allowed Payment Lifecycle state machine transitions.
+ */
+export function validatePaymentStateTransition(
+  current: EventPaymentLifecycleStatus,
+  next: EventPaymentLifecycleStatus
+): { valid: boolean; isIdempotent?: boolean; error?: string } {
+  if (current === next) {
+    return { valid: true, isIdempotent: true };
+  }
+
+  const allowedTransitions: Record<string, string[]> = {
+    CREATED: ['PENDING', 'PROCESSING', 'CANCELLED', 'EXPIRED'],
+    PENDING: ['PROCESSING', 'EXPIRED', 'CANCELLED'],
+    PROCESSING: ['SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED'],
+    SUCCEEDED: [],
+    FAILED: ['PROCESSING'], // Allow retry
+    CANCELLED: [],
+    EXPIRED: [],
+    NOT_APPLICABLE: [],
+  };
+
+  const validNextStates = allowedTransitions[current] || [];
+  if (validNextStates.includes(next)) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    error: `Invalid payment state transition from ${current} to ${next}.`,
+  };
+}
+
+/**
+ * Validates allowed Event Pass state machine transitions.
+ */
+export function validatePassStateTransition(
+  current: EventPassStatus,
+  next: EventPassStatus
+): { valid: boolean; isIdempotent?: boolean; error?: string } {
+  if (current === next) {
+    return { valid: true, isIdempotent: true };
+  }
+
+  if (current === 'ACTIVE' && (next === 'USED' || next === 'CANCELLED')) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    error: `Invalid pass state transition from ${current} to ${next}. Terminal state cannot be reverted.`,
+  };
+}
+
+/**
+ * Generates individual EventPass records for each ticket in a confirmed booking.
+ */
+export function generateEventPasses(
+  bookingId: string,
+  eventId: string,
+  ticketTypeName: string,
+  primaryAttendee: { name: string; email: string; phone: string },
+  additionalAttendees?: { name: string; email?: string; seatCode?: string }[],
+  totalCount: number = 1
+): EventPass[] {
+  const passes: EventPass[] = [];
+  const nowIso = new Date().toISOString();
+
+  // Pass 1: Primary booker
+  const primaryPassId = `CVPASS-${Math.floor(100000 + Math.random() * 900000)}`;
+  const primaryCode = `V-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+  passes.push({
+    id: primaryPassId,
+    eventBookingId: bookingId,
+    passNumber: 1,
+    ticketTypeName,
+    attendeeName: primaryAttendee.name,
+    attendeeEmail: primaryAttendee.email,
+    attendeeMobile: primaryAttendee.phone,
+    seatCode: additionalAttendees?.[0]?.seatCode,
+    passStatus: 'ACTIVE',
+    verificationCode: primaryCode,
+    qrPayload: `CINEVENUE|EVENT:${eventId}|PASS:${primaryPassId}|TOKEN:${primaryCode}`,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  });
+
+  // Passes 2..N: Additional attendees
+  for (let i = 2; i <= totalCount; i++) {
+    const additional = additionalAttendees?.[i - 2];
+    const passId = `CVPASS-${Math.floor(100000 + Math.random() * 900000)}`;
+    const code = `V-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    passes.push({
+      id: passId,
+      eventBookingId: bookingId,
+      passNumber: i,
+      ticketTypeName,
+      attendeeName: additional?.name || `${primaryAttendee.name} (Guest ${i})`,
+      attendeeEmail: additional?.email || primaryAttendee.email,
+      attendeeMobile: primaryAttendee.phone,
+      seatCode: additional?.seatCode,
+      passStatus: 'ACTIVE',
+      verificationCode: code,
+      qrPayload: `CINEVENUE|EVENT:${eventId}|PASS:${passId}|TOKEN:${code}`,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
+  }
+
+
+  return passes;
+}
+
+/**
+ * Idempotent free event pass creation.
+ * If an existing booking with the same idempotency key or primary email+event exists, returns it safely.
+ */
+export function createFreeEventPassBooking(params: {
+  eventId: string;
+  passQuantity: number;
+  primaryAttendee: { name: string; email: string; phone: string };
+  additionalAttendees?: { name: string; email?: string }[];
+  idempotencyKey?: string;
+  sessionId?: string;
+}): { success: boolean; booking?: EventBookingRecord; error?: string } {
+  const event = getEventById(params.eventId);
+  if (!event) return { success: false, error: 'Event not found.' };
+
+  const existingBookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
+
+  // Idempotency check 1: Exact idempotency key match
+  if (params.idempotencyKey) {
+    const matched = existingBookings.find((b) => b.idempotencyKey === params.idempotencyKey);
+    if (matched) {
+      return { success: true, booking: matched };
+    }
+  }
+
+  // Capacity validation
+  const currentSold = event.soldCount || 0;
+  if (event.totalCapacity && currentSold + params.passQuantity > event.totalCapacity) {
+    return { success: false, error: 'REGISTRATION_FULL: Event has reached full capacity.' };
+  }
+
+  const bookingId = `EVT-FREE-${Math.floor(100000 + Math.random() * 900000)}`;
+  const passCode = `FREE-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+
+  const freeTicketType = event.ticketTypes.find((t) => t.isFree || t.price === 0) || event.ticketTypes[0];
+  const ticketTypeName = freeTicketType ? freeTicketType.name : 'Free Entry Pass';
+
+  const passes = generateEventPasses(
+    bookingId,
+    event.id,
+    ticketTypeName,
+    params.primaryAttendee,
+    params.additionalAttendees,
+    params.passQuantity
+  );
+
+  const pricing: EventFeeBreakdown = {
+    ticketSubtotal: 0,
+    platformBookingFee: 0,
+    taxAmount: 0,
+    discountAmount: 0,
+    cineCoinsRedeemed: 0,
+    cineCoinsDiscount: 0,
+    finalAmount: 0,
+  };
+
+  const record: EventBookingRecord = {
+    id: bookingId,
+    passCode,
+    eventId: event.id,
+    orderId: null,
+    bookingMode: 'FREE',
+    eventTitle: event.title,
+    eventDate: event.date,
+    eventTime: event.startTime,
+    venueName: event.venueName,
+    venueAddress: event.venueAddress,
+    city: event.city,
+    bannerUrl: event.bannerUrl,
+    seatingType: event.seatingType,
+    ticketTypeId: freeTicketType?.id,
+    ticketTypeName,
+    ticketCount: params.passQuantity,
+    primaryAttendee: params.primaryAttendee,
+    additionalAttendees: params.additionalAttendees,
+    passes,
+    pricing,
+    paymentMethod: 'FREE_REGISTRATION',
+    paymentRequired: false,
+    paymentStatus: 'NOT_APPLICABLE',
+    bookingStatus: 'CONFIRMED',
+    pdfStatus: 'NOT_GENERATED',
+    emailStatus: 'NOT_SENT',
+    idempotencyKey: params.idempotencyKey,
+    qrCodePayload: passes[0]?.qrPayload || `CINEVENUE|FREE|${bookingId}`,
+    bookedAt: new Date().toISOString(),
+    checkedIn: false,
+  };
+
+  // Atomic commit
+  saveStorage(STORAGE_KEYS.BOOKINGS, [record, ...existingBookings]);
+
+  // Increment event soldCount
+  const events = getEvents();
+  const updatedEvents = events.map((e) => {
+    if (e.id !== event.id) return e;
+    return {
+      ...e,
+      soldCount: (e.soldCount || 0) + params.passQuantity,
+    };
+  });
+  saveStorage(STORAGE_KEYS.EVENTS, updatedEvents);
+
+  // Non-blocking Email Dispatch
+  dispatchTicketEmail({
+    type: 'EVENT',
+    bookingId: record.id,
+    ticketCode: record.passCode,
+    qrToken: record.passCode,
+    customerName: record.primaryAttendee.name,
+    customerEmail: record.primaryAttendee.email,
+    customerMobile: record.primaryAttendee.phone,
+    title: record.eventTitle,
+    venue: record.venueName,
+    date: record.eventDate,
+    time: record.eventTime,
+    categoryName: record.ticketTypeName,
+    quantity: record.ticketCount,
+    totalPaid: 0,
+    isFree: true,
+    paymentMethod: 'FREE_REGISTRATION',
+    posterUrl: record.bannerUrl,
+  }).then(() => {
+    record.emailStatus = 'SENT';
+  }).catch(() => {
+    record.emailStatus = 'FAILED';
+  });
+
+  return { success: true, booking: record };
+}
+

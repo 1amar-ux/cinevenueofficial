@@ -73,16 +73,28 @@ export async function sendEventPassToEmail(pass: EventRegistration): Promise<{ s
   };
 }
 
-function generatePassHtml(pass: EventRegistration): string {
+function generatePassHtml(pass: any): string {
+  const isFree = pass.bookingMode === 'FREE' || pass.paymentStatus === 'NOT_APPLICABLE' || pass.paymentMethod === 'FREE_REGISTRATION' || (pass.totalPrice === 0 && !pass.pricing?.finalAmount);
+  const passId = pass.id || pass.passCode || 'CVPASS-001';
+  const eventTitle = pass.eventTitle || 'CineVenue Event';
+  const attendeeName = pass.primaryAttendee?.name || pass.userName || 'Attendee';
+  const attendeeEmail = pass.primaryAttendee?.email || pass.userEmail || '';
+  const attendeePhone = pass.primaryAttendee?.phone || pass.mobileNumber || '';
+  const venueName = pass.venueName || 'Venue';
+  const dateTime = `${pass.eventDate || pass.date || ''} @ ${pass.eventTime || pass.time || ''}`;
+  const categoryName = pass.ticketTypeName || pass.categoryName || (isFree ? 'Free Admission' : 'Standard');
+  const quantity = pass.ticketCount || pass.quantity || 1;
+  const totalPaid = pass.pricing?.finalAmount ?? pass.totalPrice ?? 0;
+
   const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
-    `CINEVENUE-EVENT-PASS|ID:${pass.id}|EVENT:${pass.eventTitle}|HOLDER:${pass.userName}|QTY:${pass.quantity}|STATUS:${pass.status}`
+    `CINEVENUE-EVENT-PASS|ID:${passId}|EVENT:${eventTitle}|HOLDER:${attendeeName}|QTY:${quantity}|MODE:${isFree ? 'FREE' : 'PAID'}`
   )}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CineVenue Event Pass - ${pass.id}</title>
+  <title>CineVenue Event Pass - ${passId}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
     
@@ -328,39 +340,44 @@ function generatePassHtml(pass: EventRegistration): string {
     <div class="pass-header">
       <div>
         <div class="brand-title">CINEVENUE</div>
-        <div class="brand-sub">Official VIP Event Pass</div>
+        <div class="brand-sub">${isFree ? 'Official Free Admission Pass' : 'Official Event Admission Pass'}</div>
       </div>
-      <div class="badge-vip">CONFIRMED PASS</div>
+      <div class="badge-vip">${isFree ? 'FREE ENTRY' : 'CONFIRMED PASS'}</div>
     </div>
 
     <div class="pass-body">
-      <div class="event-title">${pass.eventTitle}</div>
-      <div class="category-badge">${pass.categoryName} Class Pass (Qty: ${pass.quantity}x)</div>
+      <div class="event-title">${eventTitle}</div>
+      <div class="category-badge">${categoryName} (${quantity}x Pass${quantity > 1 ? 'es' : ''})</div>
 
       <div class="details-grid">
         <div class="detail-item">
           <span class="detail-label">VENUE</span>
-          <span class="detail-value">${pass.venueName}</span>
+          <span class="detail-value">${venueName}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">DATE & TIME</span>
-          <span class="detail-value gold">${pass.date} @ ${pass.time}</span>
+          <span class="detail-value gold">${dateTime}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">PASS HOLDER</span>
-          <span class="detail-value">${pass.userName}</span>
+          <span class="detail-value">${attendeeName}</span>
         </div>
+        ${!isFree ? `
         <div class="detail-item">
           <span class="detail-label">TOTAL PAID</span>
-          <span class="detail-value gold">₹${pass.totalPrice.toLocaleString("en-IN")}</span>
-        </div>
+          <span class="detail-value gold">₹${Number(totalPaid).toLocaleString("en-IN")}</span>
+        </div>` : `
+        <div class="detail-item">
+          <span class="detail-label">ADMISSION TYPE</span>
+          <span class="detail-value gold">100% FREE ENTRY</span>
+        </div>`}
         <div class="detail-item">
           <span class="detail-label">CONTACT EMAIL</span>
-          <span class="detail-value">${pass.userEmail}</span>
+          <span class="detail-value">${attendeeEmail}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">MOBILE NUMBER</span>
-          <span class="detail-value">${pass.mobileNumber}</span>
+          <span class="detail-value">${attendeePhone || '—'}</span>
         </div>
       </div>
     </div>
@@ -374,19 +391,20 @@ function generatePassHtml(pass: EventRegistration): string {
         <img src="${qrDataUrl}" alt="Pass QR Code" class="qr-img" />
       </div>
       <div class="scan-info">
-        <div class="pass-code">${pass.id}</div>
+        <div class="pass-code">${passId}</div>
         <div class="scan-status">● VERIFIED & READY FOR VENUE SCAN</div>
         <p class="scan-instructions">
-          Present this official digital or printed pass at the usher entrance gates. Valid for ${pass.quantity} attendee(s) in the ${pass.categoryName} category.
+          Present this official digital or printed pass at the usher entrance gates. Valid for ${quantity} attendee(s) in the ${categoryName} category.
         </p>
       </div>
     </div>
 
     <div class="pass-footer">
-      Powered by CineVenue Entertainments • 24/7 VIP Concierge: 1800-123-4567 • support@cinevenue.in<br/>
+      Powered by CineVenue Entertainments • 24/7 Concierge Support: support@cinevenue.in<br/>
       Non-transferable • Entry subject to venue guidelines and age requirements.
     </div>
   </div>
 </body>
 </html>`;
 }
+

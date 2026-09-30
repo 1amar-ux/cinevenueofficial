@@ -145,10 +145,85 @@ export interface EventFeeBreakdown {
   finalAmount: number;
 }
 
+export type EventBookingMode = 'FREE' | 'PAID';
+
+export type EventBookingStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'CANCEL_REQUESTED'
+  | 'CANCELLED'
+  | 'CANCELLATION_REJECTED'
+  | 'EXPIRED'
+  | 'Attended'
+  | 'Confirmed'
+  | 'Cancelled';
+
+export type EventOrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PAYMENT_PROCESSING'
+  | 'PAID'
+  | 'EXPIRED'
+  | 'CANCELLED';
+
+export type EventPaymentLifecycleStatus =
+  | 'CREATED'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'NOT_APPLICABLE'
+  | 'Paid'
+  | 'NOT_REQUIRED';
+
+export type EventPassStatus = 'ACTIVE' | 'USED' | 'CANCELLED';
+
+export type PdfGenerationStatus = 'NOT_GENERATED' | 'GENERATING' | 'GENERATED' | 'FAILED';
+
+export type EmailDeliveryStatus = 'NOT_SENT' | 'QUEUED' | 'SENT' | 'FAILED';
+
+export interface EventPass {
+  id: string; // CVPASS-XXXXXX
+  eventBookingId: string;
+  passNumber: number;
+  ticketTypeId?: string;
+  ticketTypeName: string;
+  attendeeName: string;
+  attendeeEmail?: string;
+  attendeeMobile?: string;
+  seatCode?: string;
+  passStatus: EventPassStatus;
+  verificationCode: string;
+  qrPayload: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventOrder {
+  id: string; // CV-ORD-XXXXXX
+  orderReference: string;
+  eventId: string;
+  userId?: string;
+  currency: string;
+  ticketSubtotal: number;
+  convenienceFee: number;
+  taxAmount: number;
+  discountAmount: number;
+  totalPayable: number;
+  orderStatus: EventOrderStatus;
+  idempotencyKey?: string;
+  expiresAt: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EventBookingRecord {
   id: string; // EVT-BK-XXXXXX
   passCode: string; // 8-char security code for QR verification
   eventId: string;
+  orderId?: string | null;
+  bookingMode?: EventBookingMode;
   eventTitle: string;
   eventDate: string;
   eventTime: string;
@@ -163,11 +238,15 @@ export interface EventBookingRecord {
   seatCodes?: string[];
   primaryAttendee: PrimaryAttendee;
   additionalAttendees?: AdditionalAttendee[];
+  passes?: EventPass[];
   pricing: EventFeeBreakdown;
   paymentMethod: string;
   paymentRequired?: boolean;
-  paymentStatus: 'Paid' | 'Pending' | 'Failed' | 'Refunded' | 'NOT_REQUIRED';
-  bookingStatus: 'Confirmed' | 'Cancelled' | 'Attended';
+  paymentStatus: EventPaymentLifecycleStatus | string;
+  bookingStatus: EventBookingStatus | string;
+  pdfStatus?: PdfGenerationStatus;
+  emailStatus?: EmailDeliveryStatus;
+  idempotencyKey?: string;
   qrCodePayload: string; // Encrypted JSON payload for scanner validation
   bookedAt: string;
   checkedIn: boolean;
@@ -220,3 +299,4 @@ export interface OrganizerEventStats {
   checkedInCount: number;
   checkInRatePercent: number;
 }
+
