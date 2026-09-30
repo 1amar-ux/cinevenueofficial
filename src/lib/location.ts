@@ -318,3 +318,63 @@ export function getCoordinates(city: string): { lat: number; lng: number } {
   const normCity = ALIASES[city.toLowerCase()] || city;
   return CITIES_DATA[normCity] || CITIES_DATA["Hyderabad"];
 }
+
+export interface CityPriorityContext {
+  explicitSelection?: string | null;
+  savedUserCity?: string | null;
+  persistedSessionCity?: string | null;
+  gpsDetectedCity?: string | null;
+}
+
+export interface CityStateModel {
+  selectedCityId: string | null;
+  detectedCityId: string | null;
+  savedCityId: string | null;
+}
+
+/**
+ * Resolves the initial authoritative selectedCityId according to the canonical priority:
+ * 1. Current explicit user selection
+ * 2. Existing saved user city preference
+ * 3. Previously persisted session/browser city
+ * 4. GPS-detected CineVenue city
+ * 5. null (No city selected -> Manual city selection prompt)
+ */
+export function resolveAuthoritativeCity(ctx: CityPriorityContext): string | null {
+  if (ctx.explicitSelection && ctx.explicitSelection.trim() !== "") {
+    return ctx.explicitSelection.trim();
+  }
+  if (ctx.savedUserCity && ctx.savedUserCity.trim() !== "") {
+    return ctx.savedUserCity.trim();
+  }
+  if (ctx.persistedSessionCity && ctx.persistedSessionCity.trim() !== "") {
+    return ctx.persistedSessionCity.trim();
+  }
+  if (ctx.gpsDetectedCity && ctx.gpsDetectedCity.trim() !== "") {
+    return ctx.gpsDetectedCity.trim();
+  }
+  return null;
+}
+
+/**
+ * Validates whether a theatre's city matches the browsing selectedCityId.
+ * If not matching, returns CITY_MISMATCH error.
+ */
+export function validateBookingCity(
+  selectedCityId: string | null,
+  theatreCityId: string
+): { isValid: boolean; error?: 'CITY_MISMATCH' } {
+  if (!selectedCityId || selectedCityId === 'All Cities') {
+    return { isValid: true };
+  }
+
+  const normSelected = (ALIASES[selectedCityId.toLowerCase()] || selectedCityId).toLowerCase();
+  const normTheatre = (ALIASES[theatreCityId.toLowerCase()] || theatreCityId).toLowerCase();
+
+  if (normSelected === normTheatre) {
+    return { isValid: true };
+  }
+
+  return { isValid: false, error: 'CITY_MISMATCH' };
+}
+

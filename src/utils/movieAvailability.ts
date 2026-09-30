@@ -103,3 +103,43 @@ export function getPrimaryMovieTrailer(movie: Movie): MovieVideo | null {
   const allVideos = getActiveMovieVideos(movie);
   return allVideos.length > 0 ? allVideos[0] : null;
 }
+
+/**
+ * Filter events strictly belonging to the target city.
+ * If target city is "All Cities" or empty, returns all events.
+ */
+export function filterEventsByCity<T extends { city?: string }>(events: T[], targetCity: string): T[] {
+  const normTarget = normalizeCityName(targetCity);
+  if (!normTarget || normTarget === 'all cities' || normTarget === 'all') {
+    return events;
+  }
+  return events.filter((event) => {
+    const eventCity = normalizeCityName(event.city);
+    return eventCity.includes(normTarget) || normTarget.includes(eventCity);
+  });
+}
+
+/**
+ * Filter movies strictly having active shows/theatres in the target city.
+ */
+export function filterMoviesByCityShows(
+  movies: Movie[],
+  schedules: { movieTitle: string; theatreName?: string }[],
+  cityTheatres: Theatre[],
+  targetCity: string
+): Movie[] {
+  const normTarget = normalizeCityName(targetCity);
+  if (!normTarget || normTarget === 'all cities' || normTarget === 'all') {
+    return movies;
+  }
+
+  const cityTheatreNames = new Set(cityTheatres.map((t) => t.name.toLowerCase()));
+  const activeMovieTitles = new Set(
+    schedules
+      .filter((s) => s.theatreName && cityTheatreNames.has(s.theatreName.toLowerCase()))
+      .map((s) => s.movieTitle.toLowerCase())
+  );
+
+  return movies.filter((m) => activeMovieTitles.has(m.title.toLowerCase()));
+}
+
