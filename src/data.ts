@@ -2,70 +2,137 @@ import { Movie, Theatre, Testimonial, Event, CineCoinsUserWallet, CineCoinsSetti
 
 export const INITIAL_MOVIES: Movie[] = [
   {
-    title: "Kalki 2898 AD",
-    genre: "Sci-Fi",
+    title: "Don't Trouble the Trouble",
+    genre: "Comedy / Drama",
     lang: "Telugu",
-    rating: "8.2",
+    certification: "UA13+",
+    rating: "8.4",
+    img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Doraemon the Movie: New Nobita and the...",
+    genre: "Animation / Adventure",
+    lang: "Telugu",
+    certification: "U",
+    rating: "8.8",
+    img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Sigma",
+    genre: "Action / Thriller",
+    lang: "Telugu",
+    certification: "UA16+",
+    rating: "7.9",
+    img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Thellakaagitham",
+    genre: "Romantic Drama",
+    lang: "Telugu",
+    certification: "UA16+",
+    rating: "8.1",
+    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Baththa",
+    genre: "Action / Crime",
+    lang: "Tamil",
+    certification: "UA13+",
+    rating: "8.0",
+    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&q=75",
+    langKey: "tamil"
+  },
+  {
+    title: "Verity",
+    genre: "Mystery / Thriller",
+    lang: "English",
+    certification: "A",
+    rating: "7.8",
+    img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&q=75",
+    langKey: "english"
+  },
+  {
+    title: "The Paradise",
+    genre: "Action / Period Drama",
+    lang: "Telugu",
+    certification: "A",
+    rating: "8.6",
+    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Avengers Endgame: Encore",
+    genre: "Sci-Fi / Action",
+    lang: "Telugu",
+    additionalLanguages: ["English", "Hindi"],
+    certification: "UA16+",
+    rating: "9.2",
+    img: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Heart of the Beast",
+    genre: "Drama / Thriller",
+    lang: "English",
+    certification: "UA16+",
+    rating: "8.3",
+    img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=601&q=75",
+    langKey: "english"
+  },
+  {
+    title: "Resident Evil",
+    genre: "Horror / Sci-Fi",
+    lang: "Telugu",
+    additionalLanguages: ["English"],
+    certification: "A",
+    rating: "7.7",
+    img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=601&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Sub-Inspector Yugandhar",
+    genre: "Action / Crime",
+    lang: "Telugu",
+    certification: "UA16+",
+    rating: "8.5",
+    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=601&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Sanchari",
+    genre: "Drama / Romance",
+    lang: "Telugu",
+    certification: "UA13+",
+    rating: "7.9",
+    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=601&q=75",
+    langKey: "telugu"
+  },
+  {
+    title: "Kalki 2898 AD",
+    genre: "Sci-Fi / Epic",
+    lang: "Telugu",
+    additionalLanguages: ["Hindi", "Tamil"],
+    certification: "UA16+",
+    rating: "8.9",
     img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
     langKey: "telugu"
   },
   {
-    title: "Stree 2",
-    genre: "Horror",
-    lang: "Hindi",
-    rating: "8.5",
-    img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&q=70",
-    langKey: "hindi"
-  },
-  {
-    title: "Deadpool & Wolverine",
-    genre: "Action",
-    lang: "English",
-    rating: "7.9",
-    img: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=70",
-    langKey: "english"
-  },
-  {
     title: "Devara",
-    genre: "Action",
+    genre: "Action / Drama",
     lang: "Telugu",
-    rating: "7.4",
+    additionalLanguages: ["Hindi"],
+    certification: "UA16+",
+    rating: "8.2",
     img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=70",
     langKey: "telugu"
-  },
-  {
-    title: "Singham Again",
-    genre: "Action",
-    lang: "Hindi",
-    rating: "6.8",
-    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&q=70",
-    langKey: "hindi"
-  },
-  {
-    title: "Alien: Romulus",
-    genre: "Horror",
-    lang: "English",
-    rating: "7.3",
-    img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=70",
-    langKey: "english"
-  },
-  {
-    title: "Pushpa 2",
-    genre: "Drama",
-    lang: "Telugu",
-    rating: "8.6",
-    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=601&q=70",
-    langKey: "telugu"
-  },
-  {
-    title: "Bhool Bhulaiyaa 3",
-    genre: "Comedy",
-    lang: "Hindi",
-    rating: "7.1",
-    img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=601&q=70",
-    langKey: "hindi"
   }
 ];
+
 
 export const INITIAL_THEATRES: Theatre[] = [
   {

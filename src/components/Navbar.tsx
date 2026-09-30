@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft } from "lucide-react";
+import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft, Search } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 import ThemeToggle from "./ThemeToggle";
 import { useAppSettings } from "../context/AppSettingsContext";
+import { POPULAR_CITIES, ALL_INDIAN_CITIES } from "../lib/location";
 
 interface NavbarProps {
-
   selectedCity: string;
   setSelectedCity: (city: string) => void;
   onOpenLocation: () => void;
@@ -63,6 +63,12 @@ export default function Navbar({
   const matchTheatreAdmin = theatreAdmins.find(a => a.email.toLowerCase() === userEmail?.toLowerCase());
   const matchEventOrganizer = eventOrganizers.find(o => o.email.toLowerCase() === userEmail?.toLowerCase());
 
+  // Derive state from selected city
+  const matchedCity =
+    POPULAR_CITIES.find((c) => c.name.toLowerCase() === selectedCity?.toLowerCase()) ||
+    ALL_INDIAN_CITIES.find((c) => c.name.toLowerCase() === selectedCity?.toLowerCase());
+  const stateSubtitle = selectedCity === "All Cities" ? "All Locations" : matchedCity?.state || "India";
+
   const handleScroll = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -73,225 +79,234 @@ export default function Navbar({
   const userInitials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#0A0A0B]/90 backdrop-blur-md border-b border-white/10 w-full">
-      {/* Mobile Top Row & Desktop Row */}
-      <div className="max-w-7xl mx-auto px-4 md:px-12 py-3 md:py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#0A0A0B]/95 backdrop-blur-md border-b border-white/10 w-full shadow-2xl">
+      {/* Top Navbar Row */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-4">
         
-        {/* Top bar container for mobile */}
-        <div className="flex items-center justify-between w-full md:w-auto gap-3">
-          {/* Back Button & Brand Logo */}
-          <div className="flex items-center gap-2">
-            {typeof window !== "undefined" && window.location.pathname !== "/" && window.location.pathname !== "" && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.history.length > 1) {
-                    window.history.back();
-                  } else {
-                    window.location.href = "/";
-                  }
-                }}
-                className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold text-amber-200 hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
-                title="Back to previous page"
-                aria-label="Back to previous page"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-gold group-hover:-translate-x-0.5 transition-transform" />
-                <span className="hidden sm:inline">Back</span>
-              </button>
-            )}
-            <CineVenueLogo 
-              size="md" 
-              onClick={() => handleScroll("home")} 
-            />
-          </div>
+        {/* Left: Brand Logo & District Location Selector */}
+        <div className="flex items-center gap-4 shrink-0">
+          {typeof window !== "undefined" && window.location.pathname !== "/" && window.location.pathname !== "" && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.location.href = "/";
+                }
+              }}
+              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold text-amber-200 hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
+              title="Back to previous page"
+              aria-label="Back to previous page"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-gold group-hover:-translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+          )}
 
-          {/* Mobile Location Selector and Theme Toggle (Right aligned on mobile) */}
-          <div className="flex items-center gap-1.5 md:hidden">
-            <ThemeToggle />
-            <button
-              onClick={onOpenLocation}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors group cursor-pointer border border-white/10 bg-black/50 text-white shadow-sm"
-            >
-              <MapPin className="w-3.5 h-3.5 text-gold shrink-0" />
-              <span className="text-xs font-medium max-w-[100px] truncate">{selectedCity === "All Cities" ? "Select Location" : selectedCity}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-white/50 group-hover:text-white transition-transform shrink-0" />
-            </button>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 text-white/80 hover:text-gold rounded-lg hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
-              aria-label="Toggle Navigation Menu"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          <CineVenueLogo 
+            size="md" 
+            onClick={() => handleScroll("home")} 
+          />
+
+          {/* District Location Selector Pill */}
+          <button
+            onClick={onOpenLocation}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 hover:border-gold/40 transition-all group cursor-pointer text-left shadow-sm"
+            title="Choose your City / Location"
+          >
+            <MapPin className="w-4 h-4 text-gold shrink-0 group-hover:scale-110 transition-transform" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-[13px] font-bold text-white max-w-[110px] sm:max-w-[130px] truncate leading-tight">
+                  {selectedCity === "All Cities" ? "Select City" : selectedCity}
+                </span>
+                <ChevronDown className="w-3 h-3 text-white/50 group-hover:text-gold transition-colors" />
+              </div>
+              <span className="text-[10px] text-white/50 leading-none truncate max-w-[110px]">
+                {stateSubtitle}
+              </span>
+            </div>
+          </button>
         </div>
-        
-        {/* Center: Navigation Links */}
-        <div className="hidden lg:flex items-center gap-6 text-[11px] uppercase tracking-[0.2em] font-medium text-text-secondary">
-          <button 
-            onClick={() => window.location.href = "/#services"} 
-            className={`transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
-              isMovieBookingLive ? "hover:text-gold" : "text-rose-400 hover:text-rose-300"
-            }`}
+
+        {/* Center: District Navigation Capsule Bar */}
+        <div className="hidden lg:flex items-center gap-1 bg-[#151518] p-1 rounded-full border border-white/10 shadow-inner">
+          <button
+            onClick={() => {
+              window.location.href = "/#home";
+            }}
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-white/70 hover:text-white hover:bg-white/5"
           >
-            <span>Booking</span>
-            {!isMovieBookingLive && (
-              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
-            )}
+            For you
           </button>
-          <button 
-            onClick={() => window.location.href = "/productions"} 
-            className={`font-bold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
-              isFilmProductionLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
-            }`}
-            title={!isFilmProductionLive ? "Film Productions is offline" : "Film Productions"}
+
+          <button
+            onClick={() => {
+              window.location.href = "/#movies";
+            }}
+            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-white text-black shadow-md"
           >
-            <Film className="w-3.5 h-3.5" />
-            <span>Film Productions</span>
-            {!isFilmProductionLive && (
-              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
-            )}
+            Movies
           </button>
-          <button 
-            onClick={() => window.location.href = "/events"} 
-            className={`font-bold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
-              isEventsLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+
+          <button
+            onClick={() => {
+              window.location.href = "/#theatres";
+            }}
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-white/70 hover:text-white hover:bg-white/5"
+          >
+            Dining / Theatres
+          </button>
+
+          <button
+            onClick={() => {
+              window.location.href = "/events";
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
+              isEventsLive ? "text-white/70 hover:text-white hover:bg-white/5" : "text-rose-400"
             }`}
-            title={!isEventsLive ? "Events is offline" : "Events"}
           >
             <span>Events</span>
             {!isEventsLive && (
-              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold">OFF</span>
             )}
           </button>
-          <button 
+
+          <button
+            onClick={() => {
+              window.location.href = "/productions";
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
+              isFilmProductionLive ? "text-white/70 hover:text-white hover:bg-white/5" : "text-rose-400"
+            }`}
+          >
+            <span>Productions</span>
+            {!isFilmProductionLive && (
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold">OFF</span>
+            )}
+          </button>
+
+          <button
             onClick={() => {
               if (onOpenCineCoins) onOpenCineCoins();
               else window.location.href = "/cinecoins";
-            }} 
-            className={`font-bold transition-colors cursor-pointer bg-transparent border-none flex items-center gap-1.5 ${
-              isCineCoinsLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
-            }`}
-            title={!isCineCoinsLive ? "CineCoins Rewards Vault is offline" : "CineCoins Loyalty"}
+            }}
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-amber-400 hover:text-amber-300 hover:bg-white/5 flex items-center gap-1"
           >
-            <Coins className="w-3.5 h-3.5" />
+            <Coins className="w-3 h-3 text-amber-400" />
             <span>CineCoins</span>
-            {!isCineCoinsLive && (
-              <span className="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
-            )}
-          </button>
-
-          <button 
-            onClick={() => {
-              if (onOpenAccount) onOpenAccount();
-              else window.location.href = "/account";
-            }} 
-            className="hover:text-gold transition-colors cursor-pointer bg-transparent border-none"
-          >
-            My Account
-          </button>
-          <button onClick={() => handleScroll("contact")} className="hover:text-gold transition-colors cursor-pointer bg-transparent border-none">
-            Contact Us
-          </button>
-          <button onClick={onOpenOrders} className="hover:text-gold transition-colors cursor-pointer bg-transparent border-none text-cyan-400">
-            My Pass
           </button>
         </div>
 
-        {/* Right Side: Theme Toggle, Location Filter and Member Actions */}
-        <div className="flex items-center gap-3 md:gap-4">
+        {/* Right: Search, Member Actions & Avatar */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
           
-          {/* Desktop Theme Switcher */}
-          <div className="hidden md:block">
-            <ThemeToggle />
-          </div>
+          {/* Top Search Input */}
+          {setSearchQuery && (
+            <div className="hidden xl:flex items-center relative w-64">
+              <Search className="w-3.5 h-3.5 text-white/40 absolute left-3 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search events, movies, venues..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/[0.06] hover:bg-white/[0.08] focus:bg-black/80 border border-white/10 focus:border-gold/50 rounded-full pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none transition-all"
+              />
+            </div>
+          )}
 
-          {/* Location Selector Button */}
-          <div className="hidden md:block">
-            <button
-              onClick={onOpenLocation}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-semibold text-text-primary hover:border-gold/50 hover:text-gold hover:bg-gold/5 transition-all cursor-pointer shadow-sm"
-              title="Change Location / City"
-            >
-              <MapPin className="w-3.5 h-3.5 text-gold shrink-0" />
-              <span className="truncate max-w-[120px]">{selectedCity === "All Cities" ? "All Cities" : selectedCity}</span>
-              <ChevronDown className="w-3 h-3 text-text-muted transition-transform duration-200" />
-            </button>
+          {/* Theme Toggle */}
+          <div className="hidden sm:block">
+            <ThemeToggle />
           </div>
 
           {/* User Member Actions */}
           {userEmail ? (
-            <div className="flex items-center gap-3.5">
-
-
+            <div className="flex items-center gap-2">
               {!isSuperAdmin && matchTheatreAdmin && (
                 <button
                   onClick={() => onOpenTheatreDashboard(matchTheatreAdmin.theatreId)}
-                  className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500 hover:text-white hover:border-transparent transition-all cursor-pointer shadow-lg"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 text-purple-300 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500 hover:text-white transition-all cursor-pointer shadow-md"
                   title="Theatre Management Workspace"
                 >
-                  <Sliders className="w-3.5 h-3.5" />
-                  <span>Manage Theatre</span>
+                  <Sliders className="w-3 h-3" />
+                  <span>Theatre Hub</span>
                 </button>
               )}
 
               {!isSuperAdmin && !matchTheatreAdmin && matchEventOrganizer && (
                 <button
                   onClick={() => onOpenEventDashboard(matchEventOrganizer.id)}
-                  className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded border border-blue-500/30 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500 hover:text-white hover:border-transparent transition-all cursor-pointer shadow-lg"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-300 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500 hover:text-white transition-all cursor-pointer shadow-md"
                   title="Event Organizer Workspace"
                 >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Manage Events</span>
+                  <Calendar className="w-3 h-3" />
+                  <span>Events Hub</span>
                 </button>
               )}
 
               <button
                 onClick={onOpenOrders}
-                className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded border border-gold/30 bg-gold-glow text-gold text-[10px] font-bold uppercase tracking-wider hover:bg-gold hover:text-black hover:border-transparent transition-all cursor-pointer shadow-lg shadow-gold/5"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/40 bg-gold/10 text-gold text-[10px] font-bold uppercase tracking-wider hover:bg-gold hover:text-black transition-all cursor-pointer shadow-md"
                 title="My Bookings & Event Passes"
               >
-                <Ticket className="w-3.5 h-3.5" />
-                <span>My Bookings</span>
+                <Ticket className="w-3 h-3" />
+                <span>My Passes</span>
               </button>
 
+              {/* Profile Avatar Pill */}
               <div 
-                className="flex items-center gap-2 bg-white/[0.02] border border-white/10 px-3.5 py-1.5 rounded-full"
-                title={`Logged in as: ${userEmail}`}
+                className="flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                onClick={() => {
+                  if (onOpenAccount) onOpenAccount();
+                  else window.location.href = "/account";
+                }}
+                title={`Account: ${userEmail}`}
               >
-                <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
-                  {userInitials || <User className="w-3 h-3 text-gold" />}
+                <div className="w-6 h-6 rounded-full bg-gold text-black flex items-center justify-center text-[11px] font-extrabold shadow-sm">
+                  {userInitials || <User className="w-3 h-3 text-black" />}
                 </div>
-                <span className="hidden md:inline text-[10px] font-semibold text-text-primary max-w-[120px] truncate">
+                <span className="hidden md:inline text-[11px] font-semibold text-white/90 max-w-[90px] truncate">
                   {userEmail.split("@")[0]}
                 </span>
                 <button
-                  onClick={onLogout}
-                  className="text-text-muted hover:text-red-400 cursor-pointer transition-colors p-0.5 ml-1.5 bg-transparent border-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLogout();
+                  }}
+                  className="text-white/40 hover:text-red-400 cursor-pointer transition-colors p-0.5 ml-0.5 bg-transparent border-none"
                   title="Secure Logout"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
-
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onOpenAuth?.("signin")}
-                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
+                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-3.5 py-1.5 text-xs font-semibold text-white/80 hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
               >
                 Sign In
               </button>
               <button
                 onClick={() => onOpenAuth?.("signup")}
-                className="inline-flex rounded-full bg-gold px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light shadow-lg shadow-gold/15 transition-all cursor-pointer border-none"
+                className="inline-flex rounded-full bg-gold px-3.5 py-1.5 text-xs text-black font-bold hover:bg-gold-light shadow-md shadow-gold/20 transition-all cursor-pointer border-none"
               >
                 Sign Up
               </button>
             </div>
           )}
 
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-1.5 text-white/80 hover:text-gold rounded-lg hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
 
       </div>

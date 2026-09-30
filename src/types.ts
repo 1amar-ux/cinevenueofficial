@@ -76,7 +76,10 @@ export interface Movie {
   trailerUrl?: string;
   duration?: string;
   certificate?: 'U' | 'UA' | 'A';
+  certification?: string; // e.g. "UA16+", "UA13+", "U", "A"
+  additionalLanguages?: string[];
   distributor?: string;
+
   isActive?: boolean;
   description?: string;
   language?: string;
