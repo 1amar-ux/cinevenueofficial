@@ -36,8 +36,8 @@ export default function MovieDetails() {
       movieList.find((m) => m.title.toLowerCase() === decodeURIComponent(id || "").toLowerCase()) ||
       movieList[0];
 
-    // Ensure sample trailers exist if not configured
-    if (found && (!found.videos || found.videos.length === 0)) {
+    // Ensure sample trailers exist if not configured and no trailerUrl provided
+    if (found && (!found.videos || found.videos.length === 0) && !found.trailerUrl) {
       found.videos = [
         {
           id: `vid-${found.title}-trailer`,

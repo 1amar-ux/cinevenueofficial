@@ -58,6 +58,7 @@ import IntegrationTestingModule from "../components/admin/integration-testing/In
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
+import { parseAndValidateYouTubeUrl } from "../utils/youtube";
 import { Server, Cpu } from "lucide-react";
 
 
@@ -246,6 +247,7 @@ export default function AdminLayout() {
   const [newMovieLang, setNewMovieLang] = useState("");
   const [newMovieDuration, setNewMovieDuration] = useState("");
   const [newMoviePoster, setNewMoviePoster] = useState("");
+  const [newMovieTrailerUrl, setNewMovieTrailerUrl] = useState("");
   const [newCouponCode, setNewCouponCode] = useState("");
   const [newCouponDiscount, setNewCouponDiscount] = useState("");
   const [newCouponMin, setNewCouponMin] = useState("");
@@ -494,6 +496,7 @@ export default function AdminLayout() {
   const handleCreateMovie = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMovieTitle.trim()) return;
+    const trailer = newMovieTrailerUrl.trim();
     const added: Movie = {
       title: newMovieTitle.trim(),
       genre: newMovieGenre || "Action/Thriller",
@@ -501,8 +504,31 @@ export default function AdminLayout() {
       langKey: (newMovieLang || "Hindi").toLowerCase().slice(0, 2),
       duration: newMovieDuration || "152 min",
       rating: "4.8",
-      img: newMoviePoster || "https://picsum.photos/400/600?random=" + Math.floor(Math.random() * 50)
+      img: newMoviePoster || "https://picsum.photos/400/600?random=" + Math.floor(Math.random() * 50),
+      trailerUrl: trailer || undefined,
     };
+
+    if (trailer) {
+      const parsed = parseAndValidateYouTubeUrl(trailer);
+      const videoId = parsed.videoId || "trailer";
+      added.videos = [
+        {
+          id: `vid-${newMovieTitle.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}-trailer`,
+          movieId: newMovieTitle.trim(),
+          type: "TRAILER",
+          title: `${newMovieTitle.trim()} — Official Theatrical Trailer`,
+          youtubeUrl: parsed.normalizedUrl || trailer,
+          youtubeVideoId: videoId,
+          thumbnailUrl: parsed.thumbnailUrl || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          language: newMovieLang || "Telugu",
+          displayOrder: 1,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+      ];
+    }
+
     const updated = [...movies, added];
     setMovies(updated);
     saveState("cine_movies", updated);
@@ -511,6 +537,7 @@ export default function AdminLayout() {
     setNewMovieLang("");
     setNewMovieDuration("");
     setNewMoviePoster("");
+    setNewMovieTrailerUrl("");
     showToast(`Added movie '${added.title}' to system directory!`);
     setAuditLogs([
       { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie record: ${added.title}` },
@@ -1643,6 +1670,16 @@ export default function AdminLayout() {
                         placeholder="https://..."
                         value={newMoviePoster}
                         onChange={(e) => setNewMoviePoster(e.target.value)}
+                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none font-mono text-[10px]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-text-secondary">Trailer Link / YouTube URL (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={newMovieTrailerUrl}
+                        onChange={(e) => setNewMovieTrailerUrl(e.target.value)}
                         className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none font-mono text-[10px]"
                       />
                     </div>

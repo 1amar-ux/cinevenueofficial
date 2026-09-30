@@ -5,6 +5,7 @@
  */
 
 import { Movie, Theatre, Show, MovieVideo } from '../types';
+import { parseAndValidateYouTubeUrl } from './youtube';
 
 export interface CityAvailabilityResult {
   city: string;
@@ -85,10 +86,39 @@ export function deriveMovieReleaseStatus(
 
 /**
  * Extracts and sorts active YouTube videos for a movie.
+ * Automatically synthesizes a MovieVideo object if direct trailerUrl or trailer link is provided.
  * Enforces sorting by displayOrder ASC, then creation date.
  */
 export function getActiveMovieVideos(movie: Movie, type?: 'TRAILER' | 'TEASER'): MovieVideo[] {
-  const videos = movie.videos || [];
+  if (!movie) return [];
+  const videos: MovieVideo[] = Array.isArray(movie.videos) ? [...movie.videos] : [];
+  const directTrailer = movie.trailerUrl || movie.trailer || (movie as any).videoUrl || (movie as any).youtubeUrl;
+
+  if (directTrailer && typeof directTrailer === 'string' && directTrailer.trim()) {
+    const trimmed = directTrailer.trim();
+    const hasExistingTrailer = videos.some(
+      (v) => v.youtubeUrl === trimmed || (v.type === 'TRAILER' && v.isActive !== false)
+    );
+    if (!hasExistingTrailer) {
+      const parsed = parseAndValidateYouTubeUrl(trimmed);
+      const videoId = parsed.videoId || 'trailer';
+      videos.unshift({
+        id: `vid-trailer-${String(movie.id || movie.title || 'movie').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
+        movieId: movie.id || movie.title,
+        type: 'TRAILER',
+        title: `${movie.title || 'Movie'} — Official Trailer`,
+        youtubeUrl: parsed.normalizedUrl || trimmed,
+        youtubeVideoId: videoId,
+        thumbnailUrl: parsed.thumbnailUrl || (parsed.videoId ? `https://img.youtube.com/vi/${parsed.videoId}/hqdefault.jpg` : undefined),
+        language: movie.lang || movie.language || 'Telugu',
+        displayOrder: 0,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }
+
   return videos
     .filter((v) => v.isActive !== false && (!type || v.type === type))
     .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
