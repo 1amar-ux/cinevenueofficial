@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Star, Film, Eye, Play, Sparkles, Calendar, Clapperboard, ChevronRight, Flame } from "lucide-react";
+import { Search, Star, Film, Eye, Play, Sparkles, Calendar, Clapperboard, ChevronRight, Flame, ArrowLeft } from "lucide-react";
 import { Movie, MovieVideo, Advertisement } from "../types";
 import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAvailability";
 import EmptyState from "./common/EmptyState";
@@ -97,7 +97,6 @@ export default function NowShowing({
   });
 
   const nowShowingInTheatres = filteredMovies.filter((m) => {
-    // If not in this week's top releases or if showing all
     return !thisWeeksReleases.some((tw) => tw.title === m.title);
   });
 
@@ -107,7 +106,7 @@ export default function NowShowing({
     const activeVideos = getActiveMovieVideos(movie);
     const primaryTrailer = activeVideos.find((v) => v.type === "TRAILER") || activeVideos[0];
 
-    // Format certification and languages in District format: "UA16+ | Telugu and 1 more"
+    // Format certification and languages in District format: "UA13+ | Telugu", "U | Telugu"
     const cert = movie.certification || "UA16+";
     const primaryLang = movie.lang || movie.language || "Telugu";
     const extraLangCount = movie.additionalLanguages?.length || 0;
@@ -119,10 +118,10 @@ export default function NowShowing({
         onClick={() => {
           if (isMovieActive) onBookMovie(movie.title);
         }}
-        className="group flex flex-col cursor-pointer transition-transform duration-300 hover:-translate-y-1 select-none"
+        className="group flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none bg-[#161619] border border-white/[0.08] hover:border-gold/50 rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-black/40"
       >
-        {/* District Vertical Movie Poster */}
-        <div className="relative aspect-[2/3] w-full rounded-2xl md:rounded-3xl overflow-hidden bg-[#161618] border border-white/[0.08] group-hover:border-gold/50 group-hover:shadow-[0_12px_30px_rgba(0,0,0,0.8)] transition-all duration-300">
+        {/* District Movie Poster Container */}
+        <div className="relative aspect-[3/4] sm:aspect-[2/3] w-full overflow-hidden bg-[#101012]">
           <img
             src={movie.poster || movie.img}
             alt={movie.title}
@@ -130,9 +129,9 @@ export default function NowShowing({
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
 
-          {/* Rating Badge (District Style) */}
+          {/* Rating Badge */}
           {movie.rating && (
-            <div className="absolute top-2.5 right-2.5 bg-black/80 backdrop-blur-md border border-white/10 text-white text-[11px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-lg z-10">
+            <div className="absolute top-2.5 right-2.5 bg-black/80 backdrop-blur-md border border-white/10 text-white text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-lg z-10">
               <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
               <span>{movie.rating}</span>
             </div>
@@ -145,7 +144,7 @@ export default function NowShowing({
             </div>
           )}
 
-          {/* Trailer Trigger Button */}
+          {/* Trailer Button */}
           {primaryTrailer && (
             <button
               onClick={(e) => {
@@ -163,8 +162,8 @@ export default function NowShowing({
             </button>
           )}
 
-          {/* Quick Hover Book Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end justify-center pb-4 px-2">
+          {/* Quick Hover Book Overlay (Desktop) */}
+          <div className="hidden sm:flex absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-end justify-center pb-3 px-2">
             <button
               disabled={!isMovieActive}
               className="w-full py-2 rounded-xl bg-gold text-black font-bold text-[11px] uppercase tracking-wider shadow-lg shadow-gold/20 flex items-center justify-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200"
@@ -175,14 +174,14 @@ export default function NowShowing({
           </div>
         </div>
 
-        {/* Title & Metadata (District Style) */}
-        <div className="mt-2.5 px-0.5 space-y-0.5">
-          <h3 className="font-semibold text-sm sm:text-[15px] text-white tracking-normal group-hover:text-gold transition-colors line-clamp-1 leading-snug">
+        {/* Card Body with Title & Subtitle (Exact District Formation) */}
+        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow bg-[#161619]">
+          <h3 className="font-bold text-xs sm:text-sm text-white tracking-normal group-hover:text-gold transition-colors line-clamp-1 sm:line-clamp-2 leading-snug">
             {movie.title}
           </h3>
-          <p className="text-[11px] sm:text-xs text-white/60 font-medium line-clamp-1">
+          <p className="text-[11px] sm:text-xs text-white/60 font-medium mt-1 truncate">
             <span className="text-white/80 font-semibold">{cert}</span>
-            <span className="mx-1.5 text-white/30">•</span>
+            <span className="mx-1 text-white/30">•</span>
             <span>{langDisplay}</span>
           </p>
         </div>
@@ -191,13 +190,34 @@ export default function NowShowing({
   };
 
   return (
-    <section id="movies" className="py-12 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto space-y-10">
-      {/* Search & Filter Bar Container */}
-      <div className="w-full bg-[#121214]/90 border border-white/10 p-3.5 sm:p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-4 shadow-2xl backdrop-blur-md">
-        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+    <section id="movies" className="py-6 sm:py-10 px-3.5 sm:px-6 md:px-12 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      {/* Mobile Top Header (District Formation: ← Movies in Guntur) */}
+      <div className="flex sm:hidden items-center gap-3 pt-1 pb-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = "/";
+            }
+          }}
+          className="p-1.5 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer border-0 bg-transparent"
+          aria-label="Back"
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </button>
+        <h1 className="text-lg font-bold text-white tracking-tight">
+          Movies in {selectedCity === "All Cities" ? "India" : selectedCity}
+        </h1>
+      </div>
+
+      {/* Desktop Search & Filter Bar Container */}
+      <div className="w-full bg-[#121214]/90 border border-white/10 p-3 sm:p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 shadow-2xl backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 rounded-xl border border-gold/30 text-xs font-semibold uppercase text-gold select-none">
             <Clapperboard className="w-4 h-4 text-gold" />
-            <span>{selectedCity} Cinematic Hub</span>
+            <span>{selectedCity} Screenings</span>
           </div>
 
           {/* Category Switcher */}
@@ -237,19 +257,19 @@ export default function NowShowing({
             placeholder="Search films, languages, or genres..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/60 border border-white/10 focus:border-gold/60 rounded-xl pl-11 pr-4 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none transition-all duration-200"
+            className="w-full bg-black/60 border border-white/10 focus:border-gold/60 rounded-xl pl-11 pr-4 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none transition-all duration-200"
           />
         </div>
       </div>
 
       {/* Language Filter Pills */}
-      <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3 overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 items-center shrink-0">
           {["all", "telugu", "hindi", "english", "tamil", "kannada", "malayalam"].map((lang) => (
             <button
               key={lang}
               onClick={() => setActiveTab(lang)}
-              className={`px-3.5 py-1.5 text-xs font-semibold tracking-wide rounded-full transition-all cursor-pointer border ${
+              className={`px-3.5 py-1 text-xs font-semibold tracking-wide rounded-full transition-all cursor-pointer border shrink-0 ${
                 activeTab === lang
                   ? "bg-white text-black border-white shadow-md font-bold"
                   : "bg-white/[0.04] text-white/70 border-white/10 hover:border-white/30 hover:text-white"
@@ -262,7 +282,7 @@ export default function NowShowing({
 
         {/* Genre Selector Pills */}
         {availableGenres.length > 0 && (
-          <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="hidden lg:flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
             {availableGenres.slice(0, 5).map((g) => (
               <button
                 key={g}
@@ -295,45 +315,39 @@ export default function NowShowing({
           }}
         />
       ) : (
-        <div className="space-y-12">
+        <div className="space-y-8 sm:space-y-12">
           {/* SECTION 1: This Week's Releases */}
           {thisWeeksReleases.length > 0 && (
-            <div className="space-y-5">
+            <div className="space-y-3.5 sm:space-y-5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-amber-400 fill-amber-400" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    This Week's Releases
-                  </h2>
-                </div>
-                <span className="text-xs text-white/50 font-medium">
+                <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+                  This Week's Releases
+                </h2>
+                <span className="text-[11px] sm:text-xs text-white/50 font-medium">
                   {thisWeeksReleases.length} {thisWeeksReleases.length === 1 ? "movie" : "movies"}
                 </span>
               </div>
 
-              {/* 6-column Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5">
+              {/* 2-Column on Mobile, 3-6 Columns on Tablet/Desktop */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4.5">
                 {thisWeeksReleases.map((movie, idx) => renderMovieCard(movie, idx))}
               </div>
             </div>
           )}
 
           {/* SECTION 2: Only in Theatres / All Scheduled Films */}
-          <div className="space-y-5">
+          <div className="space-y-3.5 sm:space-y-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clapperboard className="w-5 h-5 text-gold" />
-                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  {thisWeeksReleases.length > 0 ? "Only in Theatres" : "Featured & Now Showing"}
-                </h2>
-              </div>
-              <span className="text-xs text-white/50 font-medium">
+              <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+                {thisWeeksReleases.length > 0 ? "Only in Theatres" : "Featured & Now Showing"}
+              </h2>
+              <span className="text-[11px] sm:text-xs text-white/50 font-medium">
                 {nowShowingInTheatres.length > 0 ? nowShowingInTheatres.length : filteredMovies.length} movies
               </span>
             </div>
 
-            {/* 6-column Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5">
+            {/* 2-Column on Mobile, 3-6 Columns on Tablet/Desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4.5">
               {(nowShowingInTheatres.length > 0 ? nowShowingInTheatres : filteredMovies).map((movie, idx) =>
                 renderMovieCard(movie, idx + 100)
               )}
