@@ -2,11 +2,11 @@ import { integrationManager } from "../integrations/IntegrationManager";
 import { posBookingTransactionService, TransactionRecord } from "./posBookingTransactionService";
 
 export type CancellationStatus =
-  | "CANCELLATION_REQUESTED"
-  | "CANCELLATION_PROCESSING"
+  | "REQUESTED"
+  | "PROCESSING"
   | "CANCELLED"
-  | "CANCELLATION_FAILED"
-  | "CANCELLATION_STATUS_UNKNOWN";
+  | "FAILED"
+  | "UNKNOWN";
 
 export type RefundStatusType =
   | "NOT_REQUIRED"
@@ -14,7 +14,7 @@ export type RefundStatusType =
   | "PROCESSING"
   | "SUCCESS"
   | "FAILED"
-  | "STATUS_UNKNOWN";
+  | "UNKNOWN";
 
 export interface CancellationRecord {
   cancellationId: string; // e.g. CVCAN-20260930-000001
@@ -54,6 +54,7 @@ export interface RefundRecord {
  * - Single stable refund reference per payment (no duplicate refunds)
  * - Independent 5-state lifecycle tracking
  * - Safe timeout handling and query-before-retry
+ * - Calculation of totalRefunded vs totalPaid (partial refund protection)
  */
 export class PosCancellationRefundService {
   private static instance: PosCancellationRefundService;
@@ -101,7 +102,7 @@ export class PosCancellationRefundService {
       posBookingId: tx.posBookingId,
       requestedBy,
       requestedAt: new Date(),
-      cancellationStatus: "CANCELLATION_REQUESTED",
+      cancellationStatus: "REQUESTED",
       refundStatus: "PENDING",
       retryCount: 0
     };
@@ -110,7 +111,7 @@ export class PosCancellationRefundService {
     this.cancellations.set(bookingId, record);
 
     // Transition to Processing
-    record.cancellationStatus = "CANCELLATION_PROCESSING";
+    record.cancellationStatus = "PROCESSING";
     const adapter = integrationManager.getAdapterForTheatre(tx.theatreId);
 
     try {
@@ -142,14 +143,14 @@ export class PosCancellationRefundService {
 
       return record;
     } catch (err: any) {
-      record.cancellationStatus = "CANCELLATION_FAILED";
+      record.cancellationStatus = "FAILED";
       record.error = err.message;
       return record;
     }
   }
 
   // --------------------------------------------------------------------------
-  // 2. IDEMPOTENT REFUND REQUEST
+  // 2. IDEMPOTENT REFUND REQUEST WITH PARTIAL REFUND SAFEGUARD
   // --------------------------------------------------------------------------
   async processRefund(params: {
     bookingId: string;
@@ -166,6 +167,18 @@ export class PosCancellationRefundService {
     if (existing) {
       // Idempotency: Return existing refund record without creating duplicate gateway calls
       return existing;
+    }
+
+    const tx = posBookingTransactionService.getTransaction(bookingId);
+    const totalPaid = tx ? tx.amount : refundAmount;
+
+    // Financial check: verify refund amount does not exceed total paid
+    const existingSuccessfulRefunds = Array.from(this.refunds.values())
+      .filter(r => r.bookingId === bookingId && r.refundStatus === "SUCCESS")
+      .reduce((sum, r) => sum + r.refundAmount, 0);
+
+    if (existingSuccessfulRefunds + refundAmount > totalPaid) {
+      throw new Error(`Refund amount ₹${refundAmount} exceeds remaining refundable balance (Total Paid: ₹${totalPaid}, Already Refunded: ₹${existingSuccessfulRefunds})`);
     }
 
     const refundRecord: RefundRecord = {
@@ -191,7 +204,6 @@ export class PosCancellationRefundService {
       refundRecord.completedAt = new Date();
 
       // Update parent transaction and cancellation records
-      const tx = posBookingTransactionService.getTransaction(bookingId);
       if (tx) {
         tx.refundStatus = "COMPLETED";
         tx.auditTrail.push({
@@ -228,7 +240,7 @@ export class PosCancellationRefundService {
     const record = this.cancellations.get(bookingId);
     if (!record) throw new Error(`Cancellation for ${bookingId} not found`);
 
-    record.cancellationStatus = "CANCELLATION_STATUS_UNKNOWN";
+    record.cancellationStatus = "UNKNOWN";
     const tx = posBookingTransactionService.getTransaction(bookingId);
     if (!tx) return record;
 
@@ -241,9 +253,26 @@ export class PosCancellationRefundService {
       tx.bookingStatus = "CANCELLED";
       tx.posStatus = "CANCELLED";
     } else {
-      record.cancellationStatus = "CANCELLATION_FAILED";
+      record.cancellationStatus = "FAILED";
     }
 
+    return record;
+  }
+
+  // --------------------------------------------------------------------------
+  // 4. RESOLVE UNKNOWN REFUND VIA STATUS QUERY
+  // --------------------------------------------------------------------------
+  async resolveUnknownRefund(refundId: string, gatewayResult: { status: "SUCCESS" | "FAILED"; gatewayRefundId?: string }): Promise<RefundRecord | undefined> {
+    const record = this.refunds.get(refundId);
+    if (!record) return undefined;
+
+    if (record.refundStatus === "UNKNOWN" || record.refundStatus === "PROCESSING") {
+      record.refundStatus = gatewayResult.status;
+      if (gatewayResult.status === "SUCCESS") {
+        record.completedAt = new Date();
+        record.paymentGatewayRefundId = gatewayResult.gatewayRefundId || record.paymentGatewayRefundId;
+      }
+    }
     return record;
   }
 

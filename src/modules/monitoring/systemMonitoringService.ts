@@ -221,6 +221,18 @@ export class SystemMonitoringService {
     return record;
   }
 
+  recordIncident(params: {
+    type: string;
+    severity: AlertSeverity;
+    theatreId: string;
+    theatreName: string;
+    integrationId: string;
+    description: string;
+    metadata?: any;
+  }): IncidentRecord {
+    return this.createIncident(params);
+  }
+
   acknowledgeIncident(incidentId: string, actor: string): IncidentRecord | undefined {
     const inc = this.incidents.get(incidentId);
     if (inc) {
@@ -334,6 +346,17 @@ export class SystemMonitoringService {
 
   getAuditLogs(): AuditLogEntry[] {
     return [...this.auditLogs];
+  }
+
+  getTelemetrySnapshot() {
+    const metrics = this.getOverviewMetrics();
+    return {
+      healthyIntegrationsCount: metrics.posIntegrations.healthy,
+      totalIntegrationsCount: metrics.posIntegrations.total,
+      p95LatencyMs: metrics.latency.p95Ms,
+      avgLatencyMs: metrics.latency.avgMs,
+      errorRatePercent: metrics.errorRate.totalRate
+    };
   }
 }
 
