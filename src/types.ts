@@ -13,8 +13,58 @@ export interface UserLocation {
 export * from './types/fees';
 import { FeeLine, TaxLine } from './types/fees';
 
+export type VideoType = 'TRAILER' | 'TEASER';
+
+export type MovieReleaseStatus = 'UPCOMING' | 'NOW_SHOWING' | 'ENDED' | 'COMING_SOON';
+
+export interface MovieVideo {
+  id: string;
+  movieId: string | number;
+  type: VideoType;
+  title: string;
+  youtubeVideoId: string;
+  youtubeUrl: string;
+  thumbnailUrl?: string;
+  language?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ShowStatus = 'SCHEDULED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
+
+export type BookingBlockedReason =
+  | 'NONE'
+  | 'MOVIE_NOT_FOUND'
+  | 'MOVIE_INACTIVE'
+  | 'MOVIE_NOT_RELEASED'
+  | 'MOVIE_RELEASE_END'
+  | 'THEATRE_NOT_FOUND'
+  | 'THEATRE_INACTIVE'
+  | 'THEATRE_CITY_MISMATCH'
+  | 'SCREEN_NOT_FOUND'
+  | 'SCREEN_INACTIVE'
+  | 'SCREEN_UNDER_MAINTENANCE'
+  | 'SHOW_NOT_FOUND'
+  | 'SHOW_INACTIVE'
+  | 'SHOW_CANCELLED'
+  | 'SHOW_COMPLETED'
+  | 'SHOW_STARTED'
+  | 'SHOW_EXPIRED'
+  | 'BOOKING_WINDOW_CLOSED'
+  | 'BOOKING_NOT_OPEN'
+  | 'ADVANCE_BOOKING_NOT_OPEN'
+  | 'SHOW_TIMING_INVALID'
+  | 'TIMEZONE_MISMATCH'
+  | 'HOUSE_FULL'
+  | 'SEAT_INVENTORY_UNAVAILABLE'
+  | 'ADMIN_BOOKING_DISABLED'
+  | 'BOOKING_RESTRICTED';
+
 export interface Movie {
   id?: string | number;
+  _id?: string | number;
   title: string;
   genre: string;
   lang: string;
@@ -31,12 +81,56 @@ export interface Movie {
   description?: string;
   language?: string;
   releaseDate?: string;
+  releaseTime?: string;
+  bookingOpenAt?: string;
+  bookingCloseAt?: string;
+  releaseWindowEndAt?: string;
+  releaseStatus?: MovieReleaseStatus;
+  advanceBookingEnabled?: boolean;
+  videos?: MovieVideo[];
   poster?: string;
   banner?: string;
   cast?: string[];
   director?: string;
   isSpotlight?: boolean;
   status?: string;
+}
+
+export interface Screen {
+  id: string;
+  theatreId: number | string;
+  name: string;
+  screenType?: string; // 2D, 3D, IMAX, 4DX, Dolby Atmos
+  totalSeats: number;
+  isActive: boolean;
+  seatLayoutId?: string;
+}
+
+export interface Show {
+  id: string;
+  movieId: string | number;
+  movieTitle: string;
+  theatreId: number | string;
+  theatreName: string;
+  theatreCity?: string;
+  screenId?: string;
+  screenName?: string;
+  showDate: string; // YYYY-MM-DD (Asia/Kolkata date-only)
+  showStartTime: string; // HH:mm
+  showEndTime: string; // HH:mm
+  showTimezone: string; // 'Asia/Kolkata'
+  showStartAt: string; // ISO string
+  showEndAt: string; // ISO string (handles midnight crossing)
+  bookingOpenAt?: string;
+  bookingCloseAt?: string;
+  pricePerSeat: number;
+  totalSeats: number;
+  availableSeats: number;
+  showStatus: ShowStatus; // Canonical DB state: SCHEDULED | STARTED | COMPLETED | CANCELLED
+  isActive: boolean;
+  cancellationReason?: string;
+  cancelledAt?: string;
+  adminBookingDisabled?: boolean;
 }
 
 export interface Theatre {

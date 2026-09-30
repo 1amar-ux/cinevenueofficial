@@ -47,15 +47,18 @@ import {
   Shield,
   HelpCircle,
   Award,
-  Menu
+  Menu,
+  Video,
+  Clapperboard
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
+import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
-import { Server, Cpu, Activity } from "lucide-react";
+import { Server, Cpu } from "lucide-react";
 
 
 export default function AdminLayout() {
@@ -269,6 +272,9 @@ export default function AdminLayout() {
   const [userFilter, setUserFilter] = useState("");
   const [theatreFilter, setTheatreFilter] = useState("");
   const [bookingFilter, setBookingFilter] = useState("");
+
+  // Video Manager & Movie Release Window states
+  const [selectedMovieForVideos, setSelectedMovieForVideos] = useState<Movie | null>(null);
 
   // New interactive states for superadmin features
   const [editingAdminEmail, setEditingAdminEmail] = useState<string | null>(null);
@@ -523,6 +529,37 @@ export default function AdminLayout() {
         ...auditLogs
       ]);
     }
+  };
+
+  const handleSaveMovieVideos = (updatedMovie: Movie) => {
+    const updated = movies.map((m) => (m.title === updatedMovie.title ? updatedMovie : m));
+    setMovies(updated);
+    saveState("cine_movies", updated);
+    setSelectedMovieForVideos(updatedMovie);
+    showToast(`Updated trailer & teaser videos for '${updatedMovie.title}'!`);
+    setAuditLogs([
+      {
+        timestamp: "Just Now",
+        actor: "superadmin@cinevenue.com",
+        ip: "103.22.41.8",
+        action: `Updated trailer & teaser video registry for movie: ${updatedMovie.title}`,
+      },
+      ...auditLogs,
+    ]);
+  };
+
+  const handleUpdateMovieReleaseStatus = (title: string, newStatus: 'UPCOMING' | 'NOW_SHOWING' | 'ENDED') => {
+    const updated = movies.map((m) => (m.title === title ? { ...m, releaseStatus: newStatus } : m));
+    setMovies(updated);
+    saveState("cine_movies", updated);
+    showToast(`Updated release status of '${title}' to ${newStatus}`);
+  };
+
+  const handleToggleShowStatus = (showId: string, nextStatus: 'SCHEDULED' | 'STARTED' | 'COMPLETED' | 'CANCELLED') => {
+    const updated = schedules.map((sch) => (sch.id === showId ? { ...sch, showStatus: nextStatus } : sch));
+    setSchedules(updated);
+    saveState("cine_schedules", updated);
+    showToast(`Show ${showId} status changed to ${nextStatus}`);
   };
 
   const handleVoidBookingWithRefund = (bookingId: string) => {
@@ -1538,40 +1575,43 @@ export default function AdminLayout() {
             {/* 5. MOVIE MANAGEMENT */}
             {activeTab === "movies" && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-                    Global Movie Directory Management
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Register new theatrical movie listings, upload regional metadata poster parameters, and manage trailers
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
+                      Movie & Release Window Management
+                    </h2>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Configure release statuses, manage YouTube trailers & teasers, and schedule release windows
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Create movie form */}
                   <form onSubmit={handleCreateMovie} className="bg-[#121213] border border-white/5 p-5 rounded-2xl space-y-3 text-xs h-fit">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2">
-                      Launch Film Entry listings
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2 flex items-center gap-2">
+                      <Film className="w-4 h-4 text-gold" />
+                      Add New Film Entry
                     </h3>
                     <div className="flex flex-col gap-1">
                       <label className="text-[9px] font-bold uppercase text-text-secondary">Movie Title</label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Devara"
+                        placeholder="e.g. Devara Part 1"
                         value={newMovieTitle}
                         onChange={(e) => setNewMovieTitle(e.target.value)}
-                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none"
+                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-[9px] font-bold uppercase text-text-secondary">Genre</label>
                       <input
                         type="text"
-                        placeholder="Action/Drama"
+                        placeholder="Action • Drama"
                         value={newMovieGenre}
                         onChange={(e) => setNewMovieGenre(e.target.value)}
-                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none"
+                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -1579,20 +1619,20 @@ export default function AdminLayout() {
                         <label className="text-[9px] font-bold uppercase text-text-secondary">Language</label>
                         <input
                           type="text"
-                          placeholder="Telugu/Hindi"
+                          placeholder="Telugu"
                           value={newMovieLang}
                           onChange={(e) => setNewMovieLang(e.target.value)}
-                          className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none"
+                          className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="text-[9px] font-bold uppercase text-text-secondary">Duration</label>
                         <input
                           type="text"
-                          placeholder="150 min"
+                          placeholder="2h 45m"
                           value={newMovieDuration}
                           onChange={(e) => setNewMovieDuration(e.target.value)}
-                          className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none"
+                          className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold"
                         />
                       </div>
                     </div>
@@ -1606,35 +1646,79 @@ export default function AdminLayout() {
                         className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none font-mono text-[10px]"
                       />
                     </div>
-                    <button type="submit" className="w-full bg-gold hover:bg-gold-light text-black py-2 rounded-xl font-bold uppercase text-[9px] tracking-wider mt-2">
-                      Publish Movie listings
+                    <button type="submit" className="w-full bg-gold hover:bg-gold-light text-black py-2 rounded-xl font-bold uppercase text-[9px] tracking-wider mt-2 cursor-pointer shadow-lg shadow-gold/20 border-0">
+                      Publish Movie Listing
                     </button>
                   </form>
 
                   {/* Active films directory */}
                   <div className="bg-[#121213] border border-white/5 p-5 rounded-2xl md:col-span-2 space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2">
-                      Live Platform Film Catalogue
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {movies.map((m) => (
-                        <div key={m.title} className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col justify-between">
-                          <img src={m.img} className="w-full h-32 object-cover rounded-lg mb-2" alt={m.title} />
-                          <div className="space-y-1">
-                            <h4 className="font-bold text-white text-xs truncate">{m.title}</h4>
-                            <p className="text-[9px] text-text-secondary font-mono">{m.genre} | {m.lang}</p>
-                            <div className="flex justify-between items-center pt-2">
-                              <span className="text-[9px] font-mono font-bold text-gold">Rating: {m.rating}</span>
-                              <button
-                                onClick={() => handleDeleteMovie(m.title)}
-                                className="p-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black border border-red-500/10 text-red-400 rounded transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                        Live Platform Film Catalogue ({movies.length})
+                      </h3>
+                      <input
+                        type="text"
+                        placeholder="Filter movies..."
+                        value={movieFilter}
+                        onChange={(e) => setMovieFilter(e.target.value)}
+                        className="bg-white/[0.02] border border-white/10 px-2.5 py-1 rounded-lg text-[10px] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {movies
+                        .filter((m) => m.title.toLowerCase().includes(movieFilter.toLowerCase()))
+                        .map((m) => {
+                          const videoCount = m.videos?.length || 0;
+                          const currentStatus = m.releaseStatus || "NOW_SHOWING";
+
+                          return (
+                            <div key={m.title} className="bg-white/[0.01] border border-white/5 rounded-2xl p-3.5 flex flex-col justify-between space-y-3">
+                              <div className="flex gap-3">
+                                <img src={m.img || m.poster} className="w-20 h-28 object-cover rounded-xl shrink-0 border border-white/10" alt={m.title} />
+                                <div className="space-y-1.5 flex-1 min-w-0">
+                                  <h4 className="font-bold text-white text-xs truncate">{m.title}</h4>
+                                  <p className="text-[10px] text-text-secondary font-mono">{m.genre} • {m.lang}</p>
+                                  
+                                  {/* Release status pill */}
+                                  <div className="pt-1">
+                                    <select
+                                      value={currentStatus}
+                                      onChange={(e) => handleUpdateMovieReleaseStatus(m.title, e.target.value as any)}
+                                      className="bg-black/60 border border-white/10 text-gold text-[10px] font-bold rounded-lg px-2 py-1 focus:outline-none"
+                                    >
+                                      <option value="NOW_SHOWING">● NOW SHOWING</option>
+                                      <option value="UPCOMING">● UPCOMING</option>
+                                      <option value="ENDED">● ENDED</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Trailer & Teasers Manager Trigger */}
+                              <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMovieForVideos(m)}
+                                  className="flex-1 py-1.5 px-3 bg-gold/10 hover:bg-gold hover:text-black border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <Video className="w-3.5 h-3.5" />
+                                  <span>Trailers & Teasers ({videoCount})</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMovie(m.title)}
+                                  title="Delete Movie"
+                                  className="p-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black border border-red-500/10 text-red-400 rounded-xl transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      ))}
+                          );
+                        })}
                     </div>
                   </div>
                 </div>
@@ -1646,16 +1730,16 @@ export default function AdminLayout() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-                    Show Scheduling conflicts Monitor
+                    Canonical Show Status & Booking Eligibility
                   </h2>
                   <p className="text-xs text-text-secondary mt-0.5">
-                    Observe active partner show schedules, evaluate time slots, and enforce safety buffer spacing rules
+                    Authoritative show lifecycle management (SCHEDULED, STARTED, COMPLETED, CANCELLED) and seat locks
                   </p>
                 </div>
 
                 <div className="bg-[#121213] border border-white/5 p-6 rounded-2xl space-y-4 text-xs">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2">
-                    Live Schedules Ledger ({schedules.length} runs)
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2 flex items-center justify-between">
+                    <span>Live Shows Master Ledger ({schedules.length} Scheduled)</span>
                   </h3>
                   <div className="overflow-x-auto table-container">
                     <table className="w-full text-left">
@@ -1664,26 +1748,67 @@ export default function AdminLayout() {
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Show ID</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Movie Film</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Multiplex Venue</th>
-                          <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Allocated Slot</th>
+                          <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Date / Slot</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Ticket Price</th>
-                          <th className="pb-3 font-bold uppercase tracking-wider text-[10px] text-right">Conflict Status</th>
+                          <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Show Status</th>
+                          <th className="pb-3 font-bold uppercase tracking-wider text-[10px] text-right">Lifecycle Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 font-mono text-text-secondary">
-                        {schedules.map((sch) => (
-                          <tr key={sch.id} className="hover:bg-white/[0.01]">
-                            <td className="py-3 font-bold text-white">{sch.id}</td>
-                            <td className="py-3 text-gold font-bold">{sch.movieTitle}</td>
-                            <td className="py-3">{sch.theatreName}</td>
-                            <td className="py-3 text-white">{sch.timeSlot} ({sch.date})</td>
-                            <td className="py-3 text-gold">₹{sch.pricePerSeat}</td>
-                            <td className="py-3 text-right">
-                              <span className="px-2 py-0.5 text-[9px] rounded font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                                CLEAR BUFFER
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {schedules.map((sch) => {
+                          const status = (sch as any).showStatus || "SCHEDULED";
+
+                          return (
+                            <tr key={sch.id} className="hover:bg-white/[0.01]">
+                              <td className="py-3 font-bold text-white">{sch.id}</td>
+                              <td className="py-3 text-gold font-bold">{sch.movieTitle}</td>
+                              <td className="py-3">{sch.theatreName}</td>
+                              <td className="py-3 text-white">{sch.timeSlot} ({sch.date})</td>
+                              <td className="py-3 text-gold">₹{sch.pricePerSeat}</td>
+                              <td className="py-3">
+                                <span
+                                  className={`px-2 py-0.5 text-[9px] rounded font-bold uppercase border ${
+                                    status === "SCHEDULED"
+                                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                      : status === "STARTED"
+                                      ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
+                                      : status === "COMPLETED"
+                                      ? "bg-white/10 border-white/20 text-white/60"
+                                      : "bg-red-500/10 border-red-500/20 text-red-400"
+                                  }`}
+                                >
+                                  ● {status}
+                                </span>
+                              </td>
+                              <td className="py-3 text-right space-x-1">
+                                {status !== "CANCELLED" && (
+                                  <button
+                                    onClick={() => handleToggleShowStatus(sch.id, "CANCELLED")}
+                                    className="px-2 py-1 text-[9px] font-bold uppercase rounded bg-red-500/10 hover:bg-red-500 hover:text-black text-red-400 border border-red-500/20 transition-all cursor-pointer"
+                                  >
+                                    Cancel Show
+                                  </button>
+                                )}
+                                {status === "SCHEDULED" && (
+                                  <button
+                                    onClick={() => handleToggleShowStatus(sch.id, "STARTED")}
+                                    className="px-2 py-1 text-[9px] font-bold uppercase rounded bg-yellow-500/10 hover:bg-yellow-500 hover:text-black text-yellow-400 border border-yellow-500/20 transition-all cursor-pointer"
+                                  >
+                                    Start Show
+                                  </button>
+                                )}
+                                {status === "STARTED" && (
+                                  <button
+                                    onClick={() => handleToggleShowStatus(sch.id, "COMPLETED")}
+                                    className="px-2 py-1 text-[9px] font-bold uppercase rounded bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all cursor-pointer"
+                                  >
+                                    Complete
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -2587,6 +2712,16 @@ export default function AdminLayout() {
           </div>
         </main>
       </div>
+
+      {/* Movie Video Manager Modal */}
+      {selectedMovieForVideos && (
+        <MovieVideoManagerModal
+          isOpen={!!selectedMovieForVideos}
+          movie={selectedMovieForVideos}
+          onClose={() => setSelectedMovieForVideos(null)}
+          onSaveVideos={handleSaveMovieVideos}
+        />
+      )}
     </div>
   );
 }
