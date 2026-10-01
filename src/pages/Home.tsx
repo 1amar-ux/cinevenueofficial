@@ -699,12 +699,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 30 }}
             transition={{ duration: 0.4 }}
-            className="py-16 px-6 md:px-12 bg-white/[0.01] border-t border-b border-white/5 max-w-7xl mx-auto"
+            className="py-16 px-6 md:px-12 bg-gray-50/50 dark:bg-white/[0.01] border-t border-b border-gray-200 dark:border-white/5 max-w-7xl mx-auto"
           >
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200 dark:border-white/5">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37] animate-ping" />
-                <h3 className="text-sm font-bold tracking-[0.25em] text-[#D4AF37] uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-gray-900 dark:bg-[#D4AF37] animate-ping" />
+                <h3 className="text-sm font-bold tracking-[0.25em] text-gray-900 dark:text-[#D4AF37] uppercase">
                   {activeDivision === "live_booking" && "🎟️ Premium Event & Live Bookings"}
                   {activeDivision === "production" && "🎥 Film Production Portfolio"}
                   {activeDivision === "events" && "🎤 Event Management & Budget Configurator"}
@@ -713,7 +713,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               </div>
               <button
                 onClick={() => setActiveDivision("none")}
-                className="text-xs text-white/50 hover:text-[#D4AF37] transition-colors uppercase font-mono cursor-pointer"
+                className="text-xs text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-[#D4AF37] transition-colors uppercase font-mono cursor-pointer"
               >
                 Close Panel [✕]
               </button>
@@ -735,12 +735,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             {activeDivision === "live_booking" && (serviceControl?.eventBooking?.status === true) && (
               <div className="space-y-12 text-left">
                 {/* CURATED GENRES & BROWSE LIVE CATEGORIES (TOP FILTER SECTION) */}
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-white/5">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-gray-200 dark:border-white/5">
                   <div className="space-y-1.5">
-                    <h4 className="font-display text-2xl font-light text-white italic">
-                      Discover <span className="text-[#D4AF37] not-italic font-normal">Live Experiences</span>
+                    <h4 className="font-display text-2xl font-light text-gray-950 dark:text-white italic">
+                      Discover <span className="text-gray-900 dark:text-[#D4AF37] not-italic font-normal">Live Experiences</span>
                     </h4>
-                    <p className="text-xs text-white/50 leading-relaxed font-light">
+                    <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light">
                       Browse vetted VIP concerts, local celebrity galas, and live standup comedies across Andhra Pradesh and Telangana.
                     </p>
                   </div>
@@ -752,8 +752,8 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                         key={i} 
                         className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border ${
                           i === 0 
-                            ? "bg-[#D4AF37] text-black border-[#D4AF37]" 
-                            : "bg-white/5 text-white/70 hover:bg-white/10 border-white/5"
+                            ? "bg-gray-950 text-white border-gray-950 dark:bg-[#D4AF37] dark:text-black dark:border-[#D4AF37]" 
+                            : "bg-white text-gray-800 hover:bg-gray-100 border-gray-200 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:border-white/5"
                         }`}
                       >
                         {genre}
@@ -2555,13 +2555,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       </AnimatePresence>
 
       {/* CONTACT US & CONCIERGE MESSAGE SECTIONS */}
-      <section id="contact-concierge" className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-white/5">
+      <section id="contact-concierge" className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5">
         <div className="text-center space-y-4 mb-16">
-          <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.4em] uppercase block">GET IN TOUCH</span>
-          <h2 className="font-display text-4xl font-light italic text-white leading-tight">
-            Contact <span className="text-[#D4AF37] not-italic font-normal">Us</span>
+          <span className="text-[10px] font-bold text-gray-500 dark:text-[#D4AF37] tracking-[0.4em] uppercase block">GET IN TOUCH</span>
+          <h2 className="font-display text-4xl font-light italic text-gray-950 dark:text-white leading-tight">
+            Contact <span className="text-gray-900 dark:text-[#D4AF37] not-italic font-normal">Us</span>
           </h2>
-          <p className="text-sm text-white/50 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm text-gray-600 dark:text-white/50 max-w-xl mx-auto leading-relaxed">
             Have questions about screen configurations, custom events, corporate bookings, or special billing? Our VIP concierge desk is open 7 days a week.
           </p>
         </div>
@@ -2569,17 +2569,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         {/* 3-COLUMN CONTACT CARDS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {/* Card 1: Phone */}
-          <div className="bg-[#0D0D0F] border border-white/5 rounded-2xl p-6 flex items-start gap-4 hover:border-[#D4AF37]/30 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] border border-[#D4AF37]/20 shrink-0">
+          <div className="bg-white dark:bg-[#0D0D0F] border border-gray-200 dark:border-white/5 rounded-2xl p-6 flex items-start gap-4 hover:border-gray-400 dark:hover:border-[#D4AF37]/30 shadow-xs dark:shadow-none transition-all">
+            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-[#D4AF37]/10 flex items-center justify-center text-gray-800 dark:text-[#D4AF37] border border-gray-200 dark:border-[#D4AF37]/20 shrink-0">
               <Phone className="w-5 h-5" />
             </div>
             <div className="space-y-2 text-left">
-              <span className="text-[10px] font-bold text-white/40 tracking-wider uppercase block">CALL US DIRECTLY</span>
-              <p className="text-xl font-bold text-white font-mono">+91 84658 70811</p>
-              <p className="text-xs text-white/50 leading-relaxed font-light">
+              <span className="text-[10px] font-bold text-gray-500 dark:text-white/40 tracking-wider uppercase block">CALL US DIRECTLY</span>
+              <p className="text-xl font-bold text-gray-950 dark:text-white font-mono">+91 84658 70811</p>
+              <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light">
                 Concierge Desk · Mon – Sun · 8:00 AM – 10:00 PM
               </p>
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 dark:bg-[#D4AF37]/10 border border-emerald-200 dark:border-[#D4AF37]/20 rounded text-[9px] font-bold text-emerald-700 dark:text-[#D4AF37] uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 LINES OPEN NOW
               </div>
@@ -2587,38 +2587,38 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           </div>
 
           {/* Card 2: Email */}
-          <div className="bg-[#0D0D0F] border border-white/5 rounded-2xl p-6 flex items-start gap-4 hover:border-[#D4AF37]/30 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20 shrink-0">
+          <div className="bg-white dark:bg-[#0D0D0F] border border-gray-200 dark:border-white/5 rounded-2xl p-6 flex items-start gap-4 hover:border-gray-400 dark:hover:border-[#D4AF37]/30 shadow-xs dark:shadow-none transition-all">
+            <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 shrink-0">
               <Mail className="w-5 h-5" />
             </div>
             <div className="space-y-2 text-left">
-              <span className="text-[10px] font-bold text-white/40 tracking-wider uppercase block">EMAIL ENQUIRIES</span>
-              <p className="text-base font-semibold text-white break-all">info.cinevenue@gmail.com</p>
-              <p className="text-xs text-white/50 leading-relaxed font-light">
+              <span className="text-[10px] font-bold text-gray-500 dark:text-white/40 tracking-wider uppercase block">EMAIL ENQUIRIES</span>
+              <p className="text-base font-semibold text-gray-950 dark:text-white break-all">info.cinevenue@gmail.com</p>
+              <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light">
                 Response within 2 hours.
               </p>
-              <p className="text-[10px] text-[#D4AF37] font-medium uppercase tracking-wider">
+              <p className="text-[10px] text-gray-700 dark:text-[#D4AF37] font-medium uppercase tracking-wider">
                 info.cinevenue@gmail.com — Venue Support
               </p>
             </div>
           </div>
 
           {/* Card 3: Address */}
-          <div className="bg-[#0D0D0F] border border-white/5 rounded-2xl p-6 flex items-start gap-4 hover:border-[#D4AF37]/30 transition-all">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20 shrink-0">
+          <div className="bg-white dark:bg-[#0D0D0F] border border-gray-200 dark:border-white/5 rounded-2xl p-6 flex items-start gap-4 hover:border-gray-400 dark:hover:border-[#D4AF37]/30 shadow-xs dark:shadow-none transition-all">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
             <div className="space-y-2 text-left">
-              <span className="text-[10px] font-bold text-white/40 tracking-wider uppercase block">HEAD OFFICE</span>
-              <p className="text-lg font-bold text-white">Guntur, Andhra Pradesh</p>
-              <p className="text-xs text-white/50 leading-relaxed font-light">
+              <span className="text-[10px] font-bold text-gray-500 dark:text-white/40 tracking-wider uppercase block">HEAD OFFICE</span>
+              <p className="text-lg font-bold text-gray-950 dark:text-white">Guntur, Andhra Pradesh</p>
+              <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light">
                 Guntur, Andhra Pradesh, India — 522001
               </p>
               <a
                 href="https://maps.google.com/?q=Guntur,Andhra+Pradesh"
                 target="_blank"
                 rel="noreferrer"
-                className="text-[10px] text-[#D4AF37] hover:text-[#E5C158] font-bold uppercase tracking-wider inline-flex items-center gap-1 mt-1 transition-colors"
+                className="text-[10px] text-gray-900 dark:text-[#D4AF37] hover:text-black dark:hover:text-[#E5C158] font-bold uppercase tracking-wider inline-flex items-center gap-1 mt-1 transition-colors"
               >
                 View on Google Map →
               </a>
@@ -2627,24 +2627,24 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         </div>
 
         {/* SEND A CONCIERGE MESSAGE CARD */}
-        <div className="bg-[#0D0D0F] border border-white/5 rounded-2xl p-8 md:p-12 max-w-4xl mx-auto text-left relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="bg-white dark:bg-[#0D0D0F] border border-gray-200 dark:border-white/5 rounded-2xl p-8 md:p-12 max-w-4xl mx-auto text-left relative overflow-hidden shadow-lg dark:shadow-2xl">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gray-200/50 dark:bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
           
           <div className="space-y-2 mb-8">
-            <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.25em] uppercase block">DIRECT CHANNEL</span>
-            <h3 className="font-display text-2xl md:text-3xl font-light italic text-white">
-              Send a <span className="text-[#D4AF37] not-italic font-normal">Concierge</span> Message
+            <span className="text-[10px] font-bold text-gray-500 dark:text-[#D4AF37] tracking-[0.25em] uppercase block">DIRECT CHANNEL</span>
+            <h3 className="font-display text-2xl md:text-3xl font-light italic text-gray-950 dark:text-white">
+              Send a <span className="text-gray-900 dark:text-[#D4AF37] not-italic font-normal">Concierge</span> Message
             </h3>
-            <p className="text-xs text-white/50 max-w-xl leading-relaxed">
+            <p className="text-xs text-gray-600 dark:text-white/50 max-w-xl leading-relaxed">
               Prefer to write? Drop us a prompt query below, and our VIP response coordinators will reach you back instantly.
             </p>
           </div>
 
           {conciergeSubmitted ? (
-            <div className="p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-center space-y-3 animate-fade-in">
-              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto animate-bounce" />
+            <div className="p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 dark:text-emerald-400 text-center space-y-3 animate-fade-in">
+              <CheckCircle2 className="w-12 h-12 text-emerald-600 dark:text-emerald-400 mx-auto animate-bounce" />
               <p className="text-base font-bold uppercase tracking-wider">MESSAGE DELIVERED</p>
-              <p className="text-xs text-emerald-300/80 max-w-md mx-auto leading-normal">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300/80 max-w-md mx-auto leading-normal">
                 Your direct prompt has been transmitted to our VIP Concierge terminal. A response coordinator will reach you back via phone or email instantly.
               </p>
             </div>
@@ -2669,44 +2669,44 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">YOUR FULL NAME</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-white/50">YOUR FULL NAME</label>
                   <input
                     type="text"
                     required
                     value={conciergeName}
                     onChange={(e) => setConciergeName(e.target.value)}
                     placeholder="Enter your full name"
-                    className="w-full bg-[#050506] border border-white/10 rounded-xl p-4 text-xs text-white focus:border-[#D4AF37] focus:outline-none transition-all placeholder:text-white/30"
+                    className="w-full bg-gray-50 dark:bg-[#050506] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-xs text-gray-900 dark:text-white focus:border-gray-950 dark:focus:border-[#D4AF37] focus:outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">PHONE / EMAIL CONTACT</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-white/50">PHONE / EMAIL CONTACT</label>
                   <input
                     type="text"
                     required
                     value={conciergeContact}
                     onChange={(e) => setConciergeContact(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-[#050506] border border-white/10 rounded-xl p-4 text-xs text-white focus:border-[#D4AF37] focus:outline-none transition-all placeholder:text-white/30"
+                    className="w-full bg-gray-50 dark:bg-[#050506] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-xs text-gray-900 dark:text-white focus:border-gray-950 dark:focus:border-[#D4AF37] focus:outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-white/30"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-white/50">DETAILED INQUIRY MESSAGE</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-700 dark:text-white/50">DETAILED INQUIRY MESSAGE</label>
                 <textarea
                   required
                   rows={4}
                   value={conciergeMessage}
                   onChange={(e) => setConciergeMessage(e.target.value)}
                   placeholder="Tell us about your custom screening, birthday package, or corporate venue inquiry..."
-                  className="w-full bg-[#050506] border border-white/10 rounded-xl p-4 text-xs text-white focus:border-[#D4AF37] focus:outline-none transition-all resize-none placeholder:text-white/30"
+                  className="w-full bg-gray-50 dark:bg-[#050506] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-xs text-gray-900 dark:text-white focus:border-gray-950 dark:focus:border-[#D4AF37] focus:outline-none transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-white/30"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-4 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-lg shadow-[#D4AF37]/10 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-gray-950 hover:bg-black text-white dark:bg-[#D4AF37] dark:hover:bg-[#E5C158] dark:text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2"
               >
                 <Mail className="w-4 h-4" />
                 <span>DELIVER MESSAGE</span>
@@ -2719,46 +2719,46 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
 
 
       {/* PREMIUM CORPORATE FOOTER */}
-      <footer className="bg-[#050506] border-t border-white/5 py-16 px-6 md:px-12 text-white/40 text-xs">
+      <footer className="bg-white dark:bg-[#050506] border-t border-gray-200 dark:border-white/5 py-16 px-6 md:px-12 text-gray-600 dark:text-white/40 text-xs transition-colors">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-10">
           
           {/* Left Block */}
           <div className="space-y-4 text-left">
             <CineVenueLogo size="lg" />
-            <p className="text-white/70 font-medium text-xs flex items-center gap-2">
-              <Phone className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+            <p className="text-gray-800 dark:text-white/70 font-medium text-xs flex items-center gap-2">
+              <Phone className="w-4 h-4 text-gray-700 dark:text-[#D4AF37] flex-shrink-0" />
               <span>Concierge Direct: +91 84658 70811</span>
             </p>
-            <p className="text-white/50 text-xs font-light flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+            <p className="text-gray-600 dark:text-white/50 text-xs font-light flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-gray-700 dark:text-[#D4AF37] flex-shrink-0" />
               <span>Guntur, Andhra Pradesh, India — 522001</span>
             </p>
-            <p className="pt-4 text-[10px] tracking-wide text-white/40 font-sans">
+            <p className="pt-4 text-[10px] tracking-wide text-gray-500 dark:text-white/40 font-sans">
               © 2026 CineVenue Private Capital. All rights reserved.
             </p>
-            <p className="text-[9px] text-[#D4AF37]/70 uppercase tracking-widest font-mono">
+            <p className="text-[9px] text-gray-500 dark:text-[#D4AF37]/70 uppercase tracking-widest font-mono">
               Designed by ATS
             </p>
           </div>
 
           {/* Right Block */}
           <div className="flex flex-col items-end gap-6 self-stretch md:self-auto text-right">
-            <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-white/80 font-medium uppercase tracking-wider text-[11px]">
-              <a href="/privacy" className="hover:text-[#D4AF37] transition-colors">Privacy Statement</a>
+            <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-gray-700 dark:text-white/80 font-medium uppercase tracking-wider text-[11px]">
+              <a href="/privacy" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">Privacy Statement</a>
               <span>•</span>
-              <a href="/terms" className="hover:text-[#D4AF37] transition-colors">Terms & Conditions</a>
+              <a href="/terms" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">Terms & Conditions</a>
               <span>•</span>
-              <a href="/refund-policy" className="hover:text-[#D4AF37] transition-colors">Refund Policy</a>
+              <a href="/refund-policy" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">Refund Policy</a>
               <span>•</span>
-              <a href="/cookie-policy" className="hover:text-[#D4AF37] transition-colors">Cookie Policy</a>
+              <a href="/cookie-policy" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">Cookie Policy</a>
               <span>•</span>
-              <a href="/user-agreement" className="hover:text-[#D4AF37] transition-colors">User Agreement</a>
+              <a href="/user-agreement" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">User Agreement</a>
               <span>•</span>
-              <a href="#services" className="hover:text-[#D4AF37] transition-colors">About CineVenue</a>
+              <a href="#services" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">About CineVenue</a>
               <span>•</span>
-              <a href="#contact-concierge" className="hover:text-[#D4AF37] transition-colors">Concierge Contact</a>
+              <a href="#contact-concierge" className="hover:text-black dark:hover:text-[#D4AF37] transition-colors">Concierge Contact</a>
               <span>•</span>
-              <a href="#inquiry" className="hover:text-[#D4AF37] text-[#D4AF37] transition-colors font-bold">Host Your Screen</a>
+              <a href="#inquiry" className="hover:text-black dark:hover:text-[#D4AF37] text-gray-950 dark:text-[#D4AF37] transition-colors font-bold">Host Your Screen</a>
             </div>
           </div>
         </div>
