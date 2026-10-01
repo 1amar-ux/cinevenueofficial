@@ -2,13 +2,31 @@ import { Movie, Theatre, Testimonial, Event, CineCoinsUserWallet, CineCoinsSetti
 
 export const INITIAL_MOVIES: Movie[] = [
   {
+    title: "Coolie",
+    genre: "Action / Thriller",
+    lang: "Telugu",
+    additionalLanguages: ["Tamil", "Hindi"],
+    certification: "UA16+",
+    rating: "9.1",
+    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
+    duration: "2h 45m",
+    releaseYear: 2026
+  },
+  {
     title: "Don't Trouble the Trouble",
     genre: "Comedy / Drama",
     lang: "Telugu",
     certification: "UA13+",
     rating: "8.4",
     img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
+    duration: "2h 15m",
+    releaseYear: 2026
   },
   {
     title: "Doraemon the Movie: New Nobita and the...",
@@ -17,7 +35,24 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "U",
     rating: "8.8",
     img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=vV_CqGfN5iI",
+    duration: "1h 44m",
+    releaseYear: 2026
+  },
+  {
+    title: "Doraemon: Castle of the Undersea Devil",
+    genre: "Animation / Adventure",
+    lang: "Telugu",
+    certification: "U",
+    rating: "8.8",
+    img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
+    poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=vV_CqGfN5iI",
+    duration: "1h 41m",
+    releaseYear: 2026
   },
   {
     title: "Sigma",
@@ -26,7 +61,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "7.9",
     img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=1kVK0MZlbI4",
+    duration: "2h 32m",
+    releaseYear: 2026
   },
   {
     title: "Thellakaagitham",
@@ -35,7 +74,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "8.1",
     img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
+    duration: "2h 10m",
+    releaseYear: 2026
   },
   {
     title: "Baththa",
@@ -44,7 +87,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA13+",
     rating: "8.0",
     img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&q=75",
-    langKey: "tamil"
+    poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&q=75",
+    langKey: "tamil",
+    trailerUrl: "https://www.youtube.com/watch?v=qeVfT2i_2kM",
+    duration: "2h 28m",
+    releaseYear: 2026
   },
   {
     title: "Verity",
@@ -53,7 +100,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "A",
     rating: "7.8",
     img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&q=75",
-    langKey: "english"
+    poster: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&q=75",
+    langKey: "english",
+    trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
+    duration: "2h 05m",
+    releaseYear: 2026
   },
   {
     title: "The Paradise",
@@ -62,7 +113,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "A",
     rating: "8.6",
     img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
+    duration: "2h 40m",
+    releaseYear: 2026
   },
   {
     title: "Avengers Endgame: Encore",
@@ -72,7 +127,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "9.2",
     img: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
+    duration: "3h 02m",
+    releaseYear: 2026
   },
   {
     title: "Heart of the Beast",
@@ -81,7 +140,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "8.3",
     img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=601&q=75",
-    langKey: "english"
+    poster: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=601&q=75",
+    langKey: "english",
+    trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
+    duration: "2h 18m",
+    releaseYear: 2026
   },
   {
     title: "Resident Evil",
@@ -91,7 +154,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "A",
     rating: "7.7",
     img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=601&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=601&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=4q6UacW8N9I",
+    duration: "1h 58m",
+    releaseYear: 2026
   },
   {
     title: "Sub-Inspector Yugandhar",
@@ -100,7 +167,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "8.5",
     img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=601&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=601&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=1kVK0MZlbI4",
+    duration: "2h 35m",
+    releaseYear: 2026
   },
   {
     title: "Sanchari",
@@ -109,7 +180,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA13+",
     rating: "7.9",
     img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=601&q=75",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=601&q=75",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
+    duration: "2h 12m",
+    releaseYear: 2026
   },
   {
     title: "Kalki 2898 AD",
@@ -119,7 +194,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "8.9",
     img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
+    duration: "3h 01m",
+    releaseYear: 2026
   },
   {
     title: "Devara",
@@ -129,7 +208,11 @@ export const INITIAL_MOVIES: Movie[] = [
     certification: "UA16+",
     rating: "8.2",
     img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=70",
-    langKey: "telugu"
+    poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=70",
+    langKey: "telugu",
+    trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
+    duration: "2h 58m",
+    releaseYear: 2026
   }
 ];
 

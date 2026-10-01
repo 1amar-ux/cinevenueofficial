@@ -37,36 +37,26 @@ export default function MovieDetails() {
       movieList[0];
 
     // Ensure sample trailers exist if not configured and no trailerUrl provided
-    if (found && (!found.videos || found.videos.length === 0) && !found.trailerUrl) {
+    if (found && (!found.videos || found.videos.length === 0)) {
+      const initialMatch = INITIAL_MOVIES.find((m) => m.title.toLowerCase() === found.title?.toLowerCase());
+      const validTrailer = found.trailerUrl || initialMatch?.trailerUrl || "https://www.youtube.com/watch?v=bC36d8e3bb0";
+      const trailerVidId = validTrailer.includes("watch?v=") ? validTrailer.split("watch?v=")[1]?.split("&")[0] : "bC36d8e3bb0";
+
       found.videos = [
         {
           id: `vid-${found.title}-trailer`,
           movieId: found.id || found.title,
           type: "TRAILER",
           title: `${found.title} — Official Theatrical Trailer`,
-          youtubeVideoId: "dQw4w9WgXcQ",
-          youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-          thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+          youtubeVideoId: trailerVidId,
+          youtubeUrl: validTrailer,
+          thumbnailUrl: `https://img.youtube.com/vi/${trailerVidId}/hqdefault.jpg`,
           language: found.lang || found.language || "Telugu",
           displayOrder: 1,
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        },
-        {
-          id: `vid-${found.title}-teaser`,
-          movieId: found.id || found.title,
-          type: "TEASER",
-          title: `${found.title} — Official Teaser 1`,
-          youtubeVideoId: "dQw4w9WgXcQ",
-          youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-          thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-          language: found.lang || found.language || "Telugu",
-          displayOrder: 2,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        }
       ];
     }
 

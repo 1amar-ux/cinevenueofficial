@@ -6,26 +6,94 @@ import { authorize } from "../../middleware/authorize";
 
 const router = Router();
 
-// 1. Get Shows (filter by movieId, theatreId, date)
+// Helper to resolve Asia/Kolkata date boundaries
+function parseKolkataDateRange(dateStr?: string) {
+  const targetDate = dateStr ? String(dateStr).trim() : "Today";
+  const now = new Date();
+  const kolkataFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const todayKolkata = kolkataFormatter.format(now);
+
+  let formattedDate = todayKolkata;
+  if (targetDate.toLowerCase() === "today") {
+    formattedDate = todayKolkata;
+  } else if (targetDate.toLowerCase() === "tomorrow") {
+    const tomorrowMs = now.getTime() + 24 * 60 * 60 * 1000;
+    formattedDate = kolkataFormatter.format(new Date(tomorrowMs));
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    formattedDate = targetDate;
+  }
+
+  const startOfDay = new Date(`${formattedDate}T00:00:00+05:30`);
+  const endOfDay = new Date(`${formattedDate}T23:59:59.999+05:30`);
+  return { formattedDate, startOfDay, endOfDay };
+}
+
+// 1. Get Shows (filter by movieId, movieTitle, city, theatreId, date)
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { movieId, theatreId, date } = req.query;
+    const { movieId, movieTitle, theatreId, theatreName, date, city, cityId } = req.query;
 
-    let dateFilter = {};
-    if (date) {
-      const startOfDay = new Date(String(date));
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(String(date));
-      endOfDay.setHours(23, 59, 59, 999);
-      dateFilter = { startTime: { gte: startOfDay, lte: endOfDay } };
+    const { formattedDate, startOfDay, endOfDay } = parseKolkataDateRange(date as string);
+
+    // Resolve Movie
+    let finalMovieId = movieId ? String(movieId) : undefined;
+    if (finalMovieId) {
+      const mv = await prisma.movie.findFirst({
+        where: {
+          OR: [
+            { id: finalMovieId },
+            { title: { equals: finalMovieId, mode: "insensitive" } }
+          ]
+        }
+      });
+      if (mv) finalMovieId = mv.id;
+    } else if (movieTitle) {
+      const mv = await prisma.movie.findFirst({
+        where: { title: { equals: String(movieTitle), mode: "insensitive" } }
+      });
+      if (mv) finalMovieId = mv.id;
     }
+
+    // Resolve Theatre
+    let finalTheatreId = theatreId ? String(theatreId) : undefined;
+    if (finalTheatreId) {
+      const th = await prisma.theatre.findFirst({
+        where: {
+          OR: [
+            { id: finalTheatreId },
+            { name: { equals: finalTheatreId, mode: "insensitive" } }
+          ]
+        }
+      });
+      if (th) finalTheatreId = th.id;
+    } else if (theatreName) {
+      const th = await prisma.theatre.findFirst({
+        where: { name: { equals: String(theatreName), mode: "insensitive" } }
+      });
+      if (th) finalTheatreId = th.id;
+    }
+
+    const targetCity = (city || cityId) ? String(city || cityId).trim() : undefined;
+    const isAllCities = !targetCity || targetCity.toLowerCase() === "all cities" || targetCity.toLowerCase() === "all";
 
     const shows = await prisma.show.findMany({
       where: {
-        ...(movieId ? { movieId: String(movieId) } : {}),
-        ...(theatreId ? { theatreId: String(theatreId) } : {}),
-        ...dateFilter,
-        status: "ACTIVE"
+        ...(finalMovieId ? { movieId: finalMovieId } : {}),
+        ...(finalTheatreId ? { theatreId: finalTheatreId } : {}),
+        startTime: { gte: startOfDay, lte: endOfDay },
+        status: "ACTIVE",
+        theatre: {
+          status: "ACTIVE",
+          ...(!isAllCities ? { city: { equals: targetCity, mode: "insensitive" } } : {})
+        },
+        screen: {
+          status: "ACTIVE"
+        }
       },
       include: {
         movie: { select: { id: true, title: true, posterUrl: true, duration: true } },
@@ -35,10 +103,160 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
       orderBy: { startTime: "asc" }
     });
 
+    // Group eligible shows by theatre
+    const theatreMap = new Map<string, any>();
+    for (const s of shows) {
+      if (!s.theatre) continue;
+      const tId = s.theatre.id;
+      if (!theatreMap.has(tId)) {
+        theatreMap.set(tId, {
+          theatreId: s.theatre.id,
+          theatreName: s.theatre.name,
+          cityId: s.theatre.city,
+          city: s.theatre.city,
+          address: s.theatre.address,
+          shows: []
+        });
+      }
+
+      const st = new Date(s.startTime);
+      const timeSlot = st.toLocaleTimeString("en-US", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      });
+
+      theatreMap.get(tId).shows.push({
+        showId: s.id,
+        screenId: s.screenId,
+        screenName: s.screen?.name,
+        showStartAt: s.startTime.toISOString(),
+        showEndAt: s.endTime.toISOString(),
+        timeSlot,
+        language: s.language,
+        format: s.format,
+        showStatus: s.status,
+        bookingEligible: true,
+        bookingBlockedReason: "NONE"
+      });
+    }
+
+    const groupedTheatres = Array.from(theatreMap.values()).sort((a, b) =>
+      a.theatreName.localeCompare(b.theatreName)
+    );
+
     return res.json({
       success: true,
       count: shows.length,
-      data: { shows }
+      data: {
+        shows,
+        theatres: groupedTheatres,
+        movieId: finalMovieId,
+        city: targetCity,
+        date: formattedDate
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Dedicated Contract Endpoint: GET /theatres-and-showtimes
+router.get("/theatres-and-showtimes", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { movieId, movieTitle, city, cityId, date } = req.query;
+    const { formattedDate, startOfDay, endOfDay } = parseKolkataDateRange(date as string);
+
+    let finalMovieId = movieId ? String(movieId) : undefined;
+    if (finalMovieId) {
+      const mv = await prisma.movie.findFirst({
+        where: {
+          OR: [
+            { id: finalMovieId },
+            { title: { equals: finalMovieId, mode: "insensitive" } }
+          ]
+        }
+      });
+      if (mv) finalMovieId = mv.id;
+    } else if (movieTitle) {
+      const mv = await prisma.movie.findFirst({
+        where: { title: { equals: String(movieTitle), mode: "insensitive" } }
+      });
+      if (mv) finalMovieId = mv.id;
+    }
+
+    const targetCity = (city || cityId) ? String(city || cityId).trim() : undefined;
+    const isAllCities = !targetCity || targetCity.toLowerCase() === "all cities" || targetCity.toLowerCase() === "all";
+
+    const shows = await prisma.show.findMany({
+      where: {
+        ...(finalMovieId ? { movieId: finalMovieId } : {}),
+        startTime: { gte: startOfDay, lte: endOfDay },
+        status: "ACTIVE",
+        theatre: {
+          status: "ACTIVE",
+          ...(!isAllCities ? { city: { equals: targetCity, mode: "insensitive" } } : {})
+        },
+        screen: {
+          status: "ACTIVE"
+        }
+      },
+      include: {
+        movie: { select: { id: true, title: true, posterUrl: true, duration: true } },
+        theatre: { select: { id: true, name: true, city: true, address: true } },
+        screen: { select: { id: true, name: true, capacity: true } }
+      },
+      orderBy: { startTime: "asc" }
+    });
+
+    const theatreMap = new Map<string, any>();
+    for (const s of shows) {
+      if (!s.theatre) continue;
+      const tId = s.theatre.id;
+      if (!theatreMap.has(tId)) {
+        theatreMap.set(tId, {
+          theatreId: s.theatre.id,
+          theatreName: s.theatre.name,
+          cityId: s.theatre.city,
+          city: s.theatre.city,
+          shows: []
+        });
+      }
+
+      const st = new Date(s.startTime);
+      const timeSlot = st.toLocaleTimeString("en-US", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      });
+
+      theatreMap.get(tId).shows.push({
+        showId: s.id,
+        screenId: s.screenId,
+        screenName: s.screen?.name,
+        showStartAt: s.startTime.toISOString(),
+        showEndAt: s.endTime.toISOString(),
+        showStatus: s.status,
+        timeSlot,
+        bookingEligible: true,
+        bookingBlockedReason: "NONE"
+      });
+    }
+
+    const theatres = Array.from(theatreMap.values()).sort((a, b) =>
+      a.theatreName.localeCompare(b.theatreName)
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        movieId: finalMovieId,
+        cityId: targetCity,
+        date: formattedDate,
+        theatres
+      }
     });
   } catch (error) {
     next(error);

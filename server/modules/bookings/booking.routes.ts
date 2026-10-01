@@ -9,8 +9,8 @@ const router = Router();
 // 1. Lock Seats
 router.post("/lock-seats", authenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { showId, seatIds } = req.body;
-    const result = await bookingService.lockSeats(showId, seatIds, req.user!.userId);
+    const { showId, seatIds, selectedCity } = req.body;
+    const result = await bookingService.lockSeats(showId, seatIds, req.user!.userId, selectedCity);
     return res.json({
       success: true,
       message: "Seats locked for 5 minutes",

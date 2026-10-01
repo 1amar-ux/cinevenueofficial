@@ -9,7 +9,7 @@ const LOCK_TTL_SECONDS = 600; // 10 minutes default hold
 
 export class BookingService {
   // 1. Atomic Seat Lock with POS Verification & Hold
-  public async lockSeats(showId: string, showSeatIds: string[], userId: string) {
+  public async lockSeats(showId: string, showSeatIds: string[], userId: string, selectedCity?: string) {
     if (!showSeatIds || showSeatIds.length === 0) {
       throw new ValidationError("At least one seat must be selected");
     }
@@ -19,6 +19,15 @@ export class BookingService {
       include: { theatre: { include: { posIntegration: true } } }
     });
     if (!show) throw new NotFoundError("Show", showId);
+
+    // City validation (AC-MTS-16)
+    if (selectedCity && selectedCity !== "All Cities") {
+      const normCity = selectedCity.trim().toLowerCase();
+      const theatreCity = (show.theatre?.city || "").trim().toLowerCase();
+      if (theatreCity && !theatreCity.includes(normCity) && !normCity.includes(theatreCity)) {
+        throw new ValidationError("CITY_MISMATCH: Show does not belong to the selected city.");
+      }
+    }
 
     // If POS Integration is active for this theatre, verify live availability & request POS hold
     let posHoldId: string | undefined;

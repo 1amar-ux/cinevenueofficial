@@ -248,6 +248,7 @@ export default function AdminLayout() {
   const [newMovieDuration, setNewMovieDuration] = useState("");
   const [newMoviePoster, setNewMoviePoster] = useState("");
   const [newMovieTrailerUrl, setNewMovieTrailerUrl] = useState("");
+  const [newMovieCertification, setNewMovieCertification] = useState("UA16+");
   const [newCouponCode, setNewCouponCode] = useState("");
   const [newCouponDiscount, setNewCouponDiscount] = useState("");
   const [newCouponMin, setNewCouponMin] = useState("");
@@ -497,15 +498,20 @@ export default function AdminLayout() {
     e.preventDefault();
     if (!newMovieTitle.trim()) return;
     const trailer = newMovieTrailerUrl.trim();
+    const movieId = `MOV-${String(movies.length + 1).padStart(3, "0")}`;
     const added: Movie = {
+      id: movieId,
       title: newMovieTitle.trim(),
       genre: newMovieGenre || "Action/Thriller",
-      lang: newMovieLang || "Hindi",
-      langKey: (newMovieLang || "Hindi").toLowerCase().slice(0, 2),
-      duration: newMovieDuration || "152 min",
-      rating: "4.8",
-      img: newMoviePoster || "https://picsum.photos/400/600?random=" + Math.floor(Math.random() * 50),
-      trailerUrl: trailer || undefined,
+      lang: newMovieLang || "Telugu",
+      langKey: (newMovieLang || "Telugu").toLowerCase().slice(0, 2),
+      duration: newMovieDuration || "2h 45m",
+      rating: "8.5",
+      certification: newMovieCertification || "UA16+",
+      img: newMoviePoster || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+      poster: newMoviePoster || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+      trailerUrl: trailer || "https://www.youtube.com/watch?v=bC36d8e3bb0",
+      releaseYear: 2026,
     };
 
     if (trailer) {
@@ -514,7 +520,7 @@ export default function AdminLayout() {
       added.videos = [
         {
           id: `vid-${newMovieTitle.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}-trailer`,
-          movieId: newMovieTitle.trim(),
+          movieId: movieId,
           type: "TRAILER",
           title: `${newMovieTitle.trim()} — Official Theatrical Trailer`,
           youtubeUrl: parsed.normalizedUrl || trailer,
@@ -538,9 +544,10 @@ export default function AdminLayout() {
     setNewMovieDuration("");
     setNewMoviePoster("");
     setNewMovieTrailerUrl("");
-    showToast(`Added movie '${added.title}' to system directory!`);
+    setNewMovieCertification("UA16+");
+    showToast(`Created movie master record [${movieId}] for '${added.title}'!`);
     setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie record: ${added.title}` },
+      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie master record [${movieId}]: ${added.title}` },
       ...auditLogs
     ]);
   };
@@ -1663,6 +1670,27 @@ export default function AdminLayout() {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold uppercase text-text-secondary">Certification</label>
+                        <select
+                          value={newMovieCertification}
+                          onChange={(e) => setNewMovieCertification(e.target.value)}
+                          className="bg-black/60 border border-white/10 px-2 py-1.5 rounded-lg focus:outline-none focus:border-gold text-[10px] text-white"
+                        >
+                          <option value="U">U (Universal)</option>
+                          <option value="UA13+">UA13+</option>
+                          <option value="UA16+">UA16+</option>
+                          <option value="A">A (Adults Only)</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold uppercase text-text-secondary">Assigned ID</label>
+                        <div className="bg-white/[0.04] border border-gold/30 px-2 py-1.5 rounded-lg font-mono text-gold text-[10px] font-bold flex items-center justify-center">
+                          MOV-{String(movies.length + 1).padStart(3, "0")}
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-[9px] font-bold uppercase text-text-secondary">Poster URL (Optional)</label>
                       <input
@@ -1706,7 +1734,7 @@ export default function AdminLayout() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {movies
                         .filter((m) => m.title.toLowerCase().includes(movieFilter.toLowerCase()))
-                        .map((m) => {
+                        .map((m, idx) => {
                           const videoCount = m.videos?.length || 0;
                           const currentStatus = m.releaseStatus || "NOW_SHOWING";
 
@@ -1715,8 +1743,18 @@ export default function AdminLayout() {
                               <div className="flex gap-3">
                                 <img src={m.img || m.poster} className="w-20 h-28 object-cover rounded-xl shrink-0 border border-white/10" alt={m.title} />
                                 <div className="space-y-1.5 flex-1 min-w-0">
-                                  <h4 className="font-bold text-white text-xs truncate">{m.title}</h4>
-                                  <p className="text-[10px] text-text-secondary font-mono">{m.genre} • {m.lang}</p>
+                                  <div className="flex items-center gap-1.5">
+                                    <h4 className="font-bold text-white text-xs truncate">{m.title}</h4>
+                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 shrink-0">
+                                      {m.id || `MOV-${String(idx + 1).padStart(3, "0")}`}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-text-secondary font-mono">
+                                    <span className="px-1.5 py-0.2 rounded bg-white/10 text-white text-[9px] font-bold mr-1">
+                                      {m.certification || "UA"}
+                                    </span>
+                                    {m.genre} • {m.lang}
+                                  </p>
                                   
                                   {/* Release status pill */}
                                   <div className="pt-1">

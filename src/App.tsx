@@ -609,7 +609,7 @@ export default function App() {
           rating: String(m.rating || '4.5'),
           releaseDate: m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '2026-09-01',
           status: m.isActive === false ? 'Upcoming' : (m.status === 'NOW_SHOWING' ? 'Now Showing' : (m.status || 'Now Showing')),
-          trailerUrl: m.trailerUrl || '',
+          trailerUrl: m.trailerUrl || (INITIAL_MOVIES.find(im => im.title.toLowerCase() === (m.title || '').toLowerCase())?.trailerUrl || 'https://www.youtube.com/watch?v=bC36d8e3bb0'),
           cast: Array.isArray(m.cast) ? m.cast : (typeof m.cast === 'string' ? m.cast.split(',') : []),
           director: m.director || '',
           isSpotlight: idx === 0,
