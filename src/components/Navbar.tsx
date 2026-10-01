@@ -79,7 +79,7 @@ export default function Navbar({
   const userInitials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#0A0A0B]/95 backdrop-blur-md border-b border-white/10 w-full shadow-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0A0A0B]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 w-full shadow-xs dark:shadow-2xl">
       {/* Top Navbar Row */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-4">
         
@@ -95,7 +95,7 @@ export default function Navbar({
                   window.location.href = "/";
                 }
               }}
-              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold text-amber-200 hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
+              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold text-amber-800 dark:text-amber-200 hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
               title="Back to previous page"
               aria-label="Back to previous page"
             >
@@ -112,18 +112,18 @@ export default function Navbar({
           {/* District Location Selector Pill */}
           <button
             onClick={onOpenLocation}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 hover:border-gold/40 transition-all group cursor-pointer text-left shadow-sm"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-gray-200 dark:border-white/10 hover:border-gold/40 transition-all group cursor-pointer text-left shadow-xs dark:shadow-sm"
             title="Choose your City / Location"
           >
             <MapPin className="w-4 h-4 text-gold shrink-0 group-hover:scale-110 transition-transform" />
             <div className="flex flex-col">
               <div className="flex items-center gap-1">
-                <span className="text-xs sm:text-[13px] font-bold text-white max-w-[110px] sm:max-w-[130px] truncate leading-tight">
+                <span className="text-xs sm:text-[13px] font-bold text-gray-900 dark:text-white max-w-[110px] sm:max-w-[130px] truncate leading-tight">
                   {selectedCity === "All Cities" ? "Select City" : selectedCity}
                 </span>
-                <ChevronDown className="w-3 h-3 text-white/50 group-hover:text-gold transition-colors" />
+                <ChevronDown className="w-3 h-3 text-gray-400 dark:text-white/50 group-hover:text-gold transition-colors" />
               </div>
-              <span className="text-[10px] text-white/50 leading-none truncate max-w-[110px]">
+              <span className="text-[10px] text-gray-500 dark:text-white/50 leading-none truncate max-w-[110px]">
                 {stateSubtitle}
               </span>
             </div>
@@ -131,12 +131,12 @@ export default function Navbar({
         </div>
 
         {/* Center: District Navigation Capsule Bar */}
-        <div className="hidden lg:flex items-center gap-1 bg-[#151518] p-1 rounded-full border border-white/10 shadow-inner">
+        <div className="hidden lg:flex items-center gap-1 bg-gray-100 dark:bg-[#151518] p-1 rounded-full border border-gray-200 dark:border-white/10 shadow-inner">
           <button
             onClick={() => {
               window.location.href = "/#home";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-white/70 hover:text-white hover:bg-white/5"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5"
           >
             For you
           </button>
@@ -145,7 +145,7 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#movies";
             }}
-            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-white text-black shadow-md"
+            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-gray-900 text-white dark:bg-white dark:text-black shadow-md"
           >
             Movies
           </button>
@@ -154,7 +154,7 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#theatres";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-white/70 hover:text-white hover:bg-white/5"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5"
           >
             Dining / Theatres
           </button>
@@ -164,12 +164,12 @@ export default function Navbar({
               window.location.href = "/events";
             }}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
-              isEventsLive ? "text-white/70 hover:text-white hover:bg-white/5" : "text-rose-400"
+              isEventsLive ? "text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5" : "text-rose-500 dark:text-rose-400"
             }`}
           >
             <span>Events</span>
             {!isEventsLive && (
-              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold">OFF</span>
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 font-bold">OFF</span>
             )}
           </button>
 
@@ -178,12 +178,12 @@ export default function Navbar({
               window.location.href = "/productions";
             }}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
-              isFilmProductionLive ? "text-white/70 hover:text-white hover:bg-white/5" : "text-rose-400"
+              isFilmProductionLive ? "text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5" : "text-rose-500 dark:text-rose-400"
             }`}
           >
             <span>Productions</span>
             {!isFilmProductionLive && (
-              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold">OFF</span>
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 font-bold">OFF</span>
             )}
           </button>
 
@@ -192,9 +192,9 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins();
               else window.location.href = "/cinecoins";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-amber-400 hover:text-amber-300 hover:bg-white/5 flex items-center gap-1"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-gray-200/70 dark:hover:bg-white/5 flex items-center gap-1"
           >
-            <Coins className="w-3 h-3 text-amber-400" />
+            <Coins className="w-3 h-3 text-amber-500 dark:text-amber-400" />
             <span>CineCoins</span>
           </button>
         </div>
@@ -205,13 +205,13 @@ export default function Navbar({
           {/* Top Search Input */}
           {setSearchQuery && (
             <div className="hidden xl:flex items-center relative w-64">
-              <Search className="w-3.5 h-3.5 text-white/40 absolute left-3 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-gray-400 dark:text-white/40 absolute left-3 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search events, movies, venues..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/[0.06] hover:bg-white/[0.08] focus:bg-black/80 border border-white/10 focus:border-gold/50 rounded-full pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none transition-all"
+                className="w-full bg-gray-100 hover:bg-gray-200/70 focus:bg-white dark:bg-white/[0.06] dark:hover:bg-white/[0.08] dark:focus:bg-black/80 border border-gray-300 dark:border-white/10 focus:border-gold/60 dark:focus:border-gold/50 rounded-full pl-9 pr-3 py-1.5 text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none transition-all shadow-xs dark:shadow-none"
               />
             </div>
           )}
@@ -227,7 +227,7 @@ export default function Navbar({
               {!isSuperAdmin && matchTheatreAdmin && (
                 <button
                   onClick={() => onOpenTheatreDashboard(matchTheatreAdmin.theatreId)}
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 text-purple-300 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500 hover:text-white transition-all cursor-pointer shadow-md"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/40 bg-purple-500/10 text-purple-600 dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500 hover:text-white transition-all cursor-pointer shadow-md"
                   title="Theatre Management Workspace"
                 >
                   <Sliders className="w-3 h-3" />
@@ -238,7 +238,7 @@ export default function Navbar({
               {!isSuperAdmin && !matchTheatreAdmin && matchEventOrganizer && (
                 <button
                   onClick={() => onOpenEventDashboard(matchEventOrganizer.id)}
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-300 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500 hover:text-white transition-all cursor-pointer shadow-md"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500 hover:text-white transition-all cursor-pointer shadow-md"
                   title="Event Organizer Workspace"
                 >
                   <Calendar className="w-3 h-3" />
@@ -257,7 +257,7 @@ export default function Navbar({
 
               {/* Profile Avatar Pill */}
               <div 
-                className="flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-gray-200 dark:border-white/10 px-2.5 py-1 rounded-full cursor-pointer transition-all shadow-xs dark:shadow-none"
                 onClick={() => {
                   if (onOpenAccount) onOpenAccount();
                   else window.location.href = "/account";
@@ -267,7 +267,7 @@ export default function Navbar({
                 <div className="w-6 h-6 rounded-full bg-gold text-black flex items-center justify-center text-[11px] font-extrabold shadow-sm">
                   {userInitials || <User className="w-3 h-3 text-black" />}
                 </div>
-                <span className="hidden md:inline text-[11px] font-semibold text-white/90 max-w-[90px] truncate">
+                <span className="hidden md:inline text-[11px] font-semibold text-gray-800 dark:text-white/90 max-w-[90px] truncate">
                   {userEmail.split("@")[0]}
                 </span>
                 <button
@@ -275,7 +275,7 @@ export default function Navbar({
                     e.stopPropagation();
                     onLogout();
                   }}
-                  className="text-white/40 hover:text-red-400 cursor-pointer transition-colors p-0.5 ml-0.5 bg-transparent border-none"
+                  className="text-gray-400 hover:text-red-500 dark:text-white/40 dark:hover:text-red-400 cursor-pointer transition-colors p-0.5 ml-0.5 bg-transparent border-none"
                   title="Secure Logout"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -286,7 +286,7 @@ export default function Navbar({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onOpenAuth?.("signin")}
-                className="hidden sm:inline-flex rounded-full border border-white/15 bg-transparent px-3.5 py-1.5 text-xs font-semibold text-white/80 hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
+                className="hidden sm:inline-flex rounded-full border border-gray-300 dark:border-white/15 bg-transparent px-3.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-white/80 hover:border-gold/60 hover:text-gold dark:hover:border-gold/40 dark:hover:text-gold transition-all cursor-pointer"
               >
                 Sign In
               </button>
@@ -302,7 +302,7 @@ export default function Navbar({
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1.5 text-white/80 hover:text-gold rounded-lg hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
+            className="lg:hidden p-1.5 text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -313,11 +313,11 @@ export default function Navbar({
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-4 pt-4 border-t border-white/10 flex flex-col gap-2.5 pb-2 animate-fade-in">
+        <div className="lg:hidden mt-4 pt-4 border-t border-gray-200 dark:border-white/10 flex flex-col gap-2.5 pb-2 animate-fade-in bg-white dark:bg-[#0A0A0B] px-2 rounded-b-2xl shadow-xl dark:shadow-none">
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/#services"; }} 
-            className={`text-left px-3 py-2 text-xs uppercase font-semibold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isMovieBookingLive ? "text-white/80 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            className={`text-left px-3 py-2 text-xs uppercase font-semibold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isMovieBookingLive ? "text-gray-800 hover:text-gold dark:text-white/80 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -325,13 +325,13 @@ export default function Navbar({
               <span>Movie Ticket Booking</span>
             </div>
             {!isMovieBookingLive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
             )}
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/productions"; }} 
-            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isFilmProductionLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isFilmProductionLive ? "text-amber-600 hover:text-gold dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -339,13 +339,13 @@ export default function Navbar({
               <span>Film Productions & 24 Crafts</span>
             </div>
             {!isFilmProductionLive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
             )}
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/events"; }} 
-            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isEventsLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isEventsLive ? "text-amber-600 hover:text-gold dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -353,7 +353,7 @@ export default function Navbar({
               <span>Events & Organization</span>
             </div>
             {!isEventsLive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
             )}
           </button>
           <button 
@@ -362,16 +362,16 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins(); 
               else window.location.href = "/cinecoins"; 
             }} 
-            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isCineCoinsLive ? "text-amber-400 hover:text-gold" : "text-rose-400 hover:text-rose-300"
+            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
+              isCineCoinsLive ? "text-amber-600 hover:text-gold dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
-              <Coins className="w-4 h-4 text-amber-400" />
+              <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>CineCoins Loyalty & Rewards</span>
             </div>
             {!isCineCoinsLive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">OFFLINE</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40">OFFLINE</span>
             )}
           </button>
           <button 
@@ -380,29 +380,29 @@ export default function Navbar({
               if (onOpenAccount) onOpenAccount(); 
               else window.location.href = "/account"; 
             }} 
-            className="text-left px-3 py-2 text-xs uppercase font-semibold text-white/80 hover:text-gold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center gap-2"
+            className="text-left px-3 py-2 text-xs uppercase font-semibold text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center gap-2"
           >
             <User className="w-4 h-4 text-gold" />
             <span>My Account & Orders</span>
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); handleScroll("contact"); }} 
-            className="text-left px-3 py-2 text-xs uppercase font-semibold text-white/80 hover:text-gold hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+            className="text-left px-3 py-2 text-xs uppercase font-semibold text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
           >
             Contact Concierge
           </button>
 
           {/* Mobile Theme Selection Row */}
-          <div className="flex items-center justify-between px-3 py-2.5 border-t border-white/10 mt-1">
-            <span className="text-[11px] uppercase tracking-wider font-bold text-text-secondary">App Theme</span>
+          <div className="flex items-center justify-between px-3 py-2.5 border-t border-gray-200 dark:border-white/10 mt-1">
+            <span className="text-[11px] uppercase tracking-wider font-bold text-gray-600 dark:text-text-secondary">App Theme</span>
             <ThemeToggle variant="segmented" />
           </div>
 
           {!userEmail && (
-            <div className="flex items-center gap-2 pt-2 border-t border-white/10 sm:hidden">
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-white/10 sm:hidden">
               <button
                 onClick={() => { setMobileMenuOpen(false); onOpenAuth?.("signin"); }}
-                className="flex-1 rounded-full border border-white/15 bg-transparent py-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/80 hover:border-gold/40 hover:text-gold transition-all"
+                className="flex-1 rounded-full border border-gray-300 dark:border-white/15 bg-transparent py-2 text-center text-[10px] uppercase tracking-[0.2em] text-gray-700 dark:text-white/80 hover:border-gold/60 hover:text-gold dark:hover:border-gold/40 dark:hover:text-gold transition-all"
               >
                 Sign In
               </button>

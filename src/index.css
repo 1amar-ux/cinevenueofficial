@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 /* @import url... */
 
 :root,
@@ -37,34 +39,34 @@ html[data-theme="dark"],
 
 html[data-theme="light"],
 .light {
-  --cv-bg: #F8F9FB;
-  --cv-bg-secondary: #EDF0F5;
+  --cv-bg: #F8F8F6;
+  --cv-bg-secondary: #F3F3F1;
   --cv-surface: #FFFFFF;
-  --cv-surface-secondary: #F3F4F8;
+  --cv-surface-secondary: #F3F3F1;
   --cv-card: #FFFFFF;
   --cv-card-elevated: #FFFFFF;
-  --cv-card-hover: #F8F9FD;
+  --cv-card-hover: #F8F8F6;
   
-  --cv-text-primary: #111827;
+  --cv-text-primary: #111111;
   --cv-text-secondary: #4B5563;
   --cv-text-muted: #6B7280;
   
-  --cv-border: rgba(0, 0, 0, 0.1);
-  --cv-border-subtle: rgba(0, 0, 0, 0.05);
-  --cv-border-strong: rgba(0, 0, 0, 0.2);
+  --cv-border: #E5E5E5;
+  --cv-border-subtle: #EEEEEE;
+  --cv-border-strong: #D1D5DB;
   
   --cv-input-bg: #FFFFFF;
-  --cv-input-border: rgba(0, 0, 0, 0.16);
+  --cv-input-border: #E5E5E5;
   
-  --cv-nav-bg: rgba(255, 255, 255, 0.94);
+  --cv-nav-bg: rgba(255, 255, 255, 0.96);
   --cv-modal-bg: #FFFFFF;
   --cv-dropdown-bg: #FFFFFF;
   
-  --cv-gold: #B8860B;
-  --cv-gold-light: #D4AF37;
-  --cv-gold-dim: #8B6508;
-  --cv-gold-glow: rgba(184, 134, 11, 0.15);
-  --cv-accent: #B8860B;
+  --cv-gold: #D4AF37;
+  --cv-gold-light: #E5C158;
+  --cv-gold-dim: #A6801E;
+  --cv-gold-glow: rgba(212, 175, 55, 0.15);
+  --cv-accent: #D4AF37;
 }
 
 @theme {

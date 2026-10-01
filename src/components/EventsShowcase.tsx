@@ -450,18 +450,18 @@ export default function EventsShowcase({
   }
 
   return (
-    <section id="exclusive-events" className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-white/5 bg-gradient-to-b from-transparent to-[#0A0A0B]/50 space-y-12">
+    <section id="exclusive-events" className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5 bg-transparent dark:bg-gradient-to-b dark:from-transparent dark:to-[#0A0A0B]/50 space-y-12">
       
       {/* VIP MEMBER ACCESS BAR (IF NOT LOGGED IN) */}
       {!userEmail && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-[#D4AF37]/10 via-[#D4AF37]/5 to-transparent border border-[#D4AF37]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
+        <div className="p-4 rounded-xl bg-[#FAF9F5] dark:bg-gradient-to-r dark:from-[#D4AF37]/10 dark:via-[#D4AF37]/5 dark:to-transparent border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37]">
+            <div className="p-2.5 rounded-lg bg-[#D4AF37]/15 dark:bg-[#D4AF37]/20 border border-[#D4AF37]/30 dark:border-[#D4AF37]/40 text-[#D4AF37]">
               <Lock className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="text-sm font-bold text-white uppercase tracking-wider">CineVenue VIP Member Access</h5>
-              <p className="text-xs text-white/70">Sign in to unlock priority seat allocations, VIP passes & instant ticket confirmation across all sub-websites.</p>
+              <h5 className="text-sm font-bold text-gray-950 dark:text-white uppercase tracking-wider">CineVenue VIP Member Access</h5>
+              <p className="text-xs text-gray-600 dark:text-white/70">Sign in to unlock priority seat allocations, VIP passes & instant ticket confirmation across all sub-websites.</p>
             </div>
           </div>
           <button
@@ -483,10 +483,10 @@ export default function EventsShowcase({
             </span>
           </div>
 
-          <h2 className="font-display text-4xl md:text-5xl font-light tracking-tight text-text-primary italic">
+          <h2 className="font-display text-4xl md:text-5xl font-light tracking-tight text-gray-950 dark:text-text-primary italic">
             Event <span className="text-gold not-italic font-normal">Booking</span>
           </h2>
-          <p className="text-xs text-text-muted mt-2 max-w-xl">
+          <p className="text-xs text-gray-600 dark:text-text-muted mt-2 max-w-xl">
             Register for celebrity meetups, custom fan-premieres, and immersive concerts occurring live in high-end theater venues near you.
           </p>
         </div>
@@ -498,10 +498,10 @@ export default function EventsShowcase({
             placeholder="Search events, venues..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 focus:border-gold/50 rounded-lg pl-4 pr-10 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none transition-all duration-200"
+            className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/20 focus:border-gold dark:focus:border-gold/50 rounded-lg pl-4 pr-10 py-2.5 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none transition-all duration-200 shadow-xs"
             id="event-search-input"
           />
-          <Plus className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4 rotate-45" />
+          <Plus className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-text-muted w-4 h-4 rotate-45 pointer-events-none" />
         </div>
       </div>
 
@@ -510,8 +510,8 @@ export default function EventsShowcase({
         <CineVenueLiveBanner placement="events_top" />
       </div>
 
-       {/* EVENT BOOKING CATEGORIES & QUICK ACTIONS BAR */}
-      <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl text-left">
+       {/* EVENT BOOKING CATEGORIES & QUICK ACTIONS BAR (INTENTIONALLY DARK BRANDED IN BOTH THEMES) */}
+      <div className="bg-[#0B0C10] border border-white/15 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl text-left">
         <div className="flex flex-wrap items-center gap-2">
           {[
             { id: "All Categories", label: "ALL EVENTS", icon: "🎟️" },
@@ -528,7 +528,7 @@ export default function EventsShowcase({
               className={`px-3.5 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedCategoryFilter === cat.id
                   ? "bg-gold text-black shadow-lg shadow-gold/20 font-black"
-                  : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:text-white"
+                  : "bg-white/10 hover:bg-white/15 text-white/90 border border-white/15 hover:text-white"
               }`}
             >
               <span>{cat.icon}</span>
@@ -540,7 +540,7 @@ export default function EventsShowcase({
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowOrganizerHub(true)}
-            className="px-4 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/40 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-sm"
           >
             <QrCode className="w-4 h-4 text-purple-400" />
             <span>Organizer Hub & Gate Terminal</span>
@@ -550,12 +550,12 @@ export default function EventsShowcase({
 
 
       {/* CURATED GENRES & CATEGORIES FILTER BAR */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-white/5 text-left">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-gray-200 dark:border-white/5 text-left">
         <div className="space-y-1">
-          <h4 className="font-display text-xl font-light text-white italic">
+          <h4 className="font-display text-xl font-light text-gray-950 dark:text-white italic">
             Curated <span className="text-[#D4AF37] not-italic font-normal">Genres</span>
           </h4>
-          <p className="text-xs text-white/50 font-light">
+          <p className="text-xs text-gray-600 dark:text-white/50 font-light">
             Browse vetted VIP concerts, local celebrity galas, and live standup comedies across Andhra Pradesh and Telangana.
           </p>
         </div>
@@ -568,7 +568,7 @@ export default function EventsShowcase({
               className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border ${
                 selectedGenreFilter === genre
                   ? "bg-[#D4AF37] text-black border-[#D4AF37] shadow-md font-extrabold" 
-                  : "bg-white/5 text-white/70 hover:bg-white/10 border-white/5"
+                  : "bg-white dark:bg-white/5 text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 border-gray-200 dark:border-white/5 shadow-xs"
               }`}
             >
               {genre}
@@ -578,9 +578,9 @@ export default function EventsShowcase({
       </div>
 
       {/* EVENT TICKET PASS TYPES FILTER & ACTIVE INVENTORY */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 text-left">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 text-left shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-white/60 uppercase font-mono tracking-wider flex items-center gap-1.5 mr-2">
+          <span className="text-xs font-bold text-gray-700 dark:text-white/60 uppercase font-mono tracking-wider flex items-center gap-1.5 mr-2">
             <Ticket className="w-4 h-4 text-gold" /> Filter By Pass Type:
           </span>
           {(['ALL', 'FREE', 'PAID', 'HYBRID'] as const).map(type => (
@@ -590,13 +590,13 @@ export default function EventsShowcase({
               className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
                 selectedEventTypeFilter === type
                   ? type === 'FREE'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
                     : type === 'HYBRID'
-                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40 shadow-sm'
+                    ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/40 shadow-sm'
                     : type === 'PAID'
-                    ? 'bg-gold/20 text-gold border border-gold/40 shadow-sm'
-                    : 'bg-white/20 text-white border border-white/30 shadow-sm'
-                  : 'bg-white/5 text-white/50 hover:text-white border border-white/5'
+                    ? 'bg-gold/20 text-gold-dim dark:text-gold border border-gold/40 shadow-sm'
+                    : 'bg-gray-950 text-white dark:bg-white/20 dark:text-white border border-gray-950 dark:border-white/30 shadow-sm'
+                  : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/50 hover:text-gray-950 dark:hover:text-white border border-gray-200 dark:border-white/5'
               }`}
             >
               {type === 'ALL' ? 'All Tiers' : `${type} Passes`}
@@ -605,7 +605,7 @@ export default function EventsShowcase({
         </div>
 
         <div className="text-right">
-          <span className="text-[10px] font-mono text-white/40 uppercase">
+          <span className="text-[10px] font-mono text-gray-500 dark:text-white/40 uppercase">
             {filteredEvents.length} Active {filteredEvents.length === 1 ? 'Event' : 'Events'} Available
           </span>
         </div>
@@ -613,7 +613,7 @@ export default function EventsShowcase({
 
       {/* EVENTS GRID */}
       {filteredEvents.length === 0 ? (
-        <div className="text-center py-20 bg-white/[0.01] border border-white/5 rounded-2xl max-w-xl mx-auto backdrop-blur-sm" id="empty-events-state">
+        <div className="text-center py-20 bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 rounded-2xl max-w-xl mx-auto backdrop-blur-sm shadow-sm" id="empty-events-state">
           <Calendar className="w-10 h-10 text-text-muted mx-auto mb-4 opacity-40" />
           <p className="text-text-secondary font-medium mb-1">No upcoming events listed in {selectedCity}.</p>
           <p className="text-text-muted text-xs">Switch your city selection or clear the search filter to explore others.</p>
@@ -634,7 +634,7 @@ export default function EventsShowcase({
               <div
                 key={evt.id}
                 id={`event-card-${evt.id}`}
-                className="group bg-[#0D0D0F] border border-white/5 rounded-xl overflow-hidden hover:border-gold/50 hover:shadow-lg hover:shadow-gold/5 -translate-y-0 hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full text-left"
+                className="group bg-white dark:bg-[#0D0D0F] border border-gray-200 dark:border-white/5 rounded-xl overflow-hidden hover:border-gold/50 hover:shadow-xl dark:hover:shadow-gold/5 -translate-y-0 hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full text-left shadow-sm"
               >
                 {/* Image & Badges */}
                 <div className="relative aspect-[16/10] overflow-hidden bg-dark-card/40">
@@ -643,7 +643,7 @@ export default function EventsShowcase({
                     alt={evt.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   
                   {/* Badges & Status */}
                   <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
@@ -676,42 +676,42 @@ export default function EventsShowcase({
                     <span className="text-[9px] font-bold text-gold uppercase tracking-widest block font-mono">
                       {new Date(evt.date).toLocaleDateString("en-IN", { weekday: 'short', day: 'numeric', month: 'short' })} • {evt.time}
                     </span>
-                    <h3 className="font-display text-xl text-text-primary tracking-wide group-hover:text-gold transition-colors duration-200">
+                    <h3 className="font-display text-xl text-gray-950 dark:text-text-primary tracking-wide group-hover:text-gold transition-colors duration-200">
                       {evt.title}
                     </h3>
-                    <p className="text-text-secondary text-xs line-clamp-3 leading-relaxed">
+                    <p className="text-gray-600 dark:text-text-secondary text-xs line-clamp-3 leading-relaxed">
                       {evt.description}
                     </p>
                   </div>
 
-                  <div className="pt-5 mt-5 border-t border-white/5 flex items-center justify-between">
+                  <div className="pt-5 mt-5 border-t border-gray-150 dark:border-white/5 flex items-center justify-between">
                     <div>
                       {evt.comingSoon ? (
                         <div>
-                          <span className="text-[9px] text-amber-400 uppercase tracking-wider block font-semibold font-mono">PRE-REGISTRATION</span>
-                          <span className="text-xs font-display font-medium text-amber-300">
+                          <span className="text-[9px] text-amber-500 dark:text-amber-400 uppercase tracking-wider block font-semibold font-mono">PRE-REGISTRATION</span>
+                          <span className="text-xs font-display font-medium text-amber-600 dark:text-amber-300">
                             Pre-Notify Active
                           </span>
                         </div>
                       ) : isFreeEvent ? (
                         <div>
-                          <span className="text-[9px] text-emerald-400 uppercase tracking-wider block font-semibold font-mono">100% FREE ADMISSION</span>
-                          <span className="text-base font-display font-bold text-emerald-400">
-                            ₹0 <span className="text-xs text-text-secondary font-normal">Free RSVP</span>
+                          <span className="text-[9px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block font-semibold font-mono">100% FREE ADMISSION</span>
+                          <span className="text-base font-display font-bold text-emerald-600 dark:text-emerald-400">
+                            ₹0 <span className="text-xs text-gray-500 dark:text-text-secondary font-normal">Free RSVP</span>
                           </span>
                         </div>
                       ) : isHybridEvent ? (
                         <div>
-                          <span className="text-[9px] text-purple-400 uppercase tracking-wider block font-semibold font-mono">HYBRID (FREE & VIP)</span>
-                          <span className="text-base font-display font-medium text-text-primary">
+                          <span className="text-[9px] text-purple-600 dark:text-purple-400 uppercase tracking-wider block font-semibold font-mono">HYBRID (FREE & VIP)</span>
+                          <span className="text-base font-display font-medium text-gray-950 dark:text-text-primary">
                             ₹0 onwards
                           </span>
                         </div>
                       ) : (
                         <div>
-                          <span className="text-[9px] text-text-muted uppercase tracking-wider block font-mono">PASSES START AT</span>
-                          <span className="text-base font-display font-medium text-text-primary">
-                            ₹{minPrice} <span className="text-xs text-text-secondary">onwards</span>
+                          <span className="text-[9px] text-gray-500 dark:text-text-muted uppercase tracking-wider block font-mono">PASSES START AT</span>
+                          <span className="text-base font-display font-medium text-gray-950 dark:text-text-primary">
+                            ₹{minPrice} <span className="text-xs text-gray-500 dark:text-text-secondary">onwards</span>
                           </span>
                         </div>
                       )}
@@ -721,7 +721,7 @@ export default function EventsShowcase({
                       <button
                         type="button"
                         onClick={(e) => handleShareEvent(e, evt.id)}
-                        className="p-2 bg-white/5 border border-white/10 text-text-primary hover:text-gold hover:border-gold/30 rounded-lg transition-all cursor-pointer flex items-center justify-center relative"
+                        className="p-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-text-primary hover:text-gold dark:hover:text-gold hover:border-gold/30 rounded-lg transition-all cursor-pointer flex items-center justify-center relative"
                         title="Share Event Link"
                       >
                         <Share2 className="w-4 h-4" />
@@ -744,12 +744,12 @@ export default function EventsShowcase({
                         }}
                         className={`px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer ${
                           evt.comingSoon
-                            ? "bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border border-amber-500/20"
+                            ? "bg-amber-500/10 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-black border border-amber-500/20"
                             : (evt.isActive === false || !isEventBookingSystemActive)
-                            ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                            ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30"
                             : isFreeEvent
                             ? "bg-emerald-500 hover:bg-emerald-400 text-black border border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20"
-                            : "bg-white/5 group-hover:bg-gold border border-white/10 group-hover:border-gold text-text-primary group-hover:text-black"
+                            : "bg-gray-100 hover:bg-gold dark:bg-white/5 dark:hover:bg-gold border border-gray-200 dark:border-white/10 hover:border-gold text-gray-900 dark:text-text-primary hover:text-black dark:hover:text-black"
                         }`}
                       >
                         <span>
@@ -775,16 +775,16 @@ export default function EventsShowcase({
       )}
 
       {/* TRENDING EXPERIENCES, BROWSE CATEGORIES, GEMINI CONCIERGE & REGIONAL UPDATES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t border-white/5 text-left">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t border-gray-200 dark:border-white/5 text-left">
         {/* LEFT 2 COLUMNS: TRENDING EXPERIENCES & BROWSE CATEGORIES */}
         <div className="lg:col-span-2 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* TRENDING LIVE EXPERIENCES */}
-            <div className="bg-white/[0.01] border border-white/5 p-5 rounded-xl space-y-4">
-              <h5 className="text-xs font-bold text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
+            <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-5 rounded-xl space-y-4 shadow-xs">
+              <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
                 <Activity className="w-4 h-4 text-[#D4AF37]" /> Trending Live Experiences
               </h5>
-              <p className="text-xs text-white/50 font-light leading-relaxed">
+              <p className="text-xs text-gray-600 dark:text-white/50 font-light leading-relaxed">
                 Ticket demand is currently surging across our regional portals. Here is a live feed of active pass bookings over the last 15 minutes.
               </p>
               <div className="space-y-3 pt-1">
@@ -793,23 +793,23 @@ export default function EventsShowcase({
                   { title: "Hyderabad Standup Fest", location: "Shilpakala Hall", dynamicStat: "⚡ 110 tickets secured in last 10 min" },
                   { title: "Alan Walker Sunburn Arena", location: "Gachibowli Stadium", dynamicStat: "🔥 320 VIP passes sold in last 1 hr" }
                 ].map((item, i) => (
-                  <div key={i} className="p-3 rounded bg-white/[0.02] border border-white/5 space-y-1">
+                  <div key={i} className="p-3 rounded-lg bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">{item.title}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{item.title}</span>
                       <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
                     </div>
-                    <p className="text-[10px] text-white/40">{item.location}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-white/40">{item.location}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* BROWSE LIVE CATEGORIES */}
-            <div className="bg-white/[0.01] border border-white/5 p-5 rounded-xl space-y-4">
-              <h5 className="text-xs font-bold text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
+            <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-5 rounded-xl space-y-4 shadow-xs">
+              <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
                 <Sparkle className="w-4 h-4 text-[#D4AF37]" /> Browse Live Categories
               </h5>
-              <p className="text-xs text-white/50 font-light leading-relaxed">
+              <p className="text-xs text-gray-600 dark:text-white/50 font-light leading-relaxed">
                 Filter and browse high-society event passes based on premium regional categories:
               </p>
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -821,8 +821,8 @@ export default function EventsShowcase({
                   { name: "Fan-Premieres", count: "5 Shows" },
                   { name: "Sufi Evenings", count: "3 Shows" }
                 ].map((cat, i) => (
-                  <div key={i} className="p-2.5 rounded bg-white/5 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/30 border border-white/5 flex items-center justify-between transition-all cursor-pointer">
-                    <span className="text-xs font-medium text-white/80">{cat.name}</span>
+                  <div key={i} className="p-2.5 rounded-lg bg-gray-50 hover:bg-amber-50/50 dark:bg-white/5 dark:hover:bg-[#D4AF37]/5 border border-gray-200 dark:border-white/5 hover:border-[#D4AF37]/30 flex items-center justify-between transition-all cursor-pointer">
+                    <span className="text-xs font-medium text-gray-800 dark:text-white/80">{cat.name}</span>
                     <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
                   </div>
                 ))}
@@ -834,13 +834,13 @@ export default function EventsShowcase({
         {/* RIGHT COLUMN: CINEVENUE VICINITY CONCIERGE & REGIONAL UPDATES */}
         <div className="space-y-6 flex flex-col justify-between">
           {/* CINEVENUE VICINITY CONCIERGE */}
-          <div className="bg-gradient-to-b from-white/[0.02] to-white/[0.01] border border-[#D4AF37]/20 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-[#D4AF37]/2">
+          <div className="bg-white dark:bg-gradient-to-b dark:from-white/[0.02] dark:to-white/[0.01] border border-gray-200 dark:border-[#D4AF37]/20 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                <h5 className="text-xs font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/5">
+                <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#D4AF37] animate-pulse" />
                   <span className="font-cinevenue normal-case text-sm tracking-normal">
-                    <span className="text-white">Cine</span>
+                    <span className="text-gray-950 dark:text-white">Cine</span>
                     <span className="text-[#D4AF37]">Venue</span>
                   </span> Vicinity Concierge
                 </h5>
@@ -856,11 +856,11 @@ export default function EventsShowcase({
                     key={i} 
                     className={`p-3 rounded-xl leading-relaxed space-y-1 ${
                       msg.role === "user" 
-                        ? "bg-white/5 border border-white/5 text-white/90 text-right ml-6" 
-                        : "bg-[#D4AF37]/5 border border-[#D4AF37]/10 text-white/90 mr-6"
+                        ? "bg-gray-100 border border-gray-200 text-gray-900 dark:bg-white/5 dark:border-white/5 dark:text-white/90 text-right ml-6" 
+                        : "bg-amber-50/80 border border-amber-200/60 text-gray-900 dark:bg-[#D4AF37]/5 dark:border-[#D4AF37]/10 dark:text-white/90 mr-6"
                     }`}
                   >
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 block pb-0.5 text-left">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-white/40 block pb-0.5 text-left">
                       {msg.role === "user" ? "You (VIP Guest)" : "CineVenue Concierge Agent"}
                     </span>
                     <p className="whitespace-pre-line text-left">{msg.text}</p>
@@ -868,9 +868,9 @@ export default function EventsShowcase({
                 ))}
 
                 {conciergeLoading && (
-                  <div className="p-3 rounded-xl bg-[#D4AF37]/5 border border-[#D4AF37]/10 mr-6 space-y-2 text-left">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 block">CineVenue Concierge Agent</span>
-                    <div className="flex items-center gap-2 text-white/60 font-mono text-[10px]">
+                  <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-[#D4AF37]/5 border border-amber-200 dark:border-[#D4AF37]/10 mr-6 space-y-2 text-left">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-white/40 block">CineVenue Concierge Agent</span>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-white/60 font-mono text-[10px]">
                       <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-ping" />
                       Querying venue database...
                     </div>
@@ -879,7 +879,7 @@ export default function EventsShowcase({
               </div>
             </div>
 
-            <form onSubmit={handleConciergeSubmit} className="space-y-2 pt-2 border-t border-white/5">
+            <form onSubmit={handleConciergeSubmit} className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/5">
               <div className="relative">
                 <input
                   type="text"
@@ -887,12 +887,12 @@ export default function EventsShowcase({
                   value={conciergePrompt}
                   onChange={(e) => setConciergePrompt(e.target.value)}
                   disabled={conciergeLoading}
-                  className="w-full pl-3 pr-10 py-2.5 bg-white/5 hover:bg-white/10 focus:bg-white/10 text-xs text-white placeholder-white/40 border border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55"
+                  className="w-full pl-3 pr-10 py-2.5 bg-gray-50 hover:bg-white focus:bg-white dark:bg-white/5 dark:hover:bg-white/10 dark:focus:bg-white/10 text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder-white/40 border border-gray-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55"
                 />
                 <button 
                   type="submit"
                   disabled={conciergeLoading || !conciergePrompt.trim()}
-                  className="absolute right-2 top-1.5 p-1.5 text-[#D4AF37] hover:text-white disabled:text-white/25 transition-colors cursor-pointer"
+                  className="absolute right-2 top-1.5 p-1.5 text-[#D4AF37] hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
@@ -901,21 +901,21 @@ export default function EventsShowcase({
           </div>
 
           {/* LIVE REGIONAL UPDATES */}
-          <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl space-y-2.5">
+          <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-4 rounded-xl space-y-2.5 shadow-xs">
             <h5 className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5" /> Live Regional Updates
             </h5>
-            <div className="space-y-2 font-mono text-[9px] text-white/50 leading-relaxed uppercase">
-              <div className="flex items-start gap-1.5 border-b border-white/5 pb-1.5">
+            <div className="space-y-2 font-mono text-[9px] text-gray-700 dark:text-white/50 leading-relaxed uppercase">
+              <div className="flex items-start gap-1.5 border-b border-gray-150 dark:border-white/5 pb-1.5">
                 <span className="text-rose-400">●</span>
                 <p>HYDERABAD METRO EXTRA LATE TRAIN RUNS FOR SUNBURN ARENA ON OCT 12TH.</p>
               </div>
-              <div className="flex items-start gap-1.5 border-b border-white/5 pb-1.5">
+              <div className="flex items-start gap-1.5 border-b border-gray-150 dark:border-white/5 pb-1.5">
                 <span className="text-[#D4AF37]">●</span>
                 <p>GUNTUR POLICE GRANTS SINGLE-WINDOW CLEARANCE FOR MIDNIGHT OPEN-AIR ACOUSTIC NIGHT.</p>
               </div>
               <div className="flex items-start gap-1.5">
-                <span className="text-emerald-400 font-bold">●</span>
+                <span className="text-emerald-500 font-bold">●</span>
                 <p>PRASADS IMAX ANNOUNCES PRE-RELEASE CELEBRITY VIP LOUNGE ACCESS SLOTS.</p>
               </div>
             </div>
@@ -932,19 +932,19 @@ export default function EventsShowcase({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.25 }}
-              className="bg-[#0D0D10] border border-white/10 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl text-left my-8"
+              className="bg-white dark:bg-[#0D0D10] border border-gray-200 dark:border-white/10 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl text-left my-8"
               id="event-detail-modal"
             >
               {/* Header Cover Banner */}
               <div className="relative aspect-[21/9] md:aspect-[24/8] overflow-hidden bg-dark-card/20">
                 <img src={selectedEvent.image} alt={selectedEvent.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D10] via-[#0D0D10]/50 to-black/45" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 
                 {/* Share Event Button */}
                 <button
                   type="button"
                   onClick={(e) => handleShareEvent(e, selectedEvent.id)}
-                  className="absolute top-4 right-14 p-2 bg-black/60 hover:bg-gold hover:text-black text-text-primary rounded-full transition-all border border-white/10 cursor-pointer relative"
+                  className="absolute top-4 right-14 p-2 bg-black/60 hover:bg-gold hover:text-black text-white rounded-full transition-all border border-white/10 cursor-pointer relative"
                   title="Share Event Link"
                 >
                   <Share2 className="w-4 h-4" />
@@ -958,7 +958,7 @@ export default function EventsShowcase({
                 {/* Back to Events Button */}
                 <button
                   onClick={() => setSelectedEvent(null)}
-                  className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 hover:bg-gold hover:text-black text-text-primary text-xs font-semibold rounded-lg transition-all border border-white/10 cursor-pointer flex items-center gap-1.5 z-10"
+                  className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 hover:bg-gold hover:text-black text-white text-xs font-semibold rounded-lg transition-all border border-white/10 cursor-pointer flex items-center gap-1.5 z-10"
                   id="back-to-events-modal-btn"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -968,7 +968,7 @@ export default function EventsShowcase({
                 {/* Close Button */}
                 <button
                   onClick={() => setSelectedEvent(null)}
-                  className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-gold hover:text-black text-text-primary rounded-full transition-all border border-white/10 cursor-pointer"
+                  className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-gold hover:text-black text-white rounded-full transition-all border border-white/10 cursor-pointer"
                   id="close-event-modal-btn"
                 >
                   <X className="w-4 h-4" />
@@ -979,25 +979,25 @@ export default function EventsShowcase({
                   <span className="text-[10px] font-bold text-gold uppercase tracking-[0.25em] block mb-1">
                     EXCLUSIVE EXPERIENCE • {selectedEvent.city}
                   </span>
-                  <h2 className="text-2xl md:text-3xl font-display font-medium text-text-primary tracking-wide">
+                  <h2 className="text-2xl md:text-3xl font-display font-medium text-white tracking-wide">
                     {selectedEvent.title}
                   </h2>
                 </div>
               </div>
 
               {/* Layout Content */}
-              <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-white/5">
+              <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-white/5">
                 
                 {/* LEFT: INFO & LOGISTICS (3 Cols) */}
                 <div className="lg:col-span-3 p-6 md:p-8 space-y-6">
                   
                   {/* METADATA CHIPS */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-white/[0.01] border border-white/5 p-4 rounded-xl">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-4 rounded-xl">
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-gold shrink-0" />
                       <div>
-                        <span className="text-[9px] text-text-muted block font-semibold uppercase">DATE</span>
-                        <span className="text-xs text-text-primary font-medium">
+                        <span className="text-[9px] text-gray-500 dark:text-text-muted block font-semibold uppercase">DATE</span>
+                        <span className="text-xs text-gray-900 dark:text-text-primary font-medium">
                           {new Date(selectedEvent.date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
@@ -1006,16 +1006,16 @@ export default function EventsShowcase({
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-gold shrink-0" />
                       <div>
-                        <span className="text-[9px] text-text-muted block font-semibold uppercase">TIMING</span>
-                        <span className="text-xs text-text-primary font-medium">{selectedEvent.time}</span>
+                        <span className="text-[9px] text-gray-500 dark:text-text-muted block font-semibold uppercase">TIMING</span>
+                        <span className="text-xs text-gray-900 dark:text-text-primary font-medium">{selectedEvent.time}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 col-span-2 md:col-span-1">
                       <MapPin className="w-5 h-5 text-gold shrink-0" />
                       <div>
-                        <span className="text-[9px] text-text-muted block font-semibold uppercase">VENUE</span>
-                        <span className="text-xs text-text-primary font-medium truncate max-w-[150px] block">{selectedEvent.venueName}</span>
+                        <span className="text-[9px] text-gray-500 dark:text-text-muted block font-semibold uppercase">VENUE</span>
+                        <span className="text-xs text-gray-900 dark:text-text-primary font-medium truncate max-w-[150px] block">{selectedEvent.venueName}</span>
                       </div>
                     </div>
                   </div>
@@ -1023,24 +1023,24 @@ export default function EventsShowcase({
                   {/* DESCRIPTION */}
                   <div className="space-y-2">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-gold">About the Event</h4>
-                    <p className="text-text-secondary text-xs leading-relaxed font-sans text-justify">
+                    <p className="text-gray-600 dark:text-text-secondary text-xs leading-relaxed font-sans text-justify">
                       {selectedEvent.description}
                     </p>
                   </div>
 
                   {/* VENUE FULL ADDRESS */}
-                  <div className="space-y-1.5 bg-white/[0.01] p-4 rounded-xl border border-white/5 text-xs text-text-secondary">
+                  <div className="space-y-1.5 bg-gray-50 dark:bg-white/[0.01] p-4 rounded-xl border border-gray-200 dark:border-white/5 text-xs text-gray-600 dark:text-text-secondary">
                     <div className="flex items-center gap-2 text-gold font-semibold text-[10px] uppercase tracking-wider">
                       <MapPin className="w-4 h-4 text-gold" />
                       <span>Venue Details & Access Coordinates</span>
                     </div>
-                    <p className="font-medium text-text-primary text-xs">{selectedEvent.venueName}</p>
-                    <p className="text-[11px] text-text-muted font-sans leading-normal">{selectedEvent.venueAddress}</p>
+                    <p className="font-medium text-gray-900 dark:text-text-primary text-xs">{selectedEvent.venueName}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-text-muted font-sans leading-normal">{selectedEvent.venueAddress}</p>
                   </div>
 
                   {/* REVIEW RATING TOTAL & TABS */}
-                  <div className="pt-2 border-t border-white/5">
-                    <div className="flex gap-4 border-b border-white/5 pb-2">
+                  <div className="pt-2 border-t border-gray-200 dark:border-white/5">
+                    <div className="flex gap-4 border-b border-gray-200 dark:border-white/5 pb-2">
                       <button
                         onClick={() => setActiveModalTab("booking")}
                         className={`pb-2 text-xs font-bold uppercase tracking-wider relative cursor-pointer ${
@@ -1071,38 +1071,38 @@ export default function EventsShowcase({
                       <div className="mt-4 space-y-4 max-h-[300px] overflow-y-auto pr-1">
                         
                         {/* SUBMIT REVIEW FORM */}
-                        <form onSubmit={handleReviewSubmit} className="bg-white/[0.02] border border-white/5 p-4 rounded-xl space-y-3">
+                        <form onSubmit={handleReviewSubmit} className="bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 p-4 rounded-xl space-y-3">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gold block">
                             ✍️ Submit Your Verified Review
                           </span>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1 text-left">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Your Name</label>
+                              <label className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Your Name</label>
                               <input
                                 type="text"
                                 value={reviewName}
                                 onChange={(e) => setReviewName(e.target.value)}
                                 placeholder="Enter name"
-                                className="w-full bg-black/40 border border-white/10 rounded px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-gold"
+                                className="w-full bg-white dark:bg-black/40 border border-gray-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-text-primary focus:outline-none focus:border-gold"
                                 required
                               />
                             </div>
                             <div className="space-y-1 text-left">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Email Address</label>
+                              <label className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Email Address</label>
                               <input
                                 type="email"
                                 value={reviewEmail}
                                 onChange={(e) => setReviewEmail(e.target.value)}
                                 placeholder="Enter email"
-                                className="w-full bg-black/40 border border-white/10 rounded px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-gold"
+                                className="w-full bg-white dark:bg-black/40 border border-gray-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-text-primary focus:outline-none focus:border-gold"
                                 required
                               />
                             </div>
                           </div>
 
                           <div className="flex items-center gap-4">
-                            <span className="text-[9px] font-bold text-text-muted uppercase">Rating:</span>
+                            <span className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Rating:</span>
                             <div className="flex items-center gap-1">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <button
@@ -1118,19 +1118,19 @@ export default function EventsShowcase({
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[9px] font-bold text-text-muted uppercase">Review Description</label>
+                            <label className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Review Description</label>
                             <textarea
                               rows={2}
                               value={reviewComment}
                               onChange={(e) => setReviewComment(e.target.value)}
                               placeholder="Share your thoughts or booking experience of this luxury event..."
-                              className="w-full bg-black/40 border border-white/10 rounded px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted/65 focus:outline-none focus:border-gold"
+                              className="w-full bg-white dark:bg-black/40 border border-gray-300 dark:border-white/10 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted/65 focus:outline-none focus:border-gold"
                               required
                             />
                           </div>
 
                           {reviewFeedback && (
-                            <p className="text-[10px] text-emerald-400 font-semibold">{reviewFeedback}</p>
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{reviewFeedback}</p>
                           )}
 
                           <button
@@ -1143,23 +1143,23 @@ export default function EventsShowcase({
 
                         {/* REVIEWS LIST */}
                         {(selectedEvent.reviews || []).length === 0 ? (
-                          <div className="text-center py-6 text-text-muted text-xs font-sans">
+                          <div className="text-center py-6 text-gray-500 dark:text-text-muted text-xs font-sans">
                             No reviews have been posted for this event yet. Be the first to share your anticipation!
                           </div>
                         ) : (
                           <div className="space-y-3">
                             {(selectedEvent.reviews || []).map((rev) => (
-                              <div key={rev.id} className="bg-white/[0.01] border border-white/5 p-3 rounded-xl space-y-1.5">
+                              <div key={rev.id} className="bg-gray-50 dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-3 rounded-xl space-y-1.5">
                                 <div className="flex justify-between items-center text-xs font-semibold">
-                                  <span className="text-text-primary">{rev.userName}</span>
-                                  <span className="text-[9px] text-text-muted">{rev.date}</span>
+                                  <span className="text-gray-900 dark:text-text-primary">{rev.userName}</span>
+                                  <span className="text-[9px] text-gray-500 dark:text-text-muted">{rev.date}</span>
                                 </div>
                                 <div className="flex items-center gap-0.5">
                                   {Array.from({ length: 5 }).map((_, i) => (
                                     <Star key={i} className={`w-3 h-3 ${i < rev.rating ? "text-amber-400 fill-amber-400" : "text-text-muted/40"}`} />
                                   ))}
                                 </div>
-                                <p className="text-text-secondary text-xs leading-normal font-sans">{rev.comment}</p>
+                                <p className="text-gray-600 dark:text-text-secondary text-xs leading-normal font-sans">{rev.comment}</p>
                               </div>
                             ))}
                           </div>
@@ -1169,12 +1169,12 @@ export default function EventsShowcase({
 
                     {/* BOOKING TAB REGISTRATION ACCESS */}
                     {activeModalTab === "booking" && !bookingPass && (
-                      <div className="mt-4 p-4 bg-white/[0.02] border border-white/5 rounded-xl text-xs space-y-2">
+                      <div className="mt-4 p-4 bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 rounded-xl text-xs space-y-2">
                         <div className="flex items-center gap-1 text-gold font-semibold uppercase tracking-wider text-[10px]">
                           <Shield className="w-4 h-4 text-gold" />
                           <span>Secure Registration Pass Access</span>
                         </div>
-                        <p className="text-text-secondary leading-relaxed font-sans text-[11px]">
+                        <p className="text-gray-600 dark:text-text-secondary leading-relaxed font-sans text-[11px]">
                           Registration for this event is secured via live digital pass passes. Select your desired pricing tier on the right pane, fill in credentials, and instantly retrieve your Cinema Venue Entry ticket.
                         </p>
                       </div>
@@ -1183,21 +1183,21 @@ export default function EventsShowcase({
                 </div>
 
                 {/* RIGHT: TICKET PRICING & TRANSACTION GATEWAY (2 Cols) */}
-                <div className="lg:col-span-2 p-6 md:p-8 flex flex-col justify-between h-full bg-[#0F0F13]/40">
+                <div className="lg:col-span-2 p-6 md:p-8 flex flex-col justify-between h-full bg-gray-50/70 dark:bg-[#0F0F13]/40">
                   {selectedEvent.comingSoon ? (
                     notifySuccess ? (
                       <div className="space-y-5 animate-fade-in text-center py-10" id="notify-success-container">
-                        <CheckCircle2 className="w-12 h-12 text-amber-400 mx-auto animate-bounce" />
-                        <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest block font-mono">NOTIFY ME CONFIGURED</span>
-                        <h4 className="text-sm font-semibold text-text-primary">Pre-registration Secured!</h4>
-                        <div className="p-4 bg-[#14141A] border border-amber-500/10 rounded-xl text-left text-xs text-text-secondary leading-relaxed font-sans space-y-2">
+                        <CheckCircle2 className="w-12 h-12 text-amber-500 dark:text-amber-400 mx-auto animate-bounce" />
+                        <span className="text-[10px] text-amber-500 dark:text-amber-400 font-bold uppercase tracking-widest block font-mono">NOTIFY ME CONFIGURED</span>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-text-primary">Pre-registration Secured!</h4>
+                        <div className="p-4 bg-white dark:bg-[#14141A] border border-amber-500/20 rounded-xl text-left text-xs text-gray-600 dark:text-text-secondary leading-relaxed font-sans space-y-2 shadow-xs">
                           <p className="text-[11px] leading-relaxed">{notifySuccess}</p>
-                          <p className="text-[10px] text-text-muted italic">Our system has logged your priority alert. You will be notified instantly once the ticket sales counter goes live.</p>
+                          <p className="text-[10px] text-gray-500 dark:text-text-muted italic">Our system has logged your priority alert. You will be notified instantly once the ticket sales counter goes live.</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => setSelectedEvent(null)}
-                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-black rounded text-xs font-bold uppercase tracking-wider cursor-pointer font-sans border-0"
+                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-black rounded text-xs font-bold uppercase tracking-wider cursor-pointer font-sans border-0 shadow-sm"
                         >
                           Close Panel
                         </button>
@@ -1205,47 +1205,47 @@ export default function EventsShowcase({
                     ) : (
                       <div className="space-y-6 flex flex-col justify-between h-full text-left">
                         <div className="space-y-4">
-                          <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-400 border-b border-white/5 pb-2 flex items-center gap-1.5 font-mono">
+                          <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 border-b border-gray-200 dark:border-white/5 pb-2 flex items-center gap-1.5 font-mono">
                             <Sparkles className="w-3.5 h-3.5" />
                             Pre-Notification Alerts Active
                           </h4>
-                          <p className="text-text-secondary text-[11px] leading-relaxed font-sans">
+                          <p className="text-gray-600 dark:text-text-secondary text-[11px] leading-relaxed font-sans">
                             Official ticket bookings for <strong>{selectedEvent.title}</strong> are currently locked but slated to open soon. Pre-register your contact details to unlock immediate alerts as soon as seat allocation commences.
                           </p>
 
                           <form onSubmit={handleNotifyMeSubmit} className="space-y-4 pt-2">
                             <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Full Name</label>
+                              <label className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Full Name</label>
                               <input
                                 type="text"
                                 value={notifyName}
                                 onChange={(e) => setNotifyName(e.target.value)}
                                 placeholder="Enter your full name"
-                                className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-amber-400"
+                                className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none focus:border-amber-400"
                                 required
                               />
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Email Address</label>
+                              <label className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Email Address</label>
                               <input
                                 type="email"
                                 value={notifyEmail}
                                 onChange={(e) => setNotifyEmail(e.target.value)}
                                 placeholder="Enter your email"
-                                className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-amber-400"
+                                className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none focus:border-amber-400"
                                 required
                               />
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Mobile Number (SMS Alerts)</label>
+                              <label className="text-[9px] font-bold text-gray-500 dark:text-text-muted uppercase">Mobile Number (SMS Alerts)</label>
                               <input
                                 type="tel"
                                 value={notifyMobile}
                                 onChange={(e) => setNotifyMobile(e.target.value)}
                                 placeholder="e.g. 9876543210 (Optional)"
-                                className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-amber-400 font-mono"
+                                className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none focus:border-amber-400 font-mono"
                               />
                             </div>
 
@@ -1446,7 +1446,7 @@ export default function EventsShowcase({
                       
                       {/* PRICING SELECTOR */}
                       <div className="space-y-4 text-left">
-                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-gold border-b border-white/5 pb-2">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-gold border-b border-gray-200 dark:border-white/5 pb-2">
                           1. Select Ticket Category & Tier
                         </h4>
 
@@ -1459,23 +1459,23 @@ export default function EventsShowcase({
                               className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer flex justify-between items-center ${
                                 selectedCategory?.name === cat.name
                                   ? "bg-gold/10 border-gold"
-                                  : "bg-white/[0.01] border-white/5 hover:border-white/15"
+                                  : "bg-gray-50 dark:bg-white/[0.01] border-gray-200 dark:border-white/5 hover:border-gold/40 dark:hover:border-white/15"
                               }`}
                               id={`tier-select-btn-${idx}`}
                             >
                               <div className="space-y-0.5">
-                                <span className="text-xs font-bold text-text-primary block">{cat.name}</span>
-                                <span className="text-[9px] text-text-secondary block">
+                                <span className="text-xs font-bold text-gray-900 dark:text-text-primary block">{cat.name}</span>
+                                <span className="text-[9px] text-gray-500 dark:text-text-secondary block">
                                   {cat.availableSeats > 0 ? `🟢 ${cat.availableSeats} passes left` : "🔴 Sold Out"}
                                 </span>
                               </div>
                               <div className="text-right">
                                 {selectedEvent.isPaid === false ? (
-                                  <span className="text-xs font-bold text-emerald-400 block uppercase font-sans">FREE ENTRY</span>
+                                  <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400 block uppercase font-sans">FREE ENTRY</span>
                                 ) : (
                                   <>
                                     <span className="text-xs font-mono text-gold font-bold block">₹{cat.price}</span>
-                                    <span className="text-[8px] text-text-muted block">per pass</span>
+                                    <span className="text-[8px] text-gray-500 dark:text-text-muted block">per pass</span>
                                   </>
                                 )}
                               </div>
@@ -1486,7 +1486,7 @@ export default function EventsShowcase({
 
                       {/* QUANTITY AND CONFIRM DETAILS */}
                       {selectedCategory && (
-                        <form onSubmit={handleBookingSubmit} className="space-y-4 pt-4 border-t border-white/5">
+                        <form onSubmit={handleBookingSubmit} className="space-y-4 pt-4 border-t border-gray-200 dark:border-white/5">
                           <h4 className="text-[10px] font-bold uppercase tracking-wider text-gold">
                             2. Enter Registrant Credentials
                           </h4>
@@ -1494,58 +1494,58 @@ export default function EventsShowcase({
                           {/* Credentials Inputs */}
                           <div className="space-y-3 text-left">
                             <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Your Full Name</label>
+                              <label className="text-[9px] font-bold text-gray-600 dark:text-text-muted uppercase">Your Full Name</label>
                               <input
                                 type="text"
                                 value={bookingName}
                                 onChange={(e) => setBookingName(e.target.value)}
                                 placeholder="e.g. Rohini Deshmukh"
-                                className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-gold"
+                                className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted/50 focus:outline-none focus:border-gold"
                                 required
                               />
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Email Address</label>
+                              <label className="text-[9px] font-bold text-gray-600 dark:text-text-muted uppercase">Email Address</label>
                               <input
                                 type="email"
                                 value={bookingEmail}
                                 onChange={(e) => setBookingEmail(e.target.value)}
                                 placeholder="e.g. rohini@outlook.com"
-                                className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-gold"
+                                className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted/50 focus:outline-none focus:border-gold"
                                 required
                               />
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-text-muted uppercase">Mobile Number</label>
+                              <label className="text-[9px] font-bold text-gray-600 dark:text-text-muted uppercase">Mobile Number</label>
                               <input
                                 type="tel"
                                 value={bookingMobileNumber}
                                 onChange={(e) => setBookingMobileNumber(e.target.value)}
                                 placeholder="e.g. 9876543210"
-                                className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-gold font-mono"
+                                className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted/50 focus:outline-none focus:border-gold font-mono"
                                 required
                               />
                             </div>
 
                             {/* Ticket Quantity Selector */}
                             {selectedEvent.isPaid !== false && (
-                              <div className="flex items-center justify-between bg-white/[0.01] border border-white/5 p-2 rounded-lg">
-                                <span className="text-[10px] font-bold text-text-secondary uppercase font-mono">Quantity Passes</span>
+                              <div className="flex items-center justify-between bg-gray-50 dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-2 rounded-lg">
+                                <span className="text-[10px] font-bold text-gray-700 dark:text-text-secondary uppercase font-mono">Quantity Passes</span>
                                 <div className="flex items-center gap-2.5">
                                   <button
                                     type="button"
                                     onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
-                                    className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-xs text-text-primary cursor-pointer"
+                                    className="w-6 h-6 rounded bg-gray-200 dark:bg-white/5 hover:bg-gray-300 dark:hover:bg-white/10 border border-gray-300 dark:border-white/10 flex items-center justify-center text-xs text-gray-800 dark:text-text-primary cursor-pointer"
                                   >
                                     -
                                   </button>
-                                  <span className="text-xs font-bold text-text-primary w-4 text-center font-mono">{ticketQuantity}</span>
+                                  <span className="text-xs font-bold text-gray-900 dark:text-text-primary w-4 text-center font-mono">{ticketQuantity}</span>
                                   <button
                                     type="button"
                                     onClick={() => setTicketQuantity(Math.min(selectedCategory.availableSeats, ticketQuantity + 1))}
-                                    className="w-6 h-6 rounded bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-xs text-text-primary cursor-pointer"
+                                    className="w-6 h-6 rounded bg-gray-200 dark:bg-white/5 hover:bg-gray-300 dark:hover:bg-white/10 border border-gray-300 dark:border-white/10 flex items-center justify-center text-xs text-gray-800 dark:text-text-primary cursor-pointer"
                                   >
                                     +
                                   </button>
@@ -1555,10 +1555,10 @@ export default function EventsShowcase({
                           </div>
 
                           {/* GRAND TOTAL PRICING & PAYMENT */}
-                          <div className="bg-white/[0.02] border border-white/5 p-3 rounded-lg flex justify-between items-center text-xs">
-                            <span className="text-text-secondary font-medium">Billed Price:</span>
+                          <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 p-3 rounded-lg flex justify-between items-center text-xs">
+                            <span className="text-gray-600 dark:text-text-secondary font-medium">Billed Price:</span>
                             {selectedEvent.isPaid === false ? (
-                              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
+                              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
                                 FREE PASS (No Payment Required)
                               </span>
                             ) : (
