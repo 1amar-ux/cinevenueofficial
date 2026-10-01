@@ -200,12 +200,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         </div>
 
         {/* Sub-Website Navigation Links beside Sign In */}
-        <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-950 dark:text-white/90">
-          <button onClick={() => navigate("/booking")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
-          <button onClick={() => navigate("/events")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
-          <button onClick={() => navigate("/productions")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎥 Film Production</button>
-          <button onClick={() => navigate("/proposals")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">📢 Brand Publicity</button>
-          <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🪙 CineCoins</button>
+        <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[13px] 2xl:text-sm font-extrabold uppercase tracking-wide text-gray-950 dark:text-white">
+          <button onClick={() => navigate("/booking")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
+          <button onClick={() => navigate("/events")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
+          <button onClick={() => navigate("/productions")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎥 Film Production</button>
+          <button onClick={() => navigate("/proposals")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">📢 Brand Publicity</button>
+          <button onClick={() => navigate("/cinecoins")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🪙 CineCoins</button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -228,7 +228,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
               }, 50);
             }}
-            className="hidden md:inline-flex items-center gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-3.5 py-2 text-[10px] uppercase tracking-[0.2em] font-bold text-gray-950 dark:text-white/80 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer"
+            className="hidden md:inline-flex items-center gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-4 py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap"
           >
             <span>☰</span>
             <span>Menu</span>
@@ -238,13 +238,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="flex items-center gap-2 bg-gray-200/70 dark:bg-white/[0.03] border border-gray-400 dark:border-gold/40 px-3 py-1.5 rounded-full shadow-xs dark:shadow-none">
               <button
                 onClick={() => navigate("/account")}
-                className="flex items-center gap-2 text-[11px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
+                className="flex items-center gap-2 text-xs sm:text-[13px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
                 title={`Logged in as ${userEmail}`}
               >
                 <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
                   <User className="w-3 h-3 text-gold" />
                 </div>
-                <span className="hidden sm:inline max-w-[120px] truncate font-bold text-gray-950 dark:text-text-primary">
+                <span className="hidden sm:inline max-w-[120px] truncate font-extrabold text-gray-950 dark:text-text-primary">
                   {userEmail.split("@")[0]}
                 </span>
               </button>
@@ -262,13 +262,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <>
               <button
                 onClick={() => onOpenAuth?.("signin")}
-                className="hidden sm:inline-flex rounded-full border border-gray-400 dark:border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold text-gray-950 dark:text-white/80 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer"
+                className="hidden sm:inline-flex rounded-full border border-gray-400 dark:border-white/15 bg-transparent px-4 py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap"
               >
                 Sign In
               </button>
               <button
                 onClick={() => onOpenAuth?.("signup")}
-                className="hidden sm:inline-flex rounded-full bg-gold px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-black font-bold hover:bg-gold-light shadow-md shadow-gold/15 transition-all cursor-pointer border-none"
+                className="hidden sm:inline-flex rounded-full bg-gold px-4 py-2 text-xs sm:text-[13px] uppercase tracking-wider text-black font-extrabold hover:bg-gold-light shadow-md shadow-gold/15 transition-all cursor-pointer border-none whitespace-nowrap"
               >
                 Sign Up
               </button>
