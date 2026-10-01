@@ -334,14 +334,14 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-[#D4AF37]/5 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
         
         <div className="space-y-6 relative z-10 max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-50 dark:bg-white/5 border border-amber-200 dark:border-white/10 rounded-full text-[10px] font-bold tracking-widest text-amber-800 dark:text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
-            <Award className="w-3.5 h-3.5 animate-spin text-gold" style={{ animationDuration: "12s" }} />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full text-[10px] font-bold tracking-widest text-gray-700 dark:text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
+            <Award className="w-3.5 h-3.5 animate-spin text-gray-700 dark:text-gold" style={{ animationDuration: "12s" }} />
             The Standard of Indian Cinema & Entertainment
           </div>
 
           <h1 className="font-display text-[clamp(2.2rem,9vw,4.5rem)] md:text-7xl font-light tracking-tight text-gray-950 dark:text-white italic leading-[1.08] break-words">
             Redefining Luxury in <br className="hidden md:inline" />
-            <span className="text-[#D4AF37] not-italic font-normal">Cinema & Corporate Entertainment</span>
+            <span className="text-gray-950 dark:text-[#D4AF37] not-italic font-normal">Cinema & Corporate Entertainment</span>
           </h1>
 
           <p className="text-sm md:text-base text-gray-600 dark:text-white/60 font-light max-w-2xl mx-auto leading-relaxed">
@@ -353,14 +353,14 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               onClick={() => navigate("/booking")}
               className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-gray-950 hover:bg-black text-white dark:bg-white dark:hover:bg-white/95 dark:text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Ticket className="w-4 h-4 text-gold dark:text-black" />
+              <Ticket className="w-4 h-4 text-white dark:text-black" />
               Book Movie Tickets
             </button>
             <a
               href="#services"
               className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-white dark:bg-transparent hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-300 dark:border-white/15 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-white/30 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs dark:shadow-none"
             >
-              <Compass className="w-4 h-4 text-[#D4AF37]" />
+              <Compass className="w-4 h-4 text-gray-700 dark:text-[#D4AF37]" />
               Explore Business Divisions
             </a>
           </div>
@@ -370,9 +370,9 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       {/* THE SIX PILLARS SERVICES GRID */}
       <section id="services" className="py-14 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 max-w-[90rem] mx-auto border-t border-gray-200 dark:border-white/5 relative">
         <div className="text-center space-y-3 mb-10">
-          <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.4em] uppercase block">Our Corporate Framework</span>
+          <span className="text-[10px] font-bold text-gray-600 dark:text-[#D4AF37] tracking-[0.4em] uppercase block">Our Corporate Framework</span>
           <h2 className="font-display text-3xl md:text-4xl font-light italic text-gray-950 dark:text-white">
-            The Core <span className="text-[#D4AF37] not-italic font-normal">Sub-Websites & Pillars</span> of CineVenue
+            The Core <span className="text-gray-950 dark:text-[#D4AF37] not-italic font-normal">Sub-Websites & Pillars</span> of CineVenue
           </h2>
           <p className="text-xs text-gray-600 dark:text-white/50 max-w-2xl mx-auto leading-relaxed">
             Operating as an integrated media holding company with six distinct elite sub-website divisions spanning cinema bookings, exclusive live passes, physical production, PR campaigns, and CineCoins loyalty.
@@ -380,7 +380,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <button
             type="button"
             onClick={() => navigate("/services")}
-            className="mx-auto mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-gold/60 dark:border-gold/40 px-5 text-xs font-bold uppercase tracking-[0.16em] text-gold transition hover:bg-gold hover:text-black shadow-xs dark:shadow-none"
+            className="mx-auto mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-gray-900 dark:border-gold/40 px-5 text-xs font-bold uppercase tracking-[0.16em] text-gray-900 dark:text-gold transition hover:bg-gray-900 hover:text-white dark:hover:bg-gold dark:hover:text-black shadow-xs dark:shadow-none"
           >
             View All Services
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -421,7 +421,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 onClick={() => navigate("/booking")}
                 className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
                   (serviceControl?.movieBooking?.status ?? true)
-                    ? "bg-[#D4AF37] hover:bg-[#E5C158] text-black"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-[#D4AF37] dark:hover:bg-[#E5C158] dark:text-black"
                     : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
@@ -434,12 +434,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           {/* Module 2: Event Booking */}
           <div className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg ${
             activeDivision === "live_booking"
-              ? "bg-amber-50/50 dark:bg-[#D4AF37]/5 border-[#D4AF37] shadow-[#D4AF37]/10"
-              : "bg-white dark:bg-white/[0.01] border-gray-200 dark:border-white/5 hover:border-[#D4AF37]/40 dark:hover:border-white/20"
+              ? "bg-gray-100 dark:bg-[#D4AF37]/5 border-gray-400 dark:border-[#D4AF37] shadow-xs"
+              : "bg-white dark:bg-white/[0.01] border-gray-200 dark:border-white/5 hover:border-gray-400 dark:hover:border-white/20"
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-cyan-500/10 flex items-center justify-center text-gray-700 dark:text-cyan-400 border border-gray-200 dark:border-cyan-500/20">
                   <Ticket className="w-5 h-5" />
                 </div>
                 
@@ -455,7 +455,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 )}
               </div>
               <div className="space-y-1.5 text-left">
-                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-[#D4AF37] transition-colors">
+                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-[#D4AF37] transition-colors">
                   Event Booking
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light min-h-[60px]">
@@ -479,7 +479,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 }`}
               >
                 <span>{(serviceControl?.eventBooking?.status ?? true) ? "Explore Live Events" : "Under Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-[#D4AF37]" />
+                <ChevronRight className="w-3 h-3 text-gray-700 dark:text-[#D4AF37]" />
               </button>
             </div>
           </div>
@@ -487,13 +487,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           {/* Module 3: Film Production */}
           <div className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg ${
             activeDivision === "production"
-              ? "bg-amber-50/50 dark:bg-[#D4AF37]/5 border-[#D4AF37] shadow-[#D4AF37]/5"
-              : "bg-white dark:bg-white/[0.01] border-gray-200 dark:border-white/5 hover:border-amber-500/40"
+              ? "bg-gray-100 dark:bg-[#D4AF37]/5 border-gray-400 dark:border-[#D4AF37]"
+              : "bg-white dark:bg-white/[0.01] border-gray-200 dark:border-white/5 hover:border-gray-400"
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-purple-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
-                  <Film className="w-5 h-5 text-gold" />
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-purple-500/20 flex items-center justify-center text-gray-700 dark:text-amber-400 border border-gray-200 dark:border-amber-500/30">
+                  <Film className="w-5 h-5 text-gray-700 dark:text-gold" />
                 </div>
                 
                 {/* Live Status Badge */}
@@ -508,7 +508,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 )}
               </div>
               <div className="space-y-1.5 text-left">
-                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-[#D4AF37] transition-colors">
+                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-[#D4AF37] transition-colors">
                   Film Production
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light min-h-[60px]">
@@ -521,22 +521,22 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 onClick={() => navigate("/productions")}
                 className={`w-full py-2.5 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-95 ${
                   (serviceControl?.filmProduction?.status ?? true)
-                    ? "bg-gradient-to-r from-amber-500 via-gold to-yellow-400 text-black shadow-gold/20"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-gradient-to-r dark:from-amber-500 dark:via-gold dark:to-yellow-400 dark:text-black shadow-none dark:shadow-gold/20"
                     : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{(serviceControl?.filmProduction?.status ?? true) ? "Film Production" : "Under Maintenance"}</span>
-                <ChevronRight className="w-3.5 h-3.5 text-black" />
+                <ChevronRight className="w-3.5 h-3.5 text-white dark:text-black" />
               </button>
             </div>
           </div>
 
           {/* Module 4: Event Management */}
-          <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 hover:border-amber-500/50 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg">
+          <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 hover:border-gray-400 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-amber-500/10 flex items-center justify-center text-gray-700 dark:text-amber-400 border border-gray-200 dark:border-amber-500/20">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 
@@ -552,7 +552,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 )}
               </div>
               <div className="space-y-1.5 text-left">
-                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-amber-400 transition-colors">
                   Event Management & Organization
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light min-h-[60px]">
@@ -565,22 +565,22 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 onClick={() => navigate("/events")}
                 className={`py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md border-none font-bold ${
                   (serviceControl?.eventManagement?.status ?? true)
-                    ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-gradient-to-r dark:from-amber-500 dark:to-amber-600 dark:hover:from-amber-400 dark:hover:to-amber-500 dark:text-black"
                     : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
                 <span>{(serviceControl?.eventManagement?.status ?? true) ? "Events Hub" : "Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-black" />
+                <ChevronRight className="w-3 h-3 text-white dark:text-black" />
               </button>
               <button
                 onClick={() => navigate("/create-event")}
                 className={`py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer font-bold ${
                   (serviceControl?.eventManagement?.status ?? true)
-                    ? "bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white dark:border-white/10 hover:border-amber-400/50"
+                    ? "bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white dark:border-white/10 hover:border-gray-400"
                     : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40"
                 }`}
               >
-                <PlusCircle className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                <PlusCircle className="w-3 h-3 text-gray-700 dark:text-amber-400" />
                 <span>{(serviceControl?.eventManagement?.status ?? true) ? "Create Event" : "Offline"}</span>
               </button>
             </div>
@@ -589,12 +589,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           {/* Module 5: Brand & Media Promotions */}
           <div className={`border rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg ${
             activeDivision === "promotions"
-              ? "bg-emerald-50/50 dark:bg-[#D4AF37]/5 border-[#D4AF37] shadow-[#D4AF37]/5"
+              ? "bg-gray-100 dark:bg-[#D4AF37]/5 border-gray-400 dark:border-[#D4AF37]"
               : "bg-white dark:bg-white/[0.01] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/20"
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-emerald-500/10 flex items-center justify-center text-gray-700 dark:text-emerald-400 border border-gray-200 dark:border-emerald-500/20">
                   <Megaphone className="w-5 h-5" />
                 </div>
                 
@@ -610,7 +610,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 )}
               </div>
               <div className="space-y-1.5 text-left">
-                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-[#D4AF37] transition-colors">
+                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-[#D4AF37] transition-colors">
                   Brand Publicity
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light min-h-[60px]">
@@ -635,16 +635,16 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 }`}
               >
                 <span>{(serviceControl?.brandPromotion?.status ?? true) ? "Explore Publicity Division" : "Under Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-[#D4AF37]" />
+                <ChevronRight className="w-3 h-3 text-gray-700 dark:text-[#D4AF37]" />
               </button>
             </div>
           </div>
 
           {/* Module 6: CineCoins Loyalty Sub-Website */}
-          <div className="bg-white dark:bg-white/[0.01] border border-amber-300 dark:border-amber-500/30 hover:border-amber-400/70 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg">
+          <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-amber-500/30 hover:border-gray-400 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-amber-500/10 flex items-center justify-center text-gray-700 dark:text-amber-400 border border-gray-200 dark:border-amber-500/20">
                   <Coins className="w-5 h-5" />
                 </div>
                 
@@ -660,7 +660,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 )}
               </div>
               <div className="space-y-1.5 text-left">
-                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
                   <span>CineCoins Loyalty</span>
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light min-h-[60px]">
@@ -673,12 +673,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 onClick={() => navigate("/cinecoins")}
                 className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
                   (serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true)
-                    ? "bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-gradient-to-r dark:from-amber-500 dark:to-amber-400 dark:hover:from-amber-400 dark:hover:to-amber-300 dark:text-black"
                     : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
                 <span>{(serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true) ? "🪙 Launch CineCoins Portal" : "Under Maintenance"}</span>
-                <ArrowRight className="w-3 h-3" />
+                <ChevronRight className="w-3 h-3 text-white dark:text-black" />
               </button>
             </div>
           </div>

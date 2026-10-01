@@ -26,19 +26,19 @@ export default function CineVenueLogo({
       className={`inline-flex items-center gap-1.5 select-none ${onClick ? "cursor-pointer group" : ""} ${className}`}
     >
       <span
-        className={`font-serif ${sizeClasses[size]} tracking-tight font-bold inline-flex items-center transition-all duration-300 drop-shadow-lg`}
+        className={`font-serif ${sizeClasses[size]} tracking-tight font-bold inline-flex items-center transition-all duration-300 drop-shadow-xs dark:drop-shadow-lg`}
         style={{ fontFamily: "'Playfair Display', 'Cinzel', 'Georgia', serif" }}
       >
-        <span className="text-white group-hover:text-amber-50 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+        <span className="text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-amber-50 transition-colors drop-shadow-none dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
           Cine
         </span>
-        <span className="text-[#E2B13C] font-bold group-hover:text-[#F3D77A] transition-colors ml-0.5 drop-shadow-[0_2px_6px_rgba(226,177,60,0.35)]">
+        <span className="text-gray-800 dark:text-[#E2B13C] font-bold group-hover:text-black dark:group-hover:text-[#F3D77A] transition-colors ml-0.5 drop-shadow-none dark:drop-shadow-[0_2px_6px_rgba(226,177,60,0.35)]">
           Venue
         </span>
       </span>
 
       {subText && (
-        <span className="text-xs text-gold font-mono uppercase tracking-wider font-bold ml-1">
+        <span className="text-xs text-gray-700 dark:text-gold font-mono uppercase tracking-wider font-bold ml-1">
           {subText}
         </span>
       )}

@@ -428,4 +428,20 @@ svg:not([aria-hidden="true"]) {
   filter: none !important;
 }
 
+/* Enforce Black & Gray Typography in Light Mode (No Yellow Letters) */
+html[data-theme="light"] .text-gold,
+.light .text-gold {
+  color: #111111;
+}
+
+html[data-theme="light"] .text-gold-light,
+.light .text-gold-light {
+  color: #4B5563;
+}
+
+html[data-theme="light"] .text-gold-dim,
+.light .text-gold-dim {
+  color: #6B7280;
+}
+
 

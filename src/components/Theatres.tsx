@@ -36,11 +36,11 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
       {/* Section Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-16">
         <div>
-          <span className="text-[10px] uppercase tracking-[0.4em] text-gold block mb-3 font-semibold">
+          <span className="text-[10px] uppercase tracking-[0.4em] text-gray-700 dark:text-gold block mb-3 font-semibold">
             Our Venues
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-light tracking-tight text-text-primary italic">
-            Premium <span className="text-gold not-italic font-normal">Theatres</span> in {selectedCity}
+            Premium <span className="text-gray-950 dark:text-gold not-italic font-normal">Theatres</span> in {selectedCity}
           </h2>
           <p className="text-xs text-text-secondary mt-2 max-w-lg">
             Experience absolute luxury at our verified state-of-the-art partner screens, customizable layouts, and premium sound systems.
@@ -50,7 +50,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
         {/* Location & Places Search input */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white dark:bg-white/[0.02] p-3 rounded-xl border border-gray-200 dark:border-white/10 shadow-sm backdrop-blur-md">
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold w-4 h-4" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gold w-4 h-4" />
             <input
               type="text"
               placeholder="Search by place or location..."
@@ -103,14 +103,14 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                 />
                 {/* Location absolute badge */}
                 <div className="absolute top-3 left-3 bg-white/90 dark:bg-[#0A0A0B]/85 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-text-secondary text-xs px-2.5 py-1 rounded backdrop-blur-md flex items-center gap-1.5 shadow-sm">
-                  <MapPin className="w-3.5 h-3.5 text-gold" />
+                  <MapPin className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
                   <span>{theatre.location ? theatre.location.split("·")[0]?.trim() : "Prime Venue"}</span>
                 </div>
               </div>
 
               {/* Theatre details body */}
               <div className="p-5 flex flex-col flex-grow">
-                <h3 className="font-display text-xl font-bold text-text-primary tracking-wide mb-1.5 group-hover:text-gold transition-colors">
+                <h3 className="font-display text-xl font-bold text-text-primary tracking-wide mb-1.5 group-hover:text-black dark:group-hover:text-gold transition-colors">
                   {theatre.name}
                 </h3>
                 
@@ -134,7 +134,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                 {/* Footer and Price label */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10 mt-auto">
                   <div>
-                    <div className="font-display text-sm font-semibold text-gold leading-none uppercase tracking-wider">
+                    <div className="font-display text-sm font-semibold text-gray-950 dark:text-gold leading-none uppercase tracking-wider">
                       Price on Request
                     </div>
                     <div className="text-[10px] text-text-secondary font-semibold tracking-wider uppercase mt-1">
@@ -142,8 +142,8 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[11px] text-gold font-semibold tracking-wide">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                  <div className="flex items-center gap-1.5 text-[11px] text-gray-800 dark:text-gold font-semibold tracking-wide">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-gold animate-pulse" />
                     Available Today
                   </div>
                 </div>

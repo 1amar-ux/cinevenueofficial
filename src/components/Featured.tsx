@@ -24,7 +24,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <span className="text-[10px] uppercase tracking-[0.4em] text-gold block mb-12 font-semibold">
+        <span className="text-[10px] uppercase tracking-[0.4em] text-gray-700 dark:text-gold block mb-12 font-semibold">
           Editor's Spotlight
         </span>
 
@@ -49,8 +49,8 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
 
           {/* Details Section */}
           <div className="text-left flex flex-col items-start">
-            <div className="inline-flex items-center gap-2.5 bg-amber-500/10 dark:bg-white/[0.03] border border-amber-500/20 dark:border-white/10 text-gold text-[10px] font-semibold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
-              <Award className="w-3.5 h-3.5 text-gold" />
+            <div className="inline-flex items-center gap-2.5 bg-gray-100 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-gold text-[10px] font-semibold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
+              <Award className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
               Editor's Choice Award
             </div>
 
@@ -61,24 +61,24 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
             {/* Movie Stats Row */}
             <div className="flex flex-wrap gap-x-6 gap-y-3 items-center text-xs text-text-secondary mb-6 border-b border-gray-200 dark:border-white/10 pb-6 w-full">
               <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-gold" />
+                <Clock className="w-4 h-4 text-gray-700 dark:text-gold" />
                 <span>{spotlight.duration}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-gold fill-gold stroke-none" />
+                <Star className="w-4 h-4 text-amber-500 dark:text-gold fill-amber-500 dark:fill-gold stroke-none" />
                 <span className="font-bold text-text-primary">{spotlight.rating}</span>
                 <span className="text-text-muted">/ 10 Rating</span>
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/10" />
               <div>{spotlight.genre}</div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/10" />
-              <div className="text-gold font-semibold">UA Certified • English</div>
+              <div className="text-gray-900 dark:text-gold font-semibold">UA Certified • English</div>
             </div>
 
             {/* Stellar Stars review row */}
-            <div className="flex gap-1 mb-6 text-gold">
+            <div className="flex gap-1 mb-6 text-amber-500 dark:text-gold">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-gold stroke-none" />
+                <Star key={i} className="w-4 h-4 fill-current stroke-none" />
               ))}
             </div>
 
@@ -98,8 +98,8 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
                     onClick={() => setSelectedShowtime(time)}
                     className={`px-4.5 py-2.5 rounded text-xs font-semibold cursor-pointer border transition-all ${
                       selectedShowtime === time
-                        ? "bg-amber-50 dark:bg-white/[0.05] border-gold text-gold font-bold shadow-sm"
-                        : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/10 text-text-secondary hover:border-gold hover:text-text-primary"
+                        ? "bg-gray-950 text-white border-gray-950 dark:bg-white/[0.05] dark:border-gold dark:text-gold font-bold shadow-sm"
+                        : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/10 text-text-secondary hover:border-gray-900 dark:hover:border-gold hover:text-text-primary"
                     }`}
                   >
                     {time}
@@ -112,7 +112,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
                 onClick={isMovieBookingSystemActive ? handleBookClick : undefined}
                 className={`mt-8 px-10 py-4 rounded-sm text-xs font-bold tracking-[0.2em] uppercase transition-all duration-200 shadow-xl ${
                   isMovieBookingSystemActive
-                    ? "bg-gold hover:bg-gold-light text-black cursor-pointer shadow-gold/10"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-gold dark:hover:bg-gold-light dark:text-black cursor-pointer shadow-md dark:shadow-gold/10"
                     : "bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-60 pointer-events-none"
                 }`}
               >

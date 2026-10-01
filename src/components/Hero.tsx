@@ -89,15 +89,15 @@ export default function Hero({
       {/* Content */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 flex flex-col items-start">
         {/* Premium badge */}
-        <div className="inline-flex items-center gap-2.5 bg-white/[0.03] border border-white/10 text-gold text-[10px] font-semibold tracking-[0.3em] uppercase px-5 py-2 rounded-full mb-8 backdrop-blur-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+        <div className="inline-flex items-center gap-2.5 bg-gray-100 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gold text-[10px] font-semibold tracking-[0.3em] uppercase px-5 py-2 rounded-full mb-8 backdrop-blur-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gold animate-pulse" />
           Live Theatre Connection
         </div>
 
         {/* Display Typography Header */}
         <h1 className="font-display text-[clamp(2.3rem,11vw,5.5rem)] sm:text-7xl md:text-[88px] leading-[0.95] font-light mb-6 select-none italic text-text-primary break-words">
           The Architecture <br />
-          <span className="not-italic text-gold font-normal">of Cinema.</span>
+          <span className="not-italic text-gray-950 dark:text-gold font-normal">of Cinema.</span>
         </h1>
 
         <p className="font-display text-lg sm:text-xl md:text-2xl text-text-secondary font-light italic tracking-wider mb-8">
@@ -111,12 +111,12 @@ export default function Hero({
         {/* Interactive Filter Booking Bar */}
         <form
           onSubmit={handleSearchClick}
-          className="w-full max-w-4xl bg-dark-card/85 backdrop-blur-md border border-dark-border p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center shadow-2xl shadow-black/80"
+          className="w-full max-w-4xl bg-white dark:bg-dark-card/85 backdrop-blur-md border border-gray-200 dark:border-dark-border p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center shadow-lg dark:shadow-2xl shadow-black/5 dark:shadow-black/80"
         >
           {/* Location field */}
           <div className="flex-1 w-full text-left">
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-gold" />
+            <label className="block text-[10px] font-bold text-gray-600 dark:text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
               Venue Location
             </label>
             <select
@@ -125,36 +125,36 @@ export default function Hero({
               className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer"
             >
               {cities.map((city) => (
-                <option key={city} value={city} className="bg-dark-card">
+                <option key={city} value={city} className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">
                   {city === "All Cities" ? "All Cities (Default)" : city}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="hidden md:block w-[1px] h-10 bg-dark-border" />
+          <div className="hidden md:block w-[1px] h-10 bg-gray-200 dark:bg-dark-border" />
 
           {/* Date Picker */}
           <div className="flex-1 w-full text-left">
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-gold" />
+            <label className="block text-[10px] font-bold text-gray-600 dark:text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
               Select Date
             </label>
             <input
               type="date"
               value={dateVal}
               onChange={(e) => setDateVal(e.target.value)}
-              className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer color-scheme-dark"
+              className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer"
               min="2026-07-01"
             />
           </div>
 
-          <div className="hidden md:block w-[1px] h-10 bg-dark-border" />
+          <div className="hidden md:block w-[1px] h-10 bg-gray-200 dark:bg-dark-border" />
 
           {/* Time Slot field */}
           <div className="flex-1 w-full text-left">
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-gold" />
+            <label className="block text-[10px] font-bold text-gray-600 dark:text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
               Available Session
             </label>
             <select
@@ -162,18 +162,18 @@ export default function Hero({
               onChange={(e) => setTimeSlotVal(e.target.value)}
               className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="morning" className="bg-dark-card">Morning (10 AM - 1 PM)</option>
-              <option value="afternoon" className="bg-dark-card">Afternoon (1 PM - 5 PM)</option>
-              <option value="evening" className="bg-dark-card">Evening (5 PM - 9 PM)</option>
-              <option value="night" className="bg-dark-card">Night (9 PM Onwards)</option>
+              <option value="morning" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Morning (10 AM - 1 PM)</option>
+              <option value="afternoon" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Afternoon (1 PM - 5 PM)</option>
+              <option value="evening" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Evening (5 PM - 9 PM)</option>
+              <option value="night" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Night (9 PM Onwards)</option>
             </select>
           </div>
 
           <button
             type="submit"
-            className="w-full md:w-auto bg-gold hover:bg-gold-light text-dark-bg px-8 py-3.5 rounded-lg text-xs font-bold tracking-widest uppercase cursor-pointer transition-all duration-200 shadow-lg shadow-gold/20 flex items-center justify-center gap-2 whitespace-nowrap self-stretch md:self-auto"
+            className="w-full md:w-auto bg-gray-950 hover:bg-black text-white dark:bg-gold dark:hover:bg-gold-light dark:text-dark-bg px-8 py-3.5 rounded-lg text-xs font-bold tracking-widest uppercase cursor-pointer transition-all duration-200 shadow-md dark:shadow-gold/20 flex items-center justify-center gap-2 whitespace-nowrap self-stretch md:self-auto"
           >
-            <Search className="w-4 h-4 text-dark-bg stroke-[2.5]" />
+            <Search className="w-4 h-4 text-white dark:text-dark-bg stroke-[2.5]" />
             Search Showtimes
           </button>
         </form>
@@ -204,16 +204,16 @@ export default function Hero({
                         }
                       }
                     }}
-                    className="group relative overflow-hidden rounded-2xl border border-gold/30 bg-[#0F0F11] cursor-pointer shadow-xl hover:border-gold transition-all duration-300"
+                    className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gold/30 bg-white dark:bg-[#0F0F11] cursor-pointer shadow-md dark:shadow-xl hover:border-gray-400 dark:hover:border-gold transition-all duration-300"
                   >
                     <img 
                       src={ad.imageUrl} 
                       alt={ad.title} 
-                      className="w-full h-36 md:h-44 object-cover filter brightness-75 group-hover:scale-105 group-hover:brightness-90 transition-all duration-500" 
+                      className="w-full h-36 md:h-44 object-cover filter brightness-90 group-hover:scale-105 transition-all duration-500" 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 flex flex-col justify-end">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-gold text-black text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
+                        <span className="bg-gray-900 dark:bg-gold text-white dark:text-black text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded">
                           SPONSORED SPOTLIGHT
                         </span>
                         <Sparkles className="w-3.5 h-3.5 text-gold animate-pulse" />
@@ -233,22 +233,22 @@ export default function Hero({
         })()}
 
         {/* Dynamic Stats Row */}
-        <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-6 sm:gap-12 md:gap-20 mt-12 sm:mt-16 pt-8 sm:pt-10 border-t border-white/10 w-full">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-6 sm:gap-12 md:gap-20 mt-12 sm:mt-16 pt-8 sm:pt-10 border-t border-gray-200 dark:border-white/10 w-full">
           <div>
             <div className="font-display text-4xl font-light text-text-primary leading-none">
-              240<span className="text-gold font-light">+</span>
+              240<span className="text-gray-900 dark:text-gold font-light">+</span>
             </div>
             <div className="text-[9px] font-medium text-text-secondary tracking-[0.2em] uppercase mt-2">Movies This Month</div>
           </div>
           <div>
             <div className="font-display text-4xl font-light text-text-primary leading-none">
-              18<span className="text-gold font-light">+</span>
+              18<span className="text-gray-900 dark:text-gold font-light">+</span>
             </div>
             <div className="text-[9px] font-medium text-text-secondary tracking-[0.2em] uppercase mt-2">Premium Venues</div>
           </div>
           <div>
             <div className="font-display text-4xl font-light text-text-primary leading-none">
-              50k<span className="text-gold font-light">+</span>
+              50k<span className="text-gray-900 dark:text-gold font-light">+</span>
             </div>
             <div className="text-[9px] font-medium text-text-secondary tracking-[0.2em] uppercase mt-2">Happy Guests</div>
           </div>

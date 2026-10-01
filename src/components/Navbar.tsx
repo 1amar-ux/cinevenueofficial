@@ -95,11 +95,11 @@ export default function Navbar({
                   window.location.href = "/";
                 }
               }}
-              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 hover:border-gold text-amber-800 dark:text-amber-200 hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gold/15 dark:hover:bg-gold/25 border border-gray-300 dark:border-gold/40 hover:border-gray-400 dark:hover:border-gold text-gray-800 dark:text-amber-200 hover:text-black dark:hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
               title="Back to previous page"
               aria-label="Back to previous page"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-gold group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="w-3.5 h-3.5 text-gray-800 dark:text-gold group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Back</span>
             </button>
           )}
@@ -112,10 +112,10 @@ export default function Navbar({
           {/* District Location Selector Pill */}
           <button
             onClick={onOpenLocation}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-gray-200 dark:border-white/10 hover:border-gold/40 transition-all group cursor-pointer text-left shadow-xs dark:shadow-sm"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-gold/40 transition-all group cursor-pointer text-left shadow-xs dark:shadow-sm"
             title="Choose your City / Location"
           >
-            <MapPin className="w-4 h-4 text-gold shrink-0 group-hover:scale-110 transition-transform" />
+            <MapPin className="w-4 h-4 text-gray-700 dark:text-gold shrink-0 group-hover:scale-110 transition-transform" />
             <div className="flex flex-col">
               <div className="flex items-center gap-1">
                 <span className="text-xs sm:text-[13px] font-bold text-gray-900 dark:text-white max-w-[110px] sm:max-w-[130px] truncate leading-tight">
@@ -192,9 +192,9 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins();
               else window.location.href = "/cinecoins";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-gray-200/70 dark:hover:bg-white/5 flex items-center gap-1"
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-gray-700 dark:text-amber-400 hover:text-black dark:hover:text-amber-300 hover:bg-gray-200/70 dark:hover:bg-white/5 flex items-center gap-1"
           >
-            <Coins className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+            <Coins className="w-3 h-3 text-gray-700 dark:text-amber-400" />
             <span>CineCoins</span>
           </button>
         </div>
@@ -331,7 +331,7 @@ export default function Navbar({
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/productions"; }} 
             className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isFilmProductionLive ? "text-amber-600 hover:text-gold dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
+              isFilmProductionLive ? "text-gray-800 hover:text-black dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -345,7 +345,7 @@ export default function Navbar({
           <button 
             onClick={() => { setMobileMenuOpen(false); window.location.href = "/events"; }} 
             className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isEventsLive ? "text-amber-600 hover:text-gold dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
+              isEventsLive ? "text-gray-800 hover:text-black dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -363,11 +363,11 @@ export default function Navbar({
               else window.location.href = "/cinecoins"; 
             }} 
             className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isCineCoinsLive ? "text-amber-600 hover:text-gold dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
+              isCineCoinsLive ? "text-gray-800 hover:text-black dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
             }`}
           >
             <div className="flex items-center gap-2">
-              <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <Coins className="w-4 h-4 text-gray-700 dark:text-amber-400" />
               <span>CineCoins Loyalty & Rewards</span>
             </div>
             {!isCineCoinsLive && (
