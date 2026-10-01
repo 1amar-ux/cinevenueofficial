@@ -428,102 +428,84 @@ export default function BookingModal({
     >
       <div
         className={`${
-          bookingStep === "confirmed" || bookingStep === "confirm_booking" || bookingStep === "theatres_showtimes"
+          bookingStep === "confirmed" || bookingStep === "confirm_booking"
             ? "bg-[#F4F6FA] text-gray-900 border border-gray-200 max-w-md w-full shadow-2xl"
             : "bg-[#0D0D10] text-white border border-white/10 max-w-5xl w-full"
         } rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden text-left my-auto backdrop-blur-lg relative transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
         id="booking-modal-content"
       >
-        {/* Top Floating Close Button for seat_selection */}
-        {bookingStep === "seat_selection" && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors z-30"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        {/* Top Floating Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors z-30"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         {/* ========================================================================= */}
-        {/* STEP 1: DISTRICT MOVIE THEATRES & SHOWTIMES SCREEN (Matching Screenshot) */}
+        {/* STEP 1: MOVIE THEATRES & SHOWTIMES SCREEN (Dark Luxury Wide UI)          */}
         {/* ========================================================================= */}
         {bookingStep === "theatres_showtimes" && (
-          <div className="bg-[#F4F6FA] text-gray-900 min-h-full">
-            {/* Top Navigation Bar with Back Arrow and Search */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-20 shadow-xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <button
-                  onClick={onClose}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-800 transition-colors cursor-pointer border-none bg-transparent shrink-0"
-                  title="Close"
-                >
-                  <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
-                </button>
-                <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate">
-                  {movieTitle}
-                </h1>
-              </div>
-              <button
-                onClick={() => {}}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-700 cursor-pointer border-none bg-transparent shrink-0"
-                title="Search"
-              >
-                <Search className="w-4 h-4 stroke-[2.5]" />
-              </button>
-            </div>
-
-            {/* Movie Header Card */}
-            <div className="p-4 bg-white border-b border-gray-200 flex items-center gap-3.5">
-              {/* Poster Thumbnail with Trailer Trigger */}
+          <div className="p-4 sm:p-6 md:p-8 space-y-6 text-white min-h-full">
+            {/* Top Movie Header Card */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 pr-12">
+              {/* Poster Thumbnail with Play Trailer Trigger */}
               <div
                 onClick={() => setShowTrailerVideo(!showTrailerVideo)}
-                className="relative w-20 sm:w-22 aspect-[2/3] rounded-xl overflow-hidden bg-black shrink-0 shadow-sm border border-gray-200 group cursor-pointer"
+                className="relative w-24 sm:w-28 aspect-[2/3] rounded-xl overflow-hidden bg-black shrink-0 shadow-2xl border border-white/10 group cursor-pointer"
                 title="Click to watch trailer"
               >
                 <img
                   src={movieObj.poster || movieObj.img}
                   alt={movieTitle}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute inset-0 bg-black/35 group-hover:bg-black/50 flex flex-col items-center justify-center transition-all">
-                  <div className="w-7 h-7 rounded-full bg-white/90 text-black flex items-center justify-center shadow-md">
-                    <Play className="w-3.5 h-3.5 fill-black translate-x-0.5" />
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/55 flex flex-col items-center justify-center transition-all">
+                  <div className="w-9 h-9 rounded-full bg-white/95 text-black flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Play className="w-4 h-4 fill-black translate-x-0.5" />
                   </div>
                 </div>
               </div>
 
-              {/* Movie Meta Information */}
-              <div className="flex-1 min-w-0 space-y-1">
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 leading-snug truncate">
-                  {movieTitle} <span className="text-gray-500 font-normal">({movieObj.releaseYear || 2026})</span>
-                </h2>
-                <p className="text-xs text-gray-600 font-medium">
-                  {movieObj.certification || "U"} <span className="text-gray-400">|</span> {movieObj.duration || "1h 41m"}
+              {/* Movie Meta Details */}
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                  {movieTitle} <span className="text-white/40 font-normal">({movieObj.releaseYear || 2026})</span>
+                </h1>
+                
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70 font-medium">
+                  <span className="border border-white/30 px-1.5 py-0.5 rounded text-[11px] font-bold text-white/90">
+                    {movieObj.certification || "U"}
+                  </span>
+                  <span>|</span>
+                  <span>{movieObj.duration || "1h 41m"}</span>
+                </div>
+
+                <p className="text-xs sm:text-sm text-white/60 font-medium">
+                  {movieObj.lang || "Telugu"}{movieObj.additionalLanguages ? `, ${movieObj.additionalLanguages.join(", ")}` : ""}
                 </p>
-                <p className="text-xs text-gray-500 font-medium">
-                  {movieObj.lang || "Telugu"}{movieObj.additionalLanguages ? `, ${movieObj.additionalLanguages.join(", ")}` : ", Hindi"}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {movieObj.genre || "Animation, Adventure"}
+
+                <p className="text-xs sm:text-sm text-white/50">
+                  {movieObj.genre || "Drama"}
                 </p>
               </div>
             </div>
 
             {/* Embedded Trailer Video Player (Collapsible) */}
             {showTrailerVideo && (
-              <div className="bg-black border-b border-gray-200 overflow-hidden animate-fade-in text-left">
-                <div className="p-2.5 bg-gray-900 text-white flex items-center justify-between text-xs">
-                  <span className="font-bold flex items-center gap-1.5 truncate">
-                    <Film className="w-3.5 h-3.5 text-gold" />
+              <div className="bg-black/90 rounded-2xl border border-white/10 overflow-hidden animate-fade-in text-left">
+                <div className="p-3 bg-[#141418] text-white flex items-center justify-between text-xs border-b border-white/10">
+                  <span className="font-bold flex items-center gap-2 truncate">
+                    <Film className="w-4 h-4 text-gold" />
                     {movieTitle} Official Trailer
                   </span>
                   <button
                     onClick={() => setShowTrailerVideo(false)}
-                    className="text-xs text-white/70 hover:text-white px-2 py-0.5 rounded bg-white/10 cursor-pointer border-none"
+                    className="text-xs text-white/70 hover:text-white px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer border-none transition-colors"
                   >
-                    Close ✕
+                    Close Trailer ✕
                   </button>
                 </div>
                 <div className="relative aspect-video w-full">
@@ -538,34 +520,34 @@ export default function BookingModal({
               </div>
             )}
 
-            {/* Date Selector Ribbon (District Style with OCT tag) */}
-            <div className="bg-white border-b border-gray-200 px-3 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-none">
-              {/* Vertical Month Tag */}
-              <div className="bg-gray-100 text-gray-500 font-bold text-[10px] px-2 py-2 rounded-xl flex items-center justify-center shrink-0 uppercase tracking-widest">
+            {/* Date Selector Ribbon */}
+            <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-1">
+              {/* Vertical / Left Month Tag */}
+              <div className="bg-[#18181C] text-white/60 border border-white/10 text-xs font-bold px-3.5 py-3 rounded-2xl flex items-center justify-center shrink-0 uppercase tracking-widest">
                 {activeDate.monthName.slice(0, 3)}
               </div>
 
               {/* Date Buttons */}
-              <div className="flex items-center divide-x divide-gray-150">
+              <div className="flex items-center gap-2">
                 {upcomingDates.map((item, idx) => {
                   const isSelected = selectedDateIdx === idx;
                   return (
                     <button
                       key={item.dateStr + idx}
                       onClick={() => setSelectedDateIdx(idx)}
-                      className={`flex flex-col items-center justify-center px-3.5 py-2 transition-all cursor-pointer border-none ${
+                      className={`flex flex-col items-center justify-center transition-all cursor-pointer ${
                         isSelected
-                          ? "bg-gray-950 text-white rounded-2xl shadow-sm"
-                          : "bg-transparent text-gray-700 hover:text-gray-950 hover:bg-gray-50 rounded-xl"
+                          ? "bg-white text-black font-extrabold rounded-2xl px-5 py-2.5 shadow-lg min-w-[70px]"
+                          : "bg-[#141418] text-white/70 hover:text-white hover:border-white/30 border border-white/10 rounded-2xl px-4 py-2.5 min-w-[58px]"
                       }`}
                     >
-                      <span className="text-sm sm:text-base font-bold leading-tight">
+                      <span className="text-base sm:text-lg font-black leading-tight">
                         {item.dayNum}
                       </span>
-                      <span className={`text-[10px] sm:text-[11px] font-medium leading-none mt-0.5 ${
-                        isSelected ? "text-white/80" : "text-gray-500"
+                      <span className={`text-[10px] sm:text-[11px] font-bold tracking-wider uppercase mt-0.5 ${
+                        isSelected ? "text-black" : "text-white/50"
                       }`}>
-                        {item.dayName}
+                        {item.isToday ? "TODAY" : item.dayName}
                       </span>
                     </button>
                   );
@@ -573,68 +555,85 @@ export default function BookingModal({
               </div>
             </div>
 
-            {/* Filter Chips Row */}
-            <div className="bg-white px-4 pt-3 pb-2 flex items-center gap-2 overflow-x-auto scrollbar-none">
-              <button className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 shrink-0 cursor-pointer">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-gray-600" />
-                <span>Filters</span>
-                <ChevronDown className="w-3 h-3 text-gray-500" />
-              </button>
-
-              <button className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#EEF2FF] border border-[#C7D2FE] text-xs font-semibold text-[#4F46E5] shrink-0 cursor-pointer">
-                <span>{movieObj.lang || "Telugu"}</span>
-                <ChevronDown className="w-3 h-3 text-[#4F46E5]" />
-              </button>
-
-              {["Morning", "Afternoon", "Evening", "Night"].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setTimeFilter(timeFilter === f ? "ALL" : f)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer border ${
-                    timeFilter === f
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
+            {/* Blue Advance Booking Ribbon */}
+            <div className="bg-[#0B1E3B]/80 border border-[#1E3A8A]/50 rounded-xl px-4 py-3 flex items-center gap-2.5 text-xs sm:text-sm text-[#93C5FD]">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8] inline-block shadow-[0_0_8px_#38BDF8] shrink-0" />
+              <span>
+                Advance bookings open for shows on <strong className="text-white font-bold">{activeDate.fullDayName}</strong>
+              </span>
             </div>
 
-            {/* Availability Legend Row (Available, Filling fast, Almost full) */}
-            <div className="bg-white px-4 pb-3 flex items-center gap-4 text-xs font-medium border-b border-gray-200">
-              <span className="flex items-center gap-1.5 text-gray-900 font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-gray-900 inline-block" />
-                <span>Available</span>
-              </span>
-              <span className="flex items-center gap-1.5 text-[#CA8A04] font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block" />
-                <span>Filling fast</span>
-              </span>
-              <span className="flex items-center gap-1.5 text-[#EA580C] font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F97316] inline-block" />
-                <span>Almost full</span>
-              </span>
+            {/* Filter Chips & Availability Legend Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+              {/* Filter Chips */}
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+                <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-white/15 text-xs font-semibold text-white/80 hover:text-white bg-[#141418] hover:bg-white/10 shrink-0 cursor-pointer transition-colors">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-gold" />
+                  <span>Filters</span>
+                  <ChevronDown className="w-3 h-3 text-white/60" />
+                </button>
+
+                <button
+                  onClick={() => setTimeFilter("ALL")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 cursor-pointer transition-all border ${
+                    timeFilter === "ALL"
+                      ? "bg-[#2B2312] border-[#D4AF37]/60 text-[#F5C518] shadow-xs"
+                      : "bg-[#141418] text-white/70 border-white/10 hover:text-white hover:border-white/20"
+                  }`}
+                >
+                  All Shows
+                </button>
+
+                {["Morning", "After 5 PM", "Recliners"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setTimeFilter(timeFilter === f ? "ALL" : f)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 cursor-pointer transition-all border ${
+                      timeFilter === f
+                        ? "bg-[#2B2312] border-[#D4AF37]/60 text-[#F5C518] shadow-xs"
+                        : "bg-[#141418] text-white/70 border-white/10 hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
+              {/* Availability Legend */}
+              <div className="flex items-center gap-4 text-xs font-semibold shrink-0">
+                <span className="flex items-center gap-1.5 text-[#10B981]">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_6px_#10B981]" />
+                  <span>Available</span>
+                </span>
+                <span className="flex items-center gap-1.5 text-[#F59E0B]">
+                  <span className="w-2 h-2 rounded-full bg-[#F59E0B] inline-block shadow-[0_0_6px_#F59E0B]" />
+                  <span>Filling fast</span>
+                </span>
+                <span className="flex items-center gap-1.5 text-[#F43F5E]">
+                  <span className="w-2 h-2 rounded-full bg-[#F43F5E] inline-block shadow-[0_0_6px_#F43F5E]" />
+                  <span>Almost full</span>
+                </span>
+              </div>
             </div>
 
             {/* Theatres in City List or Empty State */}
-            <div className="p-4 space-y-3.5 bg-[#F4F6FA]">
+            <div className="space-y-4 pt-2">
               {filteredTheatreGroups.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center space-y-3 shadow-xs">
-                  <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto text-gray-500">
-                    <Film className="w-6 h-6" />
+                <div className="bg-[#121216] border border-white/10 rounded-2xl p-8 sm:p-12 text-center space-y-4 shadow-lg">
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-gold">
+                    <Film className="w-7 h-7" />
                   </div>
-                  <div className="space-y-1 max-w-sm mx-auto">
-                    <h3 className="text-base font-bold text-gray-900">
+                  <div className="space-y-1.5 max-w-md mx-auto">
+                    <h3 className="text-lg font-bold text-white">
                       No Shows Available in {selectedCity === "All Cities" ? "this city" : selectedCity}
                     </h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      There are no scheduled shows for <strong className="text-gray-800">{movieTitle}</strong> on{" "}
-                      <strong className="text-gray-800">{activeDate.fullDayName}, {activeDate.dayNum} {activeDate.monthName}</strong>.
+                    <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
+                      There are no scheduled shows for <strong className="text-white">{movieTitle}</strong> on{" "}
+                      <strong className="text-white">{activeDate.fullDayName}, {activeDate.dayNum} {activeDate.monthName}</strong>.
                     </p>
                   </div>
                   
-                  {/* Date Jump Quick Suggestions */}
+                  {/* Quick check buttons */}
                   <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
                     {upcomingDates
                       .map((item, idx) => ({ ...item, idx }))
@@ -644,7 +643,7 @@ export default function BookingModal({
                         <button
                           key={item.dateStr}
                           onClick={() => setSelectedDateIdx(item.idx)}
-                          className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-800 transition-colors cursor-pointer border-none"
+                          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white/80 hover:text-white transition-colors cursor-pointer"
                         >
                           Check {item.isTomorrow ? "Tomorrow" : `${item.dayName}, ${item.dayNum}`}
                         </button>
@@ -655,84 +654,100 @@ export default function BookingModal({
                 filteredTheatreGroups.map(({ theatre, shows }, tIdx) => {
                   const isFav = favorites.includes(theatre.name);
                   const dist = (1.2 + (tIdx * 0.3)).toFixed(1);
+                  const monogram = theatre.name
+                    .split(" ")
+                    .filter((w) => w.length > 0)
+                    .map((w) => w[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase() || "CV";
 
                   return (
                     <div
                       key={theatre.name + tIdx}
-                      className="bg-white rounded-2xl border border-gray-200/90 p-4 shadow-sm space-y-3 text-left"
+                      className="bg-[#121216] rounded-2xl border border-white/10 hover:border-gold/30 p-4 sm:p-5 shadow-lg space-y-4 text-left transition-all"
                     >
-                      {/* Theatre Details */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          {/* Circular Logo Avatar */}
-                          <div className="w-11 h-11 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        {/* Theatre Details */}
+                        <div className="flex items-start gap-3.5">
+                          {/* Monogram Badge */}
+                          <div className="w-12 h-12 rounded-xl bg-[#242015] border border-[#D4AF37]/30 text-[#E5B842] flex items-center justify-center font-black text-sm shrink-0 shadow-md">
                             {theatre.name.includes("Studio 81") ? (
-                              <div className="text-[9px] text-center font-extrabold leading-tight text-white">
+                              <div className="text-[10px] text-center font-black leading-tight text-white">
                                 Studio<span className="text-red-500">81</span>
                               </div>
                             ) : theatre.name.includes("Naaz") ? (
-                              <div className="text-[10px] text-center font-extrabold text-amber-400">
+                              <div className="text-[11px] text-center font-black text-amber-400">
                                 NAAZ
                               </div>
                             ) : (
-                              theatre.name.substring(0, 2).toUpperCase()
+                              monogram
                             )}
                           </div>
 
                           <div className="space-y-1">
-                            <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-snug">
-                              {theatre.name}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+                                {theatre.name}
+                              </h3>
+                              <Info className="w-3.5 h-3.5 text-white/40 hover:text-white/80 cursor-pointer" />
+                              <button
+                                onClick={() => {
+                                  if (isFav) setFavorites(favorites.filter((f) => f !== theatre.name));
+                                  else setFavorites([...favorites, theatre.name]);
+                                }}
+                                className="text-white/40 hover:text-red-500 cursor-pointer p-0.5 bg-transparent border-none transition-colors"
+                                title="Add to favorites"
+                              >
+                                <Heart className={`w-4 h-4 ${isFav ? "fill-red-500 text-red-500" : ""}`} />
+                              </button>
+                            </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
-                              <span>{dist} km away</span>
-                              <span>⬦</span>
-                              {tIdx === 0 && (
-                                <span className="px-2 py-0.5 rounded-md bg-[#EEF2FF] text-[#6366F1] font-semibold text-[10px]">
-                                  Previously booked
-                                </span>
-                              )}
-                              <span>Non-cancellable</span>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-white/50 font-medium">
+                              <span className="flex items-center gap-1 text-gold/90 font-semibold">
+                                <Compass className="w-3.5 h-3.5" />
+                                {dist} km away
+                              </span>
+                              <span>•</span>
+                              <span className="px-2 py-0.5 rounded bg-white/5 text-white/70">Non-cancellable</span>
+                              <span>•</span>
+                              <span className="px-2 py-0.5 rounded bg-white/5 text-white/70">M-Ticket</span>
+                              <span>•</span>
+                              <span className="px-2 py-0.5 rounded bg-white/5 text-white/70">Food & Beverage</span>
                             </div>
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => {
-                            if (isFav) setFavorites(favorites.filter((f) => f !== theatre.name));
-                            else setFavorites([...favorites, theatre.name]);
-                          }}
-                          className="text-gray-400 hover:text-red-500 cursor-pointer p-1 bg-transparent border-none"
-                          title="Add to favorites"
-                        >
-                          <Heart className={`w-5 h-5 ${isFav ? "fill-red-500 text-red-500" : ""}`} />
-                        </button>
-                      </div>
+                        {/* Showtimes Pills */}
+                        <div className="flex flex-wrap items-center gap-2.5 pt-1 lg:pt-0">
+                          {shows.map((show, sIdx) => {
+                            const status = show.status || (sIdx === 0 ? "Available" : sIdx % 2 === 1 ? "Filling fast" : "Almost full");
+                            const isAlmostFull = status === "Almost full";
+                            const isFillingFast = status === "Filling fast";
 
-                      {/* Showtimes Pills */}
-                      <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                        {shows.map((show, sIdx) => {
-                          const status = show.status || (sIdx === 0 ? "Available" : sIdx % 2 === 1 ? "Filling fast" : "Almost full");
-                          const isAlmostFull = status === "Almost full";
-                          const isFillingFast = status === "Filling fast";
-
-                          return (
-                            <button
-                              key={show.id || show.time + sIdx}
-                              onClick={() => handleSelectShowtime(theatre.name, show.time, show.id)}
-                              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer border ${
-                                isAlmostFull
-                                  ? "border-[#FB923C] text-[#C2410C] hover:bg-orange-50"
-                                  : isFillingFast
-                                  ? "border-[#FACC15] text-[#854D0E] hover:bg-amber-50"
-                                  : "border-gray-300 text-gray-800 hover:border-gray-500 hover:bg-gray-50"
-                              }`}
-                              title={status}
-                            >
-                              {show.time}
-                            </button>
-                          );
-                        })}
+                            return (
+                              <button
+                                key={show.id || show.time + sIdx}
+                                onClick={() => handleSelectShowtime(theatre.name, show.time, show.id)}
+                                className="bg-[#0B0B0E] border border-white/15 hover:border-gold/60 hover:bg-[#18181C] rounded-xl px-4 py-2.5 text-center min-w-[110px] cursor-pointer transition-all flex flex-col items-center justify-center gap-0.5 group shadow-sm"
+                                title={status}
+                              >
+                                <span className="text-sm font-bold text-white group-hover:text-gold transition-colors">
+                                  {show.time}
+                                </span>
+                                <span className={`text-[10px] font-semibold leading-tight ${
+                                  isAlmostFull
+                                    ? "text-[#F43F5E]"
+                                    : isFillingFast
+                                    ? "text-[#F59E0B]"
+                                    : "text-[#10B981]"
+                                }`}>
+                                  {status}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );
@@ -740,6 +755,17 @@ export default function BookingModal({
               )}
             </div>
 
+            {/* Bottom Floating Navigation (Back to previous screen / close) */}
+            <div className="pt-2 flex items-center justify-between">
+              <button
+                onClick={onClose}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#18181C] hover:bg-[#222228] text-gold border border-gold/30 hover:border-gold text-xs font-bold transition-all cursor-pointer shadow-lg"
+              >
+                <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+                <span>Back</span>
+                <Compass className="w-3.5 h-3.5 opacity-70" />
+              </button>
+            </div>
           </div>
         )}
 
