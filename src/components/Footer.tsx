@@ -28,7 +28,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
     }
   };
   return (
-    <footer className="bg-[#0A0A0B] border-t border-white/10 py-16 px-6 md:px-12 relative z-10">
+    <footer className="bg-white dark:bg-[#0A0A0B] border-t border-gray-200 dark:border-white/10 py-16 px-6 md:px-12 relative z-10 transition-colors">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
         
         {/* Left column */}
@@ -50,7 +50,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
             <span>DPDP Act (India) Compliant • SSL Encrypted</span>
           </div>
 
-          <span className="text-[10px] tracking-wide text-white/50 mt-2 block font-sans">
+          <span className="text-[10px] tracking-wide text-gray-500 dark:text-white/50 mt-2 block font-sans">
             © 2026 CineVenue Private Capital. All rights reserved.
           </span>
           <span className="text-[9px] uppercase tracking-[0.25em] text-gold/80 mt-0.5 block font-mono">
@@ -61,7 +61,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
         {/* Right column: navigational links & triggers */}
         <div className="flex flex-col items-start md:items-end gap-5">
           {/* Main Legal & Compliance Group */}
-          <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] uppercase tracking-[0.15em] font-medium text-white/80">
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] uppercase tracking-[0.15em] font-medium text-gray-800 dark:text-white/80">
             <button
               onClick={() => handleOpenInfoSafe("privacy")}
               className="hover:text-gold transition-colors cursor-pointer"
@@ -95,7 +95,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
           </div>
 
           {/* Secondary Navigational links */}
-          <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] uppercase tracking-[0.15em] font-medium opacity-70">
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-[11px] uppercase tracking-[0.15em] font-medium text-gray-600 dark:text-white/70">
             <button
               onClick={() => handleOpenInfoSafe("about")}
               className="hover:text-gold transition-colors cursor-pointer"
@@ -110,7 +110,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
             </button>
             <button
               onClick={() => window.location.href = "/cinecoins"}
-              className="hover:text-gold transition-colors cursor-pointer text-amber-400 font-bold"
+              className="hover:text-gold transition-colors cursor-pointer text-amber-600 dark:text-amber-400 font-bold"
             >
               🪙 CineCoins Loyalty
             </button>

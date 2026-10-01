@@ -48,7 +48,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
         </div>
 
         {/* Location & Places Search input */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white/[0.02] p-3 rounded-xl border border-white/10 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white dark:bg-white/[0.02] p-3 rounded-xl border border-gray-200 dark:border-white/10 shadow-sm backdrop-blur-md">
           <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold w-4 h-4" />
             <input
@@ -56,7 +56,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
               placeholder="Search by place or location..."
               value={localLocationSearch}
               onChange={(e) => setLocalLocationSearch(e.target.value)}
-              className="w-full bg-black/40 border border-white/5 hover:border-white/15 focus:border-gold rounded-lg pl-10 pr-9 py-2 text-xs text-text-primary focus:outline-none transition-all duration-200"
+              className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/15 focus:border-gold rounded-lg pl-10 pr-9 py-2 text-xs text-text-primary focus:outline-none transition-all duration-200"
             />
             {localLocationSearch && (
               <button
@@ -68,7 +68,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
               </button>
             )}
           </div>
-          <div className="text-[10px] text-text-secondary font-semibold tracking-[0.15em] uppercase px-2 py-1 bg-white/5 rounded text-center self-center sm:self-auto">
+          <div className="text-[10px] text-gray-700 dark:text-text-secondary font-semibold tracking-[0.15em] uppercase px-2 py-1 bg-gray-100 dark:bg-white/5 rounded text-center self-center sm:self-auto">
             {filteredTheatres.length} Found
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
 
       {/* Theatres Grid */}
       {filteredTheatres.length === 0 ? (
-        <div className="text-center py-20 bg-white/[0.02] border border-white/10 rounded-2xl max-w-xl mx-auto backdrop-blur-sm">
+        <div className="text-center py-20 bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/10 rounded-2xl max-w-xl mx-auto backdrop-blur-sm">
           <p className="text-text-secondary font-medium mb-2">No screens currently listed for {selectedCity}.</p>
           <p className="text-text-muted text-xs">Choose another city from the selector dropdown at the top.</p>
         </div>
@@ -91,10 +91,10 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
             <div
               key={theatre.id}
               onClick={() => onSelectTheatre(theatre.name)}
-              className="group bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden hover:border-gold hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm shadow-xl cursor-pointer flex flex-col h-full"
+              className="group bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden hover:border-gold hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm shadow-sm dark:shadow-xl cursor-pointer flex flex-col h-full"
             >
               {/* Image Container */}
-              <div className="relative h-44 overflow-hidden bg-dark-card2">
+              <div className="relative h-44 overflow-hidden bg-gray-100 dark:bg-dark-card2">
                 <img
                   src={theatre.img}
                   alt={theatre.name}
@@ -102,7 +102,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                   className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                 />
                 {/* Location absolute badge */}
-                <div className="absolute top-3 left-3 bg-[#0A0A0B]/85 border border-white/10 text-text-secondary text-xs px-2.5 py-1 rounded backdrop-blur-md flex items-center gap-1.5">
+                <div className="absolute top-3 left-3 bg-white/90 dark:bg-[#0A0A0B]/85 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-text-secondary text-xs px-2.5 py-1 rounded backdrop-blur-md flex items-center gap-1.5 shadow-sm">
                   <MapPin className="w-3.5 h-3.5 text-gold" />
                   <span>{theatre.location ? theatre.location.split("·")[0]?.trim() : "Prime Venue"}</span>
                 </div>
@@ -123,7 +123,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                   {(theatre.features || []).map((feature) => (
                     <span
                       key={feature}
-                      className="text-[9px] font-semibold text-text-secondary border border-white/10 px-2.5 py-1 rounded uppercase tracking-[0.1em]"
+                      className="text-[9px] font-semibold text-text-secondary border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-transparent px-2.5 py-1 rounded uppercase tracking-[0.1em]"
                     >
                       {feature}
                     </span>
@@ -132,7 +132,7 @@ export default function Theatres({ theatres, selectedCity, searchQuery, onSelect
                 </div>
 
                 {/* Footer and Price label */}
-                <div className="flex justify-between items-center pt-4 border-t border-white/10 mt-auto">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-white/10 mt-auto">
                   <div>
                     <div className="font-display text-sm font-semibold text-gold leading-none uppercase tracking-wider">
                       Price on Request

@@ -17,7 +17,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
   };
 
   return (
-    <section id="featured" className="bg-dark-surface py-24 px-6 md:px-12 relative overflow-hidden border-y border-white/10">
+    <section id="featured" className="bg-dark-surface py-24 px-6 md:px-12 relative overflow-hidden border-y border-gray-200 dark:border-white/10">
       {/* Absolute Big Ambient Text */}
       <div className="absolute top-0 right-0 font-display text-[150px] md:text-[220px] font-bold text-transparent select-none pointer-events-none leading-none opacity-5 tracking-widest translate-x-12 -translate-y-8" style={{ WebkitTextStroke: "1.5px #D4AF37" }}>
         FEATURED
@@ -37,7 +37,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
               className="w-full h-full object-cover brightness-95 group-hover:scale-101 transition-transform duration-500"
             />
             {/* Ambient gold glow card borders */}
-            <div className="absolute inset-0 border border-white/10 rounded-xl pointer-events-none" />
+            <div className="absolute inset-0 border border-black/10 dark:border-white/10 rounded-xl pointer-events-none" />
             
             {/* Diagonal shimmer shine effect */}
             <div className="absolute top-0 -left-full w-3/5 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 animate-[shimmer_5s_infinite_linear]" 
@@ -49,7 +49,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
 
           {/* Details Section */}
           <div className="text-left flex flex-col items-start">
-            <div className="inline-flex items-center gap-2.5 bg-white/[0.03] border border-white/10 text-gold text-[10px] font-semibold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2.5 bg-amber-500/10 dark:bg-white/[0.03] border border-amber-500/20 dark:border-white/10 text-gold text-[10px] font-semibold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
               <Award className="w-3.5 h-3.5 text-gold" />
               Editor's Choice Award
             </div>
@@ -59,7 +59,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
             </h2>
 
             {/* Movie Stats Row */}
-            <div className="flex flex-wrap gap-x-6 gap-y-3 items-center text-xs text-text-secondary mb-6 border-b border-white/10 pb-6 w-full">
+            <div className="flex flex-wrap gap-x-6 gap-y-3 items-center text-xs text-text-secondary mb-6 border-b border-gray-200 dark:border-white/10 pb-6 w-full">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-gold" />
                 <span>{spotlight.duration}</span>
@@ -69,9 +69,9 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
                 <span className="font-bold text-text-primary">{spotlight.rating}</span>
                 <span className="text-text-muted">/ 10 Rating</span>
               </div>
-              <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/10" />
               <div>{spotlight.genre}</div>
-              <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/10" />
               <div className="text-gold font-semibold">UA Certified • English</div>
             </div>
 
@@ -87,7 +87,7 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
             </p>
 
             {/* Showtime selectors */}
-            <div className="w-full pt-6 border-t border-white/10">
+            <div className="w-full pt-6 border-t border-gray-200 dark:border-white/10">
               <span className="text-[10px] font-semibold uppercase text-text-secondary tracking-[0.2em] block mb-4">
                 Available Showtimes Today
               </span>
@@ -98,8 +98,8 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
                     onClick={() => setSelectedShowtime(time)}
                     className={`px-4.5 py-2.5 rounded text-xs font-semibold cursor-pointer border transition-all ${
                       selectedShowtime === time
-                        ? "bg-white/[0.05] border-gold text-gold"
-                        : "bg-white/[0.02] border-white/10 text-text-secondary hover:border-text-secondary hover:text-text-primary"
+                        ? "bg-amber-50 dark:bg-white/[0.05] border-gold text-gold font-bold shadow-sm"
+                        : "bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/10 text-text-secondary hover:border-gold hover:text-text-primary"
                     }`}
                   >
                     {time}

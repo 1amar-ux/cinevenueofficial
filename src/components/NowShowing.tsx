@@ -118,10 +118,10 @@ export default function NowShowing({
         onClick={() => {
           if (isMovieActive) onBookMovie(movie.title);
         }}
-        className="group flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none bg-[#161619] border border-white/[0.08] hover:border-gold/50 rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg shadow-black/40"
+        className="group flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-1 select-none bg-white dark:bg-[#161619] border border-gray-200 dark:border-white/[0.08] hover:border-gold/50 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm dark:shadow-lg dark:shadow-black/40"
       >
         {/* District Movie Poster Container */}
-        <div className="relative aspect-[3/4] sm:aspect-[2/3] w-full overflow-hidden bg-[#101012]">
+        <div className="relative aspect-[3/4] sm:aspect-[2/3] w-full overflow-hidden bg-gray-100 dark:bg-[#101012]">
           <img
             src={movie.poster || movie.img}
             alt={movie.title}
@@ -175,13 +175,13 @@ export default function NowShowing({
         </div>
 
         {/* Card Body with Title & Subtitle (Exact District Formation) */}
-        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow bg-[#161619]">
-          <h3 className="font-bold text-xs sm:text-sm text-white tracking-normal group-hover:text-gold transition-colors line-clamp-1 sm:line-clamp-2 leading-snug">
+        <div className="p-2.5 sm:p-3.5 flex flex-col justify-between flex-grow bg-white dark:bg-[#161619]">
+          <h3 className="font-bold text-xs sm:text-sm text-gray-950 dark:text-white tracking-normal group-hover:text-gold transition-colors line-clamp-1 sm:line-clamp-2 leading-snug">
             {movie.title}
           </h3>
-          <p className="text-[11px] sm:text-xs text-white/60 font-medium mt-1 truncate">
-            <span className="text-white/80 font-semibold">{cert}</span>
-            <span className="mx-1 text-white/30">•</span>
+          <p className="text-[11px] sm:text-xs text-gray-600 dark:text-white/60 font-medium mt-1 truncate">
+            <span className="text-gray-900 dark:text-white/80 font-semibold">{cert}</span>
+            <span className="mx-1 text-gray-400 dark:text-white/30">•</span>
             <span>{langDisplay}</span>
           </p>
         </div>
@@ -202,30 +202,30 @@ export default function NowShowing({
               window.location.href = "/";
             }
           }}
-          className="p-1.5 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer border-0 bg-transparent"
+          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-white transition-colors cursor-pointer border-0 bg-transparent"
           aria-label="Back"
         >
-          <ArrowLeft className="w-5 h-5 text-white" />
+          <ArrowLeft className="w-5 h-5 text-gray-800 dark:text-white" />
         </button>
-        <h1 className="text-lg font-bold text-white tracking-tight">
+        <h1 className="text-lg font-bold text-gray-950 dark:text-white tracking-tight">
           Movies in {selectedCity === "All Cities" ? "India" : selectedCity}
         </h1>
       </div>
 
       {/* Desktop Search & Filter Bar Container */}
-      <div className="w-full bg-[#121214]/90 border border-white/10 p-3 sm:p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 shadow-2xl backdrop-blur-md">
+      <div className="w-full bg-white dark:bg-[#121214]/90 border border-gray-200 dark:border-white/10 p-3 sm:p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 shadow-sm dark:shadow-2xl backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 rounded-xl border border-gold/30 text-xs font-semibold uppercase text-gold select-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-black/60 rounded-xl border border-amber-200 dark:border-gold/30 text-xs font-semibold uppercase text-amber-800 dark:text-gold select-none">
             <Clapperboard className="w-4 h-4 text-gold" />
             <span>{selectedCity} Screenings</span>
           </div>
 
           {/* Category Switcher */}
-          <div className="flex bg-black/50 p-1 rounded-xl border border-white/10 text-xs">
+          <div className="flex bg-gray-100 dark:bg-black/50 p-1 rounded-xl border border-gray-200 dark:border-white/10 text-xs shadow-xs dark:shadow-none">
             <button
               onClick={() => setActiveCategory("ALL")}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer border-0 ${
-                activeCategory === "ALL" ? "bg-gold text-black shadow-md" : "text-text-muted hover:text-white bg-transparent"
+                activeCategory === "ALL" ? "bg-gold text-black shadow-md" : "text-gray-600 dark:text-text-muted hover:text-gray-950 dark:hover:text-white bg-transparent"
               }`}
             >
               All Films
@@ -233,7 +233,7 @@ export default function NowShowing({
             <button
               onClick={() => setActiveCategory("NOW_SHOWING")}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer border-0 ${
-                activeCategory === "NOW_SHOWING" ? "bg-gold text-black shadow-md" : "text-text-muted hover:text-white bg-transparent"
+                activeCategory === "NOW_SHOWING" ? "bg-gold text-black shadow-md" : "text-gray-600 dark:text-text-muted hover:text-gray-950 dark:hover:text-white bg-transparent"
               }`}
             >
               In Theatres
@@ -241,7 +241,7 @@ export default function NowShowing({
             <button
               onClick={() => setActiveCategory("COMING_SOON")}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer border-0 ${
-                activeCategory === "COMING_SOON" ? "bg-gold text-black shadow-md" : "text-text-muted hover:text-white bg-transparent"
+                activeCategory === "COMING_SOON" ? "bg-gold text-black shadow-md" : "text-gray-600 dark:text-text-muted hover:text-gray-950 dark:hover:text-white bg-transparent"
               }`}
             >
               Coming Soon
@@ -251,19 +251,19 @@ export default function NowShowing({
 
         {/* Search Input */}
         <div className="relative flex-1 w-full lg:max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-text-muted w-4 h-4" />
           <input
             type="text"
             placeholder="Search films, languages, or genres..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/60 border border-white/10 focus:border-gold/60 rounded-xl pl-11 pr-4 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none transition-all duration-200"
+            className="w-full bg-gray-50 dark:bg-black/60 border border-gray-200 dark:border-white/10 focus:border-gold/60 rounded-xl pl-11 pr-4 py-2 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none transition-all duration-200"
           />
         </div>
       </div>
 
       {/* Language Filter Pills */}
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3 overflow-x-auto scrollbar-none">
+      <div className="flex items-center justify-between gap-3 border-b border-gray-200 dark:border-white/10 pb-3 overflow-x-auto scrollbar-none">
         <div className="flex gap-2 items-center shrink-0">
           {["all", "telugu", "hindi", "english", "tamil", "kannada", "malayalam"].map((lang) => (
             <button
@@ -271,8 +271,8 @@ export default function NowShowing({
               onClick={() => setActiveTab(lang)}
               className={`px-3.5 py-1 text-xs font-semibold tracking-wide rounded-full transition-all cursor-pointer border shrink-0 ${
                 activeTab === lang
-                  ? "bg-white text-black border-white shadow-md font-bold"
-                  : "bg-white/[0.04] text-white/70 border-white/10 hover:border-white/30 hover:text-white"
+                  ? "bg-gray-950 text-white border-gray-950 dark:bg-white dark:text-black dark:border-white shadow-md font-bold"
+                  : "bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300 hover:text-gray-950 dark:bg-white/[0.04] dark:text-white/70 dark:border-white/10 dark:hover:border-white/30 dark:hover:text-white"
               }`}
             >
               {lang.charAt(0).toUpperCase() + lang.slice(1)}
@@ -290,7 +290,7 @@ export default function NowShowing({
                 className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 cursor-pointer border ${
                   selectedGenre.toLowerCase() === g.toLowerCase()
                     ? "bg-gold/20 text-gold border-gold/50"
-                    : "bg-transparent text-white/50 border-white/10 hover:text-white"
+                    : "bg-transparent text-gray-500 hover:text-gray-950 dark:text-white/50 border-gray-200 dark:border-white/10 dark:hover:text-white"
                 }`}
               >
                 {g}
@@ -320,10 +320,10 @@ export default function NowShowing({
           {thisWeeksReleases.length > 0 && (
             <div className="space-y-3.5 sm:space-y-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+                <h2 className="text-base sm:text-xl font-bold text-gray-950 dark:text-white tracking-tight">
                   This Week's Releases
                 </h2>
-                <span className="text-[11px] sm:text-xs text-white/50 font-medium">
+                <span className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 font-medium">
                   {thisWeeksReleases.length} {thisWeeksReleases.length === 1 ? "movie" : "movies"}
                 </span>
               </div>
@@ -338,10 +338,10 @@ export default function NowShowing({
           {/* SECTION 2: Only in Theatres / All Scheduled Films */}
           <div className="space-y-3.5 sm:space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+              <h2 className="text-base sm:text-xl font-bold text-gray-950 dark:text-white tracking-tight">
                 {thisWeeksReleases.length > 0 ? "Only in Theatres" : "Featured & Now Showing"}
               </h2>
-              <span className="text-[11px] sm:text-xs text-white/50 font-medium">
+              <span className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 font-medium">
                 {nowShowingInTheatres.length > 0 ? nowShowingInTheatres.length : filteredMovies.length} movies
               </span>
             </div>
