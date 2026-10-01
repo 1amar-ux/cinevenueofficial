@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,8 +8,8 @@
       window.process = window.process || { env: {} };
       (function() {
         try {
-          var mode = localStorage.getItem('cine_theme_preference') || 'system';
-          var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var mode = localStorage.getItem('cine_theme_preference') || 'dark';
+          var isDark = mode === 'dark' || (mode === 'system' ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) : false);
           var effective = isDark ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', effective);
           if (effective === 'light') {

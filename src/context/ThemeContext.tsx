@@ -13,7 +13,7 @@ interface ThemeContextType {
 const STORAGE_KEY = "cine_theme_preference";
 
 const ThemeContext = createContext<ThemeContextType>({
-  themeMode: "system",
+  themeMode: "dark",
   effectiveTheme: "dark",
   setThemeMode: () => {},
   toggleTheme: () => {}
@@ -27,7 +27,7 @@ function getSystemTheme(): EffectiveTheme {
 }
 
 function getSavedThemePreference(): ThemeMode {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "dark";
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "light" || saved === "dark" || saved === "system") {
@@ -36,7 +36,7 @@ function getSavedThemePreference(): ThemeMode {
   } catch {
     // Storage access restricted or disabled
   }
-  return "system";
+  return "dark";
 }
 
 interface ThemeProviderProps {
