@@ -208,9 +208,9 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🪙 CineCoins</button>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="hidden sm:block">
-            <ThemeToggle />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center">
+            <ThemeToggle variant="segmented" />
           </div>
           <button
             type="button"

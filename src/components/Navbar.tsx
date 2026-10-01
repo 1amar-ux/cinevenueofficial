@@ -217,8 +217,8 @@ export default function Navbar({
           )}
 
           {/* Theme Toggle */}
-          <div className="hidden sm:block">
-            <ThemeToggle />
+          <div className="flex items-center">
+            <ThemeToggle variant="segmented" />
           </div>
 
           {/* User Member Actions */}

@@ -37,8 +37,8 @@ export default function ThemeToggle({ className = "", variant = "dropdown" }: Th
   }, [isOpen]);
 
   const options: { mode: ThemeMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { mode: "light", label: "Light", icon: Sun },
     { mode: "dark", label: "Dark", icon: Moon },
+    { mode: "light", label: "Light", icon: Sun },
     { mode: "system", label: "System", icon: Laptop },
   ];
 
@@ -47,7 +47,7 @@ export default function ThemeToggle({ className = "", variant = "dropdown" }: Th
   if (variant === "segmented") {
     return (
       <div
-        className={`inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 ${className}`}
+        className={`inline-flex items-center p-0.5 sm:p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 ${className}`}
         role="radiogroup"
         aria-label="Theme selection"
       >
@@ -59,15 +59,16 @@ export default function ThemeToggle({ className = "", variant = "dropdown" }: Th
               type="button"
               role="radio"
               aria-checked={isSelected}
+              title={`Switch to ${label} mode`}
               onClick={() => setThemeMode(mode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 isSelected
-                  ? "bg-gold text-black shadow-md shadow-gold/20 font-bold"
-                  : "text-gray-600 dark:text-text-secondary hover:text-gold hover:bg-gray-200/60 dark:hover:bg-white/5"
+                  ? "bg-gray-950 text-white dark:bg-gold dark:text-black shadow-xs font-bold"
+                  : "text-gray-600 dark:text-text-secondary hover:text-black dark:hover:text-gold hover:bg-gray-200/60 dark:hover:bg-white/5"
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{label}</span>
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{label}</span>
             </button>
           );
         })}
