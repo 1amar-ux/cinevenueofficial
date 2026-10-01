@@ -185,10 +185,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
   };
 
   return (
-    <div className="home-page bg-[#F8F8F6] dark:bg-[#09090A] min-h-screen text-gray-950 dark:text-[#F3F4F6] font-sans selection:bg-[#D4AF37] selection:text-black antialiased">
+    <div className="home-page bg-[#EFEFED] dark:bg-[#09090A] min-h-screen text-gray-950 dark:text-[#F3F4F6] font-sans selection:bg-[#D4AF37] selection:text-black antialiased">
       
       {/* LUXURY FLOATING NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/10 py-3 px-4 sm:px-6 md:px-12 flex items-center justify-between shadow-xs dark:shadow-none">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#EFEFED]/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-gray-300 dark:border-white/10 py-3 px-4 sm:px-6 md:px-12 flex items-center justify-between shadow-xs dark:shadow-none">
         <div 
           onClick={() => {
             setActiveDivision("none");
@@ -200,12 +200,12 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         </div>
 
         {/* Sub-Website Navigation Links beside Sign In */}
-        <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[10px] uppercase tracking-[0.2em] text-gray-600 dark:text-white/70">
-          <button onClick={() => navigate("/booking")} className="rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🎬 Movie Booking</button>
-          <button onClick={() => navigate("/events")} className="rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🎟 Events</button>
-          <button onClick={() => navigate("/productions")} className="rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🎥 Film Production</button>
-          <button onClick={() => navigate("/proposals")} className="rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">📢 Brand Publicity</button>
-          <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-1.5 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold border border-transparent hover:border-gold/30">🪙 CineCoins</button>
+        <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-950 dark:text-white/90">
+          <button onClick={() => navigate("/booking")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
+          <button onClick={() => navigate("/events")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
+          <button onClick={() => navigate("/productions")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎥 Film Production</button>
+          <button onClick={() => navigate("/proposals")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">📢 Brand Publicity</button>
+          <button onClick={() => navigate("/cinecoins")} className="rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white/90 font-bold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🪙 CineCoins</button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -215,7 +215,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <button
             type="button"
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 dark:border-white/15 text-gray-700 dark:text-white/80 transition hover:border-gold/50 hover:text-gold md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-400 dark:border-white/15 text-gray-950 dark:text-white/80 transition hover:border-gray-900 hover:text-black md:hidden"
             aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileMenuOpen}
           >
@@ -228,30 +228,30 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
               }, 50);
             }}
-            className="hidden md:inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/10 bg-gray-100 dark:bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-gray-700 dark:text-white/70 hover:border-gold/40 hover:text-gold"
+            className="hidden md:inline-flex items-center gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-3.5 py-2 text-[10px] uppercase tracking-[0.2em] font-bold text-gray-950 dark:text-white/80 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer"
           >
             <span>☰</span>
             <span>Menu</span>
           </button>
 
           {userEmail ? (
-            <div className="flex items-center gap-2 bg-gray-100 dark:bg-white/[0.03] border border-gold/40 px-3 py-1.5 rounded-full shadow-xs dark:shadow-none">
+            <div className="flex items-center gap-2 bg-gray-200/70 dark:bg-white/[0.03] border border-gray-400 dark:border-gold/40 px-3 py-1.5 rounded-full shadow-xs dark:shadow-none">
               <button
                 onClick={() => navigate("/account")}
-                className="flex items-center gap-2 text-[11px] text-gray-900 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
+                className="flex items-center gap-2 text-[11px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
                 title={`Logged in as ${userEmail}`}
               >
                 <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
                   <User className="w-3 h-3 text-gold" />
                 </div>
-                <span className="hidden sm:inline max-w-[120px] truncate font-medium text-gray-900 dark:text-text-primary">
+                <span className="hidden sm:inline max-w-[120px] truncate font-bold text-gray-950 dark:text-text-primary">
                   {userEmail.split("@")[0]}
                 </span>
               </button>
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="text-gray-400 hover:text-red-500 dark:text-text-muted dark:hover:text-red-400 p-0.5 ml-1 transition-colors cursor-pointer border-none bg-transparent flex items-center"
+                  className="text-gray-600 hover:text-red-500 dark:text-text-muted dark:hover:text-red-400 p-0.5 ml-1 transition-colors cursor-pointer border-none bg-transparent flex items-center"
                   title="Logout"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -262,7 +262,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <>
               <button
                 onClick={() => onOpenAuth?.("signin")}
-                className="hidden sm:inline-flex rounded-full border border-gray-300 dark:border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-gray-700 dark:text-white/80 hover:border-gold/40 hover:text-gold transition-all cursor-pointer"
+                className="hidden sm:inline-flex rounded-full border border-gray-400 dark:border-white/15 bg-transparent px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold text-gray-950 dark:text-white/80 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer"
               >
                 Sign In
               </button>
@@ -334,8 +334,8 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-[#D4AF37]/5 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
         
         <div className="space-y-6 relative z-10 max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full text-[10px] font-bold tracking-widest text-gray-700 dark:text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
-            <Award className="w-3.5 h-3.5 animate-spin text-gray-700 dark:text-gold" style={{ animationDuration: "12s" }} />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-gray-200/80 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-full text-[10px] font-bold tracking-widest text-gray-900 dark:text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
+            <Award className="w-3.5 h-3.5 animate-spin text-gray-900 dark:text-gold" style={{ animationDuration: "12s" }} />
             The Standard of Indian Cinema & Entertainment
           </div>
 
@@ -344,7 +344,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <span className="text-gray-950 dark:text-[#D4AF37] not-italic font-normal">Cinema & Corporate Entertainment</span>
           </h1>
 
-          <p className="text-sm md:text-base text-gray-600 dark:text-white/60 font-light max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm md:text-base text-gray-700 dark:text-white/60 font-light max-w-2xl mx-auto leading-relaxed">
             From premier live movie ticket engines with verified offline-first seat mappings, to major pan-Indian physical film production, celebrity launches, viral media campaigns, and CineCoins rewards.
           </p>
 

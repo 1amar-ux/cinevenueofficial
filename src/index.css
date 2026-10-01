@@ -39,28 +39,28 @@ html[data-theme="dark"],
 
 html[data-theme="light"],
 .light {
-  --cv-bg: #F8F8F6;
-  --cv-bg-secondary: #F3F3F1;
-  --cv-surface: #FFFFFF;
-  --cv-surface-secondary: #F3F3F1;
+  --cv-bg: #EFEFED;
+  --cv-bg-secondary: #E6E6E2;
+  --cv-surface: #FAF9F6;
+  --cv-surface-secondary: #E6E6E2;
   --cv-card: #FFFFFF;
-  --cv-card-elevated: #FFFFFF;
-  --cv-card-hover: #F8F8F6;
+  --cv-card-elevated: #FAF9F6;
+  --cv-card-hover: #EAEAE6;
   
   --cv-text-primary: #111111;
-  --cv-text-secondary: #4B5563;
-  --cv-text-muted: #6B7280;
+  --cv-text-secondary: #374151;
+  --cv-text-muted: #4B5563;
   
-  --cv-border: #E5E5E5;
-  --cv-border-subtle: #EEEEEE;
-  --cv-border-strong: #D1D5DB;
+  --cv-border: #D1D5DB;
+  --cv-border-subtle: #E5E7EB;
+  --cv-border-strong: #9CA3AF;
   
   --cv-input-bg: #FFFFFF;
-  --cv-input-border: #E5E5E5;
+  --cv-input-border: #D1D5DB;
   
-  --cv-nav-bg: rgba(255, 255, 255, 0.96);
-  --cv-modal-bg: #FFFFFF;
-  --cv-dropdown-bg: #FFFFFF;
+  --cv-nav-bg: rgba(239, 239, 237, 0.96);
+  --cv-modal-bg: #FAF9F6;
+  --cv-dropdown-bg: #FAF9F6;
   
   --cv-gold: #D4AF37;
   --cv-gold-light: #E5C158;

@@ -79,7 +79,7 @@ export default function Navbar({
   const userInitials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0A0A0B]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 w-full shadow-xs dark:shadow-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#EFEFED]/95 dark:bg-[#0A0A0B]/95 backdrop-blur-md border-b border-gray-300 dark:border-white/10 w-full shadow-xs dark:shadow-2xl">
       {/* Top Navbar Row */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-4">
         
@@ -131,12 +131,12 @@ export default function Navbar({
         </div>
 
         {/* Center: District Navigation Capsule Bar */}
-        <div className="hidden lg:flex items-center gap-1 bg-gray-100 dark:bg-[#151518] p-1 rounded-full border border-gray-200 dark:border-white/10 shadow-inner">
+        <div className="hidden lg:flex items-center gap-1 bg-gray-200/90 dark:bg-[#151518] p-1 rounded-full border border-gray-300 dark:border-white/10 shadow-inner">
           <button
             onClick={() => {
               window.location.href = "/#home";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5"
           >
             For you
           </button>
@@ -145,7 +145,7 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#movies";
             }}
-            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-gray-900 text-white dark:bg-white dark:text-black shadow-md"
+            className="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-gray-950 text-white dark:bg-white dark:text-black shadow-md"
           >
             Movies
           </button>
@@ -154,7 +154,7 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#theatres";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5"
           >
             Dining / Theatres
           </button>
@@ -163,13 +163,13 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/events";
             }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
-              isEventsLive ? "text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5" : "text-rose-500 dark:text-rose-400"
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
+              isEventsLive ? "text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
             }`}
           >
             <span>Events</span>
             {!isEventsLive && (
-              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 font-bold">OFF</span>
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">OFF</span>
             )}
           </button>
 
@@ -177,13 +177,13 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/productions";
             }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
-              isFilmProductionLive ? "text-gray-600 dark:text-white/70 hover:text-gray-950 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5" : "text-rose-500 dark:text-rose-400"
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 ${
+              isFilmProductionLive ? "text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
             }`}
           >
             <span>Productions</span>
             {!isFilmProductionLive && (
-              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 font-bold">OFF</span>
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">OFF</span>
             )}
           </button>
 
@@ -192,9 +192,9 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins();
               else window.location.href = "/cinecoins";
             }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 bg-transparent text-gray-700 dark:text-amber-400 hover:text-black dark:hover:text-amber-300 hover:bg-gray-200/70 dark:hover:bg-white/5 flex items-center gap-1"
+            className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-amber-400 hover:text-black dark:hover:text-amber-300 hover:bg-gray-300/80 dark:hover:bg-white/5 flex items-center gap-1"
           >
-            <Coins className="w-3 h-3 text-gray-700 dark:text-amber-400" />
+            <Coins className="w-3 h-3 text-gray-950 dark:text-amber-400" />
             <span>CineCoins</span>
           </button>
         </div>

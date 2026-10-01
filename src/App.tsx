@@ -1505,7 +1505,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <div className="bg-[#F8F8F6] dark:bg-[#09090A] min-h-screen text-gray-950 dark:text-[#F3F4F6]">
+          <div className="bg-[#EFEFED] dark:bg-[#09090A] min-h-screen text-gray-950 dark:text-[#F3F4F6]">
             <Home
               userEmail={userEmail}
               onOpenAdmin={() => setAdminOpen(true)}
@@ -1644,7 +1644,7 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-          <div className="bg-[#F8F8F6] dark:bg-[#0A0A0B] min-h-screen text-gray-950 dark:text-text-primary selection:bg-gold selection:text-black">
+          <div className="bg-[#EFEFED] dark:bg-[#0A0A0B] min-h-screen text-gray-950 dark:text-text-primary selection:bg-gold selection:text-black">
             {/* Dynamic luxury layout navigation */}
             <Navbar
               selectedCity={selectedCity}
