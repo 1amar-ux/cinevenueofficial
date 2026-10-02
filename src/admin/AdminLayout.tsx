@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppSettings } from "../context/AppSettingsContext";
 import {
   LayoutDashboard,
@@ -106,8 +106,38 @@ export default function AdminLayout() {
   };
 
   // 1. Dashboard states and stateful variables
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const location = useLocation();
+
+  const getInitialTab = () => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam) return tabParam;
+    const path = window.location.pathname.toLowerCase();
+    if (path.includes("/events/create")) return "event_create";
+    if (path.includes("/events")) return "events";
+    if (path.includes("/movies")) return "movies";
+    if (path.includes("/theatres")) return "theatres";
+    if (path.includes("/shows")) return "shows";
+    return "dashboard";
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [sidebarSearch, setSidebarSearch] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get("tab");
+    if (tabParam) {
+      setActiveTab(tabParam);
+    } else {
+      const path = location.pathname.toLowerCase();
+      if (path.includes("/events/create")) setActiveTab("event_create");
+      else if (path.includes("/events")) setActiveTab("events");
+      else if (path.includes("/movies")) setActiveTab("movies");
+      else if (path.includes("/theatres")) setActiveTab("theatres");
+      else if (path.includes("/shows")) setActiveTab("shows");
+    }
+  }, [location.search, location.pathname]);
 
   // System sub-states (mock logs, campaign settings, support tickets)
   const [systemAdmins, setSystemAdmins] = useState(() => {
@@ -201,9 +231,10 @@ export default function AdminLayout() {
       ]
     },
     {
-      title: "EVENTS & PRE-RELEASES",
+      title: "EVENTS & EXPERIENCES",
       items: [
-        { id: "events", label: "Event Passes & Capacity", icon: Award }
+        { id: "events", label: "Event Management & Passes", icon: Ticket },
+        { id: "event_create", label: "Create New Event", icon: PlusCircle }
       ]
     },
 
@@ -999,7 +1030,14 @@ export default function AdminLayout() {
             {/* EVENT PASSES & CAPACITY MODULE */}
             {activeTab === "events" && (
               <div className="space-y-6">
-                <EventsAdminModule />
+                <EventsAdminModule initialTab="dashboard" />
+              </div>
+            )}
+
+            {/* CREATE NEW EVENT PORTAL */}
+            {activeTab === "event_create" && (
+              <div className="space-y-6">
+                <EventsAdminModule initialTab="create" />
               </div>
             )}
 

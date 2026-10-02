@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EventsList from './EventsList';
 import EventCreator from './EventCreator';
 import EventManagementDashboard from './EventManagementDashboard';
@@ -22,13 +22,44 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
-export default function EventsAdminModule() {
+interface EventsAdminModuleProps {
+  initialTab?:
+    | 'dashboard'
+    | 'create'
+    | 'freepasses'
+    | 'registrations'
+    | 'passes'
+    | 'settlements'
+    | 'analytics'
+    | 'scanner';
+  initialEvent?: any;
+}
+
+export default function EventsAdminModule({
+  initialTab = 'dashboard',
+  initialEvent = null,
+}: EventsAdminModuleProps = {}) {
   const [activeSubTab, setActiveSubTab] = useState<
     'dashboard' | 'create' | 'freepasses' | 'registrations' | 'passes' | 'settlements' | 'analytics' | 'scanner'
-  >('dashboard');
+  >(initialTab);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [selectedEventIdForPasses, setSelectedEventIdForPasses] = useState<string | null>(null);
-  const [selectedEventForManagement, setSelectedEventForManagement] = useState<any | null>(null);
+  const [selectedEventForManagement, setSelectedEventForManagement] = useState<any | null>(initialEvent);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveSubTab(initialTab);
+      if (initialTab === 'create') {
+        setSelectedEventForManagement(null);
+      }
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialEvent) {
+      setSelectedEventForManagement(initialEvent);
+    }
+  }, [initialEvent]);
 
   const handleEditEvent = (evt: any) => {
     setEditingEvent(evt);

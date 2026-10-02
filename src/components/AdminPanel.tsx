@@ -137,7 +137,7 @@ interface AdminPanelProps {
   onUpdateCineCoinsTransactions?: (txs: CineCoinsTransaction[]) => void;
 }
 
-type TabType = "integration_testing" | "system_monitoring" | "overview" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
+type TabType = "integration_testing" | "system_monitoring" | "overview" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
 
 export default function AdminPanel({
   isOpen,
@@ -1970,7 +1970,7 @@ export default function AdminPanel({
                   </button>
                 )}
 
-                {/* Tab Item - Independent Events Creator (Super Admin Only) */}
+                {/* Tab Item - Independent Events Organizer Onboarding (Super Admin Only) */}
                 {effectiveSuperAdmin && (
                   <button
                     onClick={() => { setActiveTab("event_creator"); setIsMobileMenuOpen(false); }}
@@ -1982,10 +1982,10 @@ export default function AdminPanel({
                   >
                     <div className="flex items-center gap-3">
                       <Sparkles className="w-4 h-4 text-gold shrink-0 animate-pulse" />
-                      <span>Event Creator Portal</span>
+                      <span>Organizer Credentials Hub</span>
                     </div>
                     <span className="text-[9px] font-bold bg-[#A3E635]/15 border border-[#A3E635]/30 text-[#A3E635] px-1.5 py-0.5 rounded">
-                      NEW
+                      ORGANIZERS
                     </span>
                   </button>
                 )}
@@ -2172,7 +2172,7 @@ export default function AdminPanel({
                   </button>
                 )}
 
-                {/* Tab Item - Events Manager */}
+                {/* Tab Item - Event Management & Passes */}
                 <button
                   onClick={() => { setActiveTab("events"); setIsMobileMenuOpen(false); }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -2183,11 +2183,30 @@ export default function AdminPanel({
                   id="tab-btn-events"
                 >
                   <div className="flex items-center gap-3">
-                    <Sparkles className="w-4 h-4 text-gold shrink-0 animate-pulse" />
-                    <span>Events Manager</span>
+                    <Ticket className="w-4 h-4 text-gold shrink-0 animate-pulse" />
+                    <span>Event Management & Passes</span>
                   </div>
-                  <span className="text-[9px] font-bold bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-text-secondary">
-                    {events.length}
+                  <span className="text-[9px] font-bold bg-gold/15 border border-gold/30 text-gold px-1.5 py-0.5 rounded">
+                    CENTRAL
+                  </span>
+                </button>
+
+                {/* Tab Item - Create New Event */}
+                <button
+                  onClick={() => { setActiveTab("events_create"); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === "events_create" 
+                      ? "bg-gold/10 text-gold border-l-2 border-gold" 
+                      : "text-text-secondary hover:bg-white/[0.02] hover:text-text-primary"
+                  }`}
+                  id="tab-btn-events-create"
+                >
+                  <div className="flex items-center gap-3">
+                    <PlusCircle className="w-4 h-4 text-gold shrink-0" />
+                    <span>Create New Event</span>
+                  </div>
+                  <span className="text-[9px] font-bold bg-[#A3E635]/15 border border-[#A3E635]/30 text-[#A3E635] px-1.5 py-0.5 rounded">
+                    NEW
                   </span>
                 </button>
 
@@ -5306,7 +5325,12 @@ export default function AdminPanel({
           {/* ========================================================= */}
           {activeTab === "events" && (
             <div className="space-y-8 animate-fade-in" id="tab-events">
-              <EventsAdminModule />
+              <EventsAdminModule initialTab="dashboard" />
+            </div>
+          )}
+          {activeTab === "events_create" && (
+            <div className="space-y-8 animate-fade-in" id="tab-events-create">
+              <EventsAdminModule initialTab="create" />
             </div>
           )}
 
