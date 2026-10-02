@@ -344,8 +344,10 @@ export interface EventRegistration {
   superadminApproved?: boolean;
   utrNumber?: string;
   paymentScreenshot?: string;
-  paymentVerificationStatus?: 'Pending Review' | 'Approved' | 'Rejected';
   qrCodeData?: string;
+  orderId?: string;
+  bannerUrl?: string;
+  venueAddress?: string;
 }
 
 export interface UpiGatewaySettings {

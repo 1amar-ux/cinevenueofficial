@@ -343,17 +343,23 @@ export default function EventsShowcase({
       return;
     }
 
-    const registrationId = `EV-REG-${Math.floor(100000 + Math.random() * 900000)}`;
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const registrationId = `CV-EVT-2026-${randomSuffix}`;
     const isFree = selectedEvent.isPaid === false;
     const finalQuantity = isFree ? 1 : ticketQuantity;
     const finalPrice = isFree ? 0 : selectedCategory.price;
     const totalPrice = finalPrice * finalQuantity;
+    const orderId = isFree ? `CV-FREE-2026-${randomSuffix}` : `CV-ORDER-2026-${randomSuffix}`;
 
     const newRegistration: EventRegistration = {
       id: registrationId,
+      orderId,
       eventId: selectedEvent.id,
       eventTitle: selectedEvent.title,
       venueName: selectedEvent.venueName,
+      venueAddress: selectedEvent.venueAddress || `${selectedEvent.venueName}, ${selectedEvent.city || 'HITEC City, Hyderabad'}`,
+      city: selectedEvent.city,
+      bannerUrl: selectedEvent.imageUrl || selectedEvent.bannerUrl,
       date: selectedEvent.date,
       time: selectedEvent.time,
       userName: bookingName,

@@ -106,6 +106,87 @@ const generateSeatSection = (
 // ─── Initial Seeded Events ────────────────────────────────────
 export const INITIAL_TICKETED_EVENTS: EventItem[] = [
   {
+    id: 'EVT-100',
+    title: 'CineVenue Grand Launch',
+    slug: 'cinevenue-grand-launch-hyderabad',
+    description:
+      'The prestigious official grand launch of CineVenue Entertainments! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.',
+    category: 'Film Events',
+    bannerUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80',
+    galleryUrls: [
+      'https://images.unsplash.com/photo-1540039155732-6762b51333fc?w=800&q=75',
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=75',
+    ],
+    organizer: {
+      id: 'ORG-CV',
+      name: 'CineVenue Entertainments',
+      email: 'events@cinevenue.in',
+      phone: '+91 99887 76655',
+      companyName: 'CineVenue Entertainments Private Limited',
+      logoUrl: '/logo.jpg',
+      isVerified: true,
+      rating: 5.0,
+      eventsCount: 50,
+    },
+    date: '2026-10-18',
+    startTime: '06:00 PM',
+    endTime: '11:00 PM',
+    duration: '5h 00m',
+    venueName: 'Grand Convention Hall',
+    venueAddress: 'HITEC City Main Boulevard, Madhapur, Hyderabad, Telangana 500081',
+    city: 'Hyderabad',
+    latitude: 17.4485,
+    longitude: 78.3739,
+    language: 'Telugu / English / Hindi',
+    ageRestriction: 'All Ages',
+    termsAndConditions: [
+      'Dress Code: Smart Casual or Formal.',
+      'Gates open at 5:00 PM. Please be seated 15 minutes before launch presentation.',
+      'Vertical Event Pass required for digital scan at gate entry.',
+    ],
+    cancellationPolicy: 'Refundable up to 24 hours prior to event start.',
+    seatingType: 'GeneralAdmission',
+    totalCapacity: 1500,
+    soldCount: 850,
+    status: 'Published',
+    isFeatured: true,
+    rating: 4.98,
+    reviewCount: 320,
+    createdAt: '2026-08-01T10:00:00Z',
+    updatedAt: '2026-09-01T10:00:00Z',
+    ticketTypes: [
+      {
+        id: 'TKT-100-VIP',
+        eventId: 'EVT-100',
+        name: 'VIP Pass',
+        tier: 'VIP',
+        description: 'VIP reserved seating area, red carpet access, networking gala cocktail & refreshments.',
+        price: 999,
+        availableQuantity: 400,
+        soldQuantity: 350,
+        maxPerUser: 4,
+        minPerUser: 1,
+        status: 'Active',
+        isRefundable: true,
+      },
+      {
+        id: 'TKT-100-GEN',
+        eventId: 'EVT-100',
+        name: 'General Admission',
+        tier: 'General',
+        description: 'Standard event access and stage view.',
+        price: 0,
+        isFree: true,
+        availableQuantity: 1100,
+        soldQuantity: 500,
+        maxPerUser: 4,
+        minPerUser: 1,
+        status: 'Active',
+        isRefundable: false,
+      },
+    ],
+  },
+  {
     id: 'EVT-101',
     title: 'Sunburn Arena ft. Alan Walker Live in Concert',
     slug: 'sunburn-arena-alan-walker-hyderabad',
@@ -960,10 +1041,208 @@ export function validateCoupon(
   return { valid: true, coupon, message: 'Coupon applied successfully!' };
 }
 
+// ─── Initial Seeded Bookings ──────────────────────────────────
+export const INITIAL_BOOKINGS: EventBookingRecord[] = [
+  {
+    id: 'EVT-BK-000184',
+    passCode: 'CV-EVT-2026-000184',
+    eventId: 'EVT-100',
+    orderId: 'CV-ORDER-2026-00184',
+    bookingMode: 'PAID',
+    eventTitle: 'CineVenue Grand Launch',
+    eventDate: '2026-10-18',
+    eventTime: '06:00 PM',
+    venueName: 'Grand Convention Hall',
+    venueAddress: 'HITEC City Main Boulevard, Madhapur, Hyderabad, Telangana 500081',
+    city: 'Hyderabad',
+    bannerUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80',
+    seatingType: 'GeneralAdmission',
+    ticketTypeId: 'TKT-100-VIP',
+    ticketTypeName: 'VIP',
+    ticketCount: 1,
+    primaryAttendee: {
+      name: 'Amarnath',
+      email: 'amarnath@cinevenue.in',
+      phone: '+91 98765 43210',
+    },
+    pricing: {
+      ticketSubtotal: 999,
+      platformBookingFee: 0,
+      taxAmount: 0,
+      discountAmount: 0,
+      cineCoinsRedeemed: 0,
+      cineCoinsDiscount: 0,
+      finalAmount: 999,
+    },
+    paymentMethod: 'Online Gateway',
+    paymentStatus: 'PAID',
+    bookingStatus: 'CONFIRMED',
+    qrCodePayload: 'CV-EVT-2026-000184',
+    bookedAt: '2026-09-15T14:30:00.000Z',
+    checkedIn: false,
+  },
+  {
+    id: 'EVT-BK-000219',
+    passCode: 'CV-EVT-2026-000219',
+    eventId: 'EVT-100',
+    orderId: 'CV-FREE-2026-000219',
+    bookingMode: 'FREE',
+    eventTitle: 'CineVenue Grand Launch',
+    eventDate: '2026-10-18',
+    eventTime: '06:00 PM',
+    venueName: 'Grand Convention Hall',
+    venueAddress: 'HITEC City Main Boulevard, Madhapur, Hyderabad, Telangana 500081',
+    city: 'Hyderabad',
+    bannerUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80',
+    seatingType: 'GeneralAdmission',
+    ticketTypeId: 'TKT-100-GEN',
+    ticketTypeName: 'General Admission',
+    ticketCount: 1,
+    primaryAttendee: {
+      name: 'Priya Sharma',
+      email: 'priya.sharma@example.com',
+      phone: '+91 98123 45678',
+    },
+    pricing: {
+      ticketSubtotal: 0,
+      platformBookingFee: 0,
+      taxAmount: 0,
+      discountAmount: 0,
+      cineCoinsRedeemed: 0,
+      cineCoinsDiscount: 0,
+      finalAmount: 0,
+    },
+    paymentMethod: 'FREE_REGISTRATION',
+    paymentStatus: 'FREE',
+    bookingStatus: 'CONFIRMED',
+    qrCodePayload: 'CV-EVT-2026-000219',
+    bookedAt: '2026-09-16T11:15:00.000Z',
+    checkedIn: false,
+  },
+  {
+    id: 'EVT-BK-000142',
+    passCode: 'CV-EVT-2026-000142',
+    eventId: 'EVT-101',
+    orderId: 'CV-ORDER-2026-000142',
+    bookingMode: 'PAID',
+    eventTitle: 'Sunburn Arena ft. Alan Walker Live in Concert',
+    eventDate: '2026-10-18',
+    eventTime: '06:00 PM',
+    venueName: 'Gachibowli Outdoor Stadium',
+    venueAddress: 'Old Mumbai Highway, Gachibowli, Hyderabad, Telangana 500032',
+    city: 'Hyderabad',
+    bannerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&q=80',
+    seatingType: 'GeneralAdmission',
+    ticketTypeName: 'VIP Arena Pass',
+    ticketCount: 1,
+    primaryAttendee: {
+      name: 'Rajesh Kumar',
+      email: 'rajesh.k@example.com',
+      phone: '+91 97654 32109',
+    },
+    pricing: {
+      ticketSubtotal: 2499,
+      platformBookingFee: 125,
+      taxAmount: 23,
+      discountAmount: 0,
+      cineCoinsRedeemed: 0,
+      cineCoinsDiscount: 0,
+      finalAmount: 2647,
+    },
+    paymentMethod: 'UPI / Razorpay',
+    paymentStatus: 'PAID',
+    bookingStatus: 'CONFIRMED',
+    qrCodePayload: 'CV-EVT-2026-000142',
+    bookedAt: '2026-09-12T09:20:00.000Z',
+    checkedIn: true,
+    checkedInAt: '18 Oct 2026, 5:42 PM',
+    checkedInBy: 'Gate Staff #1',
+  },
+  {
+    id: 'EVT-BK-000108',
+    passCode: 'CV-EVT-2026-000108',
+    eventId: 'EVT-103',
+    orderId: 'CV-ORDER-2026-000108',
+    bookingMode: 'PAID',
+    eventTitle: 'Kalki 2898 AD: Director & Star Cast Celebration Gala',
+    eventDate: '2026-11-08',
+    eventTime: '07:00 PM',
+    venueName: 'Novotel & HICC Complex',
+    venueAddress: 'HITEC City, Madhapur, Hyderabad, Telangana 500081',
+    city: 'Hyderabad',
+    bannerUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&q=80',
+    seatingType: 'GeneralAdmission',
+    ticketTypeName: 'VIP Fan Pass',
+    ticketCount: 1,
+    primaryAttendee: {
+      name: 'Vikram Reddy',
+      email: 'vikram.reddy@example.com',
+      phone: '+91 99001 12233',
+    },
+    pricing: {
+      ticketSubtotal: 1499,
+      platformBookingFee: 75,
+      taxAmount: 14,
+      discountAmount: 0,
+      cineCoinsRedeemed: 0,
+      cineCoinsDiscount: 0,
+      finalAmount: 1588,
+    },
+    paymentMethod: 'Credit Card',
+    paymentStatus: 'CANCELLED',
+    bookingStatus: 'Cancelled',
+    qrCodePayload: 'CV-EVT-2026-000108',
+    bookedAt: '2026-09-10T16:45:00.000Z',
+    checkedIn: false,
+  },
+];
+
+export function isFreeEventBooking(booking: any): boolean {
+  if (!booking) return false;
+  if (booking.bookingMode === 'FREE') return true;
+  if (booking.paymentMethod === 'FREE_REGISTRATION' || booking.paymentMethod === 'Free Access Pass') return true;
+  if (booking.paymentStatus === 'FREE' || booking.paymentStatus === 'NOT_REQUIRED' || booking.paymentStatus === 'NOT_APPLICABLE') return true;
+  if (booking.pricing && booking.pricing.finalAmount === 0 && booking.pricing.ticketSubtotal === 0) return true;
+  if (booking.totalPrice === 0 && (booking.ticketPrice === 0 || booking.ticketPrice === undefined)) return true;
+  return false;
+}
+
+export function getBookingPassId(booking: any): string {
+  if (!booking) return 'CV-EVT-2026-000184';
+  if (typeof booking.passCode === 'string' && (booking.passCode.startsWith('CV-EVT-') || booking.passCode.startsWith('CV-'))) {
+    return booking.passCode;
+  }
+  if (typeof booking.id === 'string' && booking.id.startsWith('CV-EVT-')) {
+    return booking.id;
+  }
+  if (Array.isArray(booking.passes) && booking.passes[0]?.id && booking.passes[0].id.startsWith('CV-EVT-')) {
+    return booking.passes[0].id;
+  }
+  const digits = String(booking.id || booking.passCode || '184').replace(/\D/g, '') || '000184';
+  const padded = digits.padStart(6, '0').slice(-6);
+  return `CV-EVT-2026-${padded}`;
+}
+
+export function getBookingOrderId(booking: any): string {
+  if (!booking) return 'CV-ORDER-2026-00184';
+  if (booking.orderId && (booking.orderId.startsWith('CV-ORDER-') || booking.orderId.startsWith('CV-FREE-'))) {
+    return booking.orderId;
+  }
+  const isFree = isFreeEventBooking(booking);
+  const prefix = isFree ? 'CV-FREE-2026-' : 'CV-ORDER-2026-';
+  const digits = String(booking.orderId || booking.id || booking.passCode || '184').replace(/\D/g, '') || '000184';
+  const padded = digits.padStart(6, '0').slice(-6);
+  return `${prefix}${padded}`;
+}
+
 // ─── Bookings Service ─────────────────────────────────────────
 
 export function getBookings(userEmail?: string): EventBookingRecord[] {
-  const allBookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
+  let allBookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
+  if (!allBookings || allBookings.length === 0) {
+    saveStorage(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
+    allBookings = INITIAL_BOOKINGS;
+  }
   if (!userEmail) return allBookings;
   return allBookings.filter(
     (b) => b.primaryAttendee.email.toLowerCase() === userEmail.toLowerCase()
@@ -971,13 +1250,16 @@ export function getBookings(userEmail?: string): EventBookingRecord[] {
 }
 
 export function getBookingById(bookingId: string): EventBookingRecord | undefined {
-  const bookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
-  return bookings.find((b) => b.id === bookingId);
+  const bookings = getBookings();
+  return bookings.find((b) => b.id === bookingId || b.passCode === bookingId || getBookingPassId(b) === bookingId);
 }
 
 export function getBookingByPassCode(passCode: string): EventBookingRecord | undefined {
-  const bookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
-  return bookings.find((b) => b.passCode.toUpperCase() === passCode.trim().toUpperCase());
+  const bookings = getBookings();
+  const cleanCode = passCode.trim().toUpperCase();
+  return bookings.find(
+    (b) => b.passCode.toUpperCase() === cleanCode || getBookingPassId(b).toUpperCase() === cleanCode
+  );
 }
 
 export function createEventBooking(params: {
@@ -994,29 +1276,22 @@ export function createEventBooking(params: {
   const event = getEventById(params.eventId);
   if (!event) throw new Error('Event not found');
 
-  const bookingId = `EVT-BK-${Math.floor(100000 + Math.random() * 900000)}`;
-  const passCode = `PASS-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+  const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+  const bookingId = `EVT-BK-${randomSuffix}`;
+  const passCode = `CV-EVT-2026-${randomSuffix}`;
+  const isFreeBooking = params.pricing.finalAmount === 0 || isFreeEventBooking(params);
+  const orderId = isFreeBooking ? `CV-FREE-2026-${randomSuffix}` : `CV-ORDER-2026-${randomSuffix}`;
 
   const ticketType = event.ticketTypes.find((t) => t.id === params.ticketTypeId);
   const ticketTypeName = ticketType ? ticketType.name : (params.seatCodes ? 'Assigned Seating' : 'General Admission');
 
   // Payload encoded in the QR code for authentic validation
-  const qrPayload = JSON.stringify({
-    bId: bookingId,
-    code: passCode,
-    evtId: event.id,
-    seats: params.seatCodes || [],
-    qty: params.ticketCount,
-    attendee: params.primaryAttendee.name,
-    v: event.venueName,
-    date: event.date,
-  });
-
-  const isFreeBooking = params.pricing.finalAmount === 0;
+  const qrPayload = passCode;
 
   const record: EventBookingRecord = {
     id: bookingId,
     passCode,
+    orderId,
     eventId: event.id,
     eventTitle: event.title,
     eventDate: event.date,
@@ -1034,7 +1309,7 @@ export function createEventBooking(params: {
     additionalAttendees: params.additionalAttendees,
     pricing: params.pricing,
     paymentMethod: isFreeBooking ? 'FREE_REGISTRATION' : params.paymentMethod,
-    paymentStatus: isFreeBooking ? 'NOT_REQUIRED' : 'Paid',
+    paymentStatus: isFreeBooking ? 'FREE' : 'PAID',
     bookingStatus: 'Confirmed',
     qrCodePayload: qrPayload,
     bookedAt: new Date().toISOString(),
@@ -1142,51 +1417,131 @@ export function createEventBooking(params: {
 
 // ─── Gate Check-in Validation Engine ──────────────────────────
 
+export function findBookingByIdentifier(identifier: string): EventBookingRecord | undefined {
+  if (!identifier) return undefined;
+  const bookings = getBookings();
+  const cleanId = identifier.trim().toUpperCase();
+
+  // 1. Direct passCode match
+  let target = bookings.find(
+    (b) => b.passCode.toUpperCase() === cleanId || getBookingPassId(b).toUpperCase() === cleanId
+  );
+  if (target) return target;
+
+  // 2. Booking ID or Order ID match
+  target = bookings.find(
+    (b) =>
+      b.id.toUpperCase() === cleanId ||
+      (b.orderId && b.orderId.toUpperCase() === cleanId) ||
+      getBookingOrderId(b).toUpperCase() === cleanId
+  );
+  if (target) return target;
+
+  // 3. Sub-pass match
+  target = bookings.find((b) =>
+    b.passes?.some(
+      (p) =>
+        p.id.toUpperCase() === cleanId ||
+        p.verificationCode.toUpperCase() === cleanId ||
+        p.qrPayload.toUpperCase() === cleanId
+    )
+  );
+  if (target) return target;
+
+  // 4. JSON / URL encoded QR match
+  try {
+    const parsed = JSON.parse(identifier);
+    if (parsed.code) {
+      return bookings.find(
+        (b) => b.passCode.toUpperCase() === String(parsed.code).toUpperCase() || getBookingPassId(b) === parsed.code
+      );
+    }
+    if (parsed.bId) {
+      return bookings.find((b) => b.id.toUpperCase() === String(parsed.bId).toUpperCase());
+    }
+  } catch {
+    // Check delimiter patterns like CINEVENUE-EVENT-PASS|ID:...
+    const match = identifier.match(/(?:ID|PASS):([A-Za-z0-9_-]+)/i);
+    if (match && match[1]) {
+      const extracted = match[1].toUpperCase();
+      return bookings.find(
+        (b) =>
+          b.passCode.toUpperCase() === extracted ||
+          getBookingPassId(b).toUpperCase() === extracted ||
+          b.id.toUpperCase() === extracted
+      );
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Validates a pass without performing check-in.
+ * Used by QR Scanner to preview pass details before confirming entry.
+ */
+export function validatePass(identifier: string): {
+  valid: boolean;
+  status: 'VALID' | 'ALREADY_CHECKED_IN' | 'CANCELLED' | 'INVALID';
+  booking?: EventBookingRecord;
+  message: string;
+  checkedInAt?: string;
+} {
+  const targetBooking = findBookingByIdentifier(identifier);
+
+  if (!targetBooking) {
+    return {
+      valid: false,
+      status: 'INVALID',
+      message: 'INVALID PASS: No matching pass or booking found.',
+    };
+  }
+
+  if (targetBooking.bookingStatus === 'Cancelled' || targetBooking.paymentStatus === 'CANCELLED') {
+    return {
+      valid: false,
+      status: 'CANCELLED',
+      booking: targetBooking,
+      message: 'CANCELLED PASS: This pass has been cancelled or refunded.',
+    };
+  }
+
+  if (targetBooking.checkedIn) {
+    return {
+      valid: false,
+      status: 'ALREADY_CHECKED_IN',
+      booking: targetBooking,
+      checkedInAt: targetBooking.checkedInAt,
+      message: `ALREADY CHECKED-IN: Pass was checked in at ${targetBooking.checkedInAt || 'earlier today'}.`,
+    };
+  }
+
+  return {
+    valid: true,
+    status: 'VALID',
+    booking: targetBooking,
+    message: 'PASS VALID: Verified and ready for check-in.',
+  };
+}
+
 export function validateAndCheckInTicket(
   identifier: string, // bookingId, passCode, or QR payload
   staffName = 'Gate Staff'
 ): EventCheckInResult {
-  const bookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
-  let targetBooking: EventBookingRecord | undefined;
-
-  // Attempt 1: Direct passCode match
-  targetBooking = bookings.find(
-    (b) => b.passCode.toUpperCase() === identifier.trim().toUpperCase()
-  );
-
-  // Attempt 2: Booking ID match
-  if (!targetBooking) {
-    targetBooking = bookings.find(
-      (b) => b.id.toUpperCase() === identifier.trim().toUpperCase()
-    );
-  }
-
-  // Attempt 3: Decoded QR JSON
-  if (!targetBooking) {
-    try {
-      const parsed = JSON.parse(identifier);
-      if (parsed.code) {
-        targetBooking = bookings.find((b) => b.passCode === parsed.code);
-      } else if (parsed.bId) {
-        targetBooking = bookings.find((b) => b.id === parsed.bId);
-      }
-    } catch {
-      // Not JSON, ignore
-    }
-  }
+  const targetBooking = findBookingByIdentifier(identifier);
 
   if (!targetBooking) {
     return {
       success: false,
-      message: 'Invalid Ticket. No booking found matching this pass or QR code.',
+      message: 'INVALID PASS: No booking found matching this pass or QR code.',
     };
   }
 
-  if (targetBooking.bookingStatus === 'Cancelled') {
+  if (targetBooking.bookingStatus === 'Cancelled' || targetBooking.paymentStatus === 'CANCELLED') {
     return {
       success: false,
       booking: targetBooking,
-      message: 'Access Denied! This ticket has been cancelled or refunded.',
+      message: 'CANCELLED PASS: Access Denied! This ticket has been cancelled or refunded.',
     };
   }
 
@@ -1196,14 +1551,19 @@ export function validateAndCheckInTicket(
       booking: targetBooking,
       alreadyCheckedIn: true,
       checkedInAt: targetBooking.checkedInAt,
-      message: `Duplicate Entry Attempt! Ticket was already checked in at ${targetBooking.checkedInAt} by ${targetBooking.checkedInBy || 'Gate Staff'}.`,
+      message: `ALREADY CHECKED-IN: Duplicate Scan! Pass ${getBookingPassId(targetBooking)} was checked in at ${targetBooking.checkedInAt} by ${targetBooking.checkedInBy || 'Gate Staff'}.`,
     };
   }
 
-  // Mark as checked in
-  const checkInTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Format timestamp e.g. 18 Oct 2026, 5:42 PM
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const checkInTimestamp = `${dateStr}, ${timeStr}`;
+
+  const bookings = getBookings();
   const updatedBookings = bookings.map((b) => {
-    if (b.id === targetBooking!.id) {
+    if (b.id === targetBooking.id) {
       return {
         ...b,
         checkedIn: true,
@@ -1225,7 +1585,51 @@ export function validateAndCheckInTicket(
       checkedInAt: checkInTimestamp,
       checkedInBy: staffName,
     },
-    message: `Valid Ticket! Entry Granted for ${targetBooking.primaryAttendee.name} (${targetBooking.ticketCount} pass${targetBooking.ticketCount > 1 ? 'es' : ''}).`,
+    message: `STATUS: CHECKED-IN for ${targetBooking.primaryAttendee.name} at ${checkInTimestamp}.`,
+  };
+}
+
+/**
+ * Reverses a check-in status (Admin authorization only).
+ */
+export function reverseCheckInTicket(
+  identifier: string,
+  staffName = 'Admin'
+): EventCheckInResult {
+  const targetBooking = findBookingByIdentifier(identifier);
+
+  if (!targetBooking) {
+    return {
+      success: false,
+      message: 'Pass not found.',
+    };
+  }
+
+  const bookings = getBookings();
+  const updatedBookings = bookings.map((b) => {
+    if (b.id === targetBooking.id) {
+      return {
+        ...b,
+        checkedIn: false,
+        checkedInAt: undefined,
+        checkedInBy: undefined,
+        bookingStatus: 'CONFIRMED' as const,
+      };
+    }
+    return b;
+  });
+
+  saveStorage(STORAGE_KEYS.BOOKINGS, updatedBookings);
+
+  return {
+    success: true,
+    booking: {
+      ...targetBooking,
+      checkedIn: false,
+      checkedInAt: undefined,
+      checkedInBy: undefined,
+    },
+    message: `Check-in reversed for ${targetBooking.primaryAttendee.name}. Status reset to NOT CHECKED-IN.`,
   };
 }
 
@@ -1480,8 +1884,10 @@ export function createFreeEventPassBooking(params: {
     return { success: false, error: 'REGISTRATION_FULL: Event has reached full capacity.' };
   }
 
-  const bookingId = `EVT-FREE-${Math.floor(100000 + Math.random() * 900000)}`;
-  const passCode = `FREE-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+  const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+  const bookingId = `EVT-FREE-${randomSuffix}`;
+  const passCode = `CV-EVT-2026-${randomSuffix}`;
+  const orderId = `CV-FREE-2026-${randomSuffix}`;
 
   const freeTicketType = event.ticketTypes.find((t) => t.isFree || t.price === 0) || event.ticketTypes[0];
   const ticketTypeName = freeTicketType ? freeTicketType.name : 'Free Entry Pass';
@@ -1509,7 +1915,7 @@ export function createFreeEventPassBooking(params: {
     id: bookingId,
     passCode,
     eventId: event.id,
-    orderId: null,
+    orderId,
     bookingMode: 'FREE',
     eventTitle: event.title,
     eventDate: event.date,
@@ -1528,12 +1934,12 @@ export function createFreeEventPassBooking(params: {
     pricing,
     paymentMethod: 'FREE_REGISTRATION',
     paymentRequired: false,
-    paymentStatus: 'NOT_APPLICABLE',
+    paymentStatus: 'FREE',
     bookingStatus: 'CONFIRMED',
     pdfStatus: 'NOT_GENERATED',
     emailStatus: 'NOT_SENT',
     idempotencyKey: params.idempotencyKey,
-    qrCodePayload: passes[0]?.qrPayload || `CINEVENUE|FREE|${bookingId}`,
+    qrCodePayload: passCode,
     bookedAt: new Date().toISOString(),
     checkedIn: false,
   };
