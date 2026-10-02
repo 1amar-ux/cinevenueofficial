@@ -492,7 +492,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-purple-500/20 flex items-center justify-center text-gray-700 dark:text-amber-400 border border-gray-200 dark:border-amber-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-black/40 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-purple-500/20 flex items-center justify-center text-gray-700 dark:text-amber-400 border border-gray-200 dark:border-amber-500/30">
                   <Film className="w-5 h-5 text-gray-700 dark:text-gold" />
                 </div>
                 

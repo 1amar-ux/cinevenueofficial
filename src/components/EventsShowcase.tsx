@@ -460,14 +460,14 @@ export default function EventsShowcase({
       
       {/* VIP MEMBER ACCESS BAR (IF NOT LOGGED IN) */}
       {!userEmail && (
-        <div className="p-4 rounded-xl bg-[#FAF9F5] dark:bg-gradient-to-r dark:from-[#D4AF37]/10 dark:via-[#D4AF37]/5 dark:to-transparent border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
+        <div className="p-4 rounded-xl bg-[#FAF9F5] dark:bg-[#121216] dark:bg-gradient-to-r dark:from-[#D4AF37]/15 dark:via-[#D4AF37]/5 dark:to-[#121216] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-lg bg-[#D4AF37]/15 dark:bg-[#D4AF37]/20 border border-[#D4AF37]/30 dark:border-[#D4AF37]/40 text-[#D4AF37]">
               <Lock className="w-5 h-5" />
             </div>
             <div>
               <h5 className="text-sm font-bold text-gray-950 dark:text-white uppercase tracking-wider">CineVenue VIP Member Access</h5>
-              <p className="text-xs text-gray-600 dark:text-white/70">Sign in to unlock priority seat allocations, VIP passes & instant ticket confirmation across all sub-websites.</p>
+              <p className="text-xs text-gray-600 dark:text-white/80">Sign in to unlock priority seat allocations, VIP passes & instant ticket confirmation across all sub-websites.</p>
             </div>
           </div>
           <button
@@ -786,11 +786,11 @@ export default function EventsShowcase({
         <div className="lg:col-span-2 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* TRENDING LIVE EXPERIENCES */}
-            <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-5 rounded-xl space-y-4 shadow-xs">
+            <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-xl space-y-4 shadow-xs">
               <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
                 <Activity className="w-4 h-4 text-[#D4AF37]" /> Trending Live Experiences
               </h5>
-              <p className="text-xs text-gray-600 dark:text-white/50 font-light leading-relaxed">
+              <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
                 Ticket demand is currently surging across our regional portals. Here is a live feed of active pass bookings over the last 15 minutes.
               </p>
               <div className="space-y-3 pt-1">
@@ -799,23 +799,23 @@ export default function EventsShowcase({
                   { title: "Hyderabad Standup Fest", location: "Shilpakala Hall", dynamicStat: "⚡ 110 tickets secured in last 10 min" },
                   { title: "Alan Walker Sunburn Arena", location: "Gachibowli Stadium", dynamicStat: "🔥 320 VIP passes sold in last 1 hr" }
                 ].map((item, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 space-y-1">
+                  <div key={i} className="p-3 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/5 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-gray-900 dark:text-white">{item.title}</span>
                       <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 dark:text-white/40">{item.location}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-white/50">{item.location}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* BROWSE LIVE CATEGORIES */}
-            <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-5 rounded-xl space-y-4 shadow-xs">
+            <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-xl space-y-4 shadow-xs">
               <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
                 <Sparkle className="w-4 h-4 text-[#D4AF37]" /> Browse Live Categories
               </h5>
-              <p className="text-xs text-gray-600 dark:text-white/50 font-light leading-relaxed">
+              <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
                 Filter and browse high-society event passes based on premium regional categories:
               </p>
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -827,8 +827,8 @@ export default function EventsShowcase({
                   { name: "Fan-Premieres", count: "5 Shows" },
                   { name: "Sufi Evenings", count: "3 Shows" }
                 ].map((cat, i) => (
-                  <div key={i} className="p-2.5 rounded-lg bg-gray-50 hover:bg-amber-50/50 dark:bg-white/5 dark:hover:bg-[#D4AF37]/5 border border-gray-200 dark:border-white/5 hover:border-[#D4AF37]/30 flex items-center justify-between transition-all cursor-pointer">
-                    <span className="text-xs font-medium text-gray-800 dark:text-white/80">{cat.name}</span>
+                  <div key={i} className="p-2.5 rounded-lg bg-gray-50 hover:bg-amber-50/50 dark:bg-white/[0.04] dark:hover:bg-[#D4AF37]/10 border border-gray-200 dark:border-white/5 hover:border-[#D4AF37]/30 flex items-center justify-between transition-all cursor-pointer">
+                    <span className="text-xs font-medium text-gray-800 dark:text-white/90">{cat.name}</span>
                     <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
                   </div>
                 ))}
@@ -840,9 +840,9 @@ export default function EventsShowcase({
         {/* RIGHT COLUMN: CINEVENUE VICINITY CONCIERGE & REGIONAL UPDATES */}
         <div className="space-y-6 flex flex-col justify-between">
           {/* CINEVENUE VICINITY CONCIERGE */}
-          <div className="bg-white dark:bg-gradient-to-b dark:from-white/[0.02] dark:to-white/[0.01] border border-gray-200 dark:border-[#D4AF37]/20 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm">
+          <div className="bg-white dark:bg-[#121216] dark:bg-gradient-to-b dark:from-white/[0.04] dark:to-transparent border border-gray-200 dark:border-[#D4AF37]/30 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/5">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10">
                 <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#D4AF37] animate-pulse" />
                   <span className="font-cinevenue normal-case text-sm tracking-normal">
@@ -862,11 +862,11 @@ export default function EventsShowcase({
                     key={i} 
                     className={`p-3 rounded-xl leading-relaxed space-y-1 ${
                       msg.role === "user" 
-                        ? "bg-gray-100 border border-gray-200 text-gray-900 dark:bg-white/5 dark:border-white/5 dark:text-white/90 text-right ml-6" 
-                        : "bg-amber-50/80 border border-amber-200/60 text-gray-900 dark:bg-[#D4AF37]/5 dark:border-[#D4AF37]/10 dark:text-white/90 mr-6"
+                        ? "bg-gray-100 border border-gray-200 text-gray-900 dark:bg-white/10 dark:border-white/10 dark:text-white text-right ml-6" 
+                        : "bg-amber-50/80 border border-amber-200/60 text-gray-900 dark:bg-[#D4AF37]/10 dark:border-[#D4AF37]/25 dark:text-white/95 mr-6"
                     }`}
                   >
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-white/40 block pb-0.5 text-left">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block pb-0.5 text-left">
                       {msg.role === "user" ? "You (VIP Guest)" : "CineVenue Concierge Agent"}
                     </span>
                     <p className="whitespace-pre-line text-left">{msg.text}</p>
@@ -874,9 +874,9 @@ export default function EventsShowcase({
                 ))}
 
                 {conciergeLoading && (
-                  <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-[#D4AF37]/5 border border-amber-200 dark:border-[#D4AF37]/10 mr-6 space-y-2 text-left">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-white/40 block">CineVenue Concierge Agent</span>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-white/60 font-mono text-[10px]">
+                  <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-[#D4AF37]/10 border border-amber-200 dark:border-[#D4AF37]/25 mr-6 space-y-2 text-left">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block">CineVenue Concierge Agent</span>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-white/70 font-mono text-[10px]">
                       <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-ping" />
                       Querying venue database...
                     </div>
@@ -885,7 +885,7 @@ export default function EventsShowcase({
               </div>
             </div>
 
-            <form onSubmit={handleConciergeSubmit} className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/5">
+            <form onSubmit={handleConciergeSubmit} className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/10">
               <div className="relative">
                 <input
                   type="text"
@@ -893,7 +893,7 @@ export default function EventsShowcase({
                   value={conciergePrompt}
                   onChange={(e) => setConciergePrompt(e.target.value)}
                   disabled={conciergeLoading}
-                  className="w-full pl-3 pr-10 py-2.5 bg-gray-50 hover:bg-white focus:bg-white dark:bg-white/5 dark:hover:bg-white/10 dark:focus:bg-white/10 text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder-white/40 border border-gray-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55"
+                  className="w-full pl-3 pr-10 py-2.5 bg-gray-50 hover:bg-white focus:bg-white dark:bg-[#18181E] dark:hover:bg-[#202028] dark:focus:bg-[#202028] text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 border border-gray-300 dark:border-white/15 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55"
                 />
                 <button 
                   type="submit"
@@ -907,11 +907,11 @@ export default function EventsShowcase({
           </div>
 
           {/* LIVE REGIONAL UPDATES */}
-          <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-white/5 p-4 rounded-xl space-y-2.5 shadow-xs">
+          <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-4 rounded-xl space-y-2.5 shadow-xs">
             <h5 className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5" /> Live Regional Updates
             </h5>
-            <div className="space-y-2 font-mono text-[9px] text-gray-700 dark:text-white/50 leading-relaxed uppercase">
+            <div className="space-y-2 font-mono text-[9px] text-gray-700 dark:text-white/80 leading-relaxed uppercase">
               <div className="flex items-start gap-1.5 border-b border-gray-150 dark:border-white/5 pb-1.5">
                 <span className="text-rose-400">●</span>
                 <p>HYDERABAD METRO EXTRA LATE TRAIN RUNS FOR SUNBURN ARENA ON OCT 12TH.</p>
