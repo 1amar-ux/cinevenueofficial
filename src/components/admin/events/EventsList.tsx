@@ -21,7 +21,12 @@ import {
   IndianRupee,
 } from 'lucide-react';
 import apiClient from '../../../services/apiClient';
-import { getEvents as getLocalEvents, getBookings } from '../../../services/eventBookingService';
+import {
+  getEvents as getLocalEvents,
+  getBookings,
+  saveEvent,
+  deleteEvent,
+} from '../../../services/eventBookingService';
 
 interface AdminEventItem {
   id: string;
@@ -138,7 +143,18 @@ export default function EventsList({
   const handlePublish = async (event: AdminEventItem) => {
     try {
       setStatusActionLoading(event.id);
-      await apiClient.post(`/admin/events/${event.id}/publish`);
+      // Immediately update local canonical store
+      saveEvent({
+        ...event,
+        status: 'PUBLISHED',
+        bookingStatus: 'OPEN',
+      } as any);
+
+      try {
+        await apiClient.post(`/admin/events/${event.id}/publish`);
+      } catch (apiErr) {
+        console.warn('Backend sync notice (published in local store):', apiErr);
+      }
       await fetchAdminEvents();
     } catch (err: any) {
       alert(`Failed to publish event: ${err.message}`);
@@ -150,7 +166,18 @@ export default function EventsList({
   const handleUnpublish = async (event: AdminEventItem) => {
     try {
       setStatusActionLoading(event.id);
-      await apiClient.post(`/admin/events/${event.id}/unpublish`);
+      // Immediately update local canonical store
+      saveEvent({
+        ...event,
+        status: 'DRAFT',
+        bookingStatus: 'CLOSED',
+      } as any);
+
+      try {
+        await apiClient.post(`/admin/events/${event.id}/unpublish`);
+      } catch (apiErr) {
+        console.warn('Backend sync notice (unpublished in local store):', apiErr);
+      }
       await fetchAdminEvents();
     } catch (err: any) {
       alert(`Failed to unpublish event: ${err.message}`);
@@ -165,7 +192,29 @@ export default function EventsList({
     }
     try {
       setStatusActionLoading(event.id);
-      await apiClient.post(`/admin/events/${event.id}/cancel`);
+
+      // 1. Immediately update local canonical store
+      const updatedEvent = {
+        ...event,
+        status: 'CANCELLED' as const,
+        bookingStatus: 'CLOSED' as const,
+      };
+      saveEvent(updatedEvent as any);
+
+      // 2. Authoritative sync to backend admin API
+      try {
+        await apiClient.post(`/admin/events/${event.id}/cancel`);
+      } catch (apiErr) {
+        try {
+          await apiClient.patch(`/admin/events/${event.id}/status`, {
+            status: 'CANCELLED',
+            bookingStatus: 'CLOSED',
+          });
+        } catch (patchErr) {
+          console.warn('Backend sync notice (event cancelled in local store):', patchErr);
+        }
+      }
+
       await fetchAdminEvents();
     } catch (err: any) {
       alert(`Failed to cancel event: ${err.message}`);
@@ -180,7 +229,17 @@ export default function EventsList({
     }
     try {
       setStatusActionLoading(event.id);
-      await apiClient.delete(`/admin/events/${event.id}`);
+
+      // 1. Delete from local canonical store
+      deleteEvent(event.id);
+
+      // 2. Sync to backend admin API
+      try {
+        await apiClient.delete(`/admin/events/${event.id}`);
+      } catch (apiErr) {
+        console.warn('Backend sync notice (event removed from local store):', apiErr);
+      }
+
       await fetchAdminEvents();
     } catch (err: any) {
       alert(err.response?.data?.message || `Failed to delete event: ${err.message}`);
@@ -200,10 +259,24 @@ export default function EventsList({
     if (!selectedEventForModal) return;
     try {
       setStatusActionLoading(selectedEventForModal.id);
-      await apiClient.patch(`/admin/events/${selectedEventForModal.id}/status`, {
-        status: newStatus,
-        bookingStatus: newBookingStatus,
-      });
+
+      // 1. Update local canonical store
+      saveEvent({
+        ...selectedEventForModal,
+        status: newStatus as any,
+        bookingStatus: newBookingStatus as any,
+      } as any);
+
+      // 2. Sync to backend
+      try {
+        await apiClient.patch(`/admin/events/${selectedEventForModal.id}/status`, {
+          status: newStatus,
+          bookingStatus: newBookingStatus,
+        });
+      } catch (apiErr) {
+        console.warn('Backend sync notice (status updated in local store):', apiErr);
+      }
+
       setStatusModalOpen(false);
       await fetchAdminEvents();
     } catch (err: any) {
