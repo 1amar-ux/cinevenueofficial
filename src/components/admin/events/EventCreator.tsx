@@ -46,7 +46,7 @@ export default function EventCreator({
   editingEvent,
   onCancel,
 }: {
-  onCreated: () => void;
+  onCreated: (event?: any) => void;
   editingEvent?: any;
   onCancel?: () => void;
 }) {
@@ -374,7 +374,7 @@ export default function EventCreator({
             }))
           : [];
 
-      const targetEventId = editingEvent?.id || editingEvent?._id || `EVT-${Date.now().toString().slice(-4)}`;
+      const targetEventId = editingEvent?.id || editingEvent?._id || `CV-EVT-2026-${Date.now().toString().slice(-4)}`;
 
       const payload = {
         id: targetEventId,
@@ -500,7 +500,7 @@ export default function EventCreator({
       );
 
       setTimeout(() => {
-        onCreated();
+        onCreated(normalizedEventItem);
       }, 1000);
     } catch (err: any) {
       console.error('Failed to save event:', err);

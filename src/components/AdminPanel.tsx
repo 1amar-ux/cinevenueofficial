@@ -1849,15 +1849,15 @@ export default function AdminPanel({
   const averageTicketPrice = globalTotalTicketsSold > 0 ? Math.round(globalTotalBilledRevenue / globalTotalTicketsSold) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A0A0B] flex items-center justify-center p-0 overflow-hidden animate-fade-in font-sans" id="admin-panel-viewport">
-      <div className="bg-[#0A0A0B] w-full h-screen rounded-none relative overflow-hidden text-left flex flex-col md:flex-row">
+    <div className="fixed inset-0 z-50 bg-gray-100 dark:bg-[#0A0A0B] flex items-center justify-center p-0 overflow-hidden animate-fade-in font-sans" id="admin-panel-viewport">
+      <div className="bg-gray-100 dark:bg-[#0A0A0B] w-full h-screen rounded-none relative overflow-hidden text-left flex flex-col md:flex-row">
         
         {/* MOBILE HEADER */}
-        <div className="flex md:hidden items-center justify-between px-5 py-4 border-b border-white/10 bg-[#0F0F11] shrink-0" id="mobile-admin-header">
+        <div className="flex md:hidden items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#0F0F11] shrink-0" id="mobile-admin-header">
           <div className="flex items-center gap-2.5">
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-md bg-white/[0.03] border border-white/10 text-text-secondary hover:text-gold"
+              className="p-2 rounded-md bg-gray-100 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-text-secondary hover:text-gold"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -1872,7 +1872,7 @@ export default function AdminPanel({
             <ThemeToggle variant="segmented" />
             <button
               onClick={onClose}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/10 text-xs text-text-secondary hover:text-gold hover:border-gold cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-100 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 text-xs text-gray-700 dark:text-text-secondary hover:text-gold hover:border-gold cursor-pointer"
             >
               <ArrowLeft className="w-4.5 h-4.5 text-gold" />
               <span className="text-[10px] font-bold uppercase tracking-wider">Lobby</span>
@@ -1882,20 +1882,22 @@ export default function AdminPanel({
 
         {/* SIDEBAR NAVIGATION PANEL */}
         <div className={`
-          w-64 bg-[#0F0F11] border-r border-white/10 flex flex-col justify-between z-40 transition-all duration-300
+          w-64 bg-white dark:bg-[#0F0F11] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between z-40 transition-all duration-300
           absolute inset-y-0 left-0 transform md:relative md:translate-x-0 md:flex h-full shrink-0
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `} id="admin-sidebar">
           <div className="flex flex-col flex-1 min-h-0">
-            {/* Brand Title (Desktop) */}
-            <div className="p-6 border-b border-white/10 hidden md:flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <CineVenueLogo size="md" />
+            {/* Brand Title & Theme Toggle (Desktop) */}
+            <div className="p-4 border-b border-gray-200 dark:border-white/10 hidden md:flex flex-col gap-3 shrink-0">
+              <div className="flex items-center justify-between">
+                <CineVenueLogo size="sm" />
                 <span className="px-2 py-0.5 text-[8px] font-bold text-gold border border-gold/20 bg-gold/5 rounded-md uppercase tracking-wider">
                   {effectiveSuperAdmin ? "Super Admin" : "Venue Admin"}
                 </span>
               </div>
-              <ThemeToggle variant="segmented" />
+              <div className="flex justify-center w-full">
+                <ThemeToggle variant="segmented" />
+              </div>
             </div>
 
             {/* Sidebar content */}
@@ -2403,7 +2405,7 @@ export default function AdminPanel({
         </div>
 
         {/* MAIN DASHBOARD CONTENT AREA */}
-        <div className="flex-1 min-w-0 overflow-y-auto bg-[#070708] p-6 md:p-8 relative z-10" id="admin-main-content">
+        <div className="flex-1 min-w-0 overflow-y-auto bg-gray-50 dark:bg-[#070708] text-gray-900 dark:text-text-primary p-6 md:p-8 relative z-10" id="admin-main-content">
           
                     {/* ========================================================= */}
           {/* TAB: INTEGRATION & TESTING MODULE */}

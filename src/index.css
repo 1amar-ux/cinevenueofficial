@@ -339,27 +339,38 @@ html[data-theme="light"] body {
 }
 
 html[data-theme="light"] .home-page,
+html[data-theme="light"] #admin-panel-viewport,
+html[data-theme="light"] #admin-panel-viewport > div,
+html[data-theme="light"] #admin-main-content,
 html[data-theme="light"] .bg-\[\#0A0A0B\],
 html[data-theme="light"] .bg-\[\#09090A\],
 html[data-theme="light"] .bg-\[\#070709\],
 html[data-theme="light"] .bg-\[\#07070A\],
-html[data-theme="light"] .bg-\[\#0B0E14\] {
+html[data-theme="light"] .bg-\[\#070708\],
+html[data-theme="light"] .bg-\[\#08090C\],
+html[data-theme="light"] .bg-\[\#050505\],
+html[data-theme="light"] .bg-\[\#0B0E14\],
+html[data-theme="light"] .bg-\[\#0B0C10\] {
   background-color: var(--cv-bg) !important;
   color: var(--cv-text-primary) !important;
 }
 
 /* Light Mode Secondary Surfaces, Navbars & Headers */
-html[data-theme="light"] nav,
 html[data-theme="light"] header.sticky,
+html[data-theme="light"] #admin-sidebar,
 html[data-theme="light"] .bg-\[\#0F0F11\],
+html[data-theme="light"] .bg-\[\#0C0D12\],
+html[data-theme="light"] .bg-\[\#0D0E13\],
 html[data-theme="light"] .bg-\[\#121216\],
 html[data-theme="light"] .bg-\[\#121213\],
+html[data-theme="light"] .bg-\[\#12131A\],
 html[data-theme="light"] .bg-\[\#14151C\],
 html[data-theme="light"] .bg-\[\#0E0F14\],
 html[data-theme="light"] .bg-\[\#0E121A\],
 html[data-theme="light"] .bg-\[\#111319\] {
   background-color: var(--cv-surface) !important;
   border-color: var(--cv-border) !important;
+  color: var(--cv-text-primary) !important;
 }
 
 /* Light Mode Cards, Panels & Modals */
@@ -368,6 +379,9 @@ html[data-theme="light"] .bg-\[\#18181C\],
 html[data-theme="light"] .bg-\[\#1A1A1E\],
 html[data-theme="light"] .bg-\[\#212124\],
 html[data-theme="light"] .bg-\[\#191B24\],
+html[data-theme="light"] .bg-\[\#13141E\],
+html[data-theme="light"] .bg-\[\#0E0F16\],
+html[data-theme="light"] .bg-\[\#0A0B10\],
 html[data-theme="light"] .bg-black\/40,
 html[data-theme="light"] .bg-black\/50,
 html[data-theme="light"] .bg-black\/60 {
@@ -388,6 +402,36 @@ html[data-theme="light"] textarea {
 html[data-theme="light"] input::placeholder,
 html[data-theme="light"] textarea::placeholder {
   color: var(--cv-text-muted) !important;
+}
+
+/* Light Mode Translucent White Utilities */
+html[data-theme="light"] .border-white\/10,
+.light .border-white\/10,
+html[data-theme="light"] .border-white\/5,
+.light .border-white\/5,
+html[data-theme="light"] .border-white\/20,
+.light .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-theme="light"] .bg-white\/5,
+.light .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme="light"] .bg-white\/10,
+.light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.07) !important;
+}
+
+html[data-theme="light"] .hover\:bg-white\/5:hover,
+.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-theme="light"] .hover\:bg-white\/10:hover,
+.light .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Mobile Bottom Navigation in Light Mode */
@@ -442,6 +486,30 @@ html[data-theme="light"] .text-gold-light,
 html[data-theme="light"] .text-gold-dim,
 .light .text-gold-dim {
   color: #6B7280;
+}
+
+/* Text Visibility in Light Mode */
+html[data-theme="light"] .text-white:not(.keep-white),
+.light .text-white:not(.keep-white) {
+  color: #111111;
+}
+
+html[data-theme="light"] .text-white\/90:not(.keep-white),
+.light .text-white\/90:not(.keep-white),
+html[data-theme="light"] .text-white\/80:not(.keep-white),
+.light .text-white\/80:not(.keep-white) {
+  color: #1F2937;
+}
+
+html[data-theme="light"] .text-white\/70:not(.keep-white),
+.light .text-white\/70:not(.keep-white),
+html[data-theme="light"] .text-white\/60:not(.keep-white),
+.light .text-white\/60:not(.keep-white),
+html[data-theme="light"] .text-white\/50:not(.keep-white),
+.light .text-white\/50:not(.keep-white),
+html[data-theme="light"] .text-white\/40:not(.keep-white),
+.light .text-white\/40:not(.keep-white) {
+  color: #4B5563;
 }
 
 

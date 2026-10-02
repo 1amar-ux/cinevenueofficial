@@ -17,9 +17,11 @@ import {
   Shield,
   Clock,
   MoreVertical,
+  LayoutDashboard,
+  IndianRupee,
 } from 'lucide-react';
 import apiClient from '../../../services/apiClient';
-import { getEvents as getLocalEvents } from '../../../services/eventBookingService';
+import { getEvents as getLocalEvents, getBookings } from '../../../services/eventBookingService';
 
 interface AdminEventItem {
   id: string;
@@ -50,10 +52,12 @@ interface AdminEventItem {
 }
 
 export default function EventsList({
+  onManageEvent,
   onEditEvent,
   onManagePasses,
   onManageFreePasses,
 }: {
+  onManageEvent?: (event: AdminEventItem) => void;
   onEditEvent?: (event: AdminEventItem) => void;
   onManagePasses?: (event: AdminEventItem) => void;
   onManageFreePasses?: (event: AdminEventItem) => void;
@@ -127,6 +131,8 @@ export default function EventsList({
       return true;
     });
   }, [events, activeFilter, searchQuery]);
+
+  const allBookings = useMemo(() => getBookings(), [events]);
 
   // Actions
   const handlePublish = async (event: AdminEventItem) => {
@@ -303,56 +309,108 @@ export default function EventsList({
           <table className="w-full text-left text-xs text-text-secondary">
             <thead className="bg-white/5 text-white uppercase font-mono text-[9px] border-b border-white/10">
               <tr>
-                <th className="px-4 py-3">Event & Poster</th>
+                <th className="px-4 py-3">Event & Category</th>
                 <th className="px-3 py-3">Date & Venue</th>
-                <th className="px-3 py-3">Type & Passes</th>
-                <th className="px-3 py-3">Lifecycle & Gate</th>
-                <th className="px-3 py-3 text-center">Capacity / Sold</th>
+                <th className="px-3 py-3">Status</th>
+                <th className="px-3 py-3 text-center">Capacity / Registrations</th>
+                <th className="px-3 py-3 text-center">Passes Issued</th>
+                <th className="px-3 py-3 text-right">Revenue</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-white/40">
+                  <td colSpan={7} className="px-4 py-8 text-center text-white/40">
                     {loading ? 'Loading events from database...' : 'No events match the selected filters.'}
                   </td>
                 </tr>
               ) : (
                 filteredEvents.map((evt) => {
                   const capacityTotal = evt.totalTicketCapacity || evt.totalCapacity || 1000;
-                  const sold = evt.soldTicketCount || evt.soldCount || 0;
-                  const freeIssued = evt.freePassesIssuedCount || 0;
-                  const available = Math.max(0, capacityTotal - (sold + freeIssued));
+                  
+                  // Compute dynamic per-event booking stats
+                  const eventBookings = allBookings.filter(
+                    (b) => b.eventId === evt.id || (evt._id && b.eventId === evt._id)
+                  );
+                  const totalRegistrations =
+                    eventBookings.length > 0
+                      ? eventBookings.reduce((sum, b) => sum + (b.ticketCount || 1), 0)
+                      : (evt.soldTicketCount || evt.soldCount || 0) + (evt.freePassesIssuedCount || 0);
+
+                  const passesIssued =
+                    eventBookings.length > 0
+                      ? eventBookings
+                          .filter((b) => b.bookingStatus === 'Confirmed' || !b.bookingStatus)
+                          .reduce((sum, b) => sum + (b.ticketCount || 1), 0)
+                      : (evt.soldTicketCount || evt.soldCount || 0) + (evt.freePassesIssuedCount || 0);
+
+                  const isFree = evt.eventType === 'FREE';
+                  const revenue = isFree
+                    ? 0
+                    : eventBookings
+                        .filter((b) => b.paymentStatus === 'PAID' || b.paymentStatus === 'COMPLETED' || b.bookingStatus === 'Confirmed')
+                        .reduce((sum, b) => sum + (b.pricing?.finalAmount || 0), 0);
+
+                  const available = Math.max(0, capacityTotal - totalRegistrations);
                   const isActionLoading = statusActionLoading === evt.id;
                   const posterUrl = evt.posterUrl || evt.bannerUrl || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=200';
 
+                  const handleSelectEvent = () => {
+                    if (onManageEvent) {
+                      onManageEvent(evt);
+                    } else if (onManagePasses) {
+                      onManagePasses(evt);
+                    }
+                  };
+
                   return (
-                    <tr key={evt.id} className="hover:bg-white/[0.02] transition-colors">
-                      {/* Event & Poster */}
+                    <tr key={evt.id} className="hover:bg-white/[0.02] transition-colors group">
+                      {/* Event Poster, Name, Category & ID */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={posterUrl}
-                            alt={evt.title}
-                            className="w-10 h-14 object-cover rounded-lg border border-white/10 shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=200';
-                            }}
-                          />
+                          <button
+                            type="button"
+                            onClick={handleSelectEvent}
+                            className="cursor-pointer shrink-0 transition-transform group-hover:scale-105"
+                            title="Manage this event"
+                          >
+                            <img
+                              src={posterUrl}
+                              alt={evt.title}
+                              className="w-10 h-14 object-cover rounded-lg border border-white/10 shrink-0 shadow-sm"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=200';
+                              }}
+                            />
+                          </button>
                           <div className="space-y-0.5">
-                            <span className="font-semibold text-white block text-sm leading-tight hover:text-gold transition-colors">
+                            <button
+                              type="button"
+                              onClick={handleSelectEvent}
+                              className="font-semibold text-white block text-sm leading-tight text-left hover:text-gold transition-colors cursor-pointer"
+                              title="Click to open Event Management Dashboard"
+                            >
                               {evt.title}
-                            </span>
-                            <span className="text-[10px] text-white/50 font-mono block">
-                              {evt.category || 'Concerts'} • ID: {evt.id}
-                            </span>
-                            {evt.createdAt && (
-                              <span className="text-[9px] text-white/30 font-mono block">
-                                Created: {new Date(evt.createdAt).toLocaleDateString('en-IN')}
+                            </button>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-gold font-mono font-medium">
+                                {evt.category || 'Concerts'}
                               </span>
-                            )}
+                              <span className="text-[9px] text-white/40 font-mono">
+                                • ID: {evt.id}
+                              </span>
+                            </div>
+                            <span
+                              className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${
+                                isFree
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                                  : 'bg-gold/15 text-gold border border-gold/25'
+                              }`}
+                            >
+                              {isFree ? 'FREE EVENT' : 'PAID EVENT'}
+                            </span>
                           </div>
                         </div>
                       </td>
@@ -372,24 +430,6 @@ export default function EventsList({
                             <MapPin className="w-3 h-3 text-white/40 shrink-0" />
                             <span className="truncate max-w-[140px]">{evt.venueName || 'Arena'}, {evt.city}</span>
                           </div>
-                        </div>
-                      </td>
-
-                      {/* Event Type & Pass Mode */}
-                      <td className="px-3 py-3">
-                        <div className="space-y-1">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                              evt.eventType === 'FREE'
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-gold/20 text-gold border border-gold/30'
-                            }`}
-                          >
-                            {evt.eventType === 'FREE' ? 'FREE EVENT' : 'PAID EVENT'}
-                          </span>
-                          <span className="block text-[10px] text-white/50 font-mono">
-                            Passes: {evt.passMode || 'PAID'}
-                          </span>
                         </div>
                       </td>
 
@@ -415,27 +455,75 @@ export default function EventsList({
                         </div>
                       </td>
 
-                      {/* Capacity / Sold */}
+                      {/* Total Capacity & Total Registrations */}
                       <td className="px-3 py-3 text-center">
-                        <div className="space-y-0.5">
-                          <p className="font-mono text-white text-xs font-semibold">
-                            {sold + freeIssued} / {capacityTotal}
-                          </p>
-                          <div className="w-20 bg-white/10 h-1 rounded-full mx-auto overflow-hidden">
+                        <div className="space-y-1 max-w-[130px] mx-auto">
+                          <div className="flex justify-between items-center text-[11px] font-mono">
+                            <span className="text-white font-semibold">{totalRegistrations}</span>
+                            <span className="text-white/40">/ {capacityTotal}</span>
+                          </div>
+                          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
                             <div
-                              className="bg-gold h-full rounded-full"
-                              style={{ width: `${Math.min(100, Math.round(((sold + freeIssued) / (capacityTotal || 1)) * 100))}%` }}
+                              className="bg-gold h-full rounded-full transition-all"
+                              style={{ width: `${Math.min(100, Math.round((totalRegistrations / (capacityTotal || 1)) * 100))}%` }}
                             />
                           </div>
                           <p className="text-[10px] text-emerald-400 font-mono">
-                            {available} avail
+                            {available} available
                           </p>
                         </div>
+                      </td>
+
+                      {/* Passes Issued */}
+                      <td className="px-3 py-3 text-center">
+                        <div className="space-y-0.5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold/15 text-gold border border-gold/30 font-mono font-bold text-xs">
+                            <Ticket className="w-3 h-3" />
+                            {passesIssued}
+                          </span>
+                          <span className="block text-[9px] text-white/40 font-mono">
+                            confirmed passes
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Revenue */}
+                      <td className="px-3 py-3 text-right">
+                        {isFree ? (
+                          <div className="space-y-0.5">
+                            <span className="font-mono text-xs font-bold text-emerald-400">
+                              ₹0
+                            </span>
+                            <span className="block text-[9px] text-white/40 uppercase font-mono">
+                              Free Event
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <span className="font-mono text-xs font-bold text-gold">
+                              ₹{revenue.toLocaleString('en-IN')}
+                            </span>
+                            <span className="block text-[9px] text-white/40 uppercase font-mono">
+                              Gross Revenue
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Actions */}
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* PRIMARY ACTION: Manage Event */}
+                          <button
+                            type="button"
+                            onClick={handleSelectEvent}
+                            className="px-3 py-1.5 rounded-xl bg-gold hover:bg-gold-light text-black font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer hover:shadow-gold/20"
+                            title="Open dedicated Event Management Dashboard"
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5" />
+                            <span>Manage Event</span>
+                          </button>
+
                           {/* View public page */}
                           <a
                             href={`/events/${evt.id}`}
@@ -447,25 +535,14 @@ export default function EventsList({
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
 
-                          {/* Edit Event & Pass Settings */}
+                          {/* Edit Event */}
                           <button
                             type="button"
                             onClick={() => onEditEvent && onEditEvent(evt)}
                             className="p-1.5 rounded-lg bg-white/5 hover:bg-gold/20 text-white/70 hover:text-gold transition-colors"
-                            title="Edit Event & Pass Settings"
+                            title="Edit Event Configuration"
                           >
                             <Edit className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Manage Event Passes */}
-                          <button
-                            type="button"
-                            onClick={() => onManagePasses && onManagePasses(evt)}
-                            className="px-2 py-1 rounded-lg bg-gold/15 hover:bg-gold/25 text-gold border border-gold/30 text-[10px] font-mono flex items-center gap-1 transition-colors"
-                            title="View and manage passes for this event"
-                          >
-                            <Ticket className="w-3 h-3" />
-                            <span>Passes</span>
                           </button>
 
                           {/* Quick Change Status */}
@@ -514,7 +591,7 @@ export default function EventsList({
                             </button>
                           )}
 
-                          {/* Delete (only if safe) */}
+                          {/* Delete */}
                           <button
                             type="button"
                             disabled={isActionLoading}
