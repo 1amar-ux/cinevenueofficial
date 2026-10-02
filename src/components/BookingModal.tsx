@@ -398,7 +398,7 @@ export default function BookingModal({
         displayTheatre,
         displayTimeSlot,
         bookingName || userEmail.split("@")[0],
-        bookingMobile || "+91-9491336996",
+        bookingMobile || "+91 98765 43210",
         {
           ticketAmount: rawBaseTicketPrice,
           platformFee: calculatedBreakdown?.platformFee || 0,
@@ -1074,7 +1074,7 @@ export default function BookingModal({
                       type="tel"
                       value={bookingMobile}
                       onChange={(e) => setBookingMobile(e.target.value)}
-                      placeholder="+91-9491336996"
+                      placeholder="+91 98765 43210"
                       className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-red-500"
                     />
                     <input
@@ -1087,7 +1087,7 @@ export default function BookingModal({
                   </div>
                 ) : (
                   <div className="text-xs text-gray-600 font-medium">
-                    {bookingMobile || "+91-9491336996"} | {userEmail || "amarnathgattem@gmail.com"}
+                    {bookingMobile || "+91 98765 43210"} | {userEmail || "user@example.com"}
                   </div>
                 )}
 

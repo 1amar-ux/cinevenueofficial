@@ -340,7 +340,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                     value={form.mobile}
                     onChange={(e) => handleChange("mobile", e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
-                    placeholder="Mobile Number (e.g. 9491336996)"
+                    placeholder="Mobile Number (e.g. 9876543210)"
                     required
                   />
                 </div>
