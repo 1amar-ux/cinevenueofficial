@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Lock, Mail, ArrowRight } from "lucide-react";
 import CineVenueLogo from "../components/CineVenueLogo";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -42,6 +43,11 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center p-6 text-left select-none relative overflow-hidden">
+      {/* Theme Toggle Top Right */}
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeToggle variant="segmented" />
+      </div>
+
       {/* Background Ambient Glow */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-80 h-80 bg-gold/5 rounded-full blur-3xl pointer-events-none" />

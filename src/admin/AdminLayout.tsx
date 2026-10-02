@@ -60,6 +60,7 @@ import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManager
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import { parseAndValidateYouTubeUrl } from "../utils/youtube";
 import { Server, Cpu } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 
 export default function AdminLayout() {
@@ -865,7 +866,7 @@ export default function AdminLayout() {
             <Shield className="w-4.5 h-4.5 text-gold" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-white truncate">
+            <h1 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-gray-950 dark:text-white truncate">
               CINEVENUE PLATFORM SYSTEM CONTROL
             </h1>
             <p className="text-[9px] font-mono text-text-secondary truncate hidden xs:block">
@@ -874,7 +875,7 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4 text-xs shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
           <div className="hidden md:flex items-center gap-2 text-[10px] font-mono text-text-muted">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>NODE ACTIVE</span>
@@ -882,12 +883,16 @@ export default function AdminLayout() {
             <span>2026-07-08 02:05 AM UTC</span>
           </div>
 
+          <div className="flex items-center">
+            <ThemeToggle variant="segmented" />
+          </div>
+
           <button
             onClick={() => {
               localStorage.removeItem("adminToken");
               navigate("/");
             }}
-            className="px-2.5 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-400 font-bold uppercase text-[9px] tracking-wider rounded-lg transition-colors border border-red-500/20 cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 dark:text-red-400 font-bold uppercase text-[9px] tracking-wider rounded-lg transition-colors border border-red-500/20 cursor-pointer"
           >
             Exit System Control
           </button>

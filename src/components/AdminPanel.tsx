@@ -1869,7 +1869,7 @@ export default function AdminPanel({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle />
+            <ThemeToggle variant="segmented" />
             <button
               onClick={onClose}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/10 text-xs text-text-secondary hover:text-gold hover:border-gold cursor-pointer"
@@ -1895,7 +1895,7 @@ export default function AdminPanel({
                   {effectiveSuperAdmin ? "Super Admin" : "Venue Admin"}
                 </span>
               </div>
-              <ThemeToggle />
+              <ThemeToggle variant="segmented" />
             </div>
 
             {/* Sidebar content */}
