@@ -105,7 +105,7 @@ export default function EventCreator({
     editingEvent?.organizer?.email || 'events@cinevenue.in'
   );
   const [organizerPhone, setOrganizerPhone] = useState(
-    editingEvent?.organizer?.phone || '+91 99999 00000'
+    editingEvent?.organizer?.phone || ''
   );
   const [organizerCompany, setOrganizerCompany] = useState(
     editingEvent?.organizer?.companyName || 'CineVenue Entertainment Pvt Ltd'
@@ -299,7 +299,7 @@ export default function EventCreator({
       primaryAttendee: {
         name: 'Sample Attendee',
         email: 'attendee@cinevenue.in',
-        phone: '+91 98765 43210',
+        phone: '',
       },
       pricing: {
         ticketSubtotal: effectiveFee,
@@ -889,7 +889,8 @@ export default function EventCreator({
                   type="text"
                   value={organizerPhone}
                   onChange={(e) => setOrganizerPhone(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold"
+                  placeholder="Mobile Number"
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold font-mono"
                 />
               </div>
             </div>

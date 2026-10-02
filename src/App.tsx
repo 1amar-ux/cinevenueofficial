@@ -440,7 +440,7 @@ export default function App() {
         email: "sunburn.org@cinevenue.com",
         passwordHash: "Sunburn123",
         name: "Sunburn Arena Events",
-        contact: "+91 99999 88888",
+        contact: "",
         bankRouting: "HDFC0000240",
         commissionPercent: 12,
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"
@@ -1097,7 +1097,7 @@ export default function App() {
       userEmail: userEmail || "guest@cinevenue.com",
       city: selectedCity,
       userName: name || "Premium Guest",
-      mobileNumber: mobile || "+91 99999 99999",
+      mobileNumber: mobile || "",
       ticketAmount: feeDetails?.ticketAmount ?? price,
       platformFee: feeDetails?.platformFee ?? 0,
       convenienceFee: feeDetails?.convenienceFee ?? 0,

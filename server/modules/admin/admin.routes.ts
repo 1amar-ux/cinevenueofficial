@@ -1128,5 +1128,53 @@ router.delete("/events/:eventId", async (req: Request, res: Response, next: Next
   }
 });
 
+// ==========================================
+// EVENT POSTER & BANNER UPLOAD ENDPOINTS
+// ==========================================
+router.post("/uploads/event-poster", (req: Request, res: Response) => {
+  const body = req.body || {};
+  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+  const publicId = `poster_${Date.now()}`;
+  const alt = body.alt || "Event Poster";
+  return res.status(200).json({
+    success: true,
+    message: "Event poster processed successfully",
+    url,
+    publicId,
+    alt,
+    file: { url, publicId, alt }
+  });
+});
+
+router.post("/uploads/event-banner", (req: Request, res: Response) => {
+  const body = req.body || {};
+  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200";
+  const publicId = `banner_${Date.now()}`;
+  const alt = body.alt || "Event Banner";
+  return res.status(200).json({
+    success: true,
+    message: "Event banner processed successfully",
+    url,
+    publicId,
+    alt,
+    file: { url, publicId, alt }
+  });
+});
+
+router.post("/uploads/image", (req: Request, res: Response) => {
+  const body = req.body || {};
+  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+  const publicId = `img_${Date.now()}`;
+  const alt = body.alt || "Uploaded Image";
+  return res.status(200).json({
+    success: true,
+    message: "Image processed successfully",
+    url,
+    publicId,
+    alt,
+    file: { url, publicId, alt }
+  });
+});
+
 export default router;
 

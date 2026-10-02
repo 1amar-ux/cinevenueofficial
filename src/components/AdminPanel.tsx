@@ -981,7 +981,7 @@ export default function AdminPanel({
   const [eoName, setEoName] = useState("");
   const [eoEmail, setEoEmail] = useState("");
   const [eoPassword, setEoPassword] = useState("");
-  const [eoContact, setEoContact] = useState("+91 99999 00000");
+  const [eoContact, setEoContact] = useState("");
   const [eoBankRouting, setEoBankRouting] = useState("IFSC800555");
   const [eoCommissionPercent, setEoCommissionPercent] = useState<number>(15);
   const [eoAvatar, setEoAvatar] = useState("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80");
@@ -1414,7 +1414,7 @@ export default function AdminPanel({
 
     // Reset Form
     setEoName("");
-    setEoContact("+91 99999 00000");
+    setEoContact("");
     setEoBankRouting("IFSC800555");
     setEoCommissionPercent(15);
     setEoAvatar("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80");
@@ -8547,7 +8547,7 @@ export default function AdminPanel({
                         type="text"
                         value={eoContact}
                         onChange={(e) => setEoContact(e.target.value)}
-                        placeholder="+91 99999 00000"
+                        placeholder="Mobile Number"
                         className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
                         required
                       />
@@ -8645,7 +8645,7 @@ export default function AdminPanel({
                           type="button"
                           onClick={() => {
                             setEoName("");
-                            setEoContact("+91 99999 00000");
+                            setEoContact("");
                             setEoBankRouting("IFSC800555");
                             setEoCommissionPercent(15);
                             setEoAvatar("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80");
