@@ -11,6 +11,23 @@ import { Sparkles, Calendar, PlusCircle, Users, Receipt, BarChart3, QrCode, Awar
 
 export default function EventsAdminModule() {
   const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'create' | 'freepasses' | 'registrations' | 'passes' | 'settlements' | 'analytics' | 'scanner'>('passes');
+  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [selectedEventIdForPasses, setSelectedEventIdForPasses] = useState<string | null>(null);
+
+  const handleEditEvent = (evt: any) => {
+    setEditingEvent(evt);
+    setActiveSubTab('create');
+  };
+
+  const handleManagePasses = (evt: any) => {
+    setSelectedEventIdForPasses(evt.id);
+    setActiveSubTab('passes');
+  };
+
+  const handleCreateNewClick = () => {
+    setEditingEvent(null);
+    setActiveSubTab('create');
+  };
 
   return (
     <div className="space-y-6">
@@ -34,13 +51,16 @@ export default function EventsAdminModule() {
           <Calendar className="w-4 h-4" /> All Events
         </button>
         <button 
-          onClick={() => setActiveSubTab('create')} 
+          onClick={handleCreateNewClick} 
           className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors whitespace-nowrap ${activeSubTab === 'create' ? 'text-gold border-b-2 border-gold bg-gold/5' : 'text-text-secondary hover:text-white'}`}
         >
-          <PlusCircle className="w-4 h-4" /> Create Event
+          <PlusCircle className="w-4 h-4" /> {editingEvent ? 'Edit Event' : 'Create Event'}
         </button>
         <button 
-          onClick={() => setActiveSubTab('passes')} 
+          onClick={() => {
+            setSelectedEventIdForPasses(null);
+            setActiveSubTab('passes');
+          }} 
           className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-t-lg transition-colors whitespace-nowrap ${activeSubTab === 'passes' ? 'text-gold border-b-2 border-gold bg-gold/10' : 'text-text-secondary hover:text-white'}`}
         >
           <Ticket className="w-4 h-4 text-gold" /> Event Passes
@@ -78,9 +98,31 @@ export default function EventsAdminModule() {
       </div>
 
       <div className="mt-6">
-        {activeSubTab === 'dashboard' && <EventsList />}
-        {activeSubTab === 'create' && <EventCreator onCreated={() => setActiveSubTab('dashboard')} />}
-        {activeSubTab === 'passes' && <EventPassesManager />}
+        {activeSubTab === 'dashboard' && (
+          <EventsList 
+            onEditEvent={handleEditEvent} 
+            onManagePasses={handleManagePasses} 
+          />
+        )}
+        {activeSubTab === 'create' && (
+          <EventCreator 
+            editingEvent={editingEvent}
+            onCancel={() => {
+              setEditingEvent(null);
+              setActiveSubTab('dashboard');
+            }}
+            onCreated={() => {
+              setEditingEvent(null);
+              setActiveSubTab('dashboard');
+            }} 
+          />
+        )}
+        {activeSubTab === 'passes' && (
+          <EventPassesManager 
+            initialEventId={selectedEventIdForPasses}
+            onSwitchToScanner={() => setActiveSubTab('scanner')}
+          />
+        )}
         {activeSubTab === 'scanner' && <QRScanner />}
         {activeSubTab === 'freepasses' && <FreePassManager />}
         {activeSubTab === 'registrations' && <EventRegistrations />}

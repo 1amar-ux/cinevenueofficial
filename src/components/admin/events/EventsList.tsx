@@ -447,6 +447,27 @@ export default function EventsList({
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
 
+                          {/* Edit Event & Pass Settings */}
+                          <button
+                            type="button"
+                            onClick={() => onEditEvent && onEditEvent(evt)}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-gold/20 text-white/70 hover:text-gold transition-colors"
+                            title="Edit Event & Pass Settings"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Manage Event Passes */}
+                          <button
+                            type="button"
+                            onClick={() => onManagePasses && onManagePasses(evt)}
+                            className="px-2 py-1 rounded-lg bg-gold/15 hover:bg-gold/25 text-gold border border-gold/30 text-[10px] font-mono flex items-center gap-1 transition-colors"
+                            title="View and manage passes for this event"
+                          >
+                            <Ticket className="w-3 h-3" />
+                            <span>Passes</span>
+                          </button>
+
                           {/* Quick Change Status */}
                           <button
                             type="button"

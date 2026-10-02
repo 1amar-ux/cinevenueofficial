@@ -118,6 +118,11 @@ export interface EventItem {
   isSellingFast?: boolean;
   rating?: number;
   reviewCount?: number;
+  passSettings?: {
+    enabled: boolean;
+    passTypes?: string[];
+    autoGenerateOnBooking?: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }

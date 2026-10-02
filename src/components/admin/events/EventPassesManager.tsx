@@ -36,18 +36,30 @@ import {
 } from '../../../utils/eventPassPdf';
 import type { EventBookingRecord } from '../../../types/eventBooking';
 
-export default function EventPassesManager() {
+export default function EventPassesManager({
+  initialEventId = null,
+  onSwitchToScanner,
+}: {
+  initialEventId?: string | null;
+  onSwitchToScanner?: () => void;
+} = {}) {
   const [bookings, setBookings] = useState<EventBookingRecord[]>(() => getBookings());
   const [selectedPass, setSelectedPass] = useState<EventBookingRecord | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Filters & Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [eventFilter, setEventFilter] = useState('ALL');
+  const [eventFilter, setEventFilter] = useState<string>(initialEventId || 'ALL');
   const [passTypeFilter, setPassTypeFilter] = useState('ALL');
   const [feeTypeFilter, setFeeTypeFilter] = useState('ALL'); // ALL, FREE, PAID
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
   const [checkInFilter, setCheckInFilter] = useState('ALL'); // ALL, CHECKED_IN, NOT_CHECKED_IN
+
+  React.useEffect(() => {
+    if (initialEventId) {
+      setEventFilter(initialEventId);
+    }
+  }, [initialEventId]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -127,7 +139,8 @@ export default function EventPassesManager() {
 
   // Dashboard Metrics
   const stats = useMemo(() => {
-    let total = bookings.length;
+    const targetBookings = eventFilter === 'ALL' ? bookings : bookings.filter((b) => b.eventId === eventFilter);
+    let total = targetBookings.length;
     let paid = 0;
     let free = 0;
     let vip = 0;
@@ -136,7 +149,7 @@ export default function EventPassesManager() {
     let notCheckedIn = 0;
     let cancelled = 0;
 
-    bookings.forEach((b) => {
+    targetBookings.forEach((b) => {
       const isFree = isFreeEventBooking(b);
       if (isFree) free++;
       else paid++;
@@ -164,7 +177,7 @@ export default function EventPassesManager() {
       notCheckedIn,
       cancelled,
     };
-  }, [bookings]);
+  }, [bookings, eventFilter]);
 
   // Actions
   const handleCheckInToggle = (pass: EventBookingRecord) => {
@@ -230,6 +243,45 @@ export default function EventPassesManager() {
           <RefreshCw className="w-3.5 h-3.5 text-gold" /> Refresh Passes
         </button>
       </div>
+
+      {/* 13. Event-Specific Pass Management Banner */}
+      {eventFilter !== 'ALL' && (
+        <div className="bg-gradient-to-r from-black/80 via-gold/10 to-black/80 border border-gold/40 rounded-2xl p-5 shadow-xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-gold" />
+                <span className="text-[10px] font-mono uppercase text-gold font-bold tracking-wider">
+                  ADMIN EVENT PASS MANAGEMENT
+                </span>
+              </div>
+              <h3 className="text-xl font-black text-white mt-1">
+                {distinctEvents.find((e) => e.id === eventFilter)?.title || 'Selected Event'}
+              </h3>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Displaying passes issued exclusively for this event.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEventFilter('ALL')}
+                className="text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                [View All Passes]
+              </button>
+              {onSwitchToScanner && (
+                <button
+                  onClick={onSwitchToScanner}
+                  className="text-xs font-bold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <QrCode className="w-3.5 h-3.5" /> [QR Scanner]
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 11. EVENT PASS ADMIN DASHBOARD METRICS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">

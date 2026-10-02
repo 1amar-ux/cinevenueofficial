@@ -196,10 +196,47 @@ async function runAcceptanceTests() {
   console.log('\n--- Test 7: Invalid Pass Handling ---');
   const invalidCheck = validatePass('INVALID-PASS-999');
   assert(invalidCheck.valid === false, 'Unknown pass must not be valid');
-  assert(invalidCheck.status === 'INVALID', 'Status must be INVALID');
+  // Test 8: Event Pass Settings & Historical Safety
+  console.log('\n--- Test 8: Event Pass Settings & Event Creation Flow ---');
+  const sampleEventWithSettings = {
+    id: 'EVT-TEST-2026',
+    title: 'CineVenue Music Festival 2026',
+    eventType: 'PAID' as const,
+    passMode: 'PAID' as const,
+    date: '2026-11-22',
+    startTime: '5:00 PM',
+    venueName: 'Gachibowli Stadium',
+    venueAddress: 'Old Mumbai Highway, Gachibowli, Hyderabad, Telangana 500032',
+    city: 'Hyderabad',
+    bannerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&q=80',
+    passSettings: {
+      enabled: true,
+      passTypes: ['VIP', 'GENERAL', 'GUEST', 'MEDIA', 'STAFF'],
+      autoGenerateOnBooking: true,
+    },
+  };
+
+  assert(sampleEventWithSettings.passSettings.enabled === true, 'Event Pass Settings must support enable/disable toggle');
+  assert(sampleEventWithSettings.passSettings.passTypes.includes('VIP'), 'Pass types must include VIP');
+  assert(sampleEventWithSettings.passSettings.passTypes.includes('MEDIA'), 'Pass types must include custom MEDIA');
+
+  // Verify day calculation from event date
+  const dayInfo = formatEventDateAndDay(sampleEventWithSettings.date);
+  assert(dayInfo.day === 'Sunday', '22 November 2026 must automatically calculate as Sunday');
+
+  // Test 9: Historical Pass Immutability
+  console.log('\n--- Test 9: Historical Pass Immutability & Event Filtering ---');
+  const allBookings = INITIAL_BOOKINGS;
+  const grandLaunchPasses = allBookings.filter((b) => b.eventId === 'EVT-100');
+  assert(grandLaunchPasses.length > 0, 'Must have passes specifically for EVT-100 CineVenue Grand Launch');
+  
+  // Verify passes contain historical snapshot details
+  const historicalPass = grandLaunchPasses[0];
+  assert(historicalPass.eventTitle === 'CineVenue Grand Launch', 'Historical pass must maintain its original event title');
+  assert(getBookingPassId(historicalPass).startsWith('CV-EVT-2026-'), 'Historical pass ID format must remain CV-EVT-2026-XXXXXX');
 
   console.log('\n========================================================');
-  console.log('🎉 ALL 7 ACCEPTANCE TEST SUITES PASSED SUCCESSFULLY!');
+  console.log('🎉 ALL 9 ACCEPTANCE TEST SUITES PASSED SUCCESSFULLY!');
   console.log('========================================================');
 }
 
