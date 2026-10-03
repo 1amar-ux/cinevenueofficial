@@ -454,10 +454,11 @@ export default function EventCreator({
         cancellationPolicy: 'Refundable up to 24 hours prior to event start.',
         seatingType: 'GeneralAdmission',
         totalCapacity: effectiveCapacity,
-        soldCount: editingEvent?.soldCount || 0,
         status: status as any,
         eventType,
         isFeatured: true,
+        isActive: status !== 'DRAFT' && status !== 'CANCELLED',
+        image: effectiveBannerUrl || effectivePosterUrl,
         ticketTypes: formattedTicketTypes.map((t, idx) => ({
           id: `TKT-${Date.now()}-${idx + 1}`,
           eventId: targetEventId,

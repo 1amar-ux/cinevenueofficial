@@ -21,6 +21,7 @@ interface EventsShowcaseProps {
   userEmail: string | null;
   onOpenAuth: () => void;
   selectedCity: string;
+  setSelectedCity?: (city: string) => void;
   onBookEvent: (registration: EventRegistration) => void;
   onAddReview: (eventId: string, review: EventReview) => void;
   searchQuery: string;
@@ -39,6 +40,7 @@ export default function EventsShowcase({
   userEmail,
   onOpenAuth,
   selectedCity,
+  setSelectedCity,
   onBookEvent,
   onAddReview,
   searchQuery,
@@ -51,13 +53,86 @@ export default function EventsShowcase({
   userWallet,
   onUpdateWallet,
 }: EventsShowcaseProps) {
-  const safeEvents = Array.isArray(events)
-    ? events.map((event) => ({
-        ...event,
-        categories: Array.isArray(event.categories) ? event.categories : [],
-        reviews: Array.isArray(event.reviews) ? event.reviews : [],
-      }))
-    : [];
+  // Ticketed Events & Unified Booking State
+  const [ticketedEventsList, setTicketedEventsList] = useState<EventItem[]>(() => getTicketedEvents());
+  const [bookingModalEvent, setBookingModalEvent] = useState<EventItem | null>(null);
+  const [viewingPass, setViewingPass] = useState<EventBookingRecord | null>(null);
+  const [showOrganizerHub, setShowOrganizerHub] = useState<boolean>(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All Categories");
+  const [selectedEventTypeFilter, setSelectedEventTypeFilter] = useState<'ALL' | 'FREE' | 'PAID' | 'HYBRID'>('ALL');
+
+  useEffect(() => {
+    setTicketedEventsList(getTicketedEvents());
+  }, [events]);
+
+  // Real-time synchronization for events created, updated, or published
+  useEffect(() => {
+    const handleUpdate = () => {
+      setTicketedEventsList(getTicketedEvents());
+    };
+    window.addEventListener("cine_events_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("cine_events_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
+
+  const safeEvents: Event[] = React.useMemo(() => {
+    const map = new Map<string, Event>();
+
+    // 1. First add events from props
+    if (Array.isArray(events)) {
+      for (const event of events) {
+        if (!event || !event.id) continue;
+        map.set(event.id, {
+          ...event,
+          categories: Array.isArray(event.categories) ? event.categories : [],
+          reviews: Array.isArray(event.reviews) ? event.reviews : [],
+          isActive: event.isActive !== false,
+        });
+      }
+    }
+
+    // 2. Merge canonical ticketed events (from admin creation & booking service)
+    for (const t of ticketedEventsList) {
+      if (!t || (!t.id && !(t as any)._id)) continue;
+      const tid = t.id || (t as any)._id;
+      const lowestPrice = t.ticketTypes && t.ticketTypes.length > 0
+        ? Math.min(...t.ticketTypes.map((x: any) => Number(x.price) || 0))
+        : (Number(t.price) || 0);
+
+      const isEvtActive = t.isActive !== false && String(t.status || '').toUpperCase() !== 'CANCELLED' && String(t.status || '').toUpperCase() !== 'DRAFT';
+
+      const existing = map.get(tid);
+      map.set(tid, {
+        id: tid,
+        title: t.title || existing?.title || '',
+        description: t.description || existing?.description || '',
+        venueName: t.venueName || (typeof t.venue === 'string' ? t.venue : t.venue?.name) || existing?.venueName || 'Convention Arena',
+        venueAddress: t.venueAddress || t.venue?.address || existing?.venueAddress || '',
+        city: t.city || existing?.city || 'Hyderabad',
+        date: t.date || existing?.date || '2026-10-25',
+        time: t.startTime || t.time || existing?.time || '18:30',
+        image: t.bannerUrl || t.posterUrl || t.image || existing?.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+        category: t.category || existing?.category || 'Concerts',
+        categories: Array.isArray(t.ticketTypes) && t.ticketTypes.length > 0
+          ? t.ticketTypes.map((type: any) => ({
+              name: type.name || 'Standard',
+              price: Number(type.price) || 0,
+              availableSeats: Number(type.availableQuantity ?? type.totalQuantity ?? 100),
+            }))
+          : (existing?.categories || [{ name: 'General Admission', price: lowestPrice, availableSeats: 100 }]),
+        reviews: existing?.reviews || t.reviews || [],
+        featured: existing?.featured ?? true,
+        isPaid: t.eventType === 'PAID' || lowestPrice > 0,
+        isActive: isEvtActive,
+      });
+    }
+
+    return Array.from(map.values());
+  }, [events, ticketedEventsList]);
+
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [activeModalTab, setActiveModalTab] = useState<"booking" | "reviews">("booking");
   
@@ -85,18 +160,6 @@ export default function EventsShowcase({
   const [notifyEmail, setNotifyEmail] = useState(userEmail || "");
   const [notifyMobile, setNotifyMobile] = useState("");
   const [notifySuccess, setNotifySuccess] = useState<string | null>(null);
-
-  // Ticketed Events & Unified Booking State
-  const [ticketedEventsList, setTicketedEventsList] = useState<EventItem[]>(() => getTicketedEvents());
-  const [bookingModalEvent, setBookingModalEvent] = useState<EventItem | null>(null);
-  const [viewingPass, setViewingPass] = useState<EventBookingRecord | null>(null);
-  const [showOrganizerHub, setShowOrganizerHub] = useState<boolean>(false);
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All Categories");
-  const [selectedEventTypeFilter, setSelectedEventTypeFilter] = useState<'ALL' | 'FREE' | 'PAID' | 'HYBRID'>('ALL');
-
-  useEffect(() => {
-    setTicketedEventsList(getTicketedEvents());
-  }, [events]);
 
   const handleOpenBooking = (evt: Event) => {
     let matched = ticketedEventsList.find(e => e.id === evt.id || e.title.toLowerCase() === evt.title.toLowerCase());
@@ -307,13 +370,24 @@ export default function EventsShowcase({
 
   // Filter events based on selected city and search query
   const filteredEvents = safeEvents.filter((evt) => {
-    // Hide disabled events or if master event system is off
-    const isEventActive = evt.isActive !== false && isEventBookingSystemActive;
+    // Hide cancelled/draft events or if master event system is off
+    const isEventActive = 
+      evt.isActive !== false && 
+      isEventBookingSystemActive && 
+      String((evt as any).status || "").toUpperCase() !== "CANCELLED" && 
+      String((evt as any).status || "").toUpperCase() !== "DRAFT";
     if (!isEventActive) {
       return false; // Inactive events should be hidden from customers
     }
 
-    const matchesCity = selectedCity === "All Cities" || (evt.city || "").toLowerCase() === (selectedCity || "").toLowerCase();
+    const matchesCity = 
+      selectedCity === "All Cities" ||
+      selectedCity === "All" ||
+      !evt.city ||
+      (evt.city || "").toLowerCase() === "all cities" ||
+      (evt.city || "").toLowerCase() === "all" ||
+      (evt.city || "").toLowerCase() === (selectedCity || "").toLowerCase();
+
     const matchesCategory = selectedCategoryFilter === "All Categories" ||
       (evt.categories || []).some(c => c.name.toLowerCase().includes(selectedCategoryFilter.toLowerCase())) ||
       (evt.title || "").toLowerCase().includes(selectedCategoryFilter.toLowerCase()) ||
@@ -328,7 +402,7 @@ export default function EventsShowcase({
       (evt.city || "").toLowerCase().includes((searchQuery || "").toLowerCase());
 
     const ticketedMatch = ticketedEventsList.find(te => te.id === evt.id || te.title.toLowerCase() === evt.title.toLowerCase());
-    const minPrice = Math.min(...(evt.categories || []).map(c => c.price));
+    const minPrice = evt.categories && evt.categories.length > 0 ? Math.min(...evt.categories.map(c => c.price)) : 0;
     const effectiveType = ticketedMatch?.eventType || (minPrice === 0 || evt.isPaid === false ? 'FREE' : 'PAID');
     const matchesEventType = selectedEventTypeFilter === 'ALL' || effectiveType === selectedEventTypeFilter;
 
@@ -623,6 +697,17 @@ export default function EventsShowcase({
           <Calendar className="w-10 h-10 text-text-muted mx-auto mb-4 opacity-40" />
           <p className="text-text-secondary font-medium mb-1">No upcoming events listed in {selectedCity}.</p>
           <p className="text-text-muted text-xs">Switch your city selection or clear the search filter to explore others.</p>
+          {selectedCity !== "All Cities" && setSelectedCity && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setSelectedCity("All Cities")}
+                className="px-4 py-2 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5"
+              >
+                <span>View Events in All Cities</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="events-showroom-grid">

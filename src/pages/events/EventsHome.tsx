@@ -10,108 +10,146 @@ export default function EventsHome() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
 
   const displayedEvents = React.useMemo(() => {
-    if (selectedCategory === 'All') return events;
-    if (selectedCategory === 'Free') return events.filter((e) => e.eventType === 'FREE' || !e.isPaid);
-    if (selectedCategory === 'Paid') return events.filter((e) => e.eventType === 'PAID' && e.isPaid);
-    return events.filter((e) => e.category?.toLowerCase() === selectedCategory.toLowerCase());
-  }, [events, selectedCategory]);
+    return events.filter((e) => {
+      // Category filter
+      if (selectedCategory === 'Free' && (e.eventType === 'PAID' && e.isPaid)) return false;
+      if (selectedCategory === 'Paid' && (e.eventType === 'FREE' || !e.isPaid)) return false;
+      if (selectedCategory !== 'All' && selectedCategory !== 'Free' && selectedCategory !== 'Paid') {
+        if (e.category?.toLowerCase() !== selectedCategory.toLowerCase()) return false;
+      }
 
-  useEffect(() => {
-    let isMounted = true;
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchTitle = e.title?.toLowerCase().includes(q);
+        const matchDesc = e.description?.toLowerCase().includes(q);
+        const matchVenue = e.venueName?.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchVenue) return false;
+      }
 
-    async function loadEvents() {
-      // Local created & canonical events
-      let localMapped: any[] = [];
-      try {
-        const { getEvents: getLocalEvents } = await import("../../services/eventBookingService");
-        const localList = getLocalEvents();
-        localMapped = (localList || []).map((e: any) => {
+      // City filter
+      if (cityFilter.trim() && cityFilter.toLowerCase() !== 'all' && cityFilter.toLowerCase() !== 'all cities') {
+        const c = cityFilter.toLowerCase().trim();
+        const matchCity = e.city?.toLowerCase().includes(c) || e.venueAddress?.toLowerCase().includes(c);
+        if (!matchCity) return false;
+      }
+
+      return true;
+    });
+  }, [events, selectedCategory, searchQuery, cityFilter]);
+
+  const loadEvents = React.useCallback(async () => {
+    // 1. Gather all local canonical & dual-written events
+    let localMapped: any[] = [];
+    try {
+      const { getEvents: getLocalEvents } = await import("../../services/eventBookingService");
+      const localList = getLocalEvents() || [];
+
+      // Also read dual-written cine_events from localStorage
+      const cineRaw = localStorage.getItem("cine_events");
+      const cineList = cineRaw ? JSON.parse(cineRaw) : [];
+
+      const combinedLocal = new Map<string, any>();
+
+      for (const t of localList) {
+        if (t && (t.id || t._id)) combinedLocal.set(t.id || t._id, t);
+      }
+      for (const c of cineList) {
+        if (c && (c.id || c._id)) {
+          const key = c.id || c._id;
+          combinedLocal.set(key, { ...(combinedLocal.get(key) || {}), ...c });
+        }
+      }
+
+      localMapped = Array.from(combinedLocal.values()).map((e: any) => {
+        const rawDate = e.date ? new Date(e.date) : new Date();
+        const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : (e.date || "2026-10-15");
+        const lowestPrice = e.ticketTypes && e.ticketTypes.length > 0
+          ? Math.min(...e.ticketTypes.map((t: any) => Number(t.price) || 0))
+          : (Number(e.price) || 0);
+
+        const isEvtActive = e.isActive !== false && String(e.status || '').toUpperCase() !== 'CANCELLED' && String(e.status || '').toUpperCase() !== 'DRAFT';
+
+        return {
+          id: e.id || e._id,
+          title: e.title,
+          description: e.description || "",
+          venueName: e.venueName || e.venue?.name || "Convention Arena",
+          venueAddress: e.venueAddress || e.venue?.address || "",
+          city: e.city || "Hyderabad",
+          date: dateStr,
+          time: e.startTime || e.time || "18:30",
+          image: e.bannerUrl || e.posterUrl || (e as any).image || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+          category: e.category || "Concerts",
+          eventType: e.eventType || (lowestPrice === 0 ? "FREE" : "PAID"),
+          passMode: e.passMode || "PAID",
+          categories: (e.ticketTypes || []).map((t: any) => ({
+            name: t.name || "Standard",
+            price: Number(t.price ?? 0),
+            availableSeats: t.availableQuantity ?? 100,
+          })),
+          reviews: e.reviews || [],
+          featured: e.featured ?? true,
+          isPaid: e.eventType === "PAID" && lowestPrice > 0,
+          isActive: isEvtActive,
+        };
+      });
+    } catch (e) {}
+
+    try {
+      const res = await apiClient.get("/events");
+      const apiEvents = res.data?.events || res.data?.data?.events;
+      if (apiEvents && Array.isArray(apiEvents) && apiEvents.length > 0) {
+        const mapped: any[] = apiEvents.map((e: any) => {
           const rawDate = e.date ? new Date(e.date) : new Date();
-          const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : (e.date || "2026-10-15");
-          const lowestPrice = e.ticketTypes && e.ticketTypes.length > 0
-            ? Math.min(...e.ticketTypes.map((t: any) => Number(t.price) || 0))
-            : (Number(e.price) || 0);
+          const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : "2026-10-15";
+          const lowestPrice = typeof e.minPrice === "number" ? e.minPrice : (e.categories && e.categories.length > 0 ? Math.min(...e.categories.map((c: any) => Number(c.price) || 0)) : 0);
 
           return {
             id: e.id || e._id,
             title: e.title,
             description: e.description || "",
-            venueName: e.venueName || e.venue?.name || "Convention Arena",
+            venueName: e.venueName || e.venue?.name || (typeof e.venue === "string" ? e.venue : "Convention Arena"),
             venueAddress: e.venueAddress || e.venue?.address || "",
-            city: e.city || "Hyderabad",
+            city: e.city || e.venue?.city || "All Cities",
             date: dateStr,
-            time: e.startTime || e.time || "18:30",
-            image: e.bannerUrl || e.posterUrl || (e as any).image || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+            time: e.time || e.startTime || "18:00",
+            image: e.posterUrl || (typeof e.poster === "object" ? e.poster?.url : e.poster) || e.bannerUrl || (typeof e.banner === "object" ? e.banner?.url : e.banner) || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
             category: e.category || "Concerts",
             eventType: e.eventType || (lowestPrice === 0 ? "FREE" : "PAID"),
             passMode: e.passMode || "PAID",
             categories: (e.ticketTypes || []).map((t: any) => ({
-              name: t.name || "Standard",
-              price: Number(t.price ?? 0),
-              availableSeats: t.availableQuantity ?? 100,
+              name: t.name || t.typeId?.name || "Standard",
+              price: Number(t.price ?? t.typeId?.price ?? 0),
+              availableSeats: t.availableQuantity ?? t.availableSeats ?? 100,
             })),
             reviews: [],
             featured: true,
             isPaid: e.eventType === "PAID" && lowestPrice > 0,
-            isActive: e.status === "PUBLISHED" || e.status === "Published" || e.status === "UPCOMING" || e.status === "ONGOING",
+            isActive: e.status !== "CANCELLED" && e.status !== "DRAFT",
           };
         });
-      } catch (e) {}
 
-      try {
-        const res = await apiClient.get("/events");
-        const apiEvents = res.data?.events || res.data?.data?.events;
-        if (apiEvents && Array.isArray(apiEvents) && apiEvents.length > 0) {
-          const mapped: any[] = apiEvents.map((e: any) => {
-            const rawDate = e.date ? new Date(e.date) : new Date();
-            const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : "2026-10-15";
-            const lowestPrice = typeof e.minPrice === "number" ? e.minPrice : (e.categories && e.categories.length > 0 ? Math.min(...e.categories.map((c: any) => Number(c.price) || 0)) : 0);
-
-            return {
-              id: e.id || e._id,
-              title: e.title,
-              description: e.description || "",
-              venueName: e.venueName || e.venue?.name || (typeof e.venue === "string" ? e.venue : "Convention Arena"),
-              venueAddress: e.venueAddress || e.venue?.address || "",
-              city: e.city || e.venue?.city || "All Cities",
-              date: dateStr,
-              time: e.time || e.startTime || "18:00",
-              image: e.posterUrl || (typeof e.poster === "object" ? e.poster?.url : e.poster) || e.bannerUrl || (typeof e.banner === "object" ? e.banner?.url : e.banner) || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
-              category: e.category || "Concerts",
-              eventType: e.eventType || (lowestPrice === 0 ? "FREE" : "PAID"),
-              passMode: e.passMode || "PAID",
-              categories: (e.ticketTypes || []).map((t: any) => ({
-                name: t.name || t.typeId?.name || "Standard",
-                price: Number(t.price ?? t.typeId?.price ?? 0),
-                availableSeats: t.availableQuantity ?? t.availableSeats ?? 100,
-              })),
-              reviews: [],
-              featured: true,
-              isPaid: e.eventType === "PAID" && lowestPrice > 0,
-              isActive: e.status === "PUBLISHED" || e.status === "UPCOMING" || e.status === "ONGOING",
-            };
-          });
-
-          // Merge local and API events
-          const apiIds = new Set(mapped.map((m) => m.id));
-          const allMerged = [...mapped];
-          for (const loc of localMapped) {
-            if (!apiIds.has(loc.id)) {
-              allMerged.unshift(loc);
-            }
-          }
-
-          if (isMounted) {
-            setEvents(allMerged);
-            setLoading(false);
-            return;
+        // Merge local and API events
+        const apiIds = new Set(mapped.map((m) => m.id));
+        const allMerged = [...mapped];
+        for (const loc of localMapped) {
+          if (!apiIds.has(loc.id)) {
+            allMerged.unshift(loc);
           }
         }
-      } catch (err) {
-        console.warn("[Events] Live fetch fallback notice:", err);
+
+        setEvents(allMerged);
+        setLoading(false);
+        return;
       }
+    } catch (err) {
+      console.warn("[Events] Live fetch fallback notice:", err);
+    }
 
       // Default Showcase Events
       const defaultEvents: Event[] = [
@@ -167,18 +205,25 @@ export default function EventsHome() {
 
       const finalEvents = [...localMapped, ...defaultEvents.filter(d => !localMapped.some(l => l.id === d.id))];
 
-      if (isMounted) {
-        setEvents(finalEvents);
-        setLoading(false);
-      }
-    }
+      setEvents(finalEvents);
+      setLoading(false);
+  }, []);
 
+  useEffect(() => {
     loadEvents();
 
-    return () => {
-      isMounted = false;
+    const handleUpdate = () => {
+      loadEvents();
     };
-  }, []);
+
+    window.addEventListener("cine_events_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("cine_events_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, [loadEvents]);
 
   return (
     <div className="min-h-screen bg-[#09090A]">
@@ -206,6 +251,8 @@ export default function EventsHome() {
               <input 
                 type="text" 
                 placeholder="Search events, movies, artists..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none outline-none text-white w-full placeholder-text-secondary/70"
               />
             </div>
@@ -215,10 +262,16 @@ export default function EventsHome() {
               <input 
                 type="text" 
                 placeholder="City or Location" 
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
                 className="bg-transparent border-none outline-none text-white w-full placeholder-text-secondary/70"
               />
             </div>
-            <button className="bg-gold text-black px-8 py-3 rounded-full font-bold hover:bg-gold/90 transition-colors w-full sm:w-auto">
+            <button 
+              type="button"
+              onClick={() => {}}
+              className="bg-gold text-black px-8 py-3 rounded-full font-bold hover:bg-gold/90 transition-colors w-full sm:w-auto cursor-pointer"
+            >
               Search
             </button>
           </div>

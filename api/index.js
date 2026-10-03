@@ -1,5 +1,9 @@
+var __create = Object.create;
 var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
@@ -7,46 +11,63 @@ var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // server/config/env.ts
-import dotenv from "dotenv";
-import { z } from "zod";
-var envSchema, parsedEnv, env;
+var import_dotenv, import_zod, envSchema, parsedEnv, env;
 var init_env = __esm({
   "server/config/env.ts"() {
-    dotenv.config();
-    envSchema = z.object({
-      NODE_ENV: z.string().default("development"),
-      PORT: z.union([z.string(), z.number()]).default(3e3).transform((val) => typeof val === "number" ? val : parseInt(String(val), 10) || 3e3),
-      API_PREFIX: z.string().default("/api/v1"),
+    import_dotenv = __toESM(require("dotenv"), 1);
+    import_zod = require("zod");
+    import_dotenv.default.config();
+    envSchema = import_zod.z.object({
+      NODE_ENV: import_zod.z.string().default("development"),
+      PORT: import_zod.z.union([import_zod.z.string(), import_zod.z.number()]).default(3e3).transform((val) => typeof val === "number" ? val : parseInt(String(val), 10) || 3e3),
+      API_PREFIX: import_zod.z.string().default("/api/v1"),
       // Database & Cache
-      DATABASE_URL: z.string().optional().default("postgresql://postgres:postgres@localhost:5432/cinevenue"),
-      DIRECT_URL: z.string().optional(),
-      REDIS_URL: z.string().optional().default("redis://localhost:6379"),
+      DATABASE_URL: import_zod.z.string().optional().default("postgresql://postgres:postgres@localhost:5432/cinevenue"),
+      DIRECT_URL: import_zod.z.string().optional(),
+      REDIS_URL: import_zod.z.string().optional().default("redis://localhost:6379"),
       // Authentication & Security
-      JWT_ACCESS_SECRET: z.string().default("cinevenue_dev_access_jwt_secret_key_991823"),
-      JWT_REFRESH_SECRET: z.string().default("cinevenue_dev_refresh_jwt_secret_key_882714"),
-      JWT_ACCESS_EXPIRES_IN: z.string().default("1h"),
-      JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
-      GOOGLE_CLIENT_ID: z.string().optional(),
-      GOOGLE_CLIENT_SECRET: z.string().optional(),
-      GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
+      JWT_ACCESS_SECRET: import_zod.z.string().default("cinevenue_dev_access_jwt_secret_key_991823"),
+      JWT_REFRESH_SECRET: import_zod.z.string().default("cinevenue_dev_refresh_jwt_secret_key_882714"),
+      JWT_ACCESS_EXPIRES_IN: import_zod.z.string().default("1h"),
+      JWT_REFRESH_EXPIRES_IN: import_zod.z.string().default("7d"),
+      GOOGLE_CLIENT_ID: import_zod.z.string().optional(),
+      GOOGLE_CLIENT_SECRET: import_zod.z.string().optional(),
+      GOOGLE_CALLBACK_URL: import_zod.z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
       // Payment Gateways (Cashfree)
-      CASHFREE_APP_ID: z.string().optional(),
-      CASHFREE_SECRET_KEY: z.string().optional(),
-      CASHFREE_ENV: z.enum(["TEST", "PROD"]).default("TEST"),
-      CASHFREE_API_VERSION: z.string().default("2023-08-01"),
-      DEFAULT_PAYMENT_GATEWAY: z.literal("CASHFREE").default("CASHFREE"),
+      CASHFREE_APP_ID: import_zod.z.string().optional(),
+      CASHFREE_SECRET_KEY: import_zod.z.string().optional(),
+      CASHFREE_ENV: import_zod.z.enum(["TEST", "PROD"]).default("TEST"),
+      CASHFREE_API_VERSION: import_zod.z.string().default("2023-08-01"),
+      DEFAULT_PAYMENT_GATEWAY: import_zod.z.literal("CASHFREE").default("CASHFREE"),
       // AI Service
-      GEMINI_API_KEY: z.string().optional(),
+      GEMINI_API_KEY: import_zod.z.string().optional(),
       // Supabase Platform
-      SUPABASE_URL: z.string().optional(),
-      SUPABASE_ANON_KEY: z.string().optional(),
-      SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
-      SUPABASE_SECRET_KEY: z.string().optional(),
+      SUPABASE_URL: import_zod.z.string().optional(),
+      SUPABASE_ANON_KEY: import_zod.z.string().optional(),
+      SUPABASE_PUBLISHABLE_KEY: import_zod.z.string().optional(),
+      SUPABASE_SECRET_KEY: import_zod.z.string().optional(),
       // CORS & Network
-      CORS_ORIGIN: z.string().default("*"),
-      FRONTEND_URL: z.string().optional().default("http://localhost:3000")
+      CORS_ORIGIN: import_zod.z.string().default("*"),
+      FRONTEND_URL: import_zod.z.string().optional().default("http://localhost:3000")
     });
     parsedEnv = envSchema.safeParse(process.env);
     if (!parsedEnv.success) {
@@ -129,7 +150,6 @@ __export(supabaseAdmin_exports, {
   supabaseAdmin: () => supabaseAdmin,
   syncAppSettingsToSupabase: () => syncAppSettingsToSupabase
 });
-import { createClient } from "@supabase/supabase-js";
 async function syncAppSettingsToSupabase(settings) {
   if (!supabaseAdmin) {
     logger.warn("[SupabaseAdmin] Service role client is not configured; skipping cloud sync.");
@@ -177,9 +197,10 @@ async function syncAppSettingsToSupabase(settings) {
     return false;
   }
 }
-var supabaseUrl, supabaseSecretKey, isSupabaseAdminConfigured, supabaseAdmin;
+var import_supabase_js, supabaseUrl, supabaseSecretKey, isSupabaseAdminConfigured, supabaseAdmin;
 var init_supabaseAdmin = __esm({
   "server/config/supabaseAdmin.ts"() {
+    import_supabase_js = require("@supabase/supabase-js");
     init_env();
     init_logger();
     supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://mpeedjoyvimegnmymweb.supabase.co";
@@ -187,7 +208,7 @@ var init_supabaseAdmin = __esm({
     isSupabaseAdminConfigured = Boolean(
       supabaseUrl && supabaseSecretKey && supabaseSecretKey.startsWith("sb_secret_")
     );
-    supabaseAdmin = isSupabaseAdminConfigured ? createClient(supabaseUrl, supabaseSecretKey, {
+    supabaseAdmin = isSupabaseAdminConfigured ? (0, import_supabase_js.createClient)(supabaseUrl, supabaseSecretKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
@@ -197,7 +218,6 @@ var init_supabaseAdmin = __esm({
 });
 
 // server/config/database.ts
-import { PrismaClient } from "@prisma/client";
 function sanitizeRecord(tableName, data) {
   if (!data || typeof data !== "object") return {};
   const clean = {};
@@ -524,7 +544,7 @@ function createSupabaseTableProxy(tableName) {
 function initPrismaClient() {
   if (globalThis.prismaGlobal) return globalThis.prismaGlobal;
   try {
-    const rawClient = new PrismaClient({
+    const rawClient = new import_client.PrismaClient({
       datasourceUrl: env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/cinevenue",
       log: []
     });
@@ -629,9 +649,10 @@ async function checkDatabaseConnection() {
 function isDatabaseConnected() {
   return Boolean(supabaseAdmin) || prismaConnected;
 }
-var prismaConnected, TABLE_COLUMNS, TABLES_WITHOUT_UPDATED_AT, TABLE_MAP, prisma;
+var import_client, prismaConnected, TABLE_COLUMNS, TABLES_WITHOUT_UPDATED_AT, TABLE_MAP, prisma;
 var init_database = __esm({
   "server/config/database.ts"() {
+    import_client = require("@prisma/client");
     init_logger();
     init_env();
     init_supabaseAdmin();
@@ -880,12 +901,10 @@ __export(maintenance_exports, {
   setTestMaintenanceState: () => setTestMaintenanceState,
   writePersistedFileSettings: () => writePersistedFileSettings
 });
-import fs from "fs";
-import path from "path";
 function readPersistedFileSettings() {
   try {
-    if (fs.existsSync(TMP_CONFIG_PATH)) {
-      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
+    if (import_fs.default.existsSync(TMP_CONFIG_PATH)) {
+      const content = import_fs.default.readFileSync(TMP_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -893,8 +912,8 @@ function readPersistedFileSettings() {
   } catch (e) {
   }
   try {
-    if (fs.existsSync(CONFIG_FILE_PATH)) {
-      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
+    if (import_fs.default.existsSync(CONFIG_FILE_PATH)) {
+      const content = import_fs.default.readFileSync(CONFIG_FILE_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -908,11 +927,11 @@ function writePersistedFileSettings(settings) {
   try {
     const serialized = JSON.stringify(inMemoryGlobalSettings, null, 2);
     try {
-      fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
+      import_fs.default.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+      import_fs.default.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
     } catch (e) {
     }
   } catch (e) {
@@ -1074,13 +1093,15 @@ async function checkMovieBookingMaintenance(req, res, next) {
     });
   }
 }
-var CONFIG_FILE_PATH, TMP_CONFIG_PATH, inMemoryGlobalSettings, cachedState, CACHE_TTL_MS;
+var import_fs, import_path, CONFIG_FILE_PATH, TMP_CONFIG_PATH, inMemoryGlobalSettings, cachedState, CACHE_TTL_MS;
 var init_maintenance = __esm({
   "server/middleware/maintenance.ts"() {
+    import_fs = __toESM(require("fs"), 1);
+    import_path = __toESM(require("path"), 1);
     init_database();
     init_logger();
-    CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
-    TMP_CONFIG_PATH = path.resolve("/tmp", "cine_global_settings.json");
+    CONFIG_FILE_PATH = import_path.default.resolve(process.cwd(), "server/config/global_settings.json");
+    TMP_CONFIG_PATH = import_path.default.resolve("/tmp", "cine_global_settings.json");
     inMemoryGlobalSettings = {
       globalSubwebsiteEnabled: true,
       subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
@@ -1091,26 +1112,31 @@ var init_maintenance = __esm({
 });
 
 // server/serverless.ts
-import fs3 from "fs";
-import path3 from "path";
+var serverless_exports = {};
+__export(serverless_exports, {
+  default: () => handler
+});
+module.exports = __toCommonJS(serverless_exports);
+var import_fs3 = __toESM(require("fs"), 1);
+var import_path3 = __toESM(require("path"), 1);
 
 // server/app.ts
+var import_express17 = __toESM(require("express"), 1);
+var import_cors = __toESM(require("cors"), 1);
 init_env();
-import express from "express";
-import cors from "cors";
 
 // server/routes.ts
-import { Router as Router16 } from "express";
+var import_express16 = require("express");
 
 // server/modules/auth/auth.routes.ts
-import { Router } from "express";
+var import_express = require("express");
 
 // server/modules/auth/auth.service.ts
+var import_bcryptjs = __toESM(require("bcryptjs"), 1);
+var import_jsonwebtoken = __toESM(require("jsonwebtoken"), 1);
+var import_crypto = require("crypto");
 init_database();
 init_env();
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { randomBytes, createHash } from "crypto";
 
 // server/shared/errors/index.ts
 var AppError = class extends Error {
@@ -1168,8 +1194,8 @@ function isDbConnectionError(err) {
 }
 var AuthService = class {
   generateEmailVerificationToken() {
-    const rawToken = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const rawToken = (0, import_crypto.randomBytes)(32).toString("hex");
+    const tokenHash = (0, import_crypto.createHash)("sha256").update(rawToken).digest("hex");
     return { rawToken, tokenHash };
   }
   generateTokens(user) {
@@ -1179,10 +1205,10 @@ var AuthService = class {
       role: user.role,
       name: user.name
     };
-    const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+    const accessToken = import_jsonwebtoken.default.sign(payload, env.JWT_ACCESS_SECRET, {
       expiresIn: env.JWT_ACCESS_EXPIRES_IN
     });
-    const refreshToken = jwt.sign(
+    const refreshToken = import_jsonwebtoken.default.sign(
       { userId: user.id, type: "refresh" },
       env.JWT_REFRESH_SECRET,
       { expiresIn: env.JWT_REFRESH_EXPIRES_IN }
@@ -1202,7 +1228,7 @@ var AuthService = class {
         const existingMobile = await prisma.user.findFirst({ where: { mobile: data.mobile } });
         if (existingMobile) throw new ConflictError("An account with this mobile number already exists.");
       }
-      const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
+      const passwordHash = await import_bcryptjs.default.hash(data.password, SALT_ROUNDS);
       const user = await prisma.user.create({
         data: {
           email: emailLower,
@@ -1268,9 +1294,9 @@ var AuthService = class {
             throw new ConflictError("An account with this mobile number already exists.");
           }
         }
-        const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
+        const passwordHash = await import_bcryptjs.default.hash(data.password, SALT_ROUNDS);
         const resilientUser = {
-          id: `usr_${randomBytes(8).toString("hex")}`,
+          id: `usr_${(0, import_crypto.randomBytes)(8).toString("hex")}`,
           email: emailLower,
           name: data.name,
           mobile: data.mobile || null,
@@ -1328,7 +1354,7 @@ var AuthService = class {
       if (!user || !user.isActive) {
         throw new UnauthorizedError("Account not found. Please check your email or mobile number, or create an account.");
       }
-      const isMatch = await bcrypt.compare(data.password, user.passwordHash);
+      const isMatch = await import_bcryptjs.default.compare(data.password, user.passwordHash);
       if (!isMatch) {
         throw new UnauthorizedError("Incorrect password. Please try again or click 'Forgot Password?' to reset it.");
       }
@@ -1378,7 +1404,7 @@ var AuthService = class {
           }
         }
         if (foundUser) {
-          const isMatch = await bcrypt.compare(data.password, foundUser.passwordHash);
+          const isMatch = await import_bcryptjs.default.compare(data.password, foundUser.passwordHash);
           if (!isMatch) {
             throw new UnauthorizedError("Incorrect password. Please try again or click 'Forgot Password?' to reset it.");
           }
@@ -1405,7 +1431,7 @@ var AuthService = class {
       throw new ValidationError("Verification token is required");
     }
     try {
-      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const tokenHash = (0, import_crypto.createHash)("sha256").update(token).digest("hex");
       const verificationRecord = await prisma.emailVerificationToken.findUnique({
         where: { tokenHash }
       });
@@ -1511,7 +1537,7 @@ var AuthService = class {
         user = await prisma.user.create({
           data: {
             email: email || `${Date.now()}@google.local`,
-            passwordHash: await bcrypt.hash(randomBytes(16).toString("hex"), SALT_ROUNDS),
+            passwordHash: await import_bcryptjs.default.hash((0, import_crypto.randomBytes)(16).toString("hex"), SALT_ROUNDS),
             name,
             profileImageUrl,
             role: "CUSTOMER",
@@ -1596,7 +1622,7 @@ var AuthService = class {
     } catch (err) {
       if (isDbConnectionError(err)) {
         logger.warn(`Database unreachable during googleLogin: ${err.message}. Activating resilient session.`);
-        const fallbackId = `usr_g_${randomBytes(8).toString("hex")}`;
+        const fallbackId = `usr_g_${(0, import_crypto.randomBytes)(8).toString("hex")}`;
         const fallbackUser = {
           id: fallbackId,
           email: email || `${Date.now()}@google.local`,
@@ -1630,7 +1656,7 @@ var AuthService = class {
   }
   async refreshToken(token) {
     try {
-      const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET);
+      const decoded = import_jsonwebtoken.default.verify(token, env.JWT_REFRESH_SECRET);
       try {
         const storedToken = await prisma.refreshToken.findUnique({
           where: { token }
@@ -1748,7 +1774,7 @@ var AuthService = class {
           message: "No registered account found with this email or mobile number. Please check your input or sign up."
         };
       }
-      const rawToken = randomBytes(32).toString("hex");
+      const rawToken = (0, import_crypto.randomBytes)(32).toString("hex");
       const otpCode = Math.floor(1e5 + Math.random() * 9e5).toString();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1e3);
       try {
@@ -1757,10 +1783,10 @@ var AuthService = class {
         });
       } catch {
       }
-      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-      const otpHash = createHash("sha256").update(otpCode).digest("hex");
-      const tokenRecId = `prt_${randomBytes(8).toString("hex")}`;
-      const otpRecId = `prt_${randomBytes(8).toString("hex")}`;
+      const tokenHash = (0, import_crypto.createHash)("sha256").update(rawToken).digest("hex");
+      const otpHash = (0, import_crypto.createHash)("sha256").update(otpCode).digest("hex");
+      const tokenRecId = `prt_${(0, import_crypto.randomBytes)(8).toString("hex")}`;
+      const otpRecId = `prt_${(0, import_crypto.randomBytes)(8).toString("hex")}`;
       const expiresAtIso = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
       try {
         await prisma.passwordResetToken.create({
@@ -1790,7 +1816,7 @@ var AuthService = class {
         return {
           success: true,
           message: "Password reset code dispatched.",
-          resetToken: randomBytes(16).toString("hex"),
+          resetToken: (0, import_crypto.randomBytes)(16).toString("hex"),
           otpCode: "123456"
         };
       }
@@ -1799,7 +1825,7 @@ var AuthService = class {
   }
   async resetPassword(token, newPass, identifier) {
     const trimmedToken = (token || "").trim();
-    const tokenHash = createHash("sha256").update(trimmedToken).digest("hex");
+    const tokenHash = (0, import_crypto.createHash)("sha256").update(trimmedToken).digest("hex");
     const resetRecord = await prisma.passwordResetToken.findFirst({
       where: {
         tokenHash
@@ -1813,7 +1839,7 @@ var AuthService = class {
     if (/* @__PURE__ */ new Date() > expiresDate) {
       throw new ValidationError("Password reset verification code or token has expired. Please request a new one.");
     }
-    const passwordHash = await bcrypt.hash(newPass, SALT_ROUNDS);
+    const passwordHash = await import_bcryptjs.default.hash(newPass, SALT_ROUNDS);
     await prisma.user.update({
       where: { id: resetRecord.userId },
       data: { passwordHash, isVerified: true }
@@ -1967,7 +1993,7 @@ var AuthController = class {
 var authController = new AuthController();
 
 // server/middleware/validate.ts
-import { ZodError } from "zod";
+var import_zod2 = require("zod");
 function validate(schemas) {
   return async (req, res, next) => {
     try {
@@ -1982,7 +2008,7 @@ function validate(schemas) {
       }
       next();
     } catch (error) {
-      if (error instanceof ZodError) {
+      if (error instanceof import_zod2.ZodError) {
         const formatted = error.issues.map((issue) => ({
           path: issue.path.join("."),
           message: issue.message,
@@ -1996,8 +2022,8 @@ function validate(schemas) {
 }
 
 // server/middleware/auth.ts
+var import_jsonwebtoken2 = __toESM(require("jsonwebtoken"), 1);
 init_env();
-import jwt2 from "jsonwebtoken";
 function authenticate(req, res, next) {
   try {
     const passcode = req.headers["x-admin-passcode"];
@@ -2017,7 +2043,7 @@ function authenticate(req, res, next) {
     if (!token) {
       throw new UnauthorizedError("Authentication token is missing. Format: Bearer <token>");
     }
-    const decoded = jwt2.verify(token, env.JWT_ACCESS_SECRET);
+    const decoded = import_jsonwebtoken2.default.verify(token, env.JWT_ACCESS_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -2036,7 +2062,7 @@ function optionalAuthenticate(req, res, next) {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1];
       if (token) {
-        const decoded = jwt2.verify(token, env.JWT_ACCESS_SECRET);
+        const decoded = import_jsonwebtoken2.default.verify(token, env.JWT_ACCESS_SECRET);
         req.user = decoded;
       }
     }
@@ -2047,40 +2073,40 @@ function optionalAuthenticate(req, res, next) {
 }
 
 // server/modules/auth/auth.validation.ts
-import { z as z2 } from "zod";
-var registerSchema = z2.object({
-  email: z2.string().email("Please provide a valid email address"),
-  password: z2.string().min(8, "Password must be at least 8 characters long").regex(/[a-z]/, "Password must include a lowercase letter").regex(/[A-Z]/, "Password must include an uppercase letter").regex(/[0-9]/, "Password must include a number").regex(/[^A-Za-z0-9]/, "Password must include a symbol"),
-  confirmPassword: z2.string().optional(),
-  name: z2.string().min(2, "Name must be at least 2 characters long"),
-  mobile: z2.string().trim().regex(/^\+?[1-9]\d{7,14}$/, "Please provide a valid mobile number"),
-  dateOfBirth: z2.coerce.date().optional(),
-  profileImageUrl: z2.string().url().optional()
+var import_zod3 = require("zod");
+var registerSchema = import_zod3.z.object({
+  email: import_zod3.z.string().email("Please provide a valid email address"),
+  password: import_zod3.z.string().min(8, "Password must be at least 8 characters long").regex(/[a-z]/, "Password must include a lowercase letter").regex(/[A-Z]/, "Password must include an uppercase letter").regex(/[0-9]/, "Password must include a number").regex(/[^A-Za-z0-9]/, "Password must include a symbol"),
+  confirmPassword: import_zod3.z.string().optional(),
+  name: import_zod3.z.string().min(2, "Name must be at least 2 characters long"),
+  mobile: import_zod3.z.string().trim().regex(/^\+?[1-9]\d{7,14}$/, "Please provide a valid mobile number"),
+  dateOfBirth: import_zod3.z.coerce.date().optional(),
+  profileImageUrl: import_zod3.z.string().url().optional()
 }).refine((data) => !data.confirmPassword || data.confirmPassword === data.password, {
   message: "Passwords do not match.",
   path: ["confirmPassword"]
 });
-var loginSchema = z2.object({
-  identifier: z2.string().trim().min(1, "Email or mobile number is required"),
-  password: z2.string().min(1, "Password is required")
+var loginSchema = import_zod3.z.object({
+  identifier: import_zod3.z.string().trim().min(1, "Email or mobile number is required"),
+  password: import_zod3.z.string().min(1, "Password is required")
 });
-var refreshTokenSchema = z2.object({
-  refreshToken: z2.string().min(1, "Refresh token is required")
+var refreshTokenSchema = import_zod3.z.object({
+  refreshToken: import_zod3.z.string().min(1, "Refresh token is required")
 });
-var forgotPasswordSchema = z2.object({
-  email: z2.string().optional(),
-  identifier: z2.string().optional()
+var forgotPasswordSchema = import_zod3.z.object({
+  email: import_zod3.z.string().optional(),
+  identifier: import_zod3.z.string().optional()
 }).refine((data) => !!(data.email || data.identifier), {
   message: "Please provide your email address or mobile number"
 });
-var resetPasswordSchema = z2.object({
-  token: z2.string().min(1, "Reset token or code is required"),
-  newPassword: z2.string().min(6, "New password must be at least 6 characters long"),
-  identifier: z2.string().optional()
+var resetPasswordSchema = import_zod3.z.object({
+  token: import_zod3.z.string().min(1, "Reset token or code is required"),
+  newPassword: import_zod3.z.string().min(6, "New password must be at least 6 characters long"),
+  identifier: import_zod3.z.string().optional()
 });
 
 // server/modules/auth/auth.routes.ts
-var router = Router();
+var router = (0, import_express.Router)();
 router.post("/register", validate({ body: registerSchema }), authController.register);
 router.post("/login", validate({ body: loginSchema }), authController.login);
 router.get("/verify-email", authController.verifyEmail);
@@ -2095,8 +2121,8 @@ router.post("/reset-password", validate({ body: resetPasswordSchema }), authCont
 var auth_routes_default = router;
 
 // server/modules/movies/movie.routes.ts
+var import_express2 = require("express");
 init_database();
-import { Router as Router2 } from "express";
 
 // server/middleware/authorize.ts
 function authorize(...allowedRoles) {
@@ -2116,7 +2142,7 @@ function authorize(...allowedRoles) {
 }
 
 // server/modules/movies/movie.routes.ts
-var router2 = Router2();
+var router2 = (0, import_express2.Router)();
 router2.get("/", async (req, res, next) => {
   try {
     const { status, genre, language } = req.query;
@@ -2297,9 +2323,9 @@ router2.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (r
 var movie_routes_default = router2;
 
 // server/modules/theatres/theatre.routes.ts
+var import_express3 = require("express");
 init_database();
-import { Router as Router3 } from "express";
-var router3 = Router3();
+var router3 = (0, import_express3.Router)();
 router3.get("/", async (req, res, next) => {
   try {
     const { city, status } = req.query;
@@ -2477,9 +2503,9 @@ router3.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (r
 var theatre_routes_default = router3;
 
 // server/modules/shows/show.routes.ts
+var import_express4 = require("express");
 init_database();
-import { Router as Router4 } from "express";
-var router4 = Router4();
+var router4 = (0, import_express4.Router)();
 function parseKolkataDateRange(dateStr) {
   const targetDate = dateStr ? String(dateStr).trim() : "Today";
   const now = /* @__PURE__ */ new Date();
@@ -2943,11 +2969,11 @@ router4.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_
 var show_routes_default = router4;
 
 // server/modules/bookings/booking.routes.ts
-import { Router as Router5 } from "express";
+var import_express5 = require("express");
 
 // server/modules/bookings/booking.service.ts
+var import_decimal = __toESM(require("decimal.js"), 1);
 init_database();
-import Decimal from "decimal.js";
 
 // server/config/redis.ts
 init_logger();
@@ -3006,17 +3032,17 @@ init_database();
 init_logger();
 
 // server/modules/pos/pos.encryption.ts
-import crypto2 from "crypto";
+var import_crypto2 = __toESM(require("crypto"), 1);
 var ENCRYPTION_KEY = process.env.POS_ENCRYPTION_KEY || process.env.JWT_SECRET || "cinevenue_pos_secret_master_key_32bytes!!";
 var ALGORITHM = "aes-256-gcm";
 function getMasterKey() {
-  return crypto2.createHash("sha256").update(ENCRYPTION_KEY).digest();
+  return import_crypto2.default.createHash("sha256").update(ENCRYPTION_KEY).digest();
 }
 function encryptSecret(plainText) {
   if (!plainText) return "";
   try {
-    const iv = crypto2.randomBytes(12);
-    const cipher = crypto2.createCipheriv(ALGORITHM, getMasterKey(), iv);
+    const iv = import_crypto2.default.randomBytes(12);
+    const cipher = import_crypto2.default.createCipheriv(ALGORITHM, getMasterKey(), iv);
     let encrypted = cipher.update(plainText, "utf8", "hex");
     encrypted += cipher.final("hex");
     const authTag = cipher.getAuthTag().toString("hex");
@@ -3033,7 +3059,7 @@ function decryptSecret(cipherText) {
       const [ivHex, authTagHex, encryptedHex] = parts;
       const iv = Buffer.from(ivHex, "hex");
       const authTag = Buffer.from(authTagHex, "hex");
-      const decipher = crypto2.createDecipheriv(ALGORITHM, getMasterKey(), iv);
+      const decipher = import_crypto2.default.createDecipheriv(ALGORITHM, getMasterKey(), iv);
       decipher.setAuthTag(authTag);
       let decrypted = decipher.update(encryptedHex, "hex", "utf8");
       decrypted += decipher.final("utf8");
@@ -3050,11 +3076,11 @@ function maskSecret(secret) {
   return `${secret.slice(0, 3)}\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022${secret.slice(-4)}`;
 }
 function generateWebhookSecret() {
-  return `whsec_${crypto2.randomBytes(24).toString("hex")}`;
+  return `whsec_${import_crypto2.default.randomBytes(24).toString("hex")}`;
 }
 
 // server/modules/pos/adapters/generic.adapter.ts
-import axios from "axios";
+var import_axios = __toESM(require("axios"), 1);
 
 // server/modules/pos/adapters/base.adapter.ts
 init_logger();
@@ -3111,7 +3137,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
     }
     try {
       this.validateHttpsUrl(config.baseApiUrl);
-      const response = await axios.get(`${config.baseApiUrl}/health`, {
+      const response = await import_axios.default.get(`${config.baseApiUrl}/health`, {
         headers: {
           "Authorization": `Bearer ${config.apiKey}`,
           "X-API-Key": config.apiKey,
@@ -3175,7 +3201,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         }
       ];
     }
-    const res = await axios.get(`${config.baseApiUrl}/venues`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/venues`, {
       headers: { "Authorization": `Bearer ${config.apiKey}`, "X-API-Key": config.apiKey },
       timeout: 8e3
     });
@@ -3188,7 +3214,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         { posScreenId: "POS_SCR_2", posVenueId: venueId || "POS_VENUE_001", name: "Screen 2 (IMAX Laser)", capacity: 220 }
       ];
     }
-    const res = await axios.get(`${config.baseApiUrl}/venues/${venueId || config.venueId}/screens`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/venues/${venueId || config.venueId}/screens`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3201,7 +3227,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         { posMovieId: "POS_MOV_102", title: "Devara: Part 1", durationMinutes: 178, language: "Telugu", format: "2D" }
       ];
     }
-    const res = await axios.get(`${config.baseApiUrl}/movies`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/movies`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3237,7 +3263,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         }
       ];
     }
-    const res = await axios.get(`${config.baseApiUrl}/shows`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/shows`, {
       params: { venueId: venueId || config.venueId, date },
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
@@ -3266,7 +3292,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         seats
       };
     }
-    const res = await axios.get(`${config.baseApiUrl}/shows/${showId}/seatmap`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/shows/${showId}/seatmap`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3287,7 +3313,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         "D10": "BLOCKED"
       };
     }
-    const res = await axios.get(`${config.baseApiUrl}/shows/${showId}/availability`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/shows/${showId}/availability`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 5e3
     });
@@ -3303,7 +3329,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         heldSeatIds: request.posSeatIds
       };
     }
-    const res = await axios.post(`${config.baseApiUrl}/shows/${request.posShowId}/hold`, request, {
+    const res = await import_axios.default.post(`${config.baseApiUrl}/shows/${request.posShowId}/hold`, request, {
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
         "Idempotency-Key": request.idempotencyKey
@@ -3317,7 +3343,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
       return true;
     }
     try {
-      await axios.post(`${config.baseApiUrl}/shows/${posShowId}/release`, {
+      await import_axios.default.post(`${config.baseApiUrl}/shows/${posShowId}/release`, {
         posHoldId,
         posSeatIds
       }, {
@@ -3341,7 +3367,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         status: "CONFIRMED"
       };
     }
-    const res = await axios.post(`${config.baseApiUrl}/bookings`, request, {
+    const res = await import_axios.default.post(`${config.baseApiUrl}/bookings`, request, {
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
         "Idempotency-Key": request.idempotencyKey
@@ -3354,7 +3380,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
     if (config.environment === "SANDBOX") {
       return { status: "CONFIRMED" };
     }
-    const res = await axios.get(`${config.baseApiUrl}/bookings/${posBookingId}`, {
+    const res = await import_axios.default.get(`${config.baseApiUrl}/bookings/${posBookingId}`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 5e3
     });
@@ -3369,7 +3395,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         refundAmount: 350
       };
     }
-    const res = await axios.post(`${config.baseApiUrl}/bookings/${posBookingId}/cancel`, { reason }, {
+    const res = await import_axios.default.post(`${config.baseApiUrl}/bookings/${posBookingId}/cancel`, { reason }, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3379,7 +3405,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
     if (config.environment === "SANDBOX") {
       return { success: true, refundId: `REFUND_SB_${Date.now()}` };
     }
-    const res = await axios.post(`${config.baseApiUrl}/bookings/${posBookingId}/refund`, { amount }, {
+    const res = await import_axios.default.post(`${config.baseApiUrl}/bookings/${posBookingId}/refund`, { amount }, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3398,7 +3424,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
 };
 
 // server/modules/pos/adapters/vista.adapter.ts
-import axios2 from "axios";
+var import_axios2 = __toESM(require("axios"), 1);
 var VistaPosAdapter = class extends BasePosAdapter {
   constructor() {
     super(...arguments);
@@ -3439,7 +3465,7 @@ var VistaPosAdapter = class extends BasePosAdapter {
     }
     try {
       this.validateHttpsUrl(config.baseApiUrl);
-      const res = await axios2.get(`${config.baseApiUrl}/WSVistaWebClient/RESTData.svc/cinemas`, {
+      const res = await import_axios2.default.get(`${config.baseApiUrl}/WSVistaWebClient/RESTData.svc/cinemas`, {
         headers: {
           "Ocp-Apim-Subscription-Key": config.apiKey,
           "Authorization": `Basic ${Buffer.from(`${config.apiKey}:${config.apiSecret}`).toString("base64")}`
@@ -3482,7 +3508,7 @@ var VistaPosAdapter = class extends BasePosAdapter {
     if (config.environment === "SANDBOX") {
       return [{ posVenueId: config.venueId || "VISTA_001", name: "Vista Cinema Grand", city: "Hyderabad" }];
     }
-    const res = await axios2.get(`${config.baseApiUrl}/cinemas`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await import_axios2.default.get(`${config.baseApiUrl}/cinemas`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Cinemas?.map((c) => ({ posVenueId: c.ID, name: c.Name, city: c.City })) || [];
   }
   async getScreens(config, venueId) {
@@ -3492,14 +3518,14 @@ var VistaPosAdapter = class extends BasePosAdapter {
         { posScreenId: "VISTA_SCR_2", posVenueId: venueId || "VISTA_001", name: "Audi 2 - 4DX", capacity: 150 }
       ];
     }
-    const res = await axios2.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/screens`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await import_axios2.default.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/screens`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Screens || [];
   }
   async getMovies(config) {
     if (config.environment === "SANDBOX") {
       return [{ posMovieId: "VISTA_FILM_1", title: "Kalki 2898 AD", durationMinutes: 181, language: "Telugu" }];
     }
-    const res = await axios2.get(`${config.baseApiUrl}/films`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await import_axios2.default.get(`${config.baseApiUrl}/films`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Films || [];
   }
   async getShows(config, venueId, date) {
@@ -3514,7 +3540,7 @@ var VistaPosAdapter = class extends BasePosAdapter {
         categories: [{ categoryName: "EXECUTIVE", price: 250 }, { categoryName: "ROYAL", price: 350 }]
       }];
     }
-    const res = await axios2.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/sessions`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await import_axios2.default.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/sessions`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Sessions || [];
   }
   async getSeatMap(config, showId) {
@@ -4627,22 +4653,22 @@ var BookingService = class {
     if (showSeats.length !== showSeatIds.length) {
       throw new ValidationError("One or more selected seats are invalid for this show");
     }
-    let baseTicketTotal = new Decimal(0);
+    let baseTicketTotal = new import_decimal.default(0);
     for (const ss of showSeats) {
-      baseTicketTotal = baseTicketTotal.plus(new Decimal(ss.price.toString()));
+      baseTicketTotal = baseTicketTotal.plus(new import_decimal.default(ss.price.toString()));
     }
     const ticketCount = showSeats.length;
-    const platformFee = new Decimal(18);
+    const platformFee = new import_decimal.default(18);
     const convenienceFee = baseTicketTotal.times(0.05);
-    const gstRate = new Decimal(0.18);
+    const gstRate = new import_decimal.default(0.18);
     const taxAmount = platformFee.plus(convenienceFee).times(gstRate).toDecimalPlaces(2);
-    let discountAmount = new Decimal(0);
+    let discountAmount = new import_decimal.default(0);
     if (couponCode && couponCode.toUpperCase() === "CINE50" && baseTicketTotal.greaterThanOrEqualTo(200)) {
-      discountAmount = new Decimal(50);
+      discountAmount = new import_decimal.default(50);
     } else if (couponCode && couponCode.toUpperCase() === "FIRST100" && baseTicketTotal.greaterThanOrEqualTo(300)) {
-      discountAmount = new Decimal(100);
+      discountAmount = new import_decimal.default(100);
     }
-    const gatewayFee = new Decimal(0);
+    const gatewayFee = new import_decimal.default(0);
     const totalAmount = baseTicketTotal.plus(platformFee).plus(convenienceFee).plus(taxAmount).minus(discountAmount).toDecimalPlaces(2);
     return {
       ticketCount,
@@ -4762,7 +4788,7 @@ var bookingService = new BookingService();
 // server/modules/bookings/booking.routes.ts
 init_maintenance();
 init_database();
-var router5 = Router5();
+var router5 = (0, import_express5.Router)();
 router5.post("/lock-seats", authenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { showId, seatIds, selectedCity } = req.body;
@@ -4862,17 +4888,17 @@ router5.get("/my", authenticate, async (req, res, next) => {
 var booking_routes_default = router5;
 
 // server/modules/payments/payment.routes.ts
+var import_express6 = require("express");
 init_env();
 init_database();
-import { Router as Router6 } from "express";
 init_logger();
 init_maintenance();
 
 // server/modules/payments/cashfree.service.ts
+var import_crypto3 = __toESM(require("crypto"), 1);
+var import_axios3 = __toESM(require("axios"), 1);
 init_env();
 init_logger();
-import crypto3 from "crypto";
-import axios3 from "axios";
 var CashfreeService = class {
   get baseUrl() {
     return env.CASHFREE_ENV === "PROD" ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg";
@@ -4919,7 +4945,7 @@ var CashfreeService = class {
           },
           order_note: params.notes ? JSON.stringify(params.notes).substring(0, 200) : void 0
         };
-        const response = await axios3.post(`${this.baseUrl}/orders`, payload, {
+        const response = await import_axios3.default.post(`${this.baseUrl}/orders`, payload, {
           headers: this.headers,
           timeout: 1e4
         });
@@ -4972,7 +4998,7 @@ var CashfreeService = class {
       };
     }
     try {
-      const orderRes = await axios3.get(`${this.baseUrl}/orders/${orderId}`, {
+      const orderRes = await import_axios3.default.get(`${this.baseUrl}/orders/${orderId}`, {
         headers: this.headers,
         timeout: 1e4
       });
@@ -4980,7 +5006,7 @@ var CashfreeService = class {
       if (orderData.order_status === "PAID") {
         let paymentsInfo = null;
         try {
-          const paymentsRes = await axios3.get(`${this.baseUrl}/orders/${orderId}/payments`, {
+          const paymentsRes = await import_axios3.default.get(`${this.baseUrl}/orders/${orderId}/payments`, {
             headers: this.headers,
             timeout: 8e3
           });
@@ -5014,8 +5040,8 @@ var CashfreeService = class {
     const secret = env.CASHFREE_SECRET_KEY;
     if (!secret || !signature || !timestamp) return false;
     const payload = `${timestamp}${rawBody}`;
-    const generatedSignature = crypto3.createHmac("sha256", secret).update(payload).digest("base64");
-    return crypto3.timingSafeEqual(
+    const generatedSignature = import_crypto3.default.createHmac("sha256", secret).update(payload).digest("base64");
+    return import_crypto3.default.timingSafeEqual(
       Buffer.from(generatedSignature, "utf-8"),
       Buffer.from(signature, "utf-8")
     );
@@ -5024,7 +5050,7 @@ var CashfreeService = class {
 var cashfreeService = new CashfreeService();
 
 // server/modules/payments/payment.routes.ts
-var router6 = Router6();
+var router6 = (0, import_express6.Router)();
 router6.get("/gateways", (req, res) => {
   res.json({
     success: true,
@@ -5275,9 +5301,9 @@ router6.post(["/cashfree/webhook", "/webhook/cashfree"], async (req, res) => {
 var payment_routes_default = router6;
 
 // server/modules/cinecoins/cinecoins.routes.ts
+var import_express7 = require("express");
 init_database();
-import { Router as Router7 } from "express";
-var router7 = Router7();
+var router7 = (0, import_express7.Router)();
 router7.get("/wallet", authenticate, async (req, res, next) => {
   try {
     const wallet = await prisma.cineCoinWallet.findUnique({
@@ -5347,9 +5373,9 @@ router7.post("/redeem", authenticate, async (req, res, next) => {
 var cinecoins_routes_default = router7;
 
 // server/modules/events/event.routes.ts
+var import_express8 = require("express");
 init_database();
-import { Router as Router8 } from "express";
-var router8 = Router8();
+var router8 = (0, import_express8.Router)();
 router8.get("/", async (req, res, next) => {
   try {
     const { category, city } = req.query;
@@ -5493,9 +5519,9 @@ router8.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_OR
 var event_routes_default = router8;
 
 // server/modules/marketplace/marketplace.routes.ts
+var import_express9 = require("express");
 init_database();
-import { Router as Router9 } from "express";
-var router9 = Router9();
+var router9 = (0, import_express9.Router)();
 var inMemoryProposals = [
   {
     id: "prop-001",
@@ -5749,8 +5775,8 @@ router9.patch("/proposals/:id/assign", authenticate, async (req, res, next) => {
 var marketplace_routes_default = router9;
 
 // server/modules/marketplace/filmProduction.routes.ts
-import { Router as Router10 } from "express";
-var router10 = Router10();
+var import_express10 = require("express");
+var router10 = (0, import_express10.Router)();
 var inMemoryProfessionals = [
   {
     id: "prof-1",
@@ -6506,9 +6532,9 @@ router10.get("/admin/reports", authenticate, (req, res, next) => {
 var filmProduction_routes_default = router10;
 
 // server/modules/admin/admin.routes.ts
+var import_express11 = require("express");
 init_database();
-import { Router as Router11 } from "express";
-var router11 = Router11();
+var router11 = (0, import_express11.Router)();
 var verifyAdminPasscode = (req) => {
   const passcode = req.headers["x-admin-passcode"];
   return !!(passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD));
@@ -6951,7 +6977,7 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
     res.setHeader("Surrogate-Control", "no-store");
     res.setHeader("X-Accel-Expires", "0");
     const body = req.body || {};
-    const { module, enabled, maintenance, message, title, endTime } = body;
+    const { module: module2, enabled, maintenance, message, title, endTime } = body;
     const existing = await prisma.appSettings.findUnique({
       where: { id: "global_default" }
     }).catch(() => null);
@@ -6963,9 +6989,9 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
     }
     let updatedMaintenanceMode = typeof body.maintenanceMode === "boolean" ? body.maintenanceMode : typeof maintenance === "boolean" ? maintenance : existing?.maintenanceMode ?? false;
     let updatedGlobalSubwebsite = typeof body.globalSubwebsiteEnabled === "boolean" ? body.globalSubwebsiteEnabled : existing?.globalSubwebsiteEnabled ?? true;
-    if (module) {
+    if (module2) {
       const isMaint = typeof maintenance === "boolean" ? maintenance : typeof enabled === "boolean" ? !enabled : updatedMaintenanceMode;
-      if (module === "global" || module === "website" || module === "all") {
+      if (module2 === "global" || module2 === "website" || module2 === "all") {
         updatedMaintenanceMode = isMaint;
         currentControls.website = {
           ...currentControls.website || {},
@@ -6977,14 +7003,14 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
           ...currentControls.movieBooking || {},
           status: !isMaint
         };
-      } else if (module === "movieBooking" || module === "movies") {
+      } else if (module2 === "movieBooking" || module2 === "movies") {
         currentControls.movieBooking = {
           ...currentControls.movieBooking || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module === "cineCoins" || module === "cinecoins" || module === "cineCoinsLoyalty") {
+      } else if (module2 === "cineCoins" || module2 === "cinecoins" || module2 === "cineCoinsLoyalty") {
         currentControls.cinecoins = {
           ...currentControls.cinecoins || {},
           status: !isMaint,
@@ -6992,35 +7018,35 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
           ...message && { message }
         };
         currentControls.cineCoinsLoyalty = { ...currentControls.cinecoins };
-      } else if (module === "events" || module === "eventBooking") {
+      } else if (module2 === "events" || module2 === "eventBooking") {
         currentControls.eventBooking = {
           ...currentControls.eventBooking || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module === "filmProduction" || module === "productions") {
+      } else if (module2 === "filmProduction" || module2 === "productions") {
         currentControls.filmProduction = {
           ...currentControls.filmProduction || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module === "eventManagement") {
+      } else if (module2 === "eventManagement") {
         currentControls.eventManagement = {
           ...currentControls.eventManagement || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module === "brandPromotion" || module === "mediaPromotions") {
+      } else if (module2 === "brandPromotion" || module2 === "mediaPromotions") {
         currentControls.brandPromotion = {
           ...currentControls.brandPromotion || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module === "subwebsites" || module === "subwebsite") {
+      } else if (module2 === "subwebsites" || module2 === "subwebsite") {
         updatedGlobalSubwebsite = !isMaint;
       }
     } else if (typeof enabled === "boolean" && (req.path.includes("subwebsite") || body.globalSubwebsiteEnabled !== void 0)) {
@@ -7639,9 +7665,9 @@ router11.post("/uploads/image", (req, res) => {
 var admin_routes_default = router11;
 
 // server/modules/pos/pos.routes.ts
+var import_express12 = require("express");
 init_database();
-import { Router as Router12 } from "express";
-var router12 = Router12();
+var router12 = (0, import_express12.Router)();
 router12.post("/webhooks/pos/:integrationId", async (req, res, next) => {
   try {
     const { integrationId } = req.params;
@@ -8056,10 +8082,10 @@ router12.get("/admin/integrations/:id/logs", async (req, res, next) => {
 var pos_routes_default = router12;
 
 // server/modules/tickets/ticket.routes.ts
+var import_express13 = require("express");
 init_database();
 init_logger();
-import { Router as Router13 } from "express";
-var router13 = Router13();
+var router13 = (0, import_express13.Router)();
 router13.all("/verify", async (req, res, next) => {
   try {
     const token = req.query.token || req.body?.token;
@@ -8209,9 +8235,9 @@ router13.all("/verify", async (req, res, next) => {
 var ticket_routes_default = router13;
 
 // server/modules/notifications/notification.routes.ts
+var import_express14 = require("express");
 init_logger();
-import { Router as Router14 } from "express";
-var router14 = Router14();
+var router14 = (0, import_express14.Router)();
 router14.post("/send-ticket-email", async (req, res, next) => {
   try {
     const toEmail = req.body.email || req.body.recipientEmail;
@@ -8287,15 +8313,15 @@ router14.post("/send-ticket-sms", async (req, res, next) => {
 var notification_routes_default = router14;
 
 // server/modules/advertising/advertising.routes.ts
-import { Router as Router15 } from "express";
+var import_express15 = require("express");
 
 // server/modules/advertising/advertising.service.ts
+var import_fs2 = __toESM(require("fs"), 1);
+var import_path2 = __toESM(require("path"), 1);
 init_env();
 init_logger();
-import fs2 from "fs";
-import path2 from "path";
-var DATA_FILE_PATH = path2.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
-var PLACEMENTS_FILE_PATH = path2.resolve(process.cwd(), "server/config/live_banner_placements.json");
+var DATA_FILE_PATH = import_path2.default.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
+var PLACEMENTS_FILE_PATH = import_path2.default.resolve(process.cwd(), "server/config/live_banner_placements.json");
 var DEFAULT_PLACEMENTS = [
   {
     id: "homepage_top",
@@ -8456,14 +8482,14 @@ var AdvertisingService = class {
   loadData() {
     if (this.isLoaded) return;
     try {
-      if (fs2.existsSync(PLACEMENTS_FILE_PATH)) {
-        const raw = fs2.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
+      if (import_fs2.default.existsSync(PLACEMENTS_FILE_PATH)) {
+        const raw = import_fs2.default.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
         this.placements = JSON.parse(raw);
       } else {
         this.savePlacements();
       }
-      if (fs2.existsSync(DATA_FILE_PATH)) {
-        const raw = fs2.readFileSync(DATA_FILE_PATH, "utf8");
+      if (import_fs2.default.existsSync(DATA_FILE_PATH)) {
+        const raw = import_fs2.default.readFileSync(DATA_FILE_PATH, "utf8");
         this.campaigns = JSON.parse(raw);
       } else {
         this.saveCampaigns();
@@ -8479,18 +8505,18 @@ var AdvertisingService = class {
   }
   saveCampaigns() {
     try {
-      const dir = path2.dirname(DATA_FILE_PATH);
-      if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
-      fs2.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
+      const dir = import_path2.default.dirname(DATA_FILE_PATH);
+      if (!import_fs2.default.existsSync(dir)) import_fs2.default.mkdirSync(dir, { recursive: true });
+      import_fs2.default.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner campaigns: ${err.message}`);
     }
   }
   savePlacements() {
     try {
-      const dir = path2.dirname(PLACEMENTS_FILE_PATH);
-      if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
-      fs2.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
+      const dir = import_path2.default.dirname(PLACEMENTS_FILE_PATH);
+      if (!import_fs2.default.existsSync(dir)) import_fs2.default.mkdirSync(dir, { recursive: true });
+      import_fs2.default.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner placements: ${err.message}`);
     }
@@ -8941,7 +8967,7 @@ var AdvertisingService = class {
 var advertisingService = new AdvertisingService();
 
 // server/modules/advertising/advertising.routes.ts
-var advertisingPublicRouter = Router15();
+var advertisingPublicRouter = (0, import_express15.Router)();
 advertisingPublicRouter.get("/placements", (req, res) => {
   const placements = advertisingService.getPlacements();
   return res.json({ success: true, data: { placements } });
@@ -9075,7 +9101,7 @@ advertisingPublicRouter.post("/track", (req, res) => {
   }
   return res.json({ success: true });
 });
-var adminAdvertisingRouter = Router15();
+var adminAdvertisingRouter = (0, import_express15.Router)();
 adminAdvertisingRouter.use((req, res, next) => {
   const passcode = req.headers["x-admin-passcode"] || req.query.passcode;
   if (passcode === "8888" || passcode === "admin8888") {
@@ -9204,7 +9230,7 @@ adminAdvertisingRouter.get("/reports", (req, res) => {
 
 // server/routes.ts
 init_database();
-var router15 = Router16();
+var router15 = (0, import_express16.Router)();
 router15.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -9456,10 +9482,10 @@ router15.get("/system/subsites/:subsiteId/maintenance", async (req, res, next) =
 var routes_default = router15;
 
 // server/middleware/requestId.ts
-import { v4 as uuidv4 } from "uuid";
+var import_uuid = require("uuid");
 function requestIdMiddleware(req, res, next) {
   const incomingId = req.headers["x-request-id"];
-  const requestId = incomingId || `req_${uuidv4().replace(/-/g, "").slice(0, 16)}`;
+  const requestId = incomingId || `req_${(0, import_uuid.v4)().replace(/-/g, "").slice(0, 16)}`;
   req.id = requestId;
   res.setHeader("X-Request-Id", requestId);
   next();
@@ -9897,7 +9923,7 @@ async function checkGlobalSubwebsiteMiddleware(req, res, next) {
 
 // server/app.ts
 function createApp() {
-  const app = express();
+  const app = (0, import_express17.default)();
   app.use(requestIdMiddleware);
   const allowedOrigins = [
     "https://cinevenue.com",
@@ -9908,7 +9934,7 @@ function createApp() {
     "http://localhost"
   ];
   app.use(
-    cors({
+    (0, import_cors.default)({
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
         if (env.CORS_ORIGIN === "*") return callback(null, true);
@@ -9927,8 +9953,8 @@ function createApp() {
     }
     next();
   });
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(import_express17.default.json({ limit: "10mb" }));
+  app.use(import_express17.default.urlencoded({ extended: true, limit: "10mb" }));
   app.use((req, res, next) => {
     logger.debug(`${req.method} ${req.originalUrl}`, { ip: req.ip }, req.id);
     next();
@@ -9967,8 +9993,8 @@ google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
 // server/serverless.ts
 init_database();
 init_maintenance();
-var CONFIG_FILE_PATH2 = path3.resolve(process.cwd(), "server/config/global_settings.json");
-var TMP_CONFIG_PATH2 = path3.resolve("/tmp", "cine_global_settings.json");
+var CONFIG_FILE_PATH2 = import_path3.default.resolve(process.cwd(), "server/config/global_settings.json");
+var TMP_CONFIG_PATH2 = import_path3.default.resolve("/tmp", "cine_global_settings.json");
 var globalServerlessState = {
   globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
@@ -9991,8 +10017,8 @@ var globalServerlessState = {
 function syncServerlessStateFromDisk() {
   const readFromPath = (p) => {
     try {
-      if (fs3.existsSync(p)) {
-        const data = JSON.parse(fs3.readFileSync(p, "utf-8"));
+      if (import_fs3.default.existsSync(p)) {
+        const data = JSON.parse(import_fs3.default.readFileSync(p, "utf-8"));
         if (typeof data.globalSubwebsiteEnabled === "boolean") {
           globalServerlessState.globalSubwebsiteEnabled = data.globalSubwebsiteEnabled;
         }
@@ -10051,11 +10077,11 @@ function persistServerlessState(enabled, message) {
   }
   const payload = JSON.stringify(globalServerlessState, null, 2);
   try {
-    fs3.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
+    import_fs3.default.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
   } catch (e) {
   }
   try {
-    fs3.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
+    import_fs3.default.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
   } catch (e) {
   }
 }
@@ -10318,11 +10344,11 @@ async function handler(req, res) {
     globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     const serialized = JSON.stringify(globalServerlessState, null, 2);
     try {
-      fs3.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+      import_fs3.default.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs3.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+      import_fs3.default.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
@@ -10607,6 +10633,4 @@ async function handler(req, res) {
     }
   }
 }
-export {
-  handler as default
-};
+//# sourceMappingURL=index.js.map

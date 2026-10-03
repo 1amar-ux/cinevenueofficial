@@ -74,6 +74,87 @@ import { INITIAL_MOVIES, INITIAL_THEATRES, INITIAL_EVENTS, DEFAULT_SPOTLIGHT, CI
 import { Movie, Theatre, Booking, MovieSchedule, RentalRequest, ContactMessage, TheatreAdmin, Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest, EventOrganizer, SpotlightMovie, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CineCoinsUserWallet, CastingApplication } from "./types";
 import apiClient from "./services/apiClient";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
+import { getEvents as getTicketedEvents } from "./services/eventBookingService";
+
+export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = [], initialEvents: Event[] = []): Event[] {
+  const map = new Map<string, Event>();
+
+  // 1. Base default events
+  for (const item of initialEvents) {
+    if (item && item.id) {
+      map.set(item.id, {
+        ...item,
+        isActive: item.isActive !== false,
+      });
+    }
+  }
+
+  // 2. Canonical ticketed events (from admin creation & booking service)
+  for (const t of ticketedEvents) {
+    if (!t || (!t.id && !(t as any)._id)) continue;
+    const tid = t.id || (t as any)._id;
+    const lowestPrice = t.ticketTypes && t.ticketTypes.length > 0
+      ? Math.min(...t.ticketTypes.map((x: any) => Number(x.price) || 0))
+      : (Number(t.price) || 0);
+
+    const isEvtActive = t.isActive !== false && String(t.status || '').toUpperCase() !== 'CANCELLED' && String(t.status || '').toUpperCase() !== 'DRAFT';
+
+    const mapped: Event = {
+      id: tid,
+      title: t.title || '',
+      description: t.description || '',
+      venueName: t.venueName || (typeof t.venue === 'string' ? t.venue : t.venue?.name) || 'Convention Arena',
+      venueAddress: t.venueAddress || t.venue?.address || '',
+      city: t.city || 'Hyderabad',
+      date: t.date || '2026-10-25',
+      time: t.startTime || t.time || '18:30',
+      image: t.bannerUrl || t.posterUrl || t.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+      category: t.category || 'Concerts',
+      categories: Array.isArray(t.ticketTypes) && t.ticketTypes.length > 0
+        ? t.ticketTypes.map((type: any) => ({
+            name: type.name || 'Standard',
+            price: Number(type.price) || 0,
+            availableSeats: Number(type.availableQuantity ?? type.totalQuantity ?? 100),
+          }))
+        : (t.categories || [{ name: 'General Admission', price: lowestPrice, availableSeats: 100 }]),
+      reviews: t.reviews || [],
+      featured: true,
+      isPaid: t.eventType === 'PAID' || lowestPrice > 0,
+      isActive: isEvtActive,
+    };
+    map.set(tid, mapped);
+  }
+
+  // 3. Dual-written cine_events (take precedence for any user-edited metadata)
+  for (const c of cineEvents) {
+    if (!c || (!c.id && !c._id)) continue;
+    const cid = c.id || c._id;
+    const existing = map.get(cid);
+    const isEvtActive = c.isActive !== false && String(c.status || '').toUpperCase() !== 'CANCELLED' && String(c.status || '').toUpperCase() !== 'DRAFT';
+
+    map.set(cid, {
+      ...existing,
+      ...c,
+      id: cid,
+      title: c.title || existing?.title || '',
+      description: c.description || existing?.description || '',
+      venueName: c.venueName || existing?.venueName || 'Convention Arena',
+      venueAddress: c.venueAddress || existing?.venueAddress || '',
+      city: c.city || existing?.city || 'Hyderabad',
+      date: c.date || existing?.date || '2026-10-25',
+      time: c.time || existing?.time || '18:30',
+      image: c.image || c.bannerUrl || c.posterUrl || existing?.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+      category: c.category || existing?.category || 'Concerts',
+      categories: Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : (existing?.categories || []),
+      reviews: c.reviews || existing?.reviews || [],
+      featured: c.featured !== undefined ? c.featured : (existing?.featured ?? true),
+      isPaid: c.isPaid !== undefined ? c.isPaid : (existing?.isPaid ?? true),
+      isActive: isEvtActive,
+    });
+  }
+
+  return Array.from(map.values());
+}
 
 export default function App() {
   // 1. Core Data Lists (loaded from localStorage or INITIAL_X fallback)
@@ -88,8 +169,14 @@ export default function App() {
   });
 
   const [events, setEvents] = useState<Event[]>(() => {
-    const saved = localStorage.getItem("cine_events");
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    try {
+      const savedRaw = localStorage.getItem("cine_events");
+      const saved = savedRaw ? JSON.parse(savedRaw) : [];
+      const ticketed = getTicketedEvents();
+      return mergeCineEvents(saved, ticketed, INITIAL_EVENTS);
+    } catch {
+      return INITIAL_EVENTS;
+    }
   });
 
   const [spotlight, setSpotlight] = useState<SpotlightMovie>(() => {
@@ -530,8 +617,32 @@ export default function App() {
     localStorage.setItem("cine_theatres", JSON.stringify(theatres));
   }, [theatres]);
   useEffect(() => {
-    localStorage.setItem("cine_events", JSON.stringify(events));
+    if (events && events.length > 0) {
+      localStorage.setItem("cine_events", JSON.stringify(events));
+    }
   }, [events]);
+
+  // Real-time synchronization for events created or modified anywhere in the app
+  useEffect(() => {
+    const handleEventsChange = () => {
+      try {
+        const savedRaw = localStorage.getItem("cine_events");
+        const saved = savedRaw ? JSON.parse(savedRaw) : [];
+        const ticketed = getTicketedEvents();
+        const merged = mergeCineEvents(saved, ticketed, INITIAL_EVENTS);
+        setEvents(merged);
+      } catch (err) {
+        console.warn("Failed to sync updated events in App:", err);
+      }
+    };
+
+    window.addEventListener("cine_events_updated", handleEventsChange);
+    window.addEventListener("storage", handleEventsChange);
+    return () => {
+      window.removeEventListener("cine_events_updated", handleEventsChange);
+      window.removeEventListener("storage", handleEventsChange);
+    };
+  }, []);
   useEffect(() => {
     localStorage.setItem("cine_spotlight", JSON.stringify(spotlight));
   }, [spotlight]);
@@ -688,9 +799,15 @@ export default function App() {
             availableSeats: t.availableQuantity ?? (t.capacity || 100),
           })) : (e.categories || []),
           reviews: e.reviews || [],
-          isActive: e.status === 'PUBLISHED' || e.status === 'Published',
+          isActive: e.status !== 'CANCELLED' && e.status !== 'DRAFT',
         }));
-        setEvents(apiEvents);
+
+        const localSaved = localStorage.getItem("cine_events");
+        const parsedLocal = localSaved ? JSON.parse(localSaved) : [];
+        const ticketed = getTicketedEvents();
+        const merged = mergeCineEvents(parsedLocal, ticketed, apiEvents);
+        setEvents(merged);
+        localStorage.setItem("cine_events", JSON.stringify(merged));
       }
 
       // 5. Authoritative Bookings Sync from Database
@@ -2353,6 +2470,7 @@ export default function App() {
                         userEmail={userEmail}
                         onOpenAuth={() => setAuthOpen(true)}
                         selectedCity={selectedCity}
+                        setSelectedCity={setSelectedCity}
                         onBookEvent={handleBookEvent}
                         onAddReview={handleAddReview}
                         searchQuery={searchQuery}

@@ -876,6 +876,11 @@ export function saveEvent(event: EventItem): EventItem {
       const cineList = Array.isArray(existingCine) ? [...existingCine] : [];
       const cIdx = cineList.findIndex((c: any) => c.id === event.id || c._id === event.id);
 
+      const isEventActive =
+        (event as any).isActive !== false &&
+        String(event.status || '').toUpperCase() !== 'CANCELLED' &&
+        String(event.status || '').toUpperCase() !== 'DRAFT';
+
       const mappedToCine = {
         id: event.id,
         title: event.title,
@@ -897,7 +902,7 @@ export function saveEvent(event: EventItem): EventItem {
         reviews: [],
         featured: true,
         isPaid: event.eventType === 'PAID' || event.ticketTypes?.some((t) => t.price > 0),
-        isActive: String(event.status).toUpperCase() === 'PUBLISHED',
+        isActive: isEventActive,
       };
 
       if (cIdx >= 0) {
@@ -907,6 +912,7 @@ export function saveEvent(event: EventItem): EventItem {
       }
       localStorage.setItem('cine_events', JSON.stringify(cineList));
       window.dispatchEvent(new CustomEvent('cine_events_updated', { detail: cineList }));
+      window.dispatchEvent(new Event('storage'));
     } catch (e) {}
   }
 
@@ -925,7 +931,21 @@ export function deleteEvent(id: string): boolean {
   const filtered = events.filter((e) => e.id !== id && (e as any)._id !== id);
   if (filtered.length === events.length) return false;
   saveStorage(STORAGE_KEYS.EVENTS, filtered);
-  if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('cv_ticketed_events_initialized', 'true');
+    try {
+      const existingCineRaw = localStorage.getItem('cine_events');
+      if (existingCineRaw) {
+        const existingCine = JSON.parse(existingCineRaw);
+        if (Array.isArray(existingCine)) {
+          const updatedCine = existingCine.filter((c: any) => c.id !== id && c._id !== id);
+          localStorage.setItem('cine_events', JSON.stringify(updatedCine));
+          window.dispatchEvent(new CustomEvent('cine_events_updated', { detail: updatedCine }));
+          window.dispatchEvent(new Event('storage'));
+        }
+      }
+    } catch (e) {}
+  }
 
   // Authoritative delete from backend admin API
   apiClient.delete(`/admin/events/${id}`).catch((err) => {
