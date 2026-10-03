@@ -48,10 +48,88 @@ export default function EventBookingModal({
   // Step flow: 1 = Tickets/Seats, 2 = Attendees, 3 = Payment & Review
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
+  // Normalize Seating Type: Fall back to GeneralAdmission if not strictly AssignedSeating with valid sections
+  const effectiveSeatingType = useMemo(() => {
+    if (event.seatingType === 'AssignedSeating' && Array.isArray(event.seatSections) && event.seatSections.length > 0) {
+      return 'AssignedSeating';
+    }
+    return 'GeneralAdmission';
+  }, [event.seatingType, event.seatSections]);
+
+  // Robust Normalized Ticket Types (handles API/storage events with categories, raw ticketTypes, or fallback free/paid pass)
+  const normalizedTicketTypes: EventTicketType[] = useMemo(() => {
+    if (Array.isArray(event.ticketTypes) && event.ticketTypes.length > 0) {
+      return event.ticketTypes.map((t: any, idx: number) => ({
+        id: t.id || `TKT-${event.id || 'EVT'}-${idx}`,
+        eventId: t.eventId || event.id || 'EVT',
+        name: t.name || (t.tier ? `${t.tier} Pass` : 'General Admission'),
+        tier: t.tier || 'General',
+        description: t.description || `${t.name || 'Standard'} admission pass for entry.`,
+        price: Number(t.price ?? 0),
+        isFree: Number(t.price ?? 0) === 0,
+        availableQuantity: Number(t.availableQuantity ?? t.totalQuantity ?? 100),
+        soldQuantity: Number(t.soldQuantity ?? 0),
+        maxPerUser: Number(t.maxPerUser ?? t.maxPerBooking ?? 6),
+        minPerUser: Number(t.minPerUser ?? t.minPerBooking ?? 1),
+        status: t.status || 'Active',
+        isRefundable: t.isRefundable ?? (Number(t.price ?? 0) > 0),
+      }));
+    }
+
+    if (Array.isArray((event as any).categories) && (event as any).categories.length > 0) {
+      return (event as any).categories.map((c: any, idx: number) => {
+        const price = Number(c.price ?? 0);
+        const name = c.name || (price === 0 ? 'Free Pass' : 'General Admission');
+        return {
+          id: `TKT-${event.id || 'EVT'}-${idx}`,
+          eventId: event.id || 'EVT',
+          name,
+          tier: (name.toUpperCase().includes('VIP') ? 'VIP' : name.toUpperCase().includes('PREMIUM') ? 'Premium' : 'General') as any,
+          description: `${name} access pass with confirmed entry.`,
+          price,
+          isFree: price === 0,
+          availableQuantity: Number(c.availableSeats ?? 100),
+          soldQuantity: 0,
+          maxPerUser: 6,
+          minPerUser: 1,
+          status: 'Active',
+          isRefundable: price > 0,
+        };
+      });
+    }
+
+    const isFree = (event as any).eventType === 'FREE' || (event as any).isPaid === false || Number((event as any).price ?? 0) === 0;
+    const basePrice = isFree ? 0 : (Number((event as any).price) || 499);
+
+    return [
+      {
+        id: `TKT-${event.id || 'EVT'}-DEFAULT`,
+        eventId: event.id || 'EVT',
+        name: isFree ? 'Free Admission Pass' : 'General Admission Pass',
+        tier: 'General',
+        description: isFree ? 'Complimentary RSVP pass with guaranteed entry & digital QR code.' : 'Standard event pass with full venue access.',
+        price: basePrice,
+        isFree,
+        availableQuantity: 200,
+        soldQuantity: 0,
+        maxPerUser: 6,
+        minPerUser: 1,
+        status: 'Active',
+        isRefundable: !isFree,
+      },
+    ];
+  }, [event]);
+
   // Selected ticket / seats
-  const [selectedTicketType, setSelectedTicketType] = useState<EventTicketType>(
-    event.ticketTypes[0]
-  );
+  const [selectedTicketType, setSelectedTicketType] = useState<EventTicketType>(() => normalizedTicketTypes[0]);
+
+  // Auto-sync selected ticket type if normalized list changes
+  useEffect(() => {
+    if (!selectedTicketType || !normalizedTicketTypes.some((t) => t.id === selectedTicketType.id)) {
+      setSelectedTicketType(normalizedTicketTypes[0]);
+    }
+  }, [normalizedTicketTypes]);
+
   const [generalQuantity, setGeneralQuantity] = useState<number>(1);
   const [selectedSeatCodes, setSelectedSeatCodes] = useState<string[]>([]);
 
@@ -82,18 +160,17 @@ export default function EventBookingModal({
   const [confirmedBooking, setConfirmedBooking] = useState<EventBookingRecord | null>(null);
 
   // Calculate ticket count
-  const totalTicketCount = event.seatingType === 'AssignedSeating'
+  const totalTicketCount = effectiveSeatingType === 'AssignedSeating'
     ? selectedSeatCodes.length
     : generalQuantity;
 
   // Selected unit price
   const unitPrice = useMemo(() => {
-    if (event.seatingType === 'AssignedSeating' && selectedSeatCodes.length > 0) {
-      // average seat price or from section
-      return selectedTicketType.price;
+    if (effectiveSeatingType === 'AssignedSeating' && selectedSeatCodes.length > 0) {
+      return selectedTicketType?.price ?? 0;
     }
-    return selectedTicketType?.price || 0;
-  }, [event.seatingType, selectedSeatCodes, selectedTicketType]);
+    return selectedTicketType?.price ?? 0;
+  }, [effectiveSeatingType, selectedSeatCodes, selectedTicketType]);
 
   // Fee Breakdown
   const fees = useMemo(() => {
@@ -188,8 +265,9 @@ export default function EventBookingModal({
       if (prev.includes(seat.seatCode)) {
         return prev.filter((s) => s !== seat.seatCode);
       }
-      if (prev.length >= selectedTicketType.maxPerUser) {
-        alert(`You can select a maximum of ${selectedTicketType.maxPerUser} seats.`);
+      const maxAllowed = selectedTicketType?.maxPerUser || 6;
+      if (prev.length >= maxAllowed) {
+        alert(`You can select a maximum of ${maxAllowed} seats.`);
         return prev;
       }
       return [...prev, seat.seatCode];
@@ -338,11 +416,11 @@ export default function EventBookingModal({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gold font-mono">
-                {event.category}
+                {event.category || 'Special Event'}
               </span>
               <span className="text-white/30">•</span>
               <span className="text-[10px] text-white/60 font-mono">
-                {event.seatingType === 'AssignedSeating' ? 'Assigned Seating' : 'General Admission'}
+                {effectiveSeatingType === 'AssignedSeating' ? 'Assigned Seating' : 'General Admission'}
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-white truncate max-w-md">
@@ -401,27 +479,27 @@ export default function EventBookingModal({
               <div className="flex flex-wrap gap-4 text-xs text-white/60 bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-gold" />
-                  <span>{event.date}</span>
+                  <span>{event.date || 'Upcoming'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-gold" />
-                  <span>{event.startTime} ({event.duration || 'Live'})</span>
+                  <span>{event.startTime || (event as any).time || '07:00 PM'} ({event.duration || 'Live'})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-gold" />
-                  <span>{event.venueName}, {event.city}</span>
+                  <span>{event.venueName || (typeof (event as any).venue === 'string' ? (event as any).venue : (event as any).venue?.name) || 'Auditorium Arena'}, {event.city || (event as any).venue?.city || 'Hyderabad'}</span>
                 </div>
               </div>
 
               {/* Seating Mode A: General Admission Tiers */}
-              {event.seatingType === 'GeneralAdmission' && (
+              {effectiveSeatingType === 'GeneralAdmission' && (
                 <div className="space-y-3">
                   <span className="text-xs font-bold text-text-primary uppercase tracking-wider block">
                     Choose Ticket Tier
                   </span>
                   <div className="space-y-2.5">
-                    {event.ticketTypes.map((tier) => {
-                      const isSelected = selectedTicketType.id === tier.id;
+                    {normalizedTicketTypes.map((tier) => {
+                      const isSelected = selectedTicketType?.id === tier.id;
                       const isSoldOut = tier.availableQuantity <= 0;
                       return (
                         <div
@@ -451,14 +529,14 @@ export default function EventBookingModal({
                             </div>
                             <p className="text-xs text-white/50">{tier.description}</p>
                             <span className="text-[10px] text-white/40 font-mono">
-                              Max {tier.maxPerUser} passes per order • {tier.availableQuantity} available
+                              Max {tier.maxPerUser || 6} passes per order • {tier.availableQuantity} available
                             </span>
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-lg font-bold text-gold font-mono">
-                              ₹{tier.price.toLocaleString('en-IN')}
+                              {tier.price === 0 ? 'FREE' : `₹${tier.price.toLocaleString('en-IN')}`}
                             </div>
-                            <span className="text-[10px] text-white/40">per ticket</span>
+                            <span className="text-[10px] text-white/40">{tier.price === 0 ? 'Complimentary RSVP' : 'per ticket'}</span>
                           </div>
                         </div>
                       );
@@ -469,7 +547,7 @@ export default function EventBookingModal({
                   <div className="pt-3 flex items-center justify-between bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
                     <div>
                       <span className="text-xs font-bold text-white block">Number of Tickets</span>
-                      <span className="text-[10px] text-white/40">Limit {selectedTicketType.maxPerUser} per booking</span>
+                      <span className="text-[10px] text-white/40">Limit {selectedTicketType?.maxPerUser || 6} per booking</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <button
@@ -485,10 +563,10 @@ export default function EventBookingModal({
                       <button
                         onClick={() =>
                           setGeneralQuantity((q) =>
-                            Math.min(q + 1, selectedTicketType.maxPerUser, selectedTicketType.availableQuantity)
+                            Math.min(q + 1, selectedTicketType?.maxPerUser || 6, selectedTicketType?.availableQuantity || 100)
                           )
                         }
-                        disabled={generalQuantity >= selectedTicketType.maxPerUser}
+                        disabled={generalQuantity >= (selectedTicketType?.maxPerUser || 6)}
                         className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center disabled:opacity-30 cursor-pointer"
                       >
                         +
@@ -499,7 +577,7 @@ export default function EventBookingModal({
               )}
 
               {/* Seating Mode B: Assigned Seating with Interactive Map */}
-              {event.seatingType === 'AssignedSeating' && (
+              {effectiveSeatingType === 'AssignedSeating' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-text-primary uppercase tracking-wider">

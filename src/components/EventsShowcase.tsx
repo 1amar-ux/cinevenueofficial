@@ -192,64 +192,73 @@ export default function EventsShowcase({
   const [notifySuccess, setNotifySuccess] = useState<string | null>(null);
 
   const handleOpenBooking = (evt: Event) => {
-    let matched = ticketedEventsList.find(e => e.id === evt.id || e.title.toLowerCase() === evt.title.toLowerCase());
-    if (!matched) {
-      matched = {
-        id: evt.id,
-        title: evt.title,
-        slug: evt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        description: evt.description,
-        category: (evt.categories?.[0]?.name?.includes('Concert') ? 'Concerts' : 'Film Events') as any,
-        bannerUrl: evt.image,
-        organizer: {
-          id: 'ORG-MAIN',
-          name: 'CineVenue Events',
-          email: 'events@cinevenue.in',
-          isVerified: true,
-        },
-        date: evt.date || '2026-10-25',
-        startTime: evt.time || '07:00 PM',
-        venueName: evt.venueName,
-        venueAddress: evt.venueAddress,
-        city: evt.city || selectedCity,
-        seatingType: 'GeneralAdmission',
-        ticketTypes: evt.categories && evt.categories.length > 0 ? evt.categories.map((c, idx) => ({
+    let matched = ticketedEventsList.find(e => e.id === evt.id || (e.title && evt.title && e.title.toLowerCase().trim() === evt.title.toLowerCase().trim()));
+
+    const isFree = evt.isPaid === false || (matched as any)?.eventType === 'FREE' || (!matched && (!evt.categories || evt.categories.length === 0 || evt.categories.every(c => Number(c.price) === 0)));
+
+    const categories = (matched?.ticketTypes && matched.ticketTypes.length > 0)
+      ? matched.ticketTypes
+      : (evt.categories && evt.categories.length > 0)
+      ? evt.categories.map((c, idx) => ({
           id: `TKT-${evt.id}-${idx}`,
           eventId: evt.id,
           name: c.name,
-          tier: (idx === 0 ? 'General' : idx === 1 ? 'Premium' : 'VIP') as any,
-          description: `${c.name} admission pass.`,
-          price: c.price,
-          availableQuantity: c.availableSeats || 100,
+          tier: (c.name.toUpperCase().includes('VIP') ? 'VIP' : c.name.toUpperCase().includes('PREMIUM') ? 'Premium' : 'General') as any,
+          description: `${c.name} access pass.`,
+          price: Number(c.price ?? 0),
+          availableQuantity: Number(c.availableSeats ?? 100),
           soldQuantity: 0,
           maxPerUser: 6,
           minPerUser: 1,
-          status: 'Active',
-          isRefundable: true,
-        })) : [
+          status: 'Active' as const,
+          isRefundable: Number(c.price ?? 0) > 0,
+        }))
+      : [
           {
-            id: `TKT-${evt.id}-GEN`,
+            id: `TKT-${evt.id}-DEFAULT`,
             eventId: evt.id,
-            name: 'General Admission',
-            tier: 'General',
-            description: 'Standard event pass.',
-            price: 499,
+            name: isFree ? 'Free Admission Pass' : 'General Admission Pass',
+            tier: 'General' as const,
+            description: isFree ? 'Complimentary RSVP pass with guaranteed entry & QR code.' : 'Standard event pass with full venue access.',
+            price: isFree ? 0 : 499,
             availableQuantity: 200,
             soldQuantity: 0,
             maxPerUser: 6,
             minPerUser: 1,
-            status: 'Active',
-            isRefundable: true,
+            status: 'Active' as const,
+            isRefundable: !isFree,
           }
-        ],
-        totalCapacity: 500,
-        soldCount: 120,
-        status: 'Published',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    }
-    setBookingModalEvent(matched);
+        ];
+
+    const normalized: EventItem = {
+      id: matched?.id || evt.id,
+      title: matched?.title || evt.title,
+      slug: (matched?.slug || evt.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: matched?.description || evt.description || '',
+      category: (matched?.category || evt.category || 'Film Events') as any,
+      bannerUrl: matched?.bannerUrl || (matched as any)?.banner?.url || (matched as any)?.posterUrl || evt.image,
+      organizer: matched?.organizer || {
+        id: 'ORG-MAIN',
+        name: 'CineVenue Events',
+        email: 'events@cinevenue.in',
+        isVerified: true,
+      },
+      date: matched?.date || evt.date || '2026-10-25',
+      startTime: matched?.startTime || evt.time || '07:00 PM',
+      venueName: matched?.venueName || (typeof (matched as any)?.venue === 'string' ? (matched as any).venue : (matched as any)?.venue?.name) || evt.venueName || 'Convention Arena',
+      venueAddress: matched?.venueAddress || (matched as any)?.venue?.address || evt.venueAddress || '',
+      city: matched?.city || (matched as any)?.venue?.city || evt.city || selectedCity,
+      seatingType: matched?.seatingType === 'AssignedSeating' ? 'AssignedSeating' : 'GeneralAdmission',
+      seatSections: matched?.seatSections,
+      ticketTypes: categories as any,
+      totalCapacity: matched?.totalCapacity || 500,
+      soldCount: matched?.soldCount || 120,
+      status: matched?.status || 'Published',
+      createdAt: matched?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setBookingModalEvent(normalized);
   };
 
   // Curated Genres & Concierge State
@@ -758,7 +767,13 @@ export default function EventsShowcase({
                 className="group bg-white dark:bg-[#0D0D0F] border border-gray-200 dark:border-white/5 rounded-xl overflow-hidden hover:border-gold/50 hover:shadow-xl dark:hover:shadow-gold/5 -translate-y-0 hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full text-left shadow-sm"
               >
                 {/* Image & Badges */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-dark-card/40">
+                <div 
+                  onClick={() => {
+                    if (evt.comingSoon) setSelectedEvent(evt);
+                    else handleOpenBooking(evt);
+                  }}
+                  className="relative aspect-[16/10] overflow-hidden bg-dark-card/40 cursor-pointer"
+                >
                   <img
                     src={evt.image}
                     alt={evt.title}
@@ -797,7 +812,13 @@ export default function EventsShowcase({
                     <span className="text-[9px] font-bold text-gold uppercase tracking-widest block font-mono">
                       {new Date(evt.date).toLocaleDateString("en-IN", { weekday: 'short', day: 'numeric', month: 'short' })} • {evt.time}
                     </span>
-                    <h3 className="font-display text-xl text-gray-950 dark:text-text-primary tracking-wide group-hover:text-gold transition-colors duration-200">
+                    <h3 
+                      onClick={() => {
+                        if (evt.comingSoon) setSelectedEvent(evt);
+                        else handleOpenBooking(evt);
+                      }}
+                      className="font-display text-xl text-gray-950 dark:text-text-primary tracking-wide group-hover:text-gold transition-colors duration-200 cursor-pointer"
+                    >
                       {evt.title}
                     </h3>
                     <p className="text-gray-600 dark:text-text-secondary text-xs line-clamp-3 leading-relaxed">

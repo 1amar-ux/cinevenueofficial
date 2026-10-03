@@ -23,25 +23,75 @@ export default function EventCheckout() {
   const [quantity, setQuantity] = useState(1);
   const [attendeeName, setAttendeeName] = useState("");
   const [attendeeMobile, setAttendeeMobile] = useState("");
+  const [eventData, setEventData] = useState<any>(null);
   
   const [calculatedBreakdown, setCalculatedBreakdown] = useState<any>(null);
   const [paymentError, setPaymentError] = useState("");
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
 
   useEffect(() => {
-    // Set mock price based on type
-    if (passType?.includes("VVIP")) setTicketPrice(10000);
-    else if (passType?.includes("VIP")) setTicketPrice(5000);
-    else setTicketPrice(500);
-  }, [passType]);
+    if (!eventId) return;
+    import("../../services/eventBookingService").then(({ getEvents, getEventById }) => {
+      const found = getEventById(eventId) || (getEvents() || []).find((e: any) => e.id === eventId || e._id === eventId);
+      if (found) {
+        setEventData(found);
+        return;
+      }
+      try {
+        const cineRaw = localStorage.getItem("cine_events");
+        if (cineRaw) {
+          const list = JSON.parse(cineRaw);
+          const c = list.find((item: any) => item.id === eventId || item._id === eventId);
+          if (c) {
+            setEventData(c);
+            return;
+          }
+        }
+      } catch {}
+    });
+  }, [eventId]);
 
   useEffect(() => {
-    if (ticketPrice > 0) {
-      calculatePrice();
+    if (eventData) {
+      const matchedCat = (eventData.categories || []).find((c: any) => c.name?.toLowerCase() === passType?.toLowerCase())
+        || (eventData.ticketTypes || []).find((t: any) => t.name?.toLowerCase() === passType?.toLowerCase());
+      if (matchedCat) {
+        setTicketPrice(Number(matchedCat.price ?? 0));
+        return;
+      }
+      if (eventData.eventType === 'FREE' || eventData.isPaid === false) {
+        setTicketPrice(0);
+        return;
+      }
     }
-  }, [ticketPrice, quantity]);
+    // Fallback if event data still loading or custom pass
+    if (passType?.includes("VVIP")) setTicketPrice(10000);
+    else if (passType?.includes("VIP")) setTicketPrice(5000);
+    else if (passType?.toLowerCase().includes("free")) setTicketPrice(0);
+    else setTicketPrice(500);
+  }, [passType, eventData]);
 
   const calculatePrice = async () => {
+    if (ticketPrice === 0) {
+      setCalculatedBreakdown({
+        baseAmount: 0,
+        convenienceFee: 0,
+        taxAmount: 0,
+        totalAmount: 0
+      });
+      return;
+    }
+
+    const base = ticketPrice * quantity;
+    const fee = Math.round(base * 0.05);
+    const tax = Math.round((base + fee) * 0.18);
+    const fallbackBreakdown = {
+      baseAmount: base,
+      convenienceFee: fee,
+      taxAmount: tax,
+      totalAmount: base + fee + tax
+    };
+
     try {
       const res = await fetch("/api/booking/calculate-price", {
         method: "POST",
@@ -53,13 +103,19 @@ export default function EventCheckout() {
         })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.breakdown) {
         setCalculatedBreakdown(data.breakdown);
+      } else {
+        setCalculatedBreakdown(fallbackBreakdown);
       }
     } catch (err) {
-      console.error(err);
+      setCalculatedBreakdown(fallbackBreakdown);
     }
   };
+
+  useEffect(() => {
+    calculatePrice();
+  }, [ticketPrice, quantity]);
 
   const handlePayment = async () => {
     if (!attendeeName || !attendeeMobile) {
@@ -118,7 +174,7 @@ export default function EventCheckout() {
         passId: "CV-EVT-" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
         name: attendeeName,
         type: passType,
-        eventName: "Pushpa 2 Pre-Release Event"
+        eventName: eventData?.title || "Special Event"
       });
       setLoading(false);
     }, 1000);
@@ -204,7 +260,7 @@ export default function EventCheckout() {
               <div className="space-y-4 mb-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="text-white font-semibold">Pushpa 2 Pre-Release</h4>
+                    <h4 className="text-white font-semibold">{eventData?.title || "Special Event"}</h4>
                     <p className="text-sm text-text-secondary">{passType} x {quantity}</p>
                   </div>
                   <span className="text-white font-semibold">₹{ticketPrice * quantity}</span>
