@@ -80,12 +80,19 @@ export default function EventsList({
   const fetchAdminEvents = async () => {
     setLoading(true);
     try {
+      const local = getLocalEvents();
       const res = await apiClient.get('/admin/events');
-      if (res.data?.events && Array.isArray(res.data.events)) {
-        setEvents(res.data.events);
+      const apiEvents = res.data?.events || res.data?.data?.events;
+      if (Array.isArray(apiEvents) && apiEvents.length > 0) {
+        const apiIds = new Set(apiEvents.map((e: any) => e.id || e._id));
+        const merged = [...apiEvents];
+        for (const loc of local) {
+          if (!apiIds.has(loc.id) && !apiIds.has((loc as any)._id)) {
+            merged.push(loc as any);
+          }
+        }
+        setEvents(merged);
       } else {
-        // Fallback to local storage if backend returns empty
-        const local = getLocalEvents();
         setEvents(local as any);
       }
     } catch (err) {
@@ -143,6 +150,11 @@ export default function EventsList({
   const handlePublish = async (event: AdminEventItem) => {
     try {
       setStatusActionLoading(event.id);
+      // Immediately update local component state
+      setEvents((prev) =>
+        prev.map((e) => (e.id === event.id ? { ...e, status: 'PUBLISHED', bookingStatus: 'OPEN' } : e))
+      );
+
       // Immediately update local canonical store
       saveEvent({
         ...event,
@@ -166,6 +178,11 @@ export default function EventsList({
   const handleUnpublish = async (event: AdminEventItem) => {
     try {
       setStatusActionLoading(event.id);
+      // Immediately update local component state
+      setEvents((prev) =>
+        prev.map((e) => (e.id === event.id ? { ...e, status: 'DRAFT', bookingStatus: 'CLOSED' } : e))
+      );
+
       // Immediately update local canonical store
       saveEvent({
         ...event,
@@ -192,6 +209,11 @@ export default function EventsList({
     }
     try {
       setStatusActionLoading(event.id);
+
+      // Immediately update local component state
+      setEvents((prev) =>
+        prev.map((e) => (e.id === event.id ? { ...e, status: 'CANCELLED', bookingStatus: 'CLOSED' } : e))
+      );
 
       // 1. Immediately update local canonical store
       const updatedEvent = {

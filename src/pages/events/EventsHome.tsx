@@ -22,6 +22,44 @@ export default function EventsHome() {
     let isMounted = true;
 
     async function loadEvents() {
+      // Local created & canonical events
+      let localMapped: any[] = [];
+      try {
+        const { getEvents: getLocalEvents } = await import("../../services/eventBookingService");
+        const localList = getLocalEvents();
+        localMapped = (localList || []).map((e: any) => {
+          const rawDate = e.date ? new Date(e.date) : new Date();
+          const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : (e.date || "2026-10-15");
+          const lowestPrice = e.ticketTypes && e.ticketTypes.length > 0
+            ? Math.min(...e.ticketTypes.map((t: any) => Number(t.price) || 0))
+            : (Number(e.price) || 0);
+
+          return {
+            id: e.id || e._id,
+            title: e.title,
+            description: e.description || "",
+            venueName: e.venueName || e.venue?.name || "Convention Arena",
+            venueAddress: e.venueAddress || e.venue?.address || "",
+            city: e.city || "Hyderabad",
+            date: dateStr,
+            time: e.startTime || e.time || "18:30",
+            image: e.bannerUrl || e.posterUrl || (e as any).image || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+            category: e.category || "Concerts",
+            eventType: e.eventType || (lowestPrice === 0 ? "FREE" : "PAID"),
+            passMode: e.passMode || "PAID",
+            categories: (e.ticketTypes || []).map((t: any) => ({
+              name: t.name || "Standard",
+              price: Number(t.price ?? 0),
+              availableSeats: t.availableQuantity ?? 100,
+            })),
+            reviews: [],
+            featured: true,
+            isPaid: e.eventType === "PAID" && lowestPrice > 0,
+            isActive: e.status === "PUBLISHED" || e.status === "Published" || e.status === "UPCOMING" || e.status === "ONGOING",
+          };
+        });
+      } catch (e) {}
+
       try {
         const res = await apiClient.get("/events");
         const apiEvents = res.data?.events || res.data?.data?.events;
@@ -55,8 +93,18 @@ export default function EventsHome() {
               isActive: e.status === "PUBLISHED" || e.status === "UPCOMING" || e.status === "ONGOING",
             };
           });
+
+          // Merge local and API events
+          const apiIds = new Set(mapped.map((m) => m.id));
+          const allMerged = [...mapped];
+          for (const loc of localMapped) {
+            if (!apiIds.has(loc.id)) {
+              allMerged.unshift(loc);
+            }
+          }
+
           if (isMounted) {
-            setEvents(mapped);
+            setEvents(allMerged);
             setLoading(false);
             return;
           }
@@ -117,8 +165,10 @@ export default function EventsHome() {
         }
       ];
 
+      const finalEvents = [...localMapped, ...defaultEvents.filter(d => !localMapped.some(l => l.id === d.id))];
+
       if (isMounted) {
-        setEvents(defaultEvents);
+        setEvents(finalEvents);
         setLoading(false);
       }
     }

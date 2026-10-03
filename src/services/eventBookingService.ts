@@ -793,7 +793,15 @@ export function getEvents(): EventItem[] {
     apiClient.get('/events').then((res) => {
       const live = res.data?.events || res.data?.data?.events;
       if (Array.isArray(live) && live.length > 0) {
-        saveStorage(STORAGE_KEYS.EVENTS, live);
+        const current = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
+        const liveMap = new Map(live.map((e: any) => [e.id || e._id, e]));
+        const merged = [...live];
+        for (const c of current) {
+          if (!liveMap.has(c.id) && !liveMap.has((c as any)._id)) {
+            merged.push(c);
+          }
+        }
+        saveStorage(STORAGE_KEYS.EVENTS, merged);
       }
     }).catch(() => {});
   }
@@ -811,8 +819,16 @@ export async function fetchLiveEvents(): Promise<EventItem[]> {
     const res = await apiClient.get('/events');
     const live = res.data?.events || res.data?.data?.events;
     if (Array.isArray(live) && live.length > 0) {
-      saveStorage(STORAGE_KEYS.EVENTS, live);
-      return live;
+      const current = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
+      const liveMap = new Map(live.map((e: any) => [e.id || e._id, e]));
+      const merged = [...live];
+      for (const c of current) {
+        if (!liveMap.has(c.id) && !liveMap.has((c as any)._id)) {
+          merged.push(c);
+        }
+      }
+      saveStorage(STORAGE_KEYS.EVENTS, merged);
+      return merged;
     }
   } catch (err) {
     console.warn('Failed to fetch live events from API, falling back to cache:', err);
@@ -833,6 +849,7 @@ export function saveEvent(event: EventItem): EventItem {
   if (existingIdx >= 0) {
     updatedEvents = [...events];
     updatedEvents[existingIdx] = {
+      ...events[existingIdx],
       ...event,
       updatedAt: new Date().toISOString(),
     };
@@ -849,11 +866,52 @@ export function saveEvent(event: EventItem): EventItem {
   }
 
   saveStorage(STORAGE_KEYS.EVENTS, updatedEvents);
-  if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('cv_ticketed_events_initialized', 'true');
+
+    // Dual-write to cine_events for instant reactivity across the entire application
+    try {
+      const existingCineRaw = localStorage.getItem('cine_events');
+      const existingCine = existingCineRaw ? JSON.parse(existingCineRaw) : [];
+      const cineList = Array.isArray(existingCine) ? [...existingCine] : [];
+      const cIdx = cineList.findIndex((c: any) => c.id === event.id || c._id === event.id);
+
+      const mappedToCine = {
+        id: event.id,
+        title: event.title,
+        description: event.description || '',
+        venueName: event.venueName,
+        venueAddress: event.venueAddress || '',
+        city: event.city || 'Hyderabad',
+        date: event.date,
+        time: event.startTime || (event as any).time || '18:30',
+        image: event.bannerUrl || (event as any).posterUrl || (event as any).image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+        imageUrl: event.bannerUrl || (event as any).posterUrl,
+        bannerUrl: event.bannerUrl || (event as any).posterUrl,
+        category: event.category || 'Concerts',
+        categories: (event.ticketTypes || []).map((t) => ({
+          name: t.name,
+          price: t.price,
+          availableSeats: t.availableQuantity || 100,
+        })),
+        reviews: [],
+        featured: true,
+        isPaid: event.eventType === 'PAID' || event.ticketTypes?.some((t) => t.price > 0),
+        isActive: String(event.status).toUpperCase() === 'PUBLISHED',
+      };
+
+      if (cIdx >= 0) {
+        cineList[cIdx] = { ...cineList[cIdx], ...mappedToCine };
+      } else {
+        cineList.unshift(mappedToCine);
+      }
+      localStorage.setItem('cine_events', JSON.stringify(cineList));
+      window.dispatchEvent(new CustomEvent('cine_events_updated', { detail: cineList }));
+    } catch (e) {}
+  }
 
   // Authoritative sync to backend admin API
   apiClient.post('/admin/events', event).catch((err) => {
-    // If admin endpoint fails, try public /events
     apiClient.post('/events', event).catch((e) => {
       console.warn('Syncing event to backend API notice:', e);
     });

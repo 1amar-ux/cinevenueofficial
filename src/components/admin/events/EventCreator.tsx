@@ -272,8 +272,12 @@ export default function EventCreator({
   };
 
   // Total allocated capacity checks
-  const totalPaidAllocated = paidPasses.reduce((acc, p) => acc + (Number(p.totalQuantity) || 0), 0);
-  const totalFreeAllocated = freePasses.reduce((acc, f) => acc + (Number(f.allocatedCapacity) || 0), 0);
+  const totalPaidAllocated = (passMode === 'PAID' || passMode === 'BOTH')
+    ? paidPasses.reduce((acc, p) => acc + (Number(p.totalQuantity) || 0), 0)
+    : 0;
+  const totalFreeAllocated = (passMode === 'FREE' || passMode === 'BOTH')
+    ? freePasses.reduce((acc, f) => acc + (Number(f.allocatedCapacity) || 0), 0)
+    : 0;
   const totalAllocated = totalPaidAllocated + totalFreeAllocated;
   const isOverAllocated = totalAllocated > totalCapacity && !allowOverbooking;
 
@@ -330,17 +334,15 @@ export default function EventCreator({
       return;
     }
 
-    if (!posterMedia.url) {
-      setErrorMessage('Please upload an Event Poster image directly using the file uploader.');
-      return;
-    }
-
-    if (isOverAllocated) {
-      setErrorMessage(
-        `Total allocated capacity (${totalAllocated}) exceeds event total capacity (${totalCapacity}). Please adjust quantities or enable 'Allow Overbooking'.`
-      );
-      return;
-    }
+    const effectivePosterUrl =
+      posterMedia.url ||
+      bannerMedia.url ||
+      'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800';
+    const effectiveBannerUrl =
+      bannerMedia.url ||
+      posterMedia.url ||
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200';
+    const effectiveCapacity = Math.max(Number(totalCapacity) || 1000, totalAllocated);
 
     setIsSubmitting(true);
 
@@ -383,8 +385,8 @@ export default function EventCreator({
         category,
         eventType,
         passMode,
-        poster: posterMedia,
-        banner: bannerMedia.url ? bannerMedia : posterMedia,
+        poster: { url: effectivePosterUrl, publicId: posterMedia.publicId || 'poster_default', alt: title.trim() },
+        banner: { url: effectiveBannerUrl, publicId: bannerMedia.publicId || 'banner_default', alt: title.trim() },
         date,
         startTime,
         endTime,
@@ -403,7 +405,7 @@ export default function EventCreator({
           phone: organizerPhone.trim(),
           company: organizerCompany.trim(),
         },
-        totalTicketCapacity: Number(totalCapacity) || 1000,
+        totalTicketCapacity: effectiveCapacity,
         maxTicketsPerBooking: Number(maxTicketsPerBooking) || 10,
         minTicketsPerBooking: Number(minTicketsPerBooking) || 1,
         allowOverbooking,
@@ -426,7 +428,8 @@ export default function EventCreator({
         slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         description: description.trim() || `${title} live in ${city}. Hosted exclusively on CineVenue.`,
         category: category as any,
-        bannerUrl: bannerMedia.url || posterMedia.url,
+        bannerUrl: effectiveBannerUrl,
+        posterUrl: effectivePosterUrl,
         organizer: {
           id: 'ORG-ADMIN',
           name: organizerName.trim(),
@@ -450,7 +453,7 @@ export default function EventCreator({
         termsAndConditions: terms.split('\n').filter((t) => t.trim().length > 0),
         cancellationPolicy: 'Refundable up to 24 hours prior to event start.',
         seatingType: 'GeneralAdmission',
-        totalCapacity: Number(totalCapacity) || 1000,
+        totalCapacity: effectiveCapacity,
         soldCount: editingEvent?.soldCount || 0,
         status: status as any,
         eventType,
