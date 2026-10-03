@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import EventsNavbar from "../../components/events/EventsNavbar";
-import { Calendar, MapPin, Tag, ChevronRight, Ticket, Filter, Search } from "lucide-react";
+import { Calendar, MapPin, Tag, ChevronRight, Ticket, Filter, Search, Share2 } from "lucide-react";
 import { Event } from "../../types";
+import EventShareModal from "../../components/events/EventShareModal";
 
 import apiClient from "../../services/apiClient";
 
@@ -12,6 +13,7 @@ export default function EventsHome() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [shareModalEvent, setShareModalEvent] = useState<any | null>(null);
 
   const displayedEvents = React.useMemo(() => {
     return events.filter((e) => {
@@ -307,6 +309,19 @@ export default function EventsHome() {
                   <span className="bg-gold text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">Featured</span>
                 </div>
 
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShareModalEvent(event);
+                  }}
+                  className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-gold hover:text-black text-white rounded-full transition-all border border-white/10 cursor-pointer z-10 shadow-lg"
+                  title="Share Event Link"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+
                 <div className="absolute bottom-0 left-0 w-full p-6">
                   <h3 className="text-xl font-bold text-white mb-2 line-clamp-2">{event.title}</h3>
                   <div className="flex items-center text-sm text-text-secondary mb-3 gap-4">
@@ -372,6 +387,18 @@ export default function EventsHome() {
                         'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800';
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShareModalEvent(event);
+                    }}
+                    className="absolute top-3 left-3 bg-black/70 hover:bg-black/90 text-white/80 hover:text-gold p-1.5 rounded-lg border border-white/10 backdrop-blur-md transition-colors z-10 cursor-pointer shadow-md"
+                    title="Share Event Link"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
                   <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[11px] font-semibold text-white border border-white/10 font-mono">
                     {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
@@ -427,6 +454,22 @@ export default function EventsHome() {
           })}
         </div>
       </div>
+
+      {/* Share Event Modal */}
+      {shareModalEvent && (
+        <EventShareModal
+          isOpen={!!shareModalEvent}
+          onClose={() => setShareModalEvent(null)}
+          event={{
+            id: shareModalEvent.id,
+            title: shareModalEvent.title,
+            venueName: shareModalEvent.venueName,
+            city: shareModalEvent.city,
+            date: shareModalEvent.date,
+            description: shareModalEvent.description,
+          }}
+        />
+      )}
     </div>
   );
 }

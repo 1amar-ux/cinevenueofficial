@@ -32,6 +32,8 @@ import {
   RefreshCw,
   X,
   AlertTriangle,
+  Share2,
+  ExternalLink,
 } from 'lucide-react';
 import {
   getBookings,
@@ -43,6 +45,7 @@ import {
   reverseCheckInTicket,
   saveEvent,
 } from '../../../services/eventBookingService';
+import EventShareModal from '../../events/EventShareModal';
 import {
   generateAndDownloadEventPassPdf,
   printEventPassPdf,
@@ -69,6 +72,7 @@ export default function EventManagementDashboard({
   const [currentEvent, setCurrentEvent] = useState<any>(event);
   const [bookings, setBookings] = useState<EventBookingRecord[]>(() => getBookings());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // Selected Pass for Modal
   const [selectedPass, setSelectedPass] = useState<EventBookingRecord | null>(null);
@@ -541,7 +545,24 @@ export default function EventManagementDashboard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <a
+              href={`/events/${currentEvent.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Open public event webpage"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> Public Page
+            </a>
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="px-3.5 py-2 bg-white/10 hover:bg-gold hover:text-black text-white border border-white/15 hover:border-gold rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
+              title="Share event link, social media, and QR code"
+            >
+              <Share2 className="w-3.5 h-3.5" /> Share Event
+            </button>
             <button
               onClick={() => setActiveTab('checkins')}
               className="px-3.5 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
@@ -1754,6 +1775,22 @@ export default function EventManagementDashboard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Event Modal */}
+      {shareModalOpen && (
+        <EventShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          event={{
+            id: currentEvent.id,
+            title: currentEvent.title,
+            venueName: currentEvent.venueName,
+            city: currentEvent.city,
+            date: currentEvent.date,
+            description: currentEvent.description,
+          }}
+        />
       )}
     </div>
   );

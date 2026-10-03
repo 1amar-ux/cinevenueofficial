@@ -15,6 +15,8 @@ import EventBookingModal from "./events/EventBookingModal";
 import DigitalTicketPassModal from "./events/DigitalTicketPassModal";
 import OrganizerEventHub from "./events/OrganizerEventHub";
 import CineVenueLiveBanner from "./advertising/CineVenueLiveBanner";
+import EventShareModal from "./events/EventShareModal";
+import { copyEventShareLink, getEventShareUrl } from "../utils/eventSharing";
 
 interface EventsShowcaseProps {
   events: Event[];
@@ -60,6 +62,7 @@ export default function EventsShowcase({
   const [showOrganizerHub, setShowOrganizerHub] = useState<boolean>(false);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All Categories");
   const [selectedEventTypeFilter, setSelectedEventTypeFilter] = useState<'ALL' | 'FREE' | 'PAID' | 'HYBRID'>('ALL');
+  const [shareModalEvent, setShareModalEvent] = useState<any | null>(null);
 
   useEffect(() => {
     setTicketedEventsList(getTicketedEvents());
@@ -336,17 +339,17 @@ export default function EventsShowcase({
   // Handle share event
   const handleShareEvent = (e: React.MouseEvent, eventId: string) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}${window.location.pathname}?event=${eventId}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopiedEventId(eventId);
-      setTimeout(() => setCopiedEventId(null), 2000);
-    }).catch(() => {
-      const tempInput = document.createElement("input");
-      tempInput.value = shareUrl;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand("copy");
-      document.body.removeChild(tempInput);
+    const targetEvt = events.find((item) => item.id === eventId) ||
+      (selectedEvent && selectedEvent.id === eventId ? selectedEvent : null) ||
+      ticketedEventsList.find((item) => item.id === eventId);
+
+    if (targetEvt) {
+      setShareModalEvent(targetEvt);
+      return;
+    }
+
+    // Direct fallback copy
+    copyEventShareLink(eventId).then(() => {
       setCopiedEventId(eventId);
       setTimeout(() => setCopiedEventId(null), 2000);
     });
@@ -1722,6 +1725,22 @@ export default function EventsShowcase({
         <OrganizerEventHub
           userEmail={userEmail}
           onClose={() => setShowOrganizerHub(false)}
+        />
+      )}
+
+      {/* Share Event Modal */}
+      {shareModalEvent && (
+        <EventShareModal
+          isOpen={!!shareModalEvent}
+          onClose={() => setShareModalEvent(null)}
+          event={{
+            id: shareModalEvent.id,
+            title: shareModalEvent.title,
+            venueName: shareModalEvent.venueName,
+            city: shareModalEvent.city,
+            date: shareModalEvent.date,
+            description: shareModalEvent.description,
+          }}
         />
       )}
     </section>

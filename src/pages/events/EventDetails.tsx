@@ -1,58 +1,116 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import EventsNavbar from "../../components/events/EventsNavbar";
-import { Calendar, MapPin, Share2, Users, Clock, Info, CheckCircle2 } from "lucide-react";
+import { Calendar, MapPin, Share2, Users, Clock, Info, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Event } from "../../types";
-
 import apiClient from "../../services/apiClient";
+import EventShareModal from "../../components/events/EventShareModal";
 
 export default function EventDetails() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadEvent() {
+      if (!eventId) {
+        setLoading(false);
+        return;
+      }
+
+      // 1. Try local canonical storage first (instant access for newly created events)
       try {
-        if (eventId) {
-          const res = await apiClient.get(`/events/${eventId}`);
-          const e = res.data?.data?.event;
-          if (e) {
-            const mapped: Event = {
-              id: e.id,
-              title: e.title,
-              description: e.description || "",
-              venueName: e.venue || "Convention Arena",
-              venueAddress: e.venue || "",
-              city: e.city || "All Cities",
-              date: e.date ? new Date(e.date).toISOString().split("T")[0] : "2026-10-15",
-              time: e.time || "18:00",
-              image: e.bannerUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
-              categories: (e.ticketTypes || []).map((t: any) => ({
-                name: t.name,
-                price: Number(t.price),
-                availableSeats: t.available
-              })),
-              reviews: [],
-              featured: true,
-              isPaid: Number(e.price) > 0,
-              isActive: e.status === "PUBLISHED"
-            };
+        const { getEvents: getLocalEvents, getEventById } = await import("../../services/eventBookingService");
+        const localItem = getEventById(eventId) || (getLocalEvents() || []).find((e: any) => e.id === eventId || e._id === eventId);
+        if (localItem) {
+          const rawDate = localItem.date ? new Date(localItem.date) : new Date();
+          const dateStr = !isNaN(rawDate.getTime()) ? rawDate.toISOString().split("T")[0] : (localItem.date || "2026-10-15");
+          const lowestPrice = localItem.ticketTypes && localItem.ticketTypes.length > 0
+            ? Math.min(...localItem.ticketTypes.map((t: any) => Number(t.price) || 0))
+            : (Number(localItem.price) || 0);
+
+          const mapped: Event = {
+            id: localItem.id || localItem._id,
+            title: localItem.title,
+            description: localItem.description || "",
+            venueName: localItem.venueName || (typeof localItem.venue === 'string' ? localItem.venue : localItem.venue?.name) || "Convention Arena",
+            venueAddress: localItem.venueAddress || localItem.venue?.address || "",
+            city: localItem.city || "All Cities",
+            date: dateStr,
+            time: localItem.startTime || localItem.time || "18:00",
+            image: localItem.bannerUrl || localItem.posterUrl || (localItem as any).image || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+            categories: (localItem.ticketTypes || []).map((t: any) => ({
+              name: t.name || "Standard Pass",
+              price: Number(t.price ?? 0),
+              availableSeats: t.availableQuantity ?? 100,
+            })),
+            reviews: localItem.reviews || [],
+            featured: localItem.featured ?? true,
+            isPaid: localItem.eventType === "PAID" || lowestPrice > 0,
+            isActive: localItem.isActive !== false && String(localItem.status || '').toUpperCase() !== 'CANCELLED' && String(localItem.status || '').toUpperCase() !== 'DRAFT',
+          };
+          if (isMounted) {
+            setEvent(mapped);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // 2. Try cine_events in localStorage
+        const cineRaw = localStorage.getItem("cine_events");
+        if (cineRaw) {
+          const cineList = JSON.parse(cineRaw);
+          const cineItem = cineList.find((c: any) => c.id === eventId || c._id === eventId);
+          if (cineItem) {
             if (isMounted) {
-              setEvent(mapped);
+              setEvent(cineItem);
               setLoading(false);
               return;
             }
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fallback to API backend
+      try {
+        const res = await apiClient.get(`/events/${eventId}`);
+        const e = res.data?.data?.event || res.data?.event;
+        if (e) {
+          const mapped: Event = {
+            id: e.id || e._id,
+            title: e.title,
+            description: e.description || "",
+            venueName: e.venueName || e.venue?.name || (typeof e.venue === 'string' ? e.venue : "Convention Arena"),
+            venueAddress: e.venueAddress || e.venue?.address || "",
+            city: e.city || "All Cities",
+            date: e.date ? new Date(e.date).toISOString().split("T")[0] : "2026-10-15",
+            time: e.time || e.startTime || "18:00",
+            image: e.bannerUrl || e.posterUrl || (typeof e.poster === 'object' ? e.poster?.url : e.poster) || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=1200",
+            categories: (e.ticketTypes || []).map((t: any) => ({
+              name: t.name || t.typeId?.name || "Standard Pass",
+              price: Number(t.price ?? t.typeId?.price ?? 0),
+              availableSeats: t.availableQuantity ?? t.availableSeats ?? 100,
+            })),
+            reviews: [],
+            featured: true,
+            isPaid: Number(e.price) > 0 || (e.ticketTypes || []).some((t: any) => Number(t.price) > 0),
+            isActive: e.status !== "CANCELLED" && e.status !== "DRAFT",
+          };
+          if (isMounted) {
+            setEvent(mapped);
+            setLoading(false);
+            return;
           }
         }
       } catch (err) {
         console.warn("[EventDetails] Live fetch fallback notice:", err);
       }
 
-      // Default Event
+      // Default Event Fallback if event is not found
       const defaultEvent: Event = {
         id: eventId || "evt_1",
         title: "Pushpa 2 Pre-Release Event",
@@ -104,6 +162,25 @@ export default function EventDetails() {
         <div className="w-full h-[40vh] md:h-[60vh] relative">
           <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#09090A] via-[#09090A]/50 to-transparent" />
+          
+          {/* Top Quick Actions on Banner */}
+          <div className="absolute top-6 left-4 right-4 sm:left-8 sm:right-8 flex items-center justify-between z-20">
+            <Link
+              to="/events"
+              className="px-4 py-2 bg-black/60 hover:bg-black/90 text-white rounded-full text-xs font-semibold backdrop-blur-md border border-white/20 flex items-center gap-1.5 transition-all shadow-lg"
+            >
+              <ArrowLeft className="w-4 h-4 text-gold" />
+              <span>All Events</span>
+            </Link>
+
+            <button
+              onClick={() => setShareModalOpen(true)}
+              className="px-4 py-2 bg-black/60 hover:bg-gold hover:text-black text-white rounded-full text-xs font-bold backdrop-blur-md border border-white/20 hover:border-gold flex items-center gap-2 transition-all shadow-lg cursor-pointer"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share Event Link</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -198,8 +275,13 @@ export default function EventDetails() {
               </div>
 
               <div className="border-t border-white/10 pt-6">
-                <button className="w-full flex items-center justify-center gap-2 text-text-secondary hover:text-white transition-colors mb-4">
-                  <Share2 className="w-4 h-4" /> Share Event
+                <button
+                  type="button"
+                  onClick={() => setShareModalOpen(true)}
+                  className="w-full py-3 bg-white/5 hover:bg-gold hover:text-black border border-white/10 hover:border-gold text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md mb-4"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Share Event Link</span>
                 </button>
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3">
                   <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
@@ -213,6 +295,20 @@ export default function EventDetails() {
 
         </div>
       </div>
+
+      {/* Interactive Share Event Modal */}
+      <EventShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        event={{
+          id: event.id,
+          title: event.title,
+          city: event.city,
+          venueName: event.venueName,
+          date: event.date,
+          description: event.description,
+        }}
+      />
     </div>
   );
 }

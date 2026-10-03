@@ -19,6 +19,7 @@ import {
   MoreVertical,
   LayoutDashboard,
   IndianRupee,
+  Share2,
 } from 'lucide-react';
 import apiClient from '../../../services/apiClient';
 import {
@@ -27,6 +28,7 @@ import {
   saveEvent,
   deleteEvent,
 } from '../../../services/eventBookingService';
+import EventShareModal from '../../events/EventShareModal';
 
 interface AdminEventItem {
   id: string;
@@ -76,6 +78,7 @@ export default function EventsList({
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('PUBLISHED');
   const [newBookingStatus, setNewBookingStatus] = useState<string>('OPEN');
+  const [shareModalEvent, setShareModalEvent] = useState<AdminEventItem | null>(null);
 
   const fetchAdminEvents = async () => {
     setLoading(true);
@@ -630,6 +633,16 @@ export default function EventsList({
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
 
+                          {/* Share Public Link */}
+                          <button
+                            type="button"
+                            onClick={() => setShareModalEvent(evt)}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-gold/20 text-white/70 hover:text-gold transition-colors cursor-pointer"
+                            title="Share event via link & social media"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Edit Event */}
                           <button
                             type="button"
@@ -768,6 +781,22 @@ export default function EventsList({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Event Modal */}
+      {shareModalEvent && (
+        <EventShareModal
+          isOpen={!!shareModalEvent}
+          onClose={() => setShareModalEvent(null)}
+          event={{
+            id: shareModalEvent.id,
+            title: shareModalEvent.title,
+            city: shareModalEvent.city,
+            venueName: shareModalEvent.venueName,
+            date: shareModalEvent.date,
+            description: shareModalEvent.description,
+          }}
+        />
       )}
     </div>
   );
