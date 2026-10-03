@@ -389,211 +389,6 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     ],
   },
   {
-    id: 'EVT-103',
-    title: 'Kalki 2898 AD: Director & Star Cast Celebration Gala',
-    slug: 'kalki-2898-ad-fan-gala-celebrity-screening',
-    description:
-      'An unprecedented cinematic gala gathering director Nag Ashwin, Prabhas, and the legendary music & VFX team for an exclusive behind-the-scenes showcase, unreleased 70mm IMAX sequence screenings, fan Q&A session, and collector merchandise giveaway.',
-    category: 'Film Events',
-    bannerUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
-    galleryUrls: [
-      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=75',
-    ],
-    organizer: {
-      id: 'ORG-03',
-      name: 'Vyjayanthi Cinema Experiences',
-      email: 'events@vyjayanthimovies.com',
-      phone: '+91 94400 88990',
-      companyName: 'Vyjayanthi Films Pvt Ltd',
-      logoUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&q=80',
-      isVerified: true,
-      rating: 5.0,
-      eventsCount: 18,
-    },
-    date: '2026-10-24',
-    startTime: '06:30 PM',
-    endTime: '10:00 PM',
-    duration: '3h 30m',
-    venueName: 'Prasads Large Screen Theatre',
-    venueAddress: 'NTR Gardens, Necklace Road, Hyderabad, Telangana 500063',
-    city: 'Hyderabad',
-    latitude: 17.4123,
-    longitude: 78.4682,
-    language: 'Telugu / English',
-    ageRestriction: 'All Ages',
-    termsAndConditions: [
-      'Autographed movie poster and souvenir badge included with every admission pass.',
-      'Live Q&A question submission links will be SMS-sent to registered ticket holders prior to the event.',
-      'Red carpet photo opportunity opens at 05:30 PM.',
-    ],
-    cancellationPolicy: 'Refundable up to 24 hours prior to screening.',
-    seatingType: 'AssignedSeating',
-    eventType: 'HYBRID',
-    totalCapacity: 640,
-    soldCount: 480,
-    status: 'Published',
-    isFeatured: true,
-    isSellingFast: true,
-    rating: 4.95,
-    reviewCount: 190,
-    createdAt: '2026-08-15T09:00:00Z',
-    updatedAt: '2026-09-05T11:00:00Z',
-    ticketTypes: [
-      {
-        id: 'TKT-103-FREE',
-        eventId: 'EVT-103',
-        name: 'General Fan Entry Pass (Free RSVP)',
-        tier: 'General',
-        description: 'Complimentary fan entry to red carpet photo ops and live auditorium screening.',
-        price: 0,
-        isFree: true,
-        availableQuantity: 200,
-        soldQuantity: 110,
-        maxPerUser: 2,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: false,
-      },
-      {
-        id: 'TKT-103-1',
-        eventId: 'EVT-103',
-        name: 'Premium Recliner Gala Pass',
-        tier: 'VVIP',
-        description: 'Luxury recliner seating, autographed memorabilia box, and cocktail dinner buffet.',
-        price: 2999,
-        availableQuantity: 120,
-        soldQuantity: 95,
-        maxPerUser: 4,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: true,
-      },
-      {
-        id: 'TKT-103-2',
-        eventId: 'EVT-103',
-        name: 'Executive Circle Pass',
-        tier: 'VIP',
-        description: 'Prime center view seating, collector pass lanyard, and popcorn combo.',
-        price: 1499,
-        availableQuantity: 280,
-        soldQuantity: 220,
-        maxPerUser: 6,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: true,
-      },
-      {
-        id: 'TKT-103-3',
-        eventId: 'EVT-103',
-        name: 'Fan Club Pass',
-        tier: 'General',
-        description: 'Front stadium view seating with event welcome badge.',
-        price: 699,
-        availableQuantity: 240,
-        soldQuantity: 165,
-        maxPerUser: 6,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: true,
-      },
-    ],
-    seatSections: [
-      generateSeatSection('SEC-RECL', 'EVT-103', 'Platinum Recliner', 'VVIP', ['A', 'B'], 16, 2999),
-      generateSeatSection('SEC-EXEC', 'EVT-103', 'Executive Circle', 'VIP', ['C', 'D', 'E', 'F'], 20, 1499),
-      generateSeatSection('SEC-FAN', 'EVT-103', 'Fan Zone', 'General', ['G', 'H', 'J'], 20, 699),
-    ],
-  },
-  {
-    id: 'EVT-104',
-    title: 'Symphony of Cinema: AR Rahman & Ilaiyaraaja Orchestral Night',
-    slug: 'symphony-of-cinema-orchestral-night-vijayawada',
-    description:
-      'A majestic 65-piece grand philharmonic orchestra playing timeless Indian cinema classics by Oscar winner A.R. Rahman, Ilaiyaraaja, and M.M. Keeravani with synchronized 4K projections and live choir accompaniment.',
-    category: 'Cultural Events',
-    bannerUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=1200&q=80',
-    galleryUrls: [
-      'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&q=75',
-    ],
-    organizer: {
-      id: 'ORG-04',
-      name: 'South Indian Philharmonic Guild',
-      email: 'contact@philharmonic.in',
-      companyName: 'Apex Arts & Culture Society',
-      isVerified: true,
-      rating: 4.88,
-      eventsCount: 29,
-    },
-    date: '2026-11-14',
-    startTime: '06:30 PM',
-    endTime: '10:00 PM',
-    duration: '3h 30m',
-    venueName: 'A Convention Centre',
-    venueAddress: 'MG Road, Labbipet, Vijayawada, Andhra Pradesh 520010',
-    city: 'Vijayawada',
-    latitude: 16.5062,
-    longitude: 80.648,
-    language: 'Instrumental / Multilingual',
-    ageRestriction: 'All Ages',
-    termsAndConditions: [
-      'Formal / Smart Casual dress code encouraged.',
-      'Auditorium doors close 10 minutes prior to first overture.',
-    ],
-    cancellationPolicy: '100% refund up to 7 days before event.',
-    seatingType: 'GeneralAdmission',
-    totalCapacity: 3500,
-    soldCount: 2100,
-    status: 'Published',
-    isFeatured: false,
-    rating: 4.85,
-    reviewCount: 145,
-    createdAt: '2026-08-20T10:00:00Z',
-    updatedAt: '2026-09-02T16:00:00Z',
-    ticketTypes: [
-      {
-        id: 'TKT-104-1',
-        eventId: 'EVT-104',
-        name: 'Silver Gallery',
-        tier: 'General',
-        description: 'Comfortable auditorium seating with balanced orchestral acoustics.',
-        price: 499,
-        availableQuantity: 1500,
-        soldQuantity: 950,
-        maxPerUser: 8,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: true,
-      },
-      {
-        id: 'TKT-104-2',
-        eventId: 'EVT-104',
-        name: 'Gold Grand Tier',
-        tier: 'Premium',
-        description: 'Center-stage acoustic zone with prime view of the 65-member orchestra.',
-        price: 999,
-        availableQuantity: 1200,
-        soldQuantity: 780,
-        maxPerUser: 6,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: true,
-      },
-      {
-        id: 'TKT-104-3',
-        eventId: 'EVT-104',
-        name: 'Platinum Maestro Pass',
-        tier: 'VIP',
-        description: 'First 5 rows, exclusive program booklet signed by conductor, private lounge entry.',
-        price: 1999,
-        availableQuantity: 800,
-        soldQuantity: 370,
-        maxPerUser: 4,
-        minPerUser: 1,
-        status: 'Active',
-        isRefundable: true,
-      },
-    ],
-  },
-  {
     id: 'EVT-105',
     title: 'Indian National Film Acting & Audition Masterclass',
     slug: 'film-acting-audition-masterclass-guntur',
@@ -782,7 +577,27 @@ function saveStorage<T>(key: string, data: T): void {
 }
 
 
-const DUMMY_EVENT_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+export function isMockOrDuplicateEvent(item: any): boolean {
+  if (!item) return false;
+  const id = String(item.id || item._id || '');
+  if (['EV-001', 'EV-002', 'EV-003', 'EV-004', 'EVT-103', 'EVT-104'].includes(id)) {
+    return true;
+  }
+  const title = String(item.title || '').toLowerCase();
+  if (
+    title.includes('celebrity q&a') ||
+    title.includes('fan gala') ||
+    title.includes('symphony of lights') ||
+    title.includes('retro horror') ||
+    title.includes('midnight screenings') ||
+    title.includes('coming soon concert') ||
+    title.includes('director & star cast') ||
+    title.includes('symphony of cinema')
+  ) {
+    return true;
+  }
+  return false;
+}
 
 // ─── Event Item Service API ───────────────────────────────────
 
@@ -799,7 +614,7 @@ export function getEvents(): EventItem[] {
     } catch {}
   }
 
-  const cleaned = events.filter((e) => !DUMMY_EVENT_IDS.has(e.id) && !DUMMY_EVENT_IDS.has((e as any)._id) && !deletedIds.has(e.id) && !deletedIds.has((e as any)._id));
+  const cleaned = events.filter((e) => !isMockOrDuplicateEvent(e) && !deletedIds.has(e.id) && !deletedIds.has((e as any)._id));
   if (cleaned.length !== events.length) {
     events = cleaned;
     saveStorage(STORAGE_KEYS.EVENTS, events);
@@ -811,6 +626,7 @@ export function getEvents(): EventItem[] {
   const seenTitles = new Set<string>();
 
   for (const item of events) {
+    if (isMockOrDuplicateEvent(item)) continue;
     const id = item.id || (item as any)._id;
     if (seenIds.has(id)) continue;
     const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
@@ -834,7 +650,7 @@ export function getEvents(): EventItem[] {
             merged.push(c);
           }
         }
-        const filteredMerged = merged.filter((e: any) => !DUMMY_EVENT_IDS.has(e.id) && !DUMMY_EVENT_IDS.has(e._id) && !deletedIds.has(e.id) && !deletedIds.has(e._id));
+        const filteredMerged = merged.filter((e: any) => !isMockOrDuplicateEvent(e) && !deletedIds.has(e.id) && !deletedIds.has(e._id));
         saveStorage(STORAGE_KEYS.EVENTS, filteredMerged);
       }
     }).catch(() => {});

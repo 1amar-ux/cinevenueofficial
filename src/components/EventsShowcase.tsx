@@ -10,7 +10,7 @@ import { Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest }
 import MaintenancePage from "./MaintenancePage";
 import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
 import type { EventItem, EventBookingRecord } from "../types/eventBooking";
-import { getEvents as getTicketedEvents, getBookings as getEventBookings } from "../services/eventBookingService";
+import { getEvents as getTicketedEvents, getBookings as getEventBookings, isMockOrDuplicateEvent } from "../services/eventBookingService";
 import EventBookingModal from "./events/EventBookingModal";
 import DigitalTicketPassModal from "./events/DigitalTicketPassModal";
 import OrganizerEventHub from "./events/OrganizerEventHub";
@@ -82,7 +82,6 @@ export default function EventsShowcase({
   }, []);
 
   const safeEvents: Event[] = React.useMemo(() => {
-    const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
     let deletedIds = new Set<string>();
     if (typeof window !== 'undefined') {
       try {
@@ -97,8 +96,7 @@ export default function EventsShowcase({
     if (Array.isArray(events)) {
       for (const event of events) {
         if (!event || !event.id) continue;
-        if (DUMMY_IDS.has(event.id) || (event as any)._id && DUMMY_IDS.has((event as any)._id)) continue;
-        if (deletedIds.has(event.id) || (event as any)._id && deletedIds.has((event as any)._id)) continue;
+        if (isMockOrDuplicateEvent(event) || deletedIds.has(event.id) || (event as any)._id && deletedIds.has((event as any)._id)) continue;
 
         rawList.push({
           ...event,
@@ -113,7 +111,7 @@ export default function EventsShowcase({
     for (const t of ticketedEventsList) {
       if (!t || (!t.id && !(t as any)._id)) continue;
       const tid = t.id || (t as any)._id;
-      if (DUMMY_IDS.has(tid) || deletedIds.has(tid)) continue;
+      if (isMockOrDuplicateEvent(t) || deletedIds.has(tid)) continue;
 
       const lowestPrice = t.ticketTypes && t.ticketTypes.length > 0
         ? Math.min(...t.ticketTypes.map((x: any) => Number(x.price) || 0))
@@ -152,6 +150,7 @@ export default function EventsShowcase({
     const seenTitles = new Set<string>();
 
     for (const item of rawList) {
+      if (isMockOrDuplicateEvent(item)) continue;
       if (seenIds.has(item.id)) continue;
       const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
       if (normTitle && seenTitles.has(normTitle)) continue;

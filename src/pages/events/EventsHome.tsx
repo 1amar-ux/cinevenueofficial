@@ -4,7 +4,7 @@ import EventsNavbar from "../../components/events/EventsNavbar";
 import { Calendar, MapPin, Tag, ChevronRight, Ticket, Filter, Search, Share2 } from "lucide-react";
 import { Event } from "../../types";
 import EventShareModal from "../../components/events/EventShareModal";
-
+import { isMockOrDuplicateEvent } from "../../services/eventBookingService";
 import apiClient from "../../services/apiClient";
 
 export default function EventsHome() {
@@ -205,15 +205,14 @@ export default function EventsHome() {
         }
       ];
 
-      const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
       let deletedIds = new Set<string>();
       try {
         const dRaw = localStorage.getItem('cv_deleted_event_ids');
         if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
       } catch {}
 
-      const cleanLocal = localMapped.filter((e) => !DUMMY_IDS.has(e.id) && !deletedIds.has(e.id));
-      const pool = cleanLocal.length > 0 ? cleanLocal : defaultEvents.filter((d) => !DUMMY_IDS.has(d.id) && !deletedIds.has(d.id));
+      const cleanLocal = localMapped.filter((e) => !isMockOrDuplicateEvent(e) && !deletedIds.has(e.id));
+      const pool = cleanLocal.length > 0 ? cleanLocal : defaultEvents.filter((d) => !isMockOrDuplicateEvent(d) && !deletedIds.has(d.id));
 
       // Strict Deduplication by ID and normalized title
       const finalEvents: any[] = [];
@@ -221,6 +220,7 @@ export default function EventsHome() {
       const seenTitles = new Set<string>();
 
       for (const item of pool) {
+        if (isMockOrDuplicateEvent(item)) continue;
         if (seenIds.has(item.id)) continue;
         const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
         if (normTitle && seenTitles.has(normTitle)) continue;

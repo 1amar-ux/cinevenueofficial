@@ -74,9 +74,7 @@ import { INITIAL_MOVIES, INITIAL_THEATRES, INITIAL_EVENTS, DEFAULT_SPOTLIGHT, CI
 import { Movie, Theatre, Booking, MovieSchedule, RentalRequest, ContactMessage, TheatreAdmin, Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest, EventOrganizer, SpotlightMovie, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CineCoinsUserWallet, CastingApplication } from "./types";
 import apiClient from "./services/apiClient";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
-import { getEvents as getTicketedEvents } from "./services/eventBookingService";
-
-const DUMMY_EVENT_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+import { getEvents as getTicketedEvents, isMockOrDuplicateEvent } from "./services/eventBookingService";
 
 export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = [], initialEvents: Event[] = []): Event[] {
   let deletedIds = new Set<string>();
@@ -93,7 +91,7 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
   for (const c of cineEvents) {
     if (!c || (!c.id && !c._id)) continue;
     const cid = c.id || c._id;
-    if (DUMMY_EVENT_IDS.has(cid) || deletedIds.has(cid)) continue;
+    if (isMockOrDuplicateEvent(c) || deletedIds.has(cid)) continue;
 
     const isEvtActive = c.isActive !== false && String(c.status || '').toUpperCase() !== 'CANCELLED' && String(c.status || '').toUpperCase() !== 'DRAFT';
 
@@ -120,7 +118,7 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
   for (const t of ticketedEvents) {
     if (!t || (!t.id && !(t as any)._id)) continue;
     const tid = t.id || (t as any)._id;
-    if (DUMMY_EVENT_IDS.has(tid) || deletedIds.has(tid)) continue;
+    if (isMockOrDuplicateEvent(t) || deletedIds.has(tid)) continue;
 
     const lowestPrice = t.ticketTypes && t.ticketTypes.length > 0
       ? Math.min(...t.ticketTypes.map((x: any) => Number(x.price) || 0))
@@ -155,7 +153,7 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
 
   // 3. Base initial events (only non-dummy, non-deleted)
   for (const item of initialEvents) {
-    if (item && item.id && !DUMMY_EVENT_IDS.has(item.id) && !deletedIds.has(item.id)) {
+    if (item && item.id && !isMockOrDuplicateEvent(item) && !deletedIds.has(item.id)) {
       rawList.push({
         ...item,
         isActive: item.isActive !== false,
@@ -169,6 +167,7 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
   const seenTitles = new Set<string>();
 
   for (const item of rawList) {
+    if (isMockOrDuplicateEvent(item)) continue;
     if (seenIds.has(item.id)) continue;
     const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
     if (normTitle && seenTitles.has(normTitle)) continue;
@@ -643,22 +642,20 @@ export default function App() {
   }, [theatres]);
   useEffect(() => {
     if (events && events.length > 0) {
-      const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
-      const filtered = events.filter((e: any) => !DUMMY_IDS.has(e.id) && !DUMMY_IDS.has(e._id));
+      const filtered = events.filter((e: any) => !isMockOrDuplicateEvent(e));
       localStorage.setItem("cine_events", JSON.stringify(filtered));
     }
   }, [events]);
 
   // Real-time synchronization for events created or modified anywhere in the app
   useEffect(() => {
-    // Purge legacy duplicate mock event IDs from localStorage immediately on startup
+    // Purge legacy duplicate mock event IDs & mock titles from localStorage immediately on startup
     try {
-      const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
       const cRaw = localStorage.getItem("cine_events");
       if (cRaw) {
         const parsed = JSON.parse(cRaw);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((e: any) => !DUMMY_IDS.has(e.id) && !DUMMY_IDS.has(e._id));
+          const cleaned = parsed.filter((e: any) => !isMockOrDuplicateEvent(e));
           if (cleaned.length !== parsed.length) {
             localStorage.setItem("cine_events", JSON.stringify(cleaned));
           }
@@ -668,7 +665,7 @@ export default function App() {
       if (tRaw) {
         const parsed = JSON.parse(tRaw);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((e: any) => !DUMMY_IDS.has(e.id) && !DUMMY_IDS.has(e._id));
+          const cleaned = parsed.filter((e: any) => !isMockOrDuplicateEvent(e));
           if (cleaned.length !== parsed.length) {
             localStorage.setItem("cv_ticketed_events", JSON.stringify(cleaned));
           }
