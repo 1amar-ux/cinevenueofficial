@@ -93,7 +93,7 @@ export default function NowShowing({
   // Split into "This Week's Releases" and "Only in Theatres"
   const thisWeeksReleases = filteredMovies.filter((m) => {
     const status = deriveMovieReleaseStatus(m);
-    return status === "NOW_SHOWING" && (m.rating || 0) >= 8.5;
+    return status === "NOW_SHOWING" && (Number(m.rating) || 0) >= 8.5;
   });
 
   const nowShowingInTheatres = filteredMovies.filter((m) => {

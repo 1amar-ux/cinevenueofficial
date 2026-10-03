@@ -66,14 +66,16 @@ export interface Movie {
   id?: string | number;
   _id?: string | number;
   title: string;
-  genre: string;
-  lang: string;
-  rating: string;
-  img: string;
-  langKey: string;
+  genre?: string;
+  lang?: string;
+  rating?: string;
+  img?: string;
+  langKey?: string;
   formats?: string[];
   actors?: string[];
   trailerUrl?: string;
+  trailer?: string;
+  releaseYear?: number | string;
   duration?: string;
   certificate?: 'U' | 'UA' | 'A';
   certification?: string; // e.g. "UA16+", "UA13+", "U", "A"
@@ -299,6 +301,8 @@ export interface Event {
   date: string;
   time: string;
   image: string;
+  imageUrl?: string;
+  bannerUrl?: string;
   categories: EventCategory[];
   reviews: EventReview[];
   featured?: boolean;
@@ -348,6 +352,7 @@ export interface EventRegistration {
   orderId?: string;
   bannerUrl?: string;
   venueAddress?: string;
+  paymentVerificationStatus?: string;
 }
 
 export interface UpiGatewaySettings {

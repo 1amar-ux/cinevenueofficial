@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Search,
+  XCircle,
 } from 'lucide-react';
 import {
   validatePass,

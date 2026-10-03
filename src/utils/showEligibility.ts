@@ -274,3 +274,7 @@ export function evaluateShowBookingEligibility(
     calculatedShowEndAt: showEndAt,
   };
 }
+
+// Canonical alias for tests and external consumers
+export const checkShowBookingEligibility = evaluateShowBookingEligibility;
+

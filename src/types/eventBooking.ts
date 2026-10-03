@@ -259,6 +259,8 @@ export interface EventBookingRecord {
   checkedInBy?: string;
   cancellationReason?: string;
   refundAmount?: number;
+  totalPrice?: number;
+  ticketPrice?: number;
 }
 
 export interface EventCoupon {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Play, Plus, Trash2, Edit2, Eye, Check, AlertCircle, Film, ArrowUp, ArrowDown } from 'lucide-react';
 import { Movie, MovieVideo, VideoType } from '../../../types';
 import { parseAndValidateYouTubeUrl, buildSafeYouTubeEmbedUrl } from '../../../utils/youtube';
+import YouTubePlayerModal from '../../video/YouTubePlayerModal';
 
 interface MovieVideoManagerModalProps {
   isOpen: boolean;

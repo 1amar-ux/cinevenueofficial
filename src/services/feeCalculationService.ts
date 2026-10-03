@@ -345,8 +345,43 @@ export class FeeCalculationService {
       gatewayCharges: Number(gatewayCharges.toFixed(2)),
       theatreNetShare: Number(theatreNetShare.toFixed(2)),
       cineVenueNetRevenue: Number(cineVenueNetRevenue.toFixed(2)),
-      totalAmount: Number(finalAmount.toFixed(2))
+      totalAmount: Number(finalAmount.toFixed(2)),
+      convenienceFee: Number(convenienceFeeTotal.toFixed(2)),
+      platformFee: Number(platformFeeTotal.toFixed(2)),
+      bookingFee: Number(bookingFeeTotal.toFixed(2))
     };
+  }
+
+  /**
+   * Helper method for calculating movie booking fees asynchronously with optional rule arrays.
+   */
+  static async calculateMovieBookingFees(params: {
+    ticketAmount: number;
+    theatreId?: string;
+    timeSlot?: string;
+    movieTitle?: string;
+    city?: string;
+    paymentMethod?: string;
+    couponCode?: string;
+    feeRules?: FeeRule[];
+    taxRules?: TaxRule[];
+    discountRules?: DiscountRule[];
+  }): Promise<FeeCalculationResult> {
+    const context: FeeCalculationContext = {
+      ticketAmount: params.ticketAmount,
+      theatreId: params.theatreId,
+      timeSlot: params.timeSlot,
+      movieTitle: params.movieTitle,
+      city: params.city,
+      paymentMethod: params.paymentMethod,
+      couponCode: params.couponCode,
+    };
+    return this.calculateBookingFees(
+      context,
+      params.feeRules || [],
+      params.taxRules || [],
+      params.discountRules || []
+    );
   }
 
   /**

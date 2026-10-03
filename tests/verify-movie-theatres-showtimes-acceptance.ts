@@ -203,8 +203,8 @@ export function runMovieTheatresShowtimesAcceptanceTests() {
   // -------------------------------------------------------------
   // AC-MTS-13: Cache Isolation (Keys include city + movie + date)
   // -------------------------------------------------------------
-  const cacheKeyVja = `shows:Vijayawada:Coolie:2026-10-01`;
-  const cacheKeyHyd = `shows:Hyderabad:Coolie:2026-10-01`;
+  const cacheKeyVja: string = `shows:Vijayawada:Coolie:2026-10-01`;
+  const cacheKeyHyd: string = `shows:Hyderabad:Coolie:2026-10-01`;
   assert(
     cacheKeyVja !== cacheKeyHyd,
     'AC-MTS-13',

@@ -17,6 +17,11 @@ import type {
   EventCheckInResult,
   OrganizerEventStats,
   EventCategoryType,
+  EventBookingStatus,
+  EventOrderStatus,
+  EventPaymentLifecycleStatus,
+  EventPassStatus,
+  EventPass,
 } from '../types/eventBooking';
 import apiClient from './apiClient';
 import { dispatchTicketEmail, dispatchTicketSms } from '../utils/ticketDeliveryService';

@@ -165,7 +165,7 @@ export interface CalculatedDiscountItem {
 export interface FeeCalculationContext {
   bookingId?: string;
   ticketAmount: number;
-  ticketCount: number;
+  ticketCount?: number;
   seatPrices?: { [seat: string]: number };
   theatreId?: string | number;
   theatreName?: string;
@@ -179,6 +179,8 @@ export interface FeeCalculationContext {
   paymentMethod?: string;
   couponCode?: string | null;
   customerEmail?: string;
+  timeSlot?: string;
+  city?: string;
 }
 
 export interface FeeCalculationResult {
@@ -198,6 +200,9 @@ export interface FeeCalculationResult {
   theatreNetShare: number;
   cineVenueNetRevenue: number;
   totalAmount: number;
+  convenienceFee?: number;
+  platformFee?: number;
+  bookingFee?: number;
 }
 
 export interface FeeAuditLog {
