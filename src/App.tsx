@@ -76,30 +76,59 @@ import apiClient from "./services/apiClient";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
 import { getEvents as getTicketedEvents } from "./services/eventBookingService";
 
-export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = [], initialEvents: Event[] = []): Event[] {
-  const map = new Map<string, Event>();
+const DUMMY_EVENT_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
 
-  // 1. Base default events
-  for (const item of initialEvents) {
-    if (item && item.id) {
-      map.set(item.id, {
-        ...item,
-        isActive: item.isActive !== false,
-      });
-    }
+export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = [], initialEvents: Event[] = []): Event[] {
+  let deletedIds = new Set<string>();
+  if (typeof window !== 'undefined') {
+    try {
+      const dRaw = localStorage.getItem('cv_deleted_event_ids');
+      if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+    } catch {}
+  }
+
+  const rawList: Event[] = [];
+
+  // 1. Dual-written cine_events (take highest precedence for admin creations)
+  for (const c of cineEvents) {
+    if (!c || (!c.id && !c._id)) continue;
+    const cid = c.id || c._id;
+    if (DUMMY_EVENT_IDS.has(cid) || deletedIds.has(cid)) continue;
+
+    const isEvtActive = c.isActive !== false && String(c.status || '').toUpperCase() !== 'CANCELLED' && String(c.status || '').toUpperCase() !== 'DRAFT';
+
+    rawList.push({
+      id: cid,
+      title: c.title || '',
+      description: c.description || '',
+      venueName: c.venueName || 'Convention Arena',
+      venueAddress: c.venueAddress || '',
+      city: c.city || 'Hyderabad',
+      date: c.date || '2026-10-25',
+      time: c.time || c.startTime || '18:30',
+      image: c.image || c.bannerUrl || c.posterUrl || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+      category: c.category || 'Concerts',
+      categories: Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : [],
+      reviews: c.reviews || [],
+      featured: c.featured !== undefined ? c.featured : true,
+      isPaid: c.isPaid !== undefined ? c.isPaid : true,
+      isActive: isEvtActive,
+    });
   }
 
   // 2. Canonical ticketed events (from admin creation & booking service)
   for (const t of ticketedEvents) {
     if (!t || (!t.id && !(t as any)._id)) continue;
     const tid = t.id || (t as any)._id;
+    if (DUMMY_EVENT_IDS.has(tid) || deletedIds.has(tid)) continue;
+
     const lowestPrice = t.ticketTypes && t.ticketTypes.length > 0
       ? Math.min(...t.ticketTypes.map((x: any) => Number(x.price) || 0))
       : (Number(t.price) || 0);
 
     const isEvtActive = t.isActive !== false && String(t.status || '').toUpperCase() !== 'CANCELLED' && String(t.status || '').toUpperCase() !== 'DRAFT';
 
-    const mapped: Event = {
+    rawList.push({
       id: tid,
       title: t.title || '',
       description: t.description || '',
@@ -121,39 +150,35 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
       featured: true,
       isPaid: t.eventType === 'PAID' || lowestPrice > 0,
       isActive: isEvtActive,
-    };
-    map.set(tid, mapped);
-  }
-
-  // 3. Dual-written cine_events (take precedence for any user-edited metadata)
-  for (const c of cineEvents) {
-    if (!c || (!c.id && !c._id)) continue;
-    const cid = c.id || c._id;
-    const existing = map.get(cid);
-    const isEvtActive = c.isActive !== false && String(c.status || '').toUpperCase() !== 'CANCELLED' && String(c.status || '').toUpperCase() !== 'DRAFT';
-
-    map.set(cid, {
-      ...existing,
-      ...c,
-      id: cid,
-      title: c.title || existing?.title || '',
-      description: c.description || existing?.description || '',
-      venueName: c.venueName || existing?.venueName || 'Convention Arena',
-      venueAddress: c.venueAddress || existing?.venueAddress || '',
-      city: c.city || existing?.city || 'Hyderabad',
-      date: c.date || existing?.date || '2026-10-25',
-      time: c.time || existing?.time || '18:30',
-      image: c.image || c.bannerUrl || c.posterUrl || existing?.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
-      category: c.category || existing?.category || 'Concerts',
-      categories: Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : (existing?.categories || []),
-      reviews: c.reviews || existing?.reviews || [],
-      featured: c.featured !== undefined ? c.featured : (existing?.featured ?? true),
-      isPaid: c.isPaid !== undefined ? c.isPaid : (existing?.isPaid ?? true),
-      isActive: isEvtActive,
     });
   }
 
-  return Array.from(map.values());
+  // 3. Base initial events (only non-dummy, non-deleted)
+  for (const item of initialEvents) {
+    if (item && item.id && !DUMMY_EVENT_IDS.has(item.id) && !deletedIds.has(item.id)) {
+      rawList.push({
+        ...item,
+        isActive: item.isActive !== false,
+      });
+    }
+  }
+
+  // 4. Strict Deduplication by ID AND by normalized title
+  const result: Event[] = [];
+  const seenIds = new Set<string>();
+  const seenTitles = new Set<string>();
+
+  for (const item of rawList) {
+    if (seenIds.has(item.id)) continue;
+    const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    if (normTitle && seenTitles.has(normTitle)) continue;
+
+    seenIds.add(item.id);
+    if (normTitle) seenTitles.add(normTitle);
+    result.push(item);
+  }
+
+  return result;
 }
 
 export default function App() {
@@ -618,12 +643,39 @@ export default function App() {
   }, [theatres]);
   useEffect(() => {
     if (events && events.length > 0) {
-      localStorage.setItem("cine_events", JSON.stringify(events));
+      const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+      const filtered = events.filter((e: any) => !DUMMY_IDS.has(e.id) && !DUMMY_IDS.has(e._id));
+      localStorage.setItem("cine_events", JSON.stringify(filtered));
     }
   }, [events]);
 
   // Real-time synchronization for events created or modified anywhere in the app
   useEffect(() => {
+    // Purge legacy duplicate mock event IDs from localStorage immediately on startup
+    try {
+      const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+      const cRaw = localStorage.getItem("cine_events");
+      if (cRaw) {
+        const parsed = JSON.parse(cRaw);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((e: any) => !DUMMY_IDS.has(e.id) && !DUMMY_IDS.has(e._id));
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("cine_events", JSON.stringify(cleaned));
+          }
+        }
+      }
+      const tRaw = localStorage.getItem("cv_ticketed_events");
+      if (tRaw) {
+        const parsed = JSON.parse(tRaw);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((e: any) => !DUMMY_IDS.has(e.id) && !DUMMY_IDS.has(e._id));
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("cv_ticketed_events", JSON.stringify(cleaned));
+          }
+        }
+      }
+    } catch {}
+
     const handleEventsChange = () => {
       try {
         const savedRaw = localStorage.getItem("cine_events");

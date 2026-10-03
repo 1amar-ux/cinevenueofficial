@@ -82,13 +82,25 @@ export default function EventsShowcase({
   }, []);
 
   const safeEvents: Event[] = React.useMemo(() => {
-    const map = new Map<string, Event>();
+    const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+    let deletedIds = new Set<string>();
+    if (typeof window !== 'undefined') {
+      try {
+        const dRaw = localStorage.getItem('cv_deleted_event_ids');
+        if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+      } catch {}
+    }
 
-    // 1. First add events from props
+    const rawList: Event[] = [];
+
+    // 1. First add events from props (authoritative from App)
     if (Array.isArray(events)) {
       for (const event of events) {
         if (!event || !event.id) continue;
-        map.set(event.id, {
+        if (DUMMY_IDS.has(event.id) || (event as any)._id && DUMMY_IDS.has((event as any)._id)) continue;
+        if (deletedIds.has(event.id) || (event as any)._id && deletedIds.has((event as any)._id)) continue;
+
+        rawList.push({
           ...event,
           categories: Array.isArray(event.categories) ? event.categories : [],
           reviews: Array.isArray(event.reviews) ? event.reviews : [],
@@ -101,39 +113,55 @@ export default function EventsShowcase({
     for (const t of ticketedEventsList) {
       if (!t || (!t.id && !(t as any)._id)) continue;
       const tid = t.id || (t as any)._id;
+      if (DUMMY_IDS.has(tid) || deletedIds.has(tid)) continue;
+
       const lowestPrice = t.ticketTypes && t.ticketTypes.length > 0
         ? Math.min(...t.ticketTypes.map((x: any) => Number(x.price) || 0))
         : (Number(t.price) || 0);
 
       const isEvtActive = t.isActive !== false && String(t.status || '').toUpperCase() !== 'CANCELLED' && String(t.status || '').toUpperCase() !== 'DRAFT';
 
-      const existing = map.get(tid);
-      map.set(tid, {
+      rawList.push({
         id: tid,
-        title: t.title || existing?.title || '',
-        description: t.description || existing?.description || '',
-        venueName: t.venueName || (typeof t.venue === 'string' ? t.venue : t.venue?.name) || existing?.venueName || 'Convention Arena',
-        venueAddress: t.venueAddress || t.venue?.address || existing?.venueAddress || '',
-        city: t.city || existing?.city || 'Hyderabad',
-        date: t.date || existing?.date || '2026-10-25',
-        time: t.startTime || t.time || existing?.time || '18:30',
-        image: t.bannerUrl || t.posterUrl || t.image || existing?.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
-        category: t.category || existing?.category || 'Concerts',
+        title: t.title || '',
+        description: t.description || '',
+        venueName: t.venueName || (typeof t.venue === 'string' ? t.venue : t.venue?.name) || 'Convention Arena',
+        venueAddress: t.venueAddress || t.venue?.address || '',
+        city: t.city || 'Hyderabad',
+        date: t.date || '2026-10-25',
+        time: t.startTime || t.time || '18:30',
+        image: t.bannerUrl || t.posterUrl || t.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+        category: t.category || 'Concerts',
         categories: Array.isArray(t.ticketTypes) && t.ticketTypes.length > 0
           ? t.ticketTypes.map((type: any) => ({
               name: type.name || 'Standard',
               price: Number(type.price) || 0,
               availableSeats: Number(type.availableQuantity ?? type.totalQuantity ?? 100),
             }))
-          : (existing?.categories || [{ name: 'General Admission', price: lowestPrice, availableSeats: 100 }]),
-        reviews: existing?.reviews || t.reviews || [],
-        featured: existing?.featured ?? true,
+          : (t.categories || [{ name: 'General Admission', price: lowestPrice, availableSeats: 100 }]),
+        reviews: t.reviews || [],
+        featured: true,
         isPaid: t.eventType === 'PAID' || lowestPrice > 0,
         isActive: isEvtActive,
       });
     }
 
-    return Array.from(map.values());
+    // 3. Strict Deduplication by ID AND by normalized title to prevent duplicate cards
+    const result: Event[] = [];
+    const seenIds = new Set<string>();
+    const seenTitles = new Set<string>();
+
+    for (const item of rawList) {
+      if (seenIds.has(item.id)) continue;
+      const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      if (normTitle && seenTitles.has(normTitle)) continue;
+
+      seenIds.add(item.id);
+      if (normTitle) seenTitles.add(normTitle);
+      result.push(item);
+    }
+
+    return result;
   }, [events, ticketedEventsList]);
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);

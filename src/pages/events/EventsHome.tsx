@@ -205,7 +205,30 @@ export default function EventsHome() {
         }
       ];
 
-      const finalEvents = [...localMapped, ...defaultEvents.filter(d => !localMapped.some(l => l.id === d.id))];
+      const DUMMY_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+      let deletedIds = new Set<string>();
+      try {
+        const dRaw = localStorage.getItem('cv_deleted_event_ids');
+        if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+      } catch {}
+
+      const cleanLocal = localMapped.filter((e) => !DUMMY_IDS.has(e.id) && !deletedIds.has(e.id));
+      const pool = cleanLocal.length > 0 ? cleanLocal : defaultEvents.filter((d) => !DUMMY_IDS.has(d.id) && !deletedIds.has(d.id));
+
+      // Strict Deduplication by ID and normalized title
+      const finalEvents: any[] = [];
+      const seenIds = new Set<string>();
+      const seenTitles = new Set<string>();
+
+      for (const item of pool) {
+        if (seenIds.has(item.id)) continue;
+        const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        if (normTitle && seenTitles.has(normTitle)) continue;
+
+        seenIds.add(item.id);
+        if (normTitle) seenTitles.add(normTitle);
+        finalEvents.push(item);
+      }
 
       setEvents(finalEvents);
       setLoading(false);

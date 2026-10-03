@@ -782,11 +782,44 @@ function saveStorage<T>(key: string, data: T): void {
 }
 
 
+const DUMMY_EVENT_IDS = new Set(['EV-001', 'EV-002', 'EV-003', 'EV-004']);
+
 // ─── Event Item Service API ───────────────────────────────────
 
 export function getEvents(): EventItem[] {
   const isInitialized = typeof window !== 'undefined' ? localStorage.getItem('cv_ticketed_events_initialized') : null;
-  const events = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
+  let events = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
+
+  // Filter out any legacy dummy event IDs and deleted events
+  let deletedIds = new Set<string>();
+  if (typeof window !== 'undefined') {
+    try {
+      const dRaw = localStorage.getItem('cv_deleted_event_ids');
+      if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+    } catch {}
+  }
+
+  const cleaned = events.filter((e) => !DUMMY_EVENT_IDS.has(e.id) && !DUMMY_EVENT_IDS.has((e as any)._id) && !deletedIds.has(e.id) && !deletedIds.has((e as any)._id));
+  if (cleaned.length !== events.length) {
+    events = cleaned;
+    saveStorage(STORAGE_KEYS.EVENTS, events);
+  }
+
+  // Deduplicate by ID and normalized title
+  const deduplicated: EventItem[] = [];
+  const seenIds = new Set<string>();
+  const seenTitles = new Set<string>();
+
+  for (const item of events) {
+    const id = item.id || (item as any)._id;
+    if (seenIds.has(id)) continue;
+    const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    if (normTitle && seenTitles.has(normTitle)) continue;
+
+    seenIds.add(id);
+    if (normTitle) seenTitles.add(normTitle);
+    deduplicated.push(item);
+  }
 
   // Background fetch to ensure local cache stays fresh from authoritative MongoDB backend
   if (typeof window !== 'undefined') {
@@ -801,17 +834,18 @@ export function getEvents(): EventItem[] {
             merged.push(c);
           }
         }
-        saveStorage(STORAGE_KEYS.EVENTS, merged);
+        const filteredMerged = merged.filter((e: any) => !DUMMY_EVENT_IDS.has(e.id) && !DUMMY_EVENT_IDS.has(e._id) && !deletedIds.has(e.id) && !deletedIds.has(e._id));
+        saveStorage(STORAGE_KEYS.EVENTS, filteredMerged);
       }
     }).catch(() => {});
   }
 
-  if (!isInitialized && events.length === 0) {
+  if (!isInitialized && deduplicated.length === 0) {
     if (typeof window !== 'undefined') localStorage.setItem('cv_ticketed_events_initialized', 'true');
     saveStorage(STORAGE_KEYS.EVENTS, INITIAL_TICKETED_EVENTS);
     return INITIAL_TICKETED_EVENTS;
   }
-  return events;
+  return deduplicated;
 }
 
 export async function fetchLiveEvents(): Promise<EventItem[]> {
@@ -927,9 +961,18 @@ export function saveEvent(event: EventItem): EventItem {
 }
 
 export function deleteEvent(id: string): boolean {
+  if (typeof window !== 'undefined') {
+    try {
+      const dRaw = localStorage.getItem('cv_deleted_event_ids');
+      const dList: string[] = dRaw ? JSON.parse(dRaw) : [];
+      if (!dList.includes(id)) {
+        dList.push(id);
+        localStorage.setItem('cv_deleted_event_ids', JSON.stringify(dList));
+      }
+    } catch {}
+  }
   const events = getEvents();
   const filtered = events.filter((e) => e.id !== id && (e as any)._id !== id);
-  if (filtered.length === events.length) return false;
   saveStorage(STORAGE_KEYS.EVENTS, filtered);
   if (typeof window !== 'undefined') {
     localStorage.setItem('cv_ticketed_events_initialized', 'true');
