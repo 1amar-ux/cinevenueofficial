@@ -820,3 +820,128 @@ model PosReconciliationRecord {
   @@index([createdAt])
 }
 
+// ==========================================
+// 15. EMPLOYEE ACCESS MANAGEMENT & RBAC
+// ==========================================
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Employee {
+  id              String                  @id @default(cuid())
+  employeeId      String                  @unique // e.g. EMP-1001
+  fullName        String
+  username        String                  @unique
+  email           String                  @unique
+  mobile          String?
+  department      String
+  designation     String
+  roleId          String
+  passwordHash    String
+  status          EmployeeStatus          @default(ACTIVE)
+  lastLoginAt     DateTime?
+  
+  role            Role                    @relation(fields: [roleId], references: [id])
+  permissions     EmployeePermission[]
+  activityLogs    EmployeeActivityLog[]
+
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([employeeId])
+  @@index([username])
+  @@index([email])
+  @@index([roleId])
+  @@index([status])
+}
+
+model Role {
+  id              String                  @id @default(cuid())
+  name            String                  @unique // SUPER_ADMIN, ADMIN, EVENT_MANAGER, MOVIE_MANAGER, THEATRE_MANAGER, MARKETING_PROMOTION, FILM_PRODUCTION_MANAGER, FINANCE
+  displayName     String                  // "Super Admin", "Event Manager", etc.
+  description     String?
+  isSystemRole    Boolean                 @default(false)
+  
+  employees       Employee[]
+  rolePermissions RolePermission[]
+
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([name])
+}
+
+model Permission {
+  id                  String                  @id @default(cuid())
+  module              String                  // e.g. "EVENTS", "MOVIES", "THEATRES", "SHOWS", "BOOKINGS", "FINANCE", "MARKETING", "FILM_PRODUCTION", "EMPLOYEES", "SYSTEM_SETTINGS"
+  action              String                  // "VIEW", "CREATE", "EDIT", "DELETE", "APPROVE", "EXPORT", "MANAGE", "VIEW_REPORTS"
+  description         String?
+
+  rolePermissions     RolePermission[]
+  employeePermissions EmployeePermission[]
+
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@unique([module, action])
+  @@index([module])
+  @@index([action])
+}
+
+model RolePermission {
+  id            String      @id @default(cuid())
+  roleId        String
+  permissionId  String
+
+  role          Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model EmployeePermission {
+  id            String      @id @default(cuid())
+  employeeId    String
+  permissionId  String
+  isGranted     Boolean     @default(true) // explicit grant or revoke override
+
+  employee      Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  permission    Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([employeeId, permissionId])
+  @@index([employeeId])
+  @@index([permissionId])
+}
+
+model EmployeeActivityLog {
+  id            String      @id @default(cuid())
+  employeeId    String?
+  employee      Employee?   @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  employeeName  String?
+  username      String?
+  employeeCode  String?
+  action        String      // e.g. "Employee created an event"
+  module        String      // "EVENTS", "MOVIES", "AUTH", etc.
+  result        String      @default("SUCCESS") // "SUCCESS" | "FAILED"
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?       @default("{}")
+
+  createdAt     DateTime    @default(now())
+
+  @@index([employeeId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt])
+}
+
+

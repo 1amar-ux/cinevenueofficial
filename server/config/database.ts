@@ -69,6 +69,26 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   ]),
   FinancialAuditLog: new Set([
     'id', 'eventType', 'actorEmail', 'description', 'metadata', 'createdAt'
+  ]),
+  Employee: new Set([
+    'id', 'employeeId', 'fullName', 'username', 'email', 'mobile', 'department',
+    'designation', 'roleId', 'passwordHash', 'status', 'lastLoginAt', 'createdAt', 'updatedAt'
+  ]),
+  Role: new Set([
+    'id', 'name', 'displayName', 'description', 'isSystemRole', 'createdAt', 'updatedAt'
+  ]),
+  Permission: new Set([
+    'id', 'module', 'action', 'description', 'createdAt', 'updatedAt'
+  ]),
+  RolePermission: new Set([
+    'id', 'roleId', 'permissionId', 'createdAt'
+  ]),
+  EmployeePermission: new Set([
+    'id', 'employeeId', 'permissionId', 'isGranted', 'createdAt', 'updatedAt'
+  ]),
+  EmployeeActivityLog: new Set([
+    'id', 'employeeId', 'employeeName', 'username', 'employeeCode', 'action', 'module', 'result',
+    'ipAddress', 'userAgent', 'metadata', 'createdAt'
   ])
 };
 

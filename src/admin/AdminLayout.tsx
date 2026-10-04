@@ -50,7 +50,8 @@ import {
   Menu,
   Video,
   Clapperboard,
-  Sparkles
+  Sparkles,
+  UserCheck
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
@@ -58,7 +59,9 @@ import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
+import EmployeeManagementModule from "../components/admin/employees/EmployeeManagementModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
+import { employeeService, Employee } from "../services/employeeService";
 import { parseAndValidateYouTubeUrl } from "../utils/youtube";
 import { Server, Cpu } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
@@ -67,6 +70,7 @@ import ThemeToggle from "../components/ThemeToggle";
 export default function AdminLayout() {
   const navigate = useNavigate();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(() => employeeService.getCurrentEmployee());
 
   // -------------------------------------------------------------
   // Load and sync all global persistent states from localStorage
@@ -217,6 +221,7 @@ export default function AdminLayout() {
     {
       title: "IDENTITY & ACCESS",
       items: [
+        { id: "employees", label: "Employee Management", icon: UserCheck },
         { id: "admins", label: "Admin Management", icon: ShieldAlert },
         { id: "owners", label: "Theatre Owners", icon: Users },
         { id: "users", label: "Platform Users", icon: Users }
@@ -261,12 +266,68 @@ export default function AdminLayout() {
     }
   ];
 
+  const isSuperAdminSession = !currentEmployee || currentEmployee.role?.name === "SUPER_ADMIN" || currentEmployee.roleId === "role_super_admin";
+
+  const isTabPermitted = (tabId: string): boolean => {
+    if (isSuperAdminSession) return true;
+    if (!currentEmployee) return true;
+
+    // Strict Super Admin protection:
+    // Only Super Admin can access: Employee Management, Admin Management, Security & Backups, Platform Settings, System Monitoring
+    if (["employees", "admins", "security", "settings", "system_monitoring"].includes(tabId)) {
+      return false;
+    }
+
+    const perms = currentEmployee.permissions || {};
+    const roleName = currentEmployee.role?.name;
+
+    switch (tabId) {
+      case "dashboard":
+        return true;
+      case "analytics":
+      case "reports":
+        return !!perms.FINANCE?.VIEW_REPORTS || !!perms.EVENTS?.VIEW_REPORTS || !!perms.MOVIES?.VIEW_REPORTS || roleName === "ADMIN" || roleName === "FINANCE";
+      case "events":
+        return !!perms.EVENTS?.VIEW || roleName === "EVENT_MANAGER";
+      case "event_create":
+        return !!perms.EVENTS?.CREATE || roleName === "EVENT_MANAGER";
+      case "event_highlights":
+        return !!perms.EVENTS?.VIEW || !!perms.MARKETING?.VIEW;
+      case "movies":
+        return !!perms.MOVIES?.VIEW || roleName === "MOVIE_MANAGER";
+      case "theatres":
+      case "owners":
+      case "pos_integrations":
+        return !!perms.THEATRES?.VIEW || roleName === "THEATRE_MANAGER";
+      case "shows":
+        return !!perms.SHOWS?.VIEW || roleName === "THEATRE_MANAGER" || roleName === "MOVIE_MANAGER";
+      case "bookings":
+        return !!perms.BOOKINGS?.VIEW || !!perms.EVENTS?.VIEW || !!perms.FINANCE?.VIEW || roleName === "EVENT_MANAGER" || roleName === "THEATRE_MANAGER" || roleName === "FINANCE";
+      case "payments":
+        return !!perms.FINANCE?.VIEW || roleName === "FINANCE";
+      case "coupons":
+      case "notifications":
+      case "content":
+        return !!perms.MARKETING?.VIEW || roleName === "MARKETING_PROMOTION";
+      case "reviews":
+        return !!perms.MOVIES?.VIEW || !!perms.MARKETING?.VIEW || roleName === "MOVIE_MANAGER" || roleName === "MARKETING_PROMOTION";
+      case "users":
+        return roleName === "ADMIN";
+      case "support":
+        return true;
+      default:
+        return false;
+    }
+  };
+
   // Flat list for searches
   const allSidebarItems = sidebarGroups.flatMap((g) => g.items);
   const filteredSidebarGroups = sidebarGroups.map((group) => {
-    const items = group.items.filter((item) =>
-      item.label.toLowerCase().includes(sidebarSearch.toLowerCase())
-    );
+    const items = group.items
+      .filter((item) => isTabPermitted(item.id))
+      .filter((item) =>
+        item.label.toLowerCase().includes(sidebarSearch.toLowerCase())
+      );
     return { ...group, items };
   }).filter((group) => group.items.length > 0);
 
@@ -959,10 +1020,10 @@ export default function AdminLayout() {
           </div>
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-gray-950 dark:text-white truncate">
-              CINEVENUE PLATFORM SYSTEM CONTROL
+              {currentEmployee ? `CINEVENUE • ${currentEmployee.role.displayName.toUpperCase()}` : "CINEVENUE PLATFORM SYSTEM CONTROL"}
             </h1>
             <p className="text-[9px] font-mono text-text-secondary truncate hidden xs:block">
-              LEVEL-10 HYPER-PROTECTED SUPER-ADMIN SECURE PORTAL
+              {currentEmployee ? `AUTHORIZED EMPLOYEE: ${currentEmployee.fullName.toUpperCase()} (${currentEmployee.employeeId})` : "LEVEL-10 HYPER-PROTECTED SUPER-ADMIN SECURE PORTAL"}
             </p>
           </div>
         </div>
@@ -981,12 +1042,15 @@ export default function AdminLayout() {
 
           <button
             onClick={() => {
+              if (currentEmployee) {
+                employeeService.logoutEmployee();
+              }
               localStorage.removeItem("adminToken");
               navigate("/");
             }}
             className="px-2.5 sm:px-3 py-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black text-red-500 dark:text-red-400 font-bold uppercase text-[9px] tracking-wider rounded-lg transition-colors border border-red-500/20 cursor-pointer"
           >
-            Exit System Control
+            {currentEmployee ? "Sign Out" : "Exit System Control"}
           </button>
         </div>
       </header>
@@ -1058,15 +1122,33 @@ export default function AdminLayout() {
             ))}
           </nav>
 
-          {/* Admin profile snippet footer */}
-          <div className="p-4 border-t border-white/5 bg-white/[0.01] flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gold/40 to-yellow-600/10 border border-gold/20 flex items-center justify-center font-bold font-mono text-xs text-gold">
-              SA
+          {/* Admin / Employee profile snippet footer */}
+          <div className="p-4 border-t border-white/5 bg-white/[0.01] flex items-center justify-between gap-2.5 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gold/40 to-yellow-600/10 border border-gold/20 flex items-center justify-center font-bold font-mono text-xs text-gold shrink-0">
+                {currentEmployee ? currentEmployee.fullName.slice(0, 2).toUpperCase() : "SA"}
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold text-white block truncate">
+                  {currentEmployee ? currentEmployee.fullName : "Amarnath Gattem"}
+                </span>
+                <span className="text-[9px] font-mono text-gold block truncate">
+                  {currentEmployee ? `@${currentEmployee.username} • ${currentEmployee.role.displayName}` : "superadmin@cinevenue"}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-white block">Amarnath Gattem</span>
-              <span className="text-[9px] font-mono text-gold block">superadmin@cinevenue</span>
-            </div>
+            {currentEmployee && (
+              <button
+                onClick={() => {
+                  employeeService.logoutEmployee();
+                  navigate("/admin-login");
+                }}
+                className="p-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer shrink-0"
+                title="Log Out Employee"
+              >
+                <UserX className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </aside>
 
@@ -1115,45 +1197,82 @@ export default function AdminLayout() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-                    Cinevenue Platform Central Overview
+                    {currentEmployee ? `Welcome, ${currentEmployee.fullName}` : "Cinevenue Platform Central Overview"}
                   </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Real-time transaction tracking, active screenings audit logs, and gross revenue metrics
-                  </p>
+                  {currentEmployee ? (
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="px-2.5 py-1 rounded-lg bg-gold/15 border border-gold/30 text-gold text-[10px] font-mono font-bold">
+                        ID: {currentEmployee.employeeId}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white text-[10px] font-sans font-medium">
+                        Dept: {currentEmployee.department}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-text-secondary text-[10px] font-sans">
+                        Designation: <strong className="text-white">{currentEmployee.designation}</strong>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-gold/10 border border-gold/20 text-gold text-[10px] font-sans font-bold">
+                        Role: {currentEmployee.role.displayName}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono">
+                        Last Login: {currentEmployee.lastLoginAt ? new Date(currentEmployee.lastLoginAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Active Now"}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      Real-time transaction tracking, active screenings audit logs, and gross revenue metrics
+                    </p>
+                  )}
                 </div>
 
                 {/* KPI Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                  <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
-                    <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Registered Users</span>
-                    <span className="text-lg md:text-xl font-bold text-white block font-mono">{(registeredUsers.length + 845).toLocaleString()}</span>
-                    <span className="text-[9px] text-emerald-400 font-mono font-bold block">+18 joined today</span>
-                  </div>
-                  <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
-                    <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Theatre Partners</span>
-                    <span className="text-lg md:text-xl font-bold text-white block font-mono">{theatres.length} Owners</span>
-                    <span className="text-[9px] text-gold font-mono block">6 pending verification</span>
-                  </div>
-                  <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
-                    <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Total Shows</span>
-                    <span className="text-lg md:text-xl font-bold text-white block font-mono">{activeSchedulesCount} active</span>
-                    <span className="text-[9px] text-gold font-mono block">Across {theatres.length} locations</span>
-                  </div>
-                  <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
-                    <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Running Movies</span>
-                    <span className="text-lg md:text-xl font-bold text-white block font-mono">{runningMoviesCount} active</span>
-                    <span className="text-[9px] text-emerald-400 font-mono font-bold block">In high rotation</span>
-                  </div>
-                  <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
-                    <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Platform Gross</span>
-                    <span className="text-lg md:text-xl font-bold text-white block font-mono">₹{(totalRevenueSum / 100000).toFixed(2)}L</span>
-                    <span className="text-[9px] text-emerald-400 font-mono font-bold block">+14.2% growth</span>
-                  </div>
-                  <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
-                    <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Occupancy Rate</span>
-                    <span className="text-lg md:text-xl font-bold text-white block font-mono">{averageOccupancyPercent}% Avg</span>
-                    <span className="text-[9px] text-gold font-mono block">Optimal seat load</span>
-                  </div>
+                  {(isSuperAdminSession || currentEmployee?.role.name === "ADMIN") && (
+                    <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
+                      <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Registered Users</span>
+                      <span className="text-lg md:text-xl font-bold text-white block font-mono">{(registeredUsers.length + 845).toLocaleString()}</span>
+                      <span className="text-[9px] text-emerald-400 font-mono font-bold block">+18 joined today</span>
+                    </div>
+                  )}
+
+                  {(isSuperAdminSession || isTabPermitted("theatres")) && (
+                    <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
+                      <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Theatre Partners</span>
+                      <span className="text-lg md:text-xl font-bold text-white block font-mono">{theatres.length} Owners</span>
+                      <span className="text-[9px] text-gold font-mono block">6 pending verification</span>
+                    </div>
+                  )}
+
+                  {(isSuperAdminSession || isTabPermitted("shows")) && (
+                    <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
+                      <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Total Shows</span>
+                      <span className="text-lg md:text-xl font-bold text-white block font-mono">{activeSchedulesCount} active</span>
+                      <span className="text-[9px] text-gold font-mono block">Across {theatres.length} locations</span>
+                    </div>
+                  )}
+
+                  {(isSuperAdminSession || isTabPermitted("movies")) && (
+                    <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
+                      <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Running Movies</span>
+                      <span className="text-lg md:text-xl font-bold text-white block font-mono">{runningMoviesCount} active</span>
+                      <span className="text-[9px] text-emerald-400 font-mono font-bold block">In high rotation</span>
+                    </div>
+                  )}
+
+                  {(isSuperAdminSession || isTabPermitted("payments")) && (
+                    <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
+                      <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Platform Gross</span>
+                      <span className="text-lg md:text-xl font-bold text-white block font-mono">₹{(totalRevenueSum / 100000).toFixed(2)}L</span>
+                      <span className="text-[9px] text-emerald-400 font-mono font-bold block">+14.2% growth</span>
+                    </div>
+                  )}
+
+                  {(isSuperAdminSession || isTabPermitted("shows") || isTabPermitted("bookings")) && (
+                    <div className="bg-[#121213] border border-white/5 p-4 rounded-xl space-y-1">
+                      <span className="text-[9px] text-text-secondary font-bold uppercase tracking-wider block">Occupancy Rate</span>
+                      <span className="text-lg md:text-xl font-bold text-white block font-mono">{averageOccupancyPercent}% Avg</span>
+                      <span className="text-[9px] text-gold font-mono block">Optimal seat load</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Interactive Chart Section */}
@@ -1438,9 +1557,34 @@ export default function AdminLayout() {
               </div>
             )}
 
+            {/* EMPLOYEE ACCESS MANAGEMENT MODULE (SUPER ADMIN ONLY) */}
+            {activeTab === "employees" && (
+              isSuperAdminSession ? (
+                <EmployeeManagementModule />
+              ) : (
+                <div className="p-8 text-center bg-[#121214] border border-red-500/20 rounded-2xl space-y-3">
+                  <ShieldAlert className="w-10 h-10 text-red-400 mx-auto" />
+                  <h3 className="text-base font-bold text-white uppercase">Access Restricted</h3>
+                  <p className="text-xs text-text-secondary max-w-md mx-auto">
+                    Only CineVenue Super Admin possesses clearance to manage employees, access privileges, and security credentials.
+                  </p>
+                </div>
+              )
+            )}
+
             {/* 2. ADMIN MANAGEMENT */}
             {activeTab === "admins" && (
-              <AdminManagementPanel />
+              isSuperAdminSession ? (
+                <AdminManagementPanel />
+              ) : (
+                <div className="p-8 text-center bg-[#121214] border border-red-500/20 rounded-2xl space-y-3">
+                  <ShieldAlert className="w-10 h-10 text-red-400 mx-auto" />
+                  <h3 className="text-base font-bold text-white uppercase">Access Restricted</h3>
+                  <p className="text-xs text-text-secondary max-w-md mx-auto">
+                    Only CineVenue Super Admin possesses clearance to manage system administrators.
+                  </p>
+                </div>
+              )
             )}
 
             {/* 3. THEATRE OWNER MANAGEMENT */}

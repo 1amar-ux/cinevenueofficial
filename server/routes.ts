@@ -14,6 +14,7 @@ import posRoutes from "./modules/pos/pos.routes";
 import ticketRoutes from "./modules/tickets/ticket.routes";
 import notificationRoutes from "./modules/notifications/notification.routes";
 import { advertisingPublicRouter, adminAdvertisingRouter } from "./modules/advertising/advertising.routes";
+import employeeRouter from "./modules/admin/employee.routes";
 import { checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
 
@@ -64,6 +65,7 @@ router.use("/marketplace", filmProductionRoutes);
 router.use("/advertising", advertisingPublicRouter);
 router.use("/admin/advertising", adminAdvertisingRouter);
 router.use("/admin", adminRoutes);
+router.use("/", employeeRouter);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 
 // ==========================================
