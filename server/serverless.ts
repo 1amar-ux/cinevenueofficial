@@ -667,6 +667,41 @@ export default async function handler(req: any, res: any) {
     });
   }
 
+  // 5F. High-Priority Direct Route: Event Pass Email Dispatch
+  if (
+    (url.endsWith("/events/send-pass-email") || url.endsWith("/send-pass-email") || url.endsWith("/notifications/send-ticket-email")) &&
+    req.method === "POST"
+  ) {
+    let body = req.body;
+    if (typeof body === "string") {
+      try { body = JSON.parse(body); } catch (e) { body = {}; }
+    }
+    const { sendEventPassEmail } = await import("./services/emailService");
+    const recipient = body?.email || body?.to || body?.recipientEmail;
+    if (!recipient) {
+      return res.status(400).json({ success: false, message: "Recipient email address is required." });
+    }
+    const result = await sendEventPassEmail({
+      to: recipient,
+      passId: body?.passId || body?.ticketCode || `PASS-${Date.now()}`,
+      orderId: body?.orderId || body?.bookingId,
+      eventTitle: body?.eventTitle || body?.title || "CineVenue Live Event",
+      attendeeName: body?.attendeeName || body?.name || body?.userName || "Valued Guest",
+      venueName: body?.venueName || body?.venue || "Event Arena",
+      venueAddress: body?.venueAddress,
+      date: body?.date || "Upcoming",
+      day: body?.day,
+      time: body?.time || "07:00 PM",
+      tier: body?.tier || body?.categoryName || body?.category || "VIP PASS",
+      totalPrice: body?.totalPrice,
+      qrCodeUrl: body?.qrCodeUrl,
+      passUrl: body?.passUrl || body?.ticketUrl,
+      posterUrl: body?.posterUrl,
+      isFree: body?.isFree
+    });
+    return res.status(200).json(result);
+  }
+
   // 6. Direct Interception: Block sub-website APIs if globally disabled
   syncServerlessStateFromDisk();
   if (globalServerlessState.globalSubwebsiteEnabled === false) {

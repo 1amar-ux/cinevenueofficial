@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import { logger } from "../shared/logger";
+import { readPersistedFileSettings } from "../middleware/maintenance";
 
 export interface EventPassEmailParams {
   to: string;
@@ -32,11 +33,14 @@ export interface GenericTicketEmailParams {
  * Returns a configured Nodemailer transporter or null if credentials are not configured.
  */
 export function getMailTransporter(): nodemailer.Transporter | null {
-  const host = process.env.SMTP_HOST || env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || env.SMTP_PORT) || 587;
-  const user = process.env.SMTP_USER || env.SMTP_USER || process.env.EMAIL_USER || env.EMAIL_USER;
-  const pass = process.env.SMTP_PASSWORD || env.SMTP_PASSWORD || process.env.SMTP_PASS || env.SMTP_PASS || process.env.EMAIL_PASS || env.EMAIL_PASS;
-  const secure = (process.env.SMTP_SECURE || env.SMTP_SECURE) === "true" || port === 465;
+  const fileSettings = (typeof readPersistedFileSettings === 'function' ? readPersistedFileSettings() : {}) || {};
+  const emailCfg = fileSettings.emailConfig || {};
+
+  const host = process.env.SMTP_HOST || env.SMTP_HOST || emailCfg.smtpHost || emailCfg.host;
+  const port = Number(process.env.SMTP_PORT || env.SMTP_PORT || emailCfg.smtpPort || emailCfg.port) || 587;
+  const user = process.env.EMAIL_USER || env.EMAIL_USER || process.env.SMTP_USER || env.SMTP_USER || emailCfg.email || emailCfg.user || emailCfg.senderEmail;
+  const pass = process.env.EMAIL_PASS || env.EMAIL_PASS || process.env.SMTP_PASSWORD || env.SMTP_PASSWORD || process.env.SMTP_PASS || env.SMTP_PASS || emailCfg.pass || emailCfg.password || emailCfg.appPassword;
+  const secure = (process.env.SMTP_SECURE || env.SMTP_SECURE || String(emailCfg.secure)) === "true" || port === 465;
 
   if (host && user && pass) {
     return nodemailer.createTransport({

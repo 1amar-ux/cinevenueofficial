@@ -1,9 +1,5 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
@@ -11,63 +7,56 @@ var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // server/config/env.ts
-var import_dotenv, import_zod, envSchema, parsedEnv, env;
+import dotenv from "dotenv";
+import { z } from "zod";
+var envSchema, parsedEnv, env;
 var init_env = __esm({
   "server/config/env.ts"() {
-    import_dotenv = __toESM(require("dotenv"), 1);
-    import_zod = require("zod");
-    import_dotenv.default.config();
-    envSchema = import_zod.z.object({
-      NODE_ENV: import_zod.z.string().default("development"),
-      PORT: import_zod.z.union([import_zod.z.string(), import_zod.z.number()]).default(3e3).transform((val) => typeof val === "number" ? val : parseInt(String(val), 10) || 3e3),
-      API_PREFIX: import_zod.z.string().default("/api/v1"),
+    dotenv.config();
+    envSchema = z.object({
+      NODE_ENV: z.string().default("development"),
+      PORT: z.union([z.string(), z.number()]).default(3e3).transform((val) => typeof val === "number" ? val : parseInt(String(val), 10) || 3e3),
+      API_PREFIX: z.string().default("/api/v1"),
       // Database & Cache
-      DATABASE_URL: import_zod.z.string().optional().default("postgresql://postgres:postgres@localhost:5432/cinevenue"),
-      DIRECT_URL: import_zod.z.string().optional(),
-      REDIS_URL: import_zod.z.string().optional().default("redis://localhost:6379"),
+      DATABASE_URL: z.string().optional().default("postgresql://postgres:postgres@localhost:5432/cinevenue"),
+      DIRECT_URL: z.string().optional(),
+      REDIS_URL: z.string().optional().default("redis://localhost:6379"),
       // Authentication & Security
-      JWT_ACCESS_SECRET: import_zod.z.string().default("cinevenue_dev_access_jwt_secret_key_991823"),
-      JWT_REFRESH_SECRET: import_zod.z.string().default("cinevenue_dev_refresh_jwt_secret_key_882714"),
-      JWT_ACCESS_EXPIRES_IN: import_zod.z.string().default("1h"),
-      JWT_REFRESH_EXPIRES_IN: import_zod.z.string().default("7d"),
-      GOOGLE_CLIENT_ID: import_zod.z.string().optional(),
-      GOOGLE_CLIENT_SECRET: import_zod.z.string().optional(),
-      GOOGLE_CALLBACK_URL: import_zod.z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
+      JWT_ACCESS_SECRET: z.string().default("cinevenue_dev_access_jwt_secret_key_991823"),
+      JWT_REFRESH_SECRET: z.string().default("cinevenue_dev_refresh_jwt_secret_key_882714"),
+      JWT_ACCESS_EXPIRES_IN: z.string().default("1h"),
+      JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
+      GOOGLE_CLIENT_ID: z.string().optional(),
+      GOOGLE_CLIENT_SECRET: z.string().optional(),
+      GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
       // Payment Gateways (Cashfree)
-      CASHFREE_APP_ID: import_zod.z.string().optional(),
-      CASHFREE_SECRET_KEY: import_zod.z.string().optional(),
-      CASHFREE_ENV: import_zod.z.enum(["TEST", "PROD"]).default("TEST"),
-      CASHFREE_API_VERSION: import_zod.z.string().default("2023-08-01"),
-      DEFAULT_PAYMENT_GATEWAY: import_zod.z.literal("CASHFREE").default("CASHFREE"),
+      CASHFREE_APP_ID: z.string().optional(),
+      CASHFREE_SECRET_KEY: z.string().optional(),
+      CASHFREE_ENV: z.enum(["TEST", "PROD"]).default("TEST"),
+      CASHFREE_API_VERSION: z.string().default("2023-08-01"),
+      DEFAULT_PAYMENT_GATEWAY: z.literal("CASHFREE").default("CASHFREE"),
       // AI Service
-      GEMINI_API_KEY: import_zod.z.string().optional(),
+      GEMINI_API_KEY: z.string().optional(),
       // Supabase Platform
-      SUPABASE_URL: import_zod.z.string().optional(),
-      SUPABASE_ANON_KEY: import_zod.z.string().optional(),
-      SUPABASE_PUBLISHABLE_KEY: import_zod.z.string().optional(),
-      SUPABASE_SECRET_KEY: import_zod.z.string().optional(),
+      SUPABASE_URL: z.string().optional(),
+      SUPABASE_ANON_KEY: z.string().optional(),
+      SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+      SUPABASE_SECRET_KEY: z.string().optional(),
+      // Email & SMTP Notification Gateway
+      SMTP_HOST: z.string().optional(),
+      SMTP_PORT: z.union([z.string(), z.number()]).optional().transform((val) => val ? Number(val) : 587),
+      SMTP_USER: z.string().optional(),
+      SMTP_PASSWORD: z.string().optional(),
+      SMTP_PASS: z.string().optional(),
+      SMTP_SECURE: z.string().optional().default("false"),
+      SMTP_FROM: z.string().optional(),
+      EMAIL_USER: z.string().optional(),
+      EMAIL_PASS: z.string().optional(),
       // CORS & Network
-      CORS_ORIGIN: import_zod.z.string().default("*"),
-      FRONTEND_URL: import_zod.z.string().optional().default("http://localhost:3000")
+      CORS_ORIGIN: z.string().default("*"),
+      FRONTEND_URL: z.string().optional().default("http://localhost:3000")
     });
     parsedEnv = envSchema.safeParse(process.env);
     if (!parsedEnv.success) {
@@ -150,6 +139,7 @@ __export(supabaseAdmin_exports, {
   supabaseAdmin: () => supabaseAdmin,
   syncAppSettingsToSupabase: () => syncAppSettingsToSupabase
 });
+import { createClient } from "@supabase/supabase-js";
 async function syncAppSettingsToSupabase(settings) {
   if (!supabaseAdmin) {
     logger.warn("[SupabaseAdmin] Service role client is not configured; skipping cloud sync.");
@@ -197,10 +187,9 @@ async function syncAppSettingsToSupabase(settings) {
     return false;
   }
 }
-var import_supabase_js, supabaseUrl, supabaseSecretKey, isSupabaseAdminConfigured, supabaseAdmin;
+var supabaseUrl, supabaseSecretKey, isSupabaseAdminConfigured, supabaseAdmin;
 var init_supabaseAdmin = __esm({
   "server/config/supabaseAdmin.ts"() {
-    import_supabase_js = require("@supabase/supabase-js");
     init_env();
     init_logger();
     supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://mpeedjoyvimegnmymweb.supabase.co";
@@ -208,7 +197,7 @@ var init_supabaseAdmin = __esm({
     isSupabaseAdminConfigured = Boolean(
       supabaseUrl && supabaseSecretKey && supabaseSecretKey.startsWith("sb_secret_")
     );
-    supabaseAdmin = isSupabaseAdminConfigured ? (0, import_supabase_js.createClient)(supabaseUrl, supabaseSecretKey, {
+    supabaseAdmin = isSupabaseAdminConfigured ? createClient(supabaseUrl, supabaseSecretKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
@@ -218,6 +207,7 @@ var init_supabaseAdmin = __esm({
 });
 
 // server/config/database.ts
+import { PrismaClient } from "@prisma/client";
 function sanitizeRecord(tableName, data) {
   if (!data || typeof data !== "object") return {};
   const clean = {};
@@ -544,7 +534,7 @@ function createSupabaseTableProxy(tableName) {
 function initPrismaClient() {
   if (globalThis.prismaGlobal) return globalThis.prismaGlobal;
   try {
-    const rawClient = new import_client.PrismaClient({
+    const rawClient = new PrismaClient({
       datasourceUrl: env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/cinevenue",
       log: []
     });
@@ -649,10 +639,9 @@ async function checkDatabaseConnection() {
 function isDatabaseConnected() {
   return Boolean(supabaseAdmin) || prismaConnected;
 }
-var import_client, prismaConnected, TABLE_COLUMNS, TABLES_WITHOUT_UPDATED_AT, TABLE_MAP, prisma;
+var prismaConnected, TABLE_COLUMNS, TABLES_WITHOUT_UPDATED_AT, TABLE_MAP, prisma;
 var init_database = __esm({
   "server/config/database.ts"() {
-    import_client = require("@prisma/client");
     init_logger();
     init_env();
     init_supabaseAdmin();
@@ -901,10 +890,12 @@ __export(maintenance_exports, {
   setTestMaintenanceState: () => setTestMaintenanceState,
   writePersistedFileSettings: () => writePersistedFileSettings
 });
+import fs from "fs";
+import path from "path";
 function readPersistedFileSettings() {
   try {
-    if (import_fs.default.existsSync(TMP_CONFIG_PATH)) {
-      const content = import_fs.default.readFileSync(TMP_CONFIG_PATH, "utf-8");
+    if (fs.existsSync(TMP_CONFIG_PATH)) {
+      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -912,8 +903,8 @@ function readPersistedFileSettings() {
   } catch (e) {
   }
   try {
-    if (import_fs.default.existsSync(CONFIG_FILE_PATH)) {
-      const content = import_fs.default.readFileSync(CONFIG_FILE_PATH, "utf-8");
+    if (fs.existsSync(CONFIG_FILE_PATH)) {
+      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -927,11 +918,11 @@ function writePersistedFileSettings(settings) {
   try {
     const serialized = JSON.stringify(inMemoryGlobalSettings, null, 2);
     try {
-      import_fs.default.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
+      fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      import_fs.default.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
     } catch (e) {
     }
   } catch (e) {
@@ -1093,15 +1084,13 @@ async function checkMovieBookingMaintenance(req, res, next) {
     });
   }
 }
-var import_fs, import_path, CONFIG_FILE_PATH, TMP_CONFIG_PATH, inMemoryGlobalSettings, cachedState, CACHE_TTL_MS;
+var CONFIG_FILE_PATH, TMP_CONFIG_PATH, inMemoryGlobalSettings, cachedState, CACHE_TTL_MS;
 var init_maintenance = __esm({
   "server/middleware/maintenance.ts"() {
-    import_fs = __toESM(require("fs"), 1);
-    import_path = __toESM(require("path"), 1);
     init_database();
     init_logger();
-    CONFIG_FILE_PATH = import_path.default.resolve(process.cwd(), "server/config/global_settings.json");
-    TMP_CONFIG_PATH = import_path.default.resolve("/tmp", "cine_global_settings.json");
+    CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
+    TMP_CONFIG_PATH = path.resolve("/tmp", "cine_global_settings.json");
     inMemoryGlobalSettings = {
       globalSubwebsiteEnabled: true,
       subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
@@ -1111,32 +1100,278 @@ var init_maintenance = __esm({
   }
 });
 
-// server/serverless.ts
-var serverless_exports = {};
-__export(serverless_exports, {
-  default: () => handler
+// server/services/emailService.ts
+var emailService_exports = {};
+__export(emailService_exports, {
+  getMailTransporter: () => getMailTransporter,
+  sendEventPassEmail: () => sendEventPassEmail
 });
-module.exports = __toCommonJS(serverless_exports);
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path3 = __toESM(require("path"), 1);
+import nodemailer from "nodemailer";
+function getMailTransporter() {
+  const fileSettings = (typeof readPersistedFileSettings === "function" ? readPersistedFileSettings() : {}) || {};
+  const emailCfg = fileSettings.emailConfig || {};
+  const host = process.env.SMTP_HOST || env.SMTP_HOST || emailCfg.smtpHost || emailCfg.host;
+  const port = Number(process.env.SMTP_PORT || env.SMTP_PORT || emailCfg.smtpPort || emailCfg.port) || 587;
+  const user = process.env.EMAIL_USER || env.EMAIL_USER || process.env.SMTP_USER || env.SMTP_USER || emailCfg.email || emailCfg.user || emailCfg.senderEmail;
+  const pass = process.env.EMAIL_PASS || env.EMAIL_PASS || process.env.SMTP_PASSWORD || env.SMTP_PASSWORD || process.env.SMTP_PASS || env.SMTP_PASS || emailCfg.pass || emailCfg.password || emailCfg.appPassword;
+  const secure = (process.env.SMTP_SECURE || env.SMTP_SECURE || String(emailCfg.secure)) === "true" || port === 465;
+  if (host && user && pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false }
+    });
+  }
+  if (user && pass) {
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth: { user, pass }
+    });
+  }
+  return null;
+}
+async function sendEventPassEmail(params) {
+  const {
+    to,
+    passId,
+    orderId,
+    eventTitle,
+    attendeeName,
+    venueName,
+    venueAddress,
+    date,
+    day,
+    time,
+    tier = "VIP PASS",
+    totalPrice = 0,
+    qrCodeUrl,
+    passUrl,
+    posterUrl,
+    isFree = false
+  } = params;
+  if (!to || !to.includes("@")) {
+    return { success: false, message: "A valid recipient email address is required.", liveSent: false };
+  }
+  const transporter = getMailTransporter();
+  const fromAddress = process.env.SMTP_FROM || env.SMTP_FROM || process.env.EMAIL_USER || env.EMAIL_USER || "tickets@cinevenue.in";
+  const fromHeader = `"CineVenue Live" <${fromAddress}>`;
+  const fallbackQr = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=2&data=${encodeURIComponent(passId)}`;
+  const qrImage = qrCodeUrl || fallbackQr;
+  const webPassUrl = passUrl || `https://cinevenue.in/events/pass/${encodeURIComponent(passId)}`;
+  const priceDisplay = isFree || Number(totalPrice) === 0 ? "COMPLIMENTARY PASS" : `\u20B9${totalPrice}`;
+  const subject = `\u{1F39F}\uFE0F Official Pass Confirmed: ${eventTitle} [Pass #${passId}]`;
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${eventTitle} - CineVenue Official Pass</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #060608; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #FFFFFF;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #060608; padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <!-- Main Pass Container -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 540px; background: #0F0F14; border: 2px solid #E5A93C; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+          
+          <!-- Header Bar -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1C190D 0%, #2E250A 50%, #15130A 100%); padding: 18px 24px; border-bottom: 1px solid rgba(229,169,60,0.5);">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="left" style="vertical-align: middle;">
+                    <div style="font-size: 10px; font-weight: 800; color: #E5A93C; letter-spacing: 2px; text-transform: uppercase;">OFFICIAL ADMISSION</div>
+                    <div style="font-size: 18px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; margin-top: 2px;">CINEVENUE</div>
+                  </td>
+                  <td align="right" style="vertical-align: middle;">
+                    <span style="display: inline-block; background: #E5A93C; color: #000000; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 6px 14px; border-radius: 999px; text-transform: uppercase;">
+                      ${isFree ? "FREE ENTRY" : tier}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          ${posterUrl ? `
+          <!-- Poster Banner -->
+          <tr>
+            <td style="background: #000000; padding: 12px; text-align: center;">
+              <img src="${posterUrl}" alt="${eventTitle}" style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(229,169,60,0.3); display: block;" />
+            </td>
+          </tr>
+          ` : ""}
+
+          <!-- Event Details Body -->
+          <tr>
+            <td style="padding: 24px;">
+              
+              <!-- Event Title -->
+              <div style="border-left: 3px solid #E5A93C; padding-left: 12px; margin-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #FFFFFF; line-height: 1.2;">${eventTitle}</h1>
+                <p style="margin: 6px 0 0 0; font-size: 12px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px;">Pass Holder: <strong style="color: #FFFFFF;">${attendeeName}</strong></p>
+              </div>
+
+              <!-- Two Column Date & Venue Block -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                <tr>
+                  <!-- Date Column -->
+                  <td width="48%" style="vertical-align: top; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 10px; color: #9CA3AF; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">DATE & DAY</div>
+                    <div style="font-size: 14px; font-weight: 800; color: #FFFFFF; margin-top: 4px;">${date}</div>
+                    ${day ? `<div style="font-size: 12px; font-weight: 700; color: #E5A93C; margin-top: 2px;">${day}</div>` : ""}
+                  </td>
+                  <td width="4%"></td>
+                  <!-- Venue Column -->
+                  <td width="48%" style="vertical-align: top; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 10px; color: #9CA3AF; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">TIME & VENUE</div>
+                    <div style="font-size: 13px; font-weight: 800; color: #E5A93C; margin-top: 4px;">${time}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #FFFFFF; margin-top: 2px; line-height: 1.3;">${venueName}</div>
+                    ${venueAddress ? `<div style="font-size: 10px; color: #6B7280; margin-top: 2px;">${venueAddress}</div>` : ""}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Order / Tier Bar -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(229,169,60,0.06); border: 1px solid rgba(229,169,60,0.2); border-radius: 12px; padding: 12px 16px; margin-bottom: 24px;">
+                <tr>
+                  <td align="left">
+                    <span style="font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px; display: block;">Registration Fee</span>
+                    <strong style="font-size: 14px; color: #E5A93C; font-family: monospace;">${priceDisplay}</strong>
+                  </td>
+                  <td align="right">
+                    <span style="font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px; display: block;">Booking Status</span>
+                    <strong style="font-size: 12px; color: #10B981; font-weight: 800;">\u25CF CONFIRMED</strong>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Scannable Barcode & QR Centerpiece -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: #08080C; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; text-align: center;">
+                <tr>
+                  <td align="center">
+                    <div style="display: inline-block; background: #FFFFFF; padding: 10px; border-radius: 12px; border: 2px solid #E5A93C;">
+                      <img src="${qrImage}" width="160" height="160" alt="Official Admission QR" style="display: block;" />
+                    </div>
+                    <div style="font-family: monospace; font-size: 14px; font-weight: 800; color: #E5A93C; letter-spacing: 2px; margin-top: 14px;">${passId}</div>
+                    <div style="display: inline-block; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #10B981; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 4px 10px; border-radius: 6px; margin-top: 8px; text-transform: uppercase;">
+                      \u25CF SCAN AT VENUE ENTRY GATE
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Action Button to View Pass -->
+              <div style="text-align: center; margin-top: 24px;">
+                <a href="${webPassUrl}" style="display: inline-block; background: #E5A93C; color: #000000; text-decoration: none; font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 15px rgba(229,169,60,0.35);">
+                  View & Download Live Pass
+                </a>
+                <div style="font-size: 11px; color: #6B7280; margin-top: 10px;">
+                  Keep this email or pass ready on your phone screen upon arrival.
+                </div>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background: #08080C; padding: 16px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
+              <div style="font-size: 10px; color: #E5A93C; font-family: monospace; letter-spacing: 1px; font-weight: 700;">CINEVENUE ENTERTAINMENTS \u2022 OFFICIAL PASS</div>
+              <div style="font-size: 10px; color: #4B5563; margin-top: 4px;">Order ID: ${orderId || passId} \u2022 Verified Digital Security</div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+  const plainText = `
+CINEVENUE EVENT PASS CONFIRMATION
+=================================
+Event: ${eventTitle}
+Attendee: ${attendeeName}
+Pass ID: ${passId}
+Date: ${date} ${day ? `(${day})` : ""}
+Time: ${time}
+Venue: ${venueName} ${venueAddress ? `- ${venueAddress}` : ""}
+Tier: ${tier}
+Fee: ${priceDisplay}
+Status: CONFIRMED
+
+Live Pass Link: ${webPassUrl}
+QR Code Reference: ${qrImage}
+
+Please show this pass ID or the QR code at the venue gate for direct admission.
+\xA9 CineVenue Entertainments
+`;
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromHeader,
+        to,
+        subject,
+        html,
+        text: plainText
+      });
+      logger.info(`[EmailService] Live email successfully dispatched via SMTP to ${to} for Pass ${passId}`);
+      return {
+        success: true,
+        message: `Official CineVenue Event Pass [${passId}] delivered to ${to}!`,
+        liveSent: true
+      };
+    } catch (err) {
+      logger.error(`[EmailService] SMTP transmission error to ${to}: ${err.message}`);
+      return {
+        success: false,
+        message: `Failed to deliver email via SMTP: ${err.message}`,
+        liveSent: false
+      };
+    }
+  } else {
+    logger.warn(`[EmailService] Notice: SMTP credentials (SMTP_HOST/SMTP_USER/SMTP_PASSWORD or EMAIL_USER/EMAIL_PASS) are not configured in .env. Pass [${passId}] prepared for ${to}.`);
+    return {
+      success: true,
+      message: `Pass recorded for ${to}. (Note: configure SMTP in server .env to deliver live emails).`,
+      liveSent: false
+    };
+  }
+}
+var init_emailService = __esm({
+  "server/services/emailService.ts"() {
+    init_env();
+    init_logger();
+    init_maintenance();
+  }
+});
+
+// server/serverless.ts
+import fs3 from "fs";
+import path3 from "path";
 
 // server/app.ts
-var import_express17 = __toESM(require("express"), 1);
-var import_cors = __toESM(require("cors"), 1);
 init_env();
+import express from "express";
+import cors from "cors";
 
 // server/routes.ts
-var import_express16 = require("express");
+import { Router as Router16 } from "express";
 
 // server/modules/auth/auth.routes.ts
-var import_express = require("express");
+import { Router } from "express";
 
 // server/modules/auth/auth.service.ts
-var import_bcryptjs = __toESM(require("bcryptjs"), 1);
-var import_jsonwebtoken = __toESM(require("jsonwebtoken"), 1);
-var import_crypto = require("crypto");
 init_database();
 init_env();
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { randomBytes, createHash } from "crypto";
 
 // server/shared/errors/index.ts
 var AppError = class extends Error {
@@ -1194,8 +1429,8 @@ function isDbConnectionError(err) {
 }
 var AuthService = class {
   generateEmailVerificationToken() {
-    const rawToken = (0, import_crypto.randomBytes)(32).toString("hex");
-    const tokenHash = (0, import_crypto.createHash)("sha256").update(rawToken).digest("hex");
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
     return { rawToken, tokenHash };
   }
   generateTokens(user) {
@@ -1205,10 +1440,10 @@ var AuthService = class {
       role: user.role,
       name: user.name
     };
-    const accessToken = import_jsonwebtoken.default.sign(payload, env.JWT_ACCESS_SECRET, {
+    const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
       expiresIn: env.JWT_ACCESS_EXPIRES_IN
     });
-    const refreshToken = import_jsonwebtoken.default.sign(
+    const refreshToken = jwt.sign(
       { userId: user.id, type: "refresh" },
       env.JWT_REFRESH_SECRET,
       { expiresIn: env.JWT_REFRESH_EXPIRES_IN }
@@ -1228,7 +1463,7 @@ var AuthService = class {
         const existingMobile = await prisma.user.findFirst({ where: { mobile: data.mobile } });
         if (existingMobile) throw new ConflictError("An account with this mobile number already exists.");
       }
-      const passwordHash = await import_bcryptjs.default.hash(data.password, SALT_ROUNDS);
+      const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
       const user = await prisma.user.create({
         data: {
           email: emailLower,
@@ -1294,9 +1529,9 @@ var AuthService = class {
             throw new ConflictError("An account with this mobile number already exists.");
           }
         }
-        const passwordHash = await import_bcryptjs.default.hash(data.password, SALT_ROUNDS);
+        const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
         const resilientUser = {
-          id: `usr_${(0, import_crypto.randomBytes)(8).toString("hex")}`,
+          id: `usr_${randomBytes(8).toString("hex")}`,
           email: emailLower,
           name: data.name,
           mobile: data.mobile || null,
@@ -1354,7 +1589,7 @@ var AuthService = class {
       if (!user || !user.isActive) {
         throw new UnauthorizedError("Account not found. Please check your email or mobile number, or create an account.");
       }
-      const isMatch = await import_bcryptjs.default.compare(data.password, user.passwordHash);
+      const isMatch = await bcrypt.compare(data.password, user.passwordHash);
       if (!isMatch) {
         throw new UnauthorizedError("Incorrect password. Please try again or click 'Forgot Password?' to reset it.");
       }
@@ -1404,7 +1639,7 @@ var AuthService = class {
           }
         }
         if (foundUser) {
-          const isMatch = await import_bcryptjs.default.compare(data.password, foundUser.passwordHash);
+          const isMatch = await bcrypt.compare(data.password, foundUser.passwordHash);
           if (!isMatch) {
             throw new UnauthorizedError("Incorrect password. Please try again or click 'Forgot Password?' to reset it.");
           }
@@ -1431,7 +1666,7 @@ var AuthService = class {
       throw new ValidationError("Verification token is required");
     }
     try {
-      const tokenHash = (0, import_crypto.createHash)("sha256").update(token).digest("hex");
+      const tokenHash = createHash("sha256").update(token).digest("hex");
       const verificationRecord = await prisma.emailVerificationToken.findUnique({
         where: { tokenHash }
       });
@@ -1537,7 +1772,7 @@ var AuthService = class {
         user = await prisma.user.create({
           data: {
             email: email || `${Date.now()}@google.local`,
-            passwordHash: await import_bcryptjs.default.hash((0, import_crypto.randomBytes)(16).toString("hex"), SALT_ROUNDS),
+            passwordHash: await bcrypt.hash(randomBytes(16).toString("hex"), SALT_ROUNDS),
             name,
             profileImageUrl,
             role: "CUSTOMER",
@@ -1622,7 +1857,7 @@ var AuthService = class {
     } catch (err) {
       if (isDbConnectionError(err)) {
         logger.warn(`Database unreachable during googleLogin: ${err.message}. Activating resilient session.`);
-        const fallbackId = `usr_g_${(0, import_crypto.randomBytes)(8).toString("hex")}`;
+        const fallbackId = `usr_g_${randomBytes(8).toString("hex")}`;
         const fallbackUser = {
           id: fallbackId,
           email: email || `${Date.now()}@google.local`,
@@ -1656,7 +1891,7 @@ var AuthService = class {
   }
   async refreshToken(token) {
     try {
-      const decoded = import_jsonwebtoken.default.verify(token, env.JWT_REFRESH_SECRET);
+      const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET);
       try {
         const storedToken = await prisma.refreshToken.findUnique({
           where: { token }
@@ -1774,7 +2009,7 @@ var AuthService = class {
           message: "No registered account found with this email or mobile number. Please check your input or sign up."
         };
       }
-      const rawToken = (0, import_crypto.randomBytes)(32).toString("hex");
+      const rawToken = randomBytes(32).toString("hex");
       const otpCode = Math.floor(1e5 + Math.random() * 9e5).toString();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1e3);
       try {
@@ -1783,10 +2018,10 @@ var AuthService = class {
         });
       } catch {
       }
-      const tokenHash = (0, import_crypto.createHash)("sha256").update(rawToken).digest("hex");
-      const otpHash = (0, import_crypto.createHash)("sha256").update(otpCode).digest("hex");
-      const tokenRecId = `prt_${(0, import_crypto.randomBytes)(8).toString("hex")}`;
-      const otpRecId = `prt_${(0, import_crypto.randomBytes)(8).toString("hex")}`;
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      const otpHash = createHash("sha256").update(otpCode).digest("hex");
+      const tokenRecId = `prt_${randomBytes(8).toString("hex")}`;
+      const otpRecId = `prt_${randomBytes(8).toString("hex")}`;
       const expiresAtIso = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
       try {
         await prisma.passwordResetToken.create({
@@ -1816,7 +2051,7 @@ var AuthService = class {
         return {
           success: true,
           message: "Password reset code dispatched.",
-          resetToken: (0, import_crypto.randomBytes)(16).toString("hex"),
+          resetToken: randomBytes(16).toString("hex"),
           otpCode: "123456"
         };
       }
@@ -1825,7 +2060,7 @@ var AuthService = class {
   }
   async resetPassword(token, newPass, identifier) {
     const trimmedToken = (token || "").trim();
-    const tokenHash = (0, import_crypto.createHash)("sha256").update(trimmedToken).digest("hex");
+    const tokenHash = createHash("sha256").update(trimmedToken).digest("hex");
     const resetRecord = await prisma.passwordResetToken.findFirst({
       where: {
         tokenHash
@@ -1839,7 +2074,7 @@ var AuthService = class {
     if (/* @__PURE__ */ new Date() > expiresDate) {
       throw new ValidationError("Password reset verification code or token has expired. Please request a new one.");
     }
-    const passwordHash = await import_bcryptjs.default.hash(newPass, SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(newPass, SALT_ROUNDS);
     await prisma.user.update({
       where: { id: resetRecord.userId },
       data: { passwordHash, isVerified: true }
@@ -1993,7 +2228,7 @@ var AuthController = class {
 var authController = new AuthController();
 
 // server/middleware/validate.ts
-var import_zod2 = require("zod");
+import { ZodError } from "zod";
 function validate(schemas) {
   return async (req, res, next) => {
     try {
@@ -2008,7 +2243,7 @@ function validate(schemas) {
       }
       next();
     } catch (error) {
-      if (error instanceof import_zod2.ZodError) {
+      if (error instanceof ZodError) {
         const formatted = error.issues.map((issue) => ({
           path: issue.path.join("."),
           message: issue.message,
@@ -2022,8 +2257,8 @@ function validate(schemas) {
 }
 
 // server/middleware/auth.ts
-var import_jsonwebtoken2 = __toESM(require("jsonwebtoken"), 1);
 init_env();
+import jwt2 from "jsonwebtoken";
 function authenticate(req, res, next) {
   try {
     const passcode = req.headers["x-admin-passcode"];
@@ -2043,7 +2278,7 @@ function authenticate(req, res, next) {
     if (!token) {
       throw new UnauthorizedError("Authentication token is missing. Format: Bearer <token>");
     }
-    const decoded = import_jsonwebtoken2.default.verify(token, env.JWT_ACCESS_SECRET);
+    const decoded = jwt2.verify(token, env.JWT_ACCESS_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -2062,7 +2297,7 @@ function optionalAuthenticate(req, res, next) {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1];
       if (token) {
-        const decoded = import_jsonwebtoken2.default.verify(token, env.JWT_ACCESS_SECRET);
+        const decoded = jwt2.verify(token, env.JWT_ACCESS_SECRET);
         req.user = decoded;
       }
     }
@@ -2073,40 +2308,40 @@ function optionalAuthenticate(req, res, next) {
 }
 
 // server/modules/auth/auth.validation.ts
-var import_zod3 = require("zod");
-var registerSchema = import_zod3.z.object({
-  email: import_zod3.z.string().email("Please provide a valid email address"),
-  password: import_zod3.z.string().min(8, "Password must be at least 8 characters long").regex(/[a-z]/, "Password must include a lowercase letter").regex(/[A-Z]/, "Password must include an uppercase letter").regex(/[0-9]/, "Password must include a number").regex(/[^A-Za-z0-9]/, "Password must include a symbol"),
-  confirmPassword: import_zod3.z.string().optional(),
-  name: import_zod3.z.string().min(2, "Name must be at least 2 characters long"),
-  mobile: import_zod3.z.string().trim().regex(/^\+?[1-9]\d{7,14}$/, "Please provide a valid mobile number"),
-  dateOfBirth: import_zod3.z.coerce.date().optional(),
-  profileImageUrl: import_zod3.z.string().url().optional()
+import { z as z2 } from "zod";
+var registerSchema = z2.object({
+  email: z2.string().email("Please provide a valid email address"),
+  password: z2.string().min(8, "Password must be at least 8 characters long").regex(/[a-z]/, "Password must include a lowercase letter").regex(/[A-Z]/, "Password must include an uppercase letter").regex(/[0-9]/, "Password must include a number").regex(/[^A-Za-z0-9]/, "Password must include a symbol"),
+  confirmPassword: z2.string().optional(),
+  name: z2.string().min(2, "Name must be at least 2 characters long"),
+  mobile: z2.string().trim().regex(/^\+?[1-9]\d{7,14}$/, "Please provide a valid mobile number"),
+  dateOfBirth: z2.coerce.date().optional(),
+  profileImageUrl: z2.string().url().optional()
 }).refine((data) => !data.confirmPassword || data.confirmPassword === data.password, {
   message: "Passwords do not match.",
   path: ["confirmPassword"]
 });
-var loginSchema = import_zod3.z.object({
-  identifier: import_zod3.z.string().trim().min(1, "Email or mobile number is required"),
-  password: import_zod3.z.string().min(1, "Password is required")
+var loginSchema = z2.object({
+  identifier: z2.string().trim().min(1, "Email or mobile number is required"),
+  password: z2.string().min(1, "Password is required")
 });
-var refreshTokenSchema = import_zod3.z.object({
-  refreshToken: import_zod3.z.string().min(1, "Refresh token is required")
+var refreshTokenSchema = z2.object({
+  refreshToken: z2.string().min(1, "Refresh token is required")
 });
-var forgotPasswordSchema = import_zod3.z.object({
-  email: import_zod3.z.string().optional(),
-  identifier: import_zod3.z.string().optional()
+var forgotPasswordSchema = z2.object({
+  email: z2.string().optional(),
+  identifier: z2.string().optional()
 }).refine((data) => !!(data.email || data.identifier), {
   message: "Please provide your email address or mobile number"
 });
-var resetPasswordSchema = import_zod3.z.object({
-  token: import_zod3.z.string().min(1, "Reset token or code is required"),
-  newPassword: import_zod3.z.string().min(6, "New password must be at least 6 characters long"),
-  identifier: import_zod3.z.string().optional()
+var resetPasswordSchema = z2.object({
+  token: z2.string().min(1, "Reset token or code is required"),
+  newPassword: z2.string().min(6, "New password must be at least 6 characters long"),
+  identifier: z2.string().optional()
 });
 
 // server/modules/auth/auth.routes.ts
-var router = (0, import_express.Router)();
+var router = Router();
 router.post("/register", validate({ body: registerSchema }), authController.register);
 router.post("/login", validate({ body: loginSchema }), authController.login);
 router.get("/verify-email", authController.verifyEmail);
@@ -2121,8 +2356,8 @@ router.post("/reset-password", validate({ body: resetPasswordSchema }), authCont
 var auth_routes_default = router;
 
 // server/modules/movies/movie.routes.ts
-var import_express2 = require("express");
 init_database();
+import { Router as Router2 } from "express";
 
 // server/middleware/authorize.ts
 function authorize(...allowedRoles) {
@@ -2142,7 +2377,7 @@ function authorize(...allowedRoles) {
 }
 
 // server/modules/movies/movie.routes.ts
-var router2 = (0, import_express2.Router)();
+var router2 = Router2();
 router2.get("/", async (req, res, next) => {
   try {
     const { status, genre, language } = req.query;
@@ -2323,9 +2558,9 @@ router2.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (r
 var movie_routes_default = router2;
 
 // server/modules/theatres/theatre.routes.ts
-var import_express3 = require("express");
 init_database();
-var router3 = (0, import_express3.Router)();
+import { Router as Router3 } from "express";
+var router3 = Router3();
 router3.get("/", async (req, res, next) => {
   try {
     const { city, status } = req.query;
@@ -2503,9 +2738,9 @@ router3.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (r
 var theatre_routes_default = router3;
 
 // server/modules/shows/show.routes.ts
-var import_express4 = require("express");
 init_database();
-var router4 = (0, import_express4.Router)();
+import { Router as Router4 } from "express";
+var router4 = Router4();
 function parseKolkataDateRange(dateStr) {
   const targetDate = dateStr ? String(dateStr).trim() : "Today";
   const now = /* @__PURE__ */ new Date();
@@ -2969,11 +3204,11 @@ router4.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_
 var show_routes_default = router4;
 
 // server/modules/bookings/booking.routes.ts
-var import_express5 = require("express");
+import { Router as Router5 } from "express";
 
 // server/modules/bookings/booking.service.ts
-var import_decimal = __toESM(require("decimal.js"), 1);
 init_database();
+import Decimal from "decimal.js";
 
 // server/config/redis.ts
 init_logger();
@@ -3032,17 +3267,17 @@ init_database();
 init_logger();
 
 // server/modules/pos/pos.encryption.ts
-var import_crypto2 = __toESM(require("crypto"), 1);
+import crypto2 from "crypto";
 var ENCRYPTION_KEY = process.env.POS_ENCRYPTION_KEY || process.env.JWT_SECRET || "cinevenue_pos_secret_master_key_32bytes!!";
 var ALGORITHM = "aes-256-gcm";
 function getMasterKey() {
-  return import_crypto2.default.createHash("sha256").update(ENCRYPTION_KEY).digest();
+  return crypto2.createHash("sha256").update(ENCRYPTION_KEY).digest();
 }
 function encryptSecret(plainText) {
   if (!plainText) return "";
   try {
-    const iv = import_crypto2.default.randomBytes(12);
-    const cipher = import_crypto2.default.createCipheriv(ALGORITHM, getMasterKey(), iv);
+    const iv = crypto2.randomBytes(12);
+    const cipher = crypto2.createCipheriv(ALGORITHM, getMasterKey(), iv);
     let encrypted = cipher.update(plainText, "utf8", "hex");
     encrypted += cipher.final("hex");
     const authTag = cipher.getAuthTag().toString("hex");
@@ -3059,7 +3294,7 @@ function decryptSecret(cipherText) {
       const [ivHex, authTagHex, encryptedHex] = parts;
       const iv = Buffer.from(ivHex, "hex");
       const authTag = Buffer.from(authTagHex, "hex");
-      const decipher = import_crypto2.default.createDecipheriv(ALGORITHM, getMasterKey(), iv);
+      const decipher = crypto2.createDecipheriv(ALGORITHM, getMasterKey(), iv);
       decipher.setAuthTag(authTag);
       let decrypted = decipher.update(encryptedHex, "hex", "utf8");
       decrypted += decipher.final("utf8");
@@ -3076,11 +3311,11 @@ function maskSecret(secret) {
   return `${secret.slice(0, 3)}\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022${secret.slice(-4)}`;
 }
 function generateWebhookSecret() {
-  return `whsec_${import_crypto2.default.randomBytes(24).toString("hex")}`;
+  return `whsec_${crypto2.randomBytes(24).toString("hex")}`;
 }
 
 // server/modules/pos/adapters/generic.adapter.ts
-var import_axios = __toESM(require("axios"), 1);
+import axios from "axios";
 
 // server/modules/pos/adapters/base.adapter.ts
 init_logger();
@@ -3137,7 +3372,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
     }
     try {
       this.validateHttpsUrl(config.baseApiUrl);
-      const response = await import_axios.default.get(`${config.baseApiUrl}/health`, {
+      const response = await axios.get(`${config.baseApiUrl}/health`, {
         headers: {
           "Authorization": `Bearer ${config.apiKey}`,
           "X-API-Key": config.apiKey,
@@ -3201,7 +3436,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         }
       ];
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/venues`, {
+    const res = await axios.get(`${config.baseApiUrl}/venues`, {
       headers: { "Authorization": `Bearer ${config.apiKey}`, "X-API-Key": config.apiKey },
       timeout: 8e3
     });
@@ -3214,7 +3449,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         { posScreenId: "POS_SCR_2", posVenueId: venueId || "POS_VENUE_001", name: "Screen 2 (IMAX Laser)", capacity: 220 }
       ];
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/venues/${venueId || config.venueId}/screens`, {
+    const res = await axios.get(`${config.baseApiUrl}/venues/${venueId || config.venueId}/screens`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3227,7 +3462,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         { posMovieId: "POS_MOV_102", title: "Devara: Part 1", durationMinutes: 178, language: "Telugu", format: "2D" }
       ];
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/movies`, {
+    const res = await axios.get(`${config.baseApiUrl}/movies`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3263,7 +3498,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         }
       ];
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/shows`, {
+    const res = await axios.get(`${config.baseApiUrl}/shows`, {
       params: { venueId: venueId || config.venueId, date },
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
@@ -3292,7 +3527,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         seats
       };
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/shows/${showId}/seatmap`, {
+    const res = await axios.get(`${config.baseApiUrl}/shows/${showId}/seatmap`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3313,7 +3548,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         "D10": "BLOCKED"
       };
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/shows/${showId}/availability`, {
+    const res = await axios.get(`${config.baseApiUrl}/shows/${showId}/availability`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 5e3
     });
@@ -3329,7 +3564,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         heldSeatIds: request.posSeatIds
       };
     }
-    const res = await import_axios.default.post(`${config.baseApiUrl}/shows/${request.posShowId}/hold`, request, {
+    const res = await axios.post(`${config.baseApiUrl}/shows/${request.posShowId}/hold`, request, {
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
         "Idempotency-Key": request.idempotencyKey
@@ -3343,7 +3578,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
       return true;
     }
     try {
-      await import_axios.default.post(`${config.baseApiUrl}/shows/${posShowId}/release`, {
+      await axios.post(`${config.baseApiUrl}/shows/${posShowId}/release`, {
         posHoldId,
         posSeatIds
       }, {
@@ -3367,7 +3602,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         status: "CONFIRMED"
       };
     }
-    const res = await import_axios.default.post(`${config.baseApiUrl}/bookings`, request, {
+    const res = await axios.post(`${config.baseApiUrl}/bookings`, request, {
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
         "Idempotency-Key": request.idempotencyKey
@@ -3380,7 +3615,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
     if (config.environment === "SANDBOX") {
       return { status: "CONFIRMED" };
     }
-    const res = await import_axios.default.get(`${config.baseApiUrl}/bookings/${posBookingId}`, {
+    const res = await axios.get(`${config.baseApiUrl}/bookings/${posBookingId}`, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 5e3
     });
@@ -3395,7 +3630,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
         refundAmount: 350
       };
     }
-    const res = await import_axios.default.post(`${config.baseApiUrl}/bookings/${posBookingId}/cancel`, { reason }, {
+    const res = await axios.post(`${config.baseApiUrl}/bookings/${posBookingId}/cancel`, { reason }, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3405,7 +3640,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
     if (config.environment === "SANDBOX") {
       return { success: true, refundId: `REFUND_SB_${Date.now()}` };
     }
-    const res = await import_axios.default.post(`${config.baseApiUrl}/bookings/${posBookingId}/refund`, { amount }, {
+    const res = await axios.post(`${config.baseApiUrl}/bookings/${posBookingId}/refund`, { amount }, {
       headers: { "Authorization": `Bearer ${config.apiKey}` },
       timeout: 8e3
     });
@@ -3424,7 +3659,7 @@ var GenericPosAdapter = class extends BasePosAdapter {
 };
 
 // server/modules/pos/adapters/vista.adapter.ts
-var import_axios2 = __toESM(require("axios"), 1);
+import axios2 from "axios";
 var VistaPosAdapter = class extends BasePosAdapter {
   constructor() {
     super(...arguments);
@@ -3465,7 +3700,7 @@ var VistaPosAdapter = class extends BasePosAdapter {
     }
     try {
       this.validateHttpsUrl(config.baseApiUrl);
-      const res = await import_axios2.default.get(`${config.baseApiUrl}/WSVistaWebClient/RESTData.svc/cinemas`, {
+      const res = await axios2.get(`${config.baseApiUrl}/WSVistaWebClient/RESTData.svc/cinemas`, {
         headers: {
           "Ocp-Apim-Subscription-Key": config.apiKey,
           "Authorization": `Basic ${Buffer.from(`${config.apiKey}:${config.apiSecret}`).toString("base64")}`
@@ -3508,7 +3743,7 @@ var VistaPosAdapter = class extends BasePosAdapter {
     if (config.environment === "SANDBOX") {
       return [{ posVenueId: config.venueId || "VISTA_001", name: "Vista Cinema Grand", city: "Hyderabad" }];
     }
-    const res = await import_axios2.default.get(`${config.baseApiUrl}/cinemas`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await axios2.get(`${config.baseApiUrl}/cinemas`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Cinemas?.map((c) => ({ posVenueId: c.ID, name: c.Name, city: c.City })) || [];
   }
   async getScreens(config, venueId) {
@@ -3518,14 +3753,14 @@ var VistaPosAdapter = class extends BasePosAdapter {
         { posScreenId: "VISTA_SCR_2", posVenueId: venueId || "VISTA_001", name: "Audi 2 - 4DX", capacity: 150 }
       ];
     }
-    const res = await import_axios2.default.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/screens`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await axios2.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/screens`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Screens || [];
   }
   async getMovies(config) {
     if (config.environment === "SANDBOX") {
       return [{ posMovieId: "VISTA_FILM_1", title: "Kalki 2898 AD", durationMinutes: 181, language: "Telugu" }];
     }
-    const res = await import_axios2.default.get(`${config.baseApiUrl}/films`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await axios2.get(`${config.baseApiUrl}/films`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Films || [];
   }
   async getShows(config, venueId, date) {
@@ -3540,7 +3775,7 @@ var VistaPosAdapter = class extends BasePosAdapter {
         categories: [{ categoryName: "EXECUTIVE", price: 250 }, { categoryName: "ROYAL", price: 350 }]
       }];
     }
-    const res = await import_axios2.default.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/sessions`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
+    const res = await axios2.get(`${config.baseApiUrl}/cinemas/${venueId || config.venueId}/sessions`, { headers: { "Ocp-Apim-Subscription-Key": config.apiKey } });
     return res.data?.Sessions || [];
   }
   async getSeatMap(config, showId) {
@@ -4653,22 +4888,22 @@ var BookingService = class {
     if (showSeats.length !== showSeatIds.length) {
       throw new ValidationError("One or more selected seats are invalid for this show");
     }
-    let baseTicketTotal = new import_decimal.default(0);
+    let baseTicketTotal = new Decimal(0);
     for (const ss of showSeats) {
-      baseTicketTotal = baseTicketTotal.plus(new import_decimal.default(ss.price.toString()));
+      baseTicketTotal = baseTicketTotal.plus(new Decimal(ss.price.toString()));
     }
     const ticketCount = showSeats.length;
-    const platformFee = new import_decimal.default(18);
+    const platformFee = new Decimal(18);
     const convenienceFee = baseTicketTotal.times(0.05);
-    const gstRate = new import_decimal.default(0.18);
+    const gstRate = new Decimal(0.18);
     const taxAmount = platformFee.plus(convenienceFee).times(gstRate).toDecimalPlaces(2);
-    let discountAmount = new import_decimal.default(0);
+    let discountAmount = new Decimal(0);
     if (couponCode && couponCode.toUpperCase() === "CINE50" && baseTicketTotal.greaterThanOrEqualTo(200)) {
-      discountAmount = new import_decimal.default(50);
+      discountAmount = new Decimal(50);
     } else if (couponCode && couponCode.toUpperCase() === "FIRST100" && baseTicketTotal.greaterThanOrEqualTo(300)) {
-      discountAmount = new import_decimal.default(100);
+      discountAmount = new Decimal(100);
     }
-    const gatewayFee = new import_decimal.default(0);
+    const gatewayFee = new Decimal(0);
     const totalAmount = baseTicketTotal.plus(platformFee).plus(convenienceFee).plus(taxAmount).minus(discountAmount).toDecimalPlaces(2);
     return {
       ticketCount,
@@ -4788,7 +5023,7 @@ var bookingService = new BookingService();
 // server/modules/bookings/booking.routes.ts
 init_maintenance();
 init_database();
-var router5 = (0, import_express5.Router)();
+var router5 = Router5();
 router5.post("/lock-seats", authenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { showId, seatIds, selectedCity } = req.body;
@@ -4888,17 +5123,17 @@ router5.get("/my", authenticate, async (req, res, next) => {
 var booking_routes_default = router5;
 
 // server/modules/payments/payment.routes.ts
-var import_express6 = require("express");
 init_env();
 init_database();
+import { Router as Router6 } from "express";
 init_logger();
 init_maintenance();
 
 // server/modules/payments/cashfree.service.ts
-var import_crypto3 = __toESM(require("crypto"), 1);
-var import_axios3 = __toESM(require("axios"), 1);
 init_env();
 init_logger();
+import crypto3 from "crypto";
+import axios3 from "axios";
 var CashfreeService = class {
   get baseUrl() {
     return env.CASHFREE_ENV === "PROD" ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg";
@@ -4945,7 +5180,7 @@ var CashfreeService = class {
           },
           order_note: params.notes ? JSON.stringify(params.notes).substring(0, 200) : void 0
         };
-        const response = await import_axios3.default.post(`${this.baseUrl}/orders`, payload, {
+        const response = await axios3.post(`${this.baseUrl}/orders`, payload, {
           headers: this.headers,
           timeout: 1e4
         });
@@ -4998,7 +5233,7 @@ var CashfreeService = class {
       };
     }
     try {
-      const orderRes = await import_axios3.default.get(`${this.baseUrl}/orders/${orderId}`, {
+      const orderRes = await axios3.get(`${this.baseUrl}/orders/${orderId}`, {
         headers: this.headers,
         timeout: 1e4
       });
@@ -5006,7 +5241,7 @@ var CashfreeService = class {
       if (orderData.order_status === "PAID") {
         let paymentsInfo = null;
         try {
-          const paymentsRes = await import_axios3.default.get(`${this.baseUrl}/orders/${orderId}/payments`, {
+          const paymentsRes = await axios3.get(`${this.baseUrl}/orders/${orderId}/payments`, {
             headers: this.headers,
             timeout: 8e3
           });
@@ -5040,8 +5275,8 @@ var CashfreeService = class {
     const secret = env.CASHFREE_SECRET_KEY;
     if (!secret || !signature || !timestamp) return false;
     const payload = `${timestamp}${rawBody}`;
-    const generatedSignature = import_crypto3.default.createHmac("sha256", secret).update(payload).digest("base64");
-    return import_crypto3.default.timingSafeEqual(
+    const generatedSignature = crypto3.createHmac("sha256", secret).update(payload).digest("base64");
+    return crypto3.timingSafeEqual(
       Buffer.from(generatedSignature, "utf-8"),
       Buffer.from(signature, "utf-8")
     );
@@ -5050,7 +5285,7 @@ var CashfreeService = class {
 var cashfreeService = new CashfreeService();
 
 // server/modules/payments/payment.routes.ts
-var router6 = (0, import_express6.Router)();
+var router6 = Router6();
 router6.get("/gateways", (req, res) => {
   res.json({
     success: true,
@@ -5301,9 +5536,9 @@ router6.post(["/cashfree/webhook", "/webhook/cashfree"], async (req, res) => {
 var payment_routes_default = router6;
 
 // server/modules/cinecoins/cinecoins.routes.ts
-var import_express7 = require("express");
 init_database();
-var router7 = (0, import_express7.Router)();
+import { Router as Router7 } from "express";
+var router7 = Router7();
 router7.get("/wallet", authenticate, async (req, res, next) => {
   try {
     const wallet = await prisma.cineCoinWallet.findUnique({
@@ -5373,9 +5608,61 @@ router7.post("/redeem", authenticate, async (req, res, next) => {
 var cinecoins_routes_default = router7;
 
 // server/modules/events/event.routes.ts
-var import_express8 = require("express");
 init_database();
-var router8 = (0, import_express8.Router)();
+import { Router as Router8 } from "express";
+init_emailService();
+var router8 = Router8();
+router8.post("/send-pass-email", async (req, res, next) => {
+  try {
+    const {
+      email,
+      to,
+      passId,
+      orderId,
+      eventTitle,
+      attendeeName,
+      userName,
+      name,
+      venueName,
+      venueAddress,
+      date,
+      day,
+      time,
+      categoryName,
+      tier,
+      totalPrice,
+      qrCodeUrl,
+      passUrl,
+      posterUrl,
+      isFree
+    } = req.body;
+    const recipient = email || to;
+    if (!recipient) {
+      return res.status(400).json({ success: false, message: "Recipient email address is required." });
+    }
+    const result = await sendEventPassEmail({
+      to: recipient,
+      passId: passId || `PASS-${Math.floor(1e5 + Math.random() * 9e5)}`,
+      orderId,
+      eventTitle: eventTitle || "CineVenue Live Event",
+      attendeeName: attendeeName || userName || name || "Valued Guest",
+      venueName: venueName || "Event Arena",
+      venueAddress,
+      date: date || "Upcoming",
+      day,
+      time: time || "07:00 PM",
+      tier: tier || categoryName || "VIP PASS",
+      totalPrice,
+      qrCodeUrl,
+      passUrl,
+      posterUrl,
+      isFree
+    });
+    return res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 router8.get("/", async (req, res, next) => {
   try {
     const { category, city } = req.query;
@@ -5519,9 +5806,9 @@ router8.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_OR
 var event_routes_default = router8;
 
 // server/modules/marketplace/marketplace.routes.ts
-var import_express9 = require("express");
 init_database();
-var router9 = (0, import_express9.Router)();
+import { Router as Router9 } from "express";
+var router9 = Router9();
 var inMemoryProposals = [
   {
     id: "prop-001",
@@ -5775,8 +6062,8 @@ router9.patch("/proposals/:id/assign", authenticate, async (req, res, next) => {
 var marketplace_routes_default = router9;
 
 // server/modules/marketplace/filmProduction.routes.ts
-var import_express10 = require("express");
-var router10 = (0, import_express10.Router)();
+import { Router as Router10 } from "express";
+var router10 = Router10();
 var inMemoryProfessionals = [
   {
     id: "prof-1",
@@ -6532,9 +6819,9 @@ router10.get("/admin/reports", authenticate, (req, res, next) => {
 var filmProduction_routes_default = router10;
 
 // server/modules/admin/admin.routes.ts
-var import_express11 = require("express");
 init_database();
-var router11 = (0, import_express11.Router)();
+import { Router as Router11 } from "express";
+var router11 = Router11();
 var verifyAdminPasscode = (req) => {
   const passcode = req.headers["x-admin-passcode"];
   return !!(passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD));
@@ -6977,7 +7264,7 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
     res.setHeader("Surrogate-Control", "no-store");
     res.setHeader("X-Accel-Expires", "0");
     const body = req.body || {};
-    const { module: module2, enabled, maintenance, message, title, endTime } = body;
+    const { module, enabled, maintenance, message, title, endTime } = body;
     const existing = await prisma.appSettings.findUnique({
       where: { id: "global_default" }
     }).catch(() => null);
@@ -6989,9 +7276,9 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
     }
     let updatedMaintenanceMode = typeof body.maintenanceMode === "boolean" ? body.maintenanceMode : typeof maintenance === "boolean" ? maintenance : existing?.maintenanceMode ?? false;
     let updatedGlobalSubwebsite = typeof body.globalSubwebsiteEnabled === "boolean" ? body.globalSubwebsiteEnabled : existing?.globalSubwebsiteEnabled ?? true;
-    if (module2) {
+    if (module) {
       const isMaint = typeof maintenance === "boolean" ? maintenance : typeof enabled === "boolean" ? !enabled : updatedMaintenanceMode;
-      if (module2 === "global" || module2 === "website" || module2 === "all") {
+      if (module === "global" || module === "website" || module === "all") {
         updatedMaintenanceMode = isMaint;
         currentControls.website = {
           ...currentControls.website || {},
@@ -7003,14 +7290,14 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
           ...currentControls.movieBooking || {},
           status: !isMaint
         };
-      } else if (module2 === "movieBooking" || module2 === "movies") {
+      } else if (module === "movieBooking" || module === "movies") {
         currentControls.movieBooking = {
           ...currentControls.movieBooking || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module2 === "cineCoins" || module2 === "cinecoins" || module2 === "cineCoinsLoyalty") {
+      } else if (module === "cineCoins" || module === "cinecoins" || module === "cineCoinsLoyalty") {
         currentControls.cinecoins = {
           ...currentControls.cinecoins || {},
           status: !isMaint,
@@ -7018,35 +7305,35 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
           ...message && { message }
         };
         currentControls.cineCoinsLoyalty = { ...currentControls.cinecoins };
-      } else if (module2 === "events" || module2 === "eventBooking") {
+      } else if (module === "events" || module === "eventBooking") {
         currentControls.eventBooking = {
           ...currentControls.eventBooking || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module2 === "filmProduction" || module2 === "productions") {
+      } else if (module === "filmProduction" || module === "productions") {
         currentControls.filmProduction = {
           ...currentControls.filmProduction || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module2 === "eventManagement") {
+      } else if (module === "eventManagement") {
         currentControls.eventManagement = {
           ...currentControls.eventManagement || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module2 === "brandPromotion" || module2 === "mediaPromotions") {
+      } else if (module === "brandPromotion" || module === "mediaPromotions") {
         currentControls.brandPromotion = {
           ...currentControls.brandPromotion || {},
           status: !isMaint,
           ...title && { title },
           ...message && { message }
         };
-      } else if (module2 === "subwebsites" || module2 === "subwebsite") {
+      } else if (module === "subwebsites" || module === "subwebsite") {
         updatedGlobalSubwebsite = !isMaint;
       }
     } else if (typeof enabled === "boolean" && (req.path.includes("subwebsite") || body.globalSubwebsiteEnabled !== void 0)) {
@@ -7665,9 +7952,9 @@ router11.post("/uploads/image", (req, res) => {
 var admin_routes_default = router11;
 
 // server/modules/pos/pos.routes.ts
-var import_express12 = require("express");
 init_database();
-var router12 = (0, import_express12.Router)();
+import { Router as Router12 } from "express";
+var router12 = Router12();
 router12.post("/webhooks/pos/:integrationId", async (req, res, next) => {
   try {
     const { integrationId } = req.params;
@@ -8082,10 +8369,10 @@ router12.get("/admin/integrations/:id/logs", async (req, res, next) => {
 var pos_routes_default = router12;
 
 // server/modules/tickets/ticket.routes.ts
-var import_express13 = require("express");
 init_database();
 init_logger();
-var router13 = (0, import_express13.Router)();
+import { Router as Router13 } from "express";
+var router13 = Router13();
 router13.all("/verify", async (req, res, next) => {
   try {
     const token = req.query.token || req.body?.token;
@@ -8235,9 +8522,10 @@ router13.all("/verify", async (req, res, next) => {
 var ticket_routes_default = router13;
 
 // server/modules/notifications/notification.routes.ts
-var import_express14 = require("express");
 init_logger();
-var router14 = (0, import_express14.Router)();
+init_emailService();
+import { Router as Router14 } from "express";
+var router14 = Router14();
 router14.post("/send-ticket-email", async (req, res, next) => {
   try {
     const toEmail = req.body.email || req.body.recipientEmail;
@@ -8259,20 +8547,25 @@ router14.post("/send-ticket-email", async (req, res, next) => {
       ticketUrl,
       type
     } = req.body;
-    const subject = `CineVenue Booking Confirmed \u2014 ${title || "Premium Entertainment"}`;
-    logger.info(`[NotificationService:Email] Dispatched ticket confirmation email to ${email}`, {
-      subject,
-      bookingId,
-      ticketCode,
-      title
+    const emailResult = await sendEventPassEmail({
+      to: email,
+      passId: ticketCode || bookingId || `TKT-${Date.now()}`,
+      orderId: bookingId,
+      eventTitle: title || "CineVenue Entertainment",
+      attendeeName: name || "Customer",
+      venueName: venue || "CineVenue Multiplex",
+      date: date || "Upcoming",
+      time: time || "Showtime",
+      tier: category || (type === "MOVIE" ? "Cinema Ticket" : "Event Pass"),
+      passUrl: ticketUrl
     });
     return res.json({
       success: true,
-      message: `CineVenue confirmation email and digital ticket pass dispatched to ${email}`,
+      message: emailResult.message || `CineVenue confirmation email and digital ticket pass dispatched to ${email}`,
       data: {
         recipient: email,
-        subject,
-        bookingId,
+        bookingId: bookingId || ticketCode,
+        liveSent: emailResult.liveSent,
         sentAt: (/* @__PURE__ */ new Date()).toISOString()
       }
     });
@@ -8313,15 +8606,15 @@ router14.post("/send-ticket-sms", async (req, res, next) => {
 var notification_routes_default = router14;
 
 // server/modules/advertising/advertising.routes.ts
-var import_express15 = require("express");
+import { Router as Router15 } from "express";
 
 // server/modules/advertising/advertising.service.ts
-var import_fs2 = __toESM(require("fs"), 1);
-var import_path2 = __toESM(require("path"), 1);
 init_env();
 init_logger();
-var DATA_FILE_PATH = import_path2.default.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
-var PLACEMENTS_FILE_PATH = import_path2.default.resolve(process.cwd(), "server/config/live_banner_placements.json");
+import fs2 from "fs";
+import path2 from "path";
+var DATA_FILE_PATH = path2.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
+var PLACEMENTS_FILE_PATH = path2.resolve(process.cwd(), "server/config/live_banner_placements.json");
 var DEFAULT_PLACEMENTS = [
   {
     id: "homepage_top",
@@ -8482,14 +8775,14 @@ var AdvertisingService = class {
   loadData() {
     if (this.isLoaded) return;
     try {
-      if (import_fs2.default.existsSync(PLACEMENTS_FILE_PATH)) {
-        const raw = import_fs2.default.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
+      if (fs2.existsSync(PLACEMENTS_FILE_PATH)) {
+        const raw = fs2.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
         this.placements = JSON.parse(raw);
       } else {
         this.savePlacements();
       }
-      if (import_fs2.default.existsSync(DATA_FILE_PATH)) {
-        const raw = import_fs2.default.readFileSync(DATA_FILE_PATH, "utf8");
+      if (fs2.existsSync(DATA_FILE_PATH)) {
+        const raw = fs2.readFileSync(DATA_FILE_PATH, "utf8");
         this.campaigns = JSON.parse(raw);
       } else {
         this.saveCampaigns();
@@ -8505,18 +8798,18 @@ var AdvertisingService = class {
   }
   saveCampaigns() {
     try {
-      const dir = import_path2.default.dirname(DATA_FILE_PATH);
-      if (!import_fs2.default.existsSync(dir)) import_fs2.default.mkdirSync(dir, { recursive: true });
-      import_fs2.default.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
+      const dir = path2.dirname(DATA_FILE_PATH);
+      if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
+      fs2.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner campaigns: ${err.message}`);
     }
   }
   savePlacements() {
     try {
-      const dir = import_path2.default.dirname(PLACEMENTS_FILE_PATH);
-      if (!import_fs2.default.existsSync(dir)) import_fs2.default.mkdirSync(dir, { recursive: true });
-      import_fs2.default.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
+      const dir = path2.dirname(PLACEMENTS_FILE_PATH);
+      if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
+      fs2.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner placements: ${err.message}`);
     }
@@ -8967,7 +9260,7 @@ var AdvertisingService = class {
 var advertisingService = new AdvertisingService();
 
 // server/modules/advertising/advertising.routes.ts
-var advertisingPublicRouter = (0, import_express15.Router)();
+var advertisingPublicRouter = Router15();
 advertisingPublicRouter.get("/placements", (req, res) => {
   const placements = advertisingService.getPlacements();
   return res.json({ success: true, data: { placements } });
@@ -9101,7 +9394,7 @@ advertisingPublicRouter.post("/track", (req, res) => {
   }
   return res.json({ success: true });
 });
-var adminAdvertisingRouter = (0, import_express15.Router)();
+var adminAdvertisingRouter = Router15();
 adminAdvertisingRouter.use((req, res, next) => {
   const passcode = req.headers["x-admin-passcode"] || req.query.passcode;
   if (passcode === "8888" || passcode === "admin8888") {
@@ -9230,7 +9523,7 @@ adminAdvertisingRouter.get("/reports", (req, res) => {
 
 // server/routes.ts
 init_database();
-var router15 = (0, import_express16.Router)();
+var router15 = Router16();
 router15.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -9482,10 +9775,10 @@ router15.get("/system/subsites/:subsiteId/maintenance", async (req, res, next) =
 var routes_default = router15;
 
 // server/middleware/requestId.ts
-var import_uuid = require("uuid");
+import { v4 as uuidv4 } from "uuid";
 function requestIdMiddleware(req, res, next) {
   const incomingId = req.headers["x-request-id"];
-  const requestId = incomingId || `req_${(0, import_uuid.v4)().replace(/-/g, "").slice(0, 16)}`;
+  const requestId = incomingId || `req_${uuidv4().replace(/-/g, "").slice(0, 16)}`;
   req.id = requestId;
   res.setHeader("X-Request-Id", requestId);
   next();
@@ -9923,7 +10216,7 @@ async function checkGlobalSubwebsiteMiddleware(req, res, next) {
 
 // server/app.ts
 function createApp() {
-  const app = (0, import_express17.default)();
+  const app = express();
   app.use(requestIdMiddleware);
   const allowedOrigins = [
     "https://cinevenue.com",
@@ -9934,7 +10227,7 @@ function createApp() {
     "http://localhost"
   ];
   app.use(
-    (0, import_cors.default)({
+    cors({
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
         if (env.CORS_ORIGIN === "*") return callback(null, true);
@@ -9953,8 +10246,8 @@ function createApp() {
     }
     next();
   });
-  app.use(import_express17.default.json({ limit: "10mb" }));
-  app.use(import_express17.default.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
   app.use((req, res, next) => {
     logger.debug(`${req.method} ${req.originalUrl}`, { ip: req.ip }, req.id);
     next();
@@ -9993,8 +10286,8 @@ google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
 // server/serverless.ts
 init_database();
 init_maintenance();
-var CONFIG_FILE_PATH2 = import_path3.default.resolve(process.cwd(), "server/config/global_settings.json");
-var TMP_CONFIG_PATH2 = import_path3.default.resolve("/tmp", "cine_global_settings.json");
+var CONFIG_FILE_PATH2 = path3.resolve(process.cwd(), "server/config/global_settings.json");
+var TMP_CONFIG_PATH2 = path3.resolve("/tmp", "cine_global_settings.json");
 var globalServerlessState = {
   globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
@@ -10017,8 +10310,8 @@ var globalServerlessState = {
 function syncServerlessStateFromDisk() {
   const readFromPath = (p) => {
     try {
-      if (import_fs3.default.existsSync(p)) {
-        const data = JSON.parse(import_fs3.default.readFileSync(p, "utf-8"));
+      if (fs3.existsSync(p)) {
+        const data = JSON.parse(fs3.readFileSync(p, "utf-8"));
         if (typeof data.globalSubwebsiteEnabled === "boolean") {
           globalServerlessState.globalSubwebsiteEnabled = data.globalSubwebsiteEnabled;
         }
@@ -10077,11 +10370,11 @@ function persistServerlessState(enabled, message) {
   }
   const payload = JSON.stringify(globalServerlessState, null, 2);
   try {
-    import_fs3.default.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
+    fs3.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
   } catch (e) {
   }
   try {
-    import_fs3.default.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
+    fs3.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
   } catch (e) {
   }
 }
@@ -10344,11 +10637,11 @@ async function handler(req, res) {
     globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     const serialized = JSON.stringify(globalServerlessState, null, 2);
     try {
-      import_fs3.default.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+      fs3.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      import_fs3.default.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+      fs3.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
@@ -10567,6 +10860,40 @@ async function handler(req, res) {
       bookingStatus: newStatus === "PUBLISHED" ? "OPEN" : "CLOSED"
     });
   }
+  if ((url.endsWith("/events/send-pass-email") || url.endsWith("/send-pass-email") || url.endsWith("/notifications/send-ticket-email")) && req.method === "POST") {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        body = {};
+      }
+    }
+    const { sendEventPassEmail: sendEventPassEmail2 } = await Promise.resolve().then(() => (init_emailService(), emailService_exports));
+    const recipient = body?.email || body?.to || body?.recipientEmail;
+    if (!recipient) {
+      return res.status(400).json({ success: false, message: "Recipient email address is required." });
+    }
+    const result = await sendEventPassEmail2({
+      to: recipient,
+      passId: body?.passId || body?.ticketCode || `PASS-${Date.now()}`,
+      orderId: body?.orderId || body?.bookingId,
+      eventTitle: body?.eventTitle || body?.title || "CineVenue Live Event",
+      attendeeName: body?.attendeeName || body?.name || body?.userName || "Valued Guest",
+      venueName: body?.venueName || body?.venue || "Event Arena",
+      venueAddress: body?.venueAddress,
+      date: body?.date || "Upcoming",
+      day: body?.day,
+      time: body?.time || "07:00 PM",
+      tier: body?.tier || body?.categoryName || body?.category || "VIP PASS",
+      totalPrice: body?.totalPrice,
+      qrCodeUrl: body?.qrCodeUrl,
+      passUrl: body?.passUrl || body?.ticketUrl,
+      posterUrl: body?.posterUrl,
+      isFree: body?.isFree
+    });
+    return res.status(200).json(result);
+  }
   syncServerlessStateFromDisk();
   if (globalServerlessState.globalSubwebsiteEnabled === false) {
     const isSubwebsiteApi = url.startsWith("/api/v1/events") || url.startsWith("/api/events") || url.startsWith("/api/v1/marketplace") || url.startsWith("/api/marketplace") || url.startsWith("/api/v1/productions") || url.startsWith("/api/productions");
@@ -10633,4 +10960,6 @@ async function handler(req, res) {
     }
   }
 }
-//# sourceMappingURL=index.js.map
+export {
+  handler as default
+};

@@ -295,12 +295,20 @@ export default function AdminLayout() {
   const [platformName, setPlatformName] = useState("Cinevenue Premium Booking");
   const [platformTax, setPlatformTax] = useState("18");
   const [platformCommission, setPlatformCommission] = useState("12");
-  const [maintenanceMode, setMaintenanceMode] = useState(globalAppSettings.maintenanceMode);
   const [smtpServer, setSmtpServer] = useState("smtp.cinevenue-aws.com");
+  const [gmailUser, setGmailUser] = useState(() => (globalAppSettings as any)?.emailConfig?.user || localStorage.getItem("cine_admin_gmail_user") || "");
+  const [gmailAppPass, setGmailAppPass] = useState(() => (globalAppSettings as any)?.emailConfig?.pass || localStorage.getItem("cine_admin_gmail_pass") || "");
+  const [testingEmail, setTestingEmail] = useState(false);
 
   useEffect(() => {
     setMaintenanceMode(globalAppSettings.maintenanceMode);
-  }, [globalAppSettings.maintenanceMode]);
+    if ((globalAppSettings as any)?.emailConfig?.user) {
+      setGmailUser((globalAppSettings as any).emailConfig.user);
+    }
+    if ((globalAppSettings as any)?.emailConfig?.pass) {
+      setGmailAppPass((globalAppSettings as any).emailConfig.pass);
+    }
+  }, [globalAppSettings]);
 
   // Filter terms
   const [movieFilter, setMovieFilter] = useState("");
@@ -830,12 +838,63 @@ export default function AdminLayout() {
 
   const handleUpdatePlatformSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateGlobalSettings({ maintenanceMode });
-    showToast("Platform configurations saved successfully!");
+    const emailConfig = {
+      user: gmailUser.trim(),
+      email: gmailUser.trim(),
+      pass: gmailAppPass.trim(),
+      service: "gmail",
+      smtpHost: smtpServer.trim(),
+      updatedAt: new Date().toISOString()
+    };
+    await updateGlobalSettings({ 
+      maintenanceMode,
+      emailConfig
+    });
+    localStorage.setItem("cine_admin_gmail_user", gmailUser.trim());
+    localStorage.setItem("cine_admin_gmail_pass", gmailAppPass.trim());
+    showToast("Platform configurations & email delivery credentials saved successfully!");
     setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Updated global platform parameters (Tax: ${platformTax}%, Commission: ${platformCommission}%, Maintenance: ${maintenanceMode ? "ON" : "OFF"})` },
+      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Updated platform settings and Gmail ticket delivery gateway (${gmailUser.trim() || 'Not configured'})` },
       ...auditLogs
     ]);
+  };
+
+  const handleTestGmailDelivery = async () => {
+    if (!gmailUser.trim() || !gmailAppPass.trim()) {
+      alert("Please enter both your Gmail Address and 16-character App Password first, then click Save.");
+      return;
+    }
+    setTestingEmail(true);
+    try {
+      const res = await fetch("/api/events/send-pass-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: gmailUser.trim(),
+          email: gmailUser.trim(),
+          passId: "TEST-PASS-001",
+          eventTitle: "CineVenue Live Pass Delivery Test",
+          attendeeName: "Administrator",
+          venueName: "Platform Test Terminal",
+          date: "Today",
+          time: "Just Now",
+          tier: "SYSTEM TEST PASS",
+          totalPrice: 0,
+          isFree: true
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("Test email successfully sent to your inbox!");
+        alert(`Success! Test ticket pass email dispatched to ${gmailUser.trim()}.\nCheck your inbox (and Spam folder)!`);
+      } else {
+        alert(`Email dispatch error: ${data.message || "Failed to deliver. Please check your 16-character App Password."}`);
+      }
+    } catch (err: any) {
+      alert(`Could not reach email dispatch gateway: ${err.message}`);
+    } finally {
+      setTestingEmail(false);
+    }
   };
 
   // Authoritative revenue and KPI calculations from real bookings
@@ -2704,6 +2763,69 @@ export default function AdminLayout() {
                         onChange={(e) => setSmtpServer(e.target.value)}
                         className="bg-white/[0.02] border border-white/10 px-3 py-2 rounded-xl text-white focus:outline-none font-mono"
                       />
+                    </div>
+
+                    {/* Gmail / Outbound Email Delivery Configuration */}
+                    <div className="bg-white/[0.02] border border-gold/20 rounded-2xl p-4 space-y-4">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <div>
+                          <span className="text-[10px] font-bold text-gold uppercase tracking-wider block font-mono">
+                            ✉️ DIRECT TICKET & PASS EMAIL DISPATCH
+                          </span>
+                          <span className="text-[9px] text-text-secondary">
+                            Configure your Gmail account & 16-character Google App Password to deliver event passes directly into attendees' inboxes.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleTestGmailDelivery}
+                          disabled={testingEmail}
+                          className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500 text-blue-400 hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider border border-blue-500/30 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {testingEmail ? "Sending Test..." : "Test Dispatch"}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold uppercase text-text-secondary">Sender Gmail Address</label>
+                          <input
+                            type="email"
+                            placeholder="e.g. yourname@gmail.com"
+                            value={gmailUser}
+                            onChange={(e) => setGmailUser(e.target.value)}
+                            className="bg-white/[0.02] border border-white/10 px-3 py-2 rounded-xl text-white focus:outline-none font-mono text-xs placeholder:text-white/20"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold uppercase text-text-secondary flex justify-between">
+                            <span>Gmail 16-Char App Password</span>
+                            <a
+                              href="https://myaccount.google.com/apppasswords"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-gold hover:underline normal-case text-[8.5px]"
+                            >
+                              Get Google App Password ↗
+                            </a>
+                          </label>
+                          <input
+                            type="password"
+                            placeholder="e.g. abcd efgh ijkl mnop"
+                            value={gmailAppPass}
+                            onChange={(e) => setGmailAppPass(e.target.value)}
+                            className="bg-white/[0.02] border border-white/10 px-3 py-2 rounded-xl text-white focus:outline-none font-mono text-xs placeholder:text-white/20"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 text-[9px] text-text-secondary space-y-1">
+                        <p className="font-semibold text-white/80">How to generate a Google App Password:</p>
+                        <p>1. Open your Google Account (<a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="text-gold underline">myaccount.google.com/security</a>) and turn on <strong>2-Step Verification</strong>.</p>
+                        <p>2. Search for <strong>App Passwords</strong> (or visit <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-gold underline">myaccount.google.com/apppasswords</a>).</p>
+                        <p>3. Create an app password named &ldquo;CineVenue&rdquo; and paste the 16-character code here.</p>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between border-t border-white/5 pt-4">
