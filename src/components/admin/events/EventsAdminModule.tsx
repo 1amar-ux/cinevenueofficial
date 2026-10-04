@@ -8,6 +8,7 @@ import EventSettlements from './EventSettlements';
 import EventAnalytics from './EventAnalytics';
 import QRScanner from './QRScanner';
 import FreePassManager from './FreePassManager';
+import EventHighlightsManager from './EventHighlightsManager';
 import {
   Sparkles,
   Calendar,
@@ -31,7 +32,8 @@ interface EventsAdminModuleProps {
     | 'passes'
     | 'settlements'
     | 'analytics'
-    | 'scanner';
+    | 'scanner'
+    | 'highlights';
   initialEvent?: any;
 }
 
@@ -40,7 +42,7 @@ export default function EventsAdminModule({
   initialEvent = null,
 }: EventsAdminModuleProps = {}) {
   const [activeSubTab, setActiveSubTab] = useState<
-    'dashboard' | 'create' | 'freepasses' | 'registrations' | 'passes' | 'settlements' | 'analytics' | 'scanner'
+    'dashboard' | 'create' | 'freepasses' | 'registrations' | 'passes' | 'settlements' | 'analytics' | 'scanner' | 'highlights'
   >(initialTab);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [selectedEventIdForPasses, setSelectedEventIdForPasses] = useState<string | null>(null);
@@ -200,6 +202,16 @@ export default function EventsAdminModule({
         >
           <BarChart3 className="w-4 h-4" /> Analytics
         </button>
+        <button
+          onClick={() => handleTabChange('highlights')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-t-lg transition-colors whitespace-nowrap ${
+            activeSubTab === 'highlights'
+              ? 'text-gold border-b-2 border-gold bg-gold/10'
+              : 'text-text-secondary hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-gold" /> Trending & Categories
+        </button>
       </div>
 
       <div className="mt-6">
@@ -239,6 +251,7 @@ export default function EventsAdminModule({
         {activeSubTab === 'registrations' && <EventRegistrations />}
         {activeSubTab === 'settlements' && <EventSettlements />}
         {activeSubTab === 'analytics' && <EventAnalytics />}
+        {activeSubTab === 'highlights' && <EventHighlightsManager />}
       </div>
     </div>
   );

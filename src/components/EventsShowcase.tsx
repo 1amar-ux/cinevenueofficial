@@ -18,6 +18,12 @@ import OrganizerEventHub from "./events/OrganizerEventHub";
 import CineVenueLiveBanner from "./advertising/CineVenueLiveBanner";
 import EventShareModal from "./events/EventShareModal";
 import { copyEventShareLink, getEventShareUrl } from "../utils/eventSharing";
+import {
+  TrendingExperienceItem,
+  BrowseLiveCategoryItem,
+  getTrendingExperiences,
+  getBrowseLiveCategories,
+} from "../services/eventHighlightsService";
 
 interface EventsShowcaseProps {
   events: Event[];
@@ -262,44 +268,39 @@ export default function EventsShowcase({
     setBookingModalEvent(normalized);
   };
 
-  // Curated Genres & Concierge State
+  // Curated Genres & Dynamic Portal Feeds State
   const [selectedGenreFilter, setSelectedGenreFilter] = useState("All Genres");
-  const [conciergePrompt, setConciergePrompt] = useState("");
-  const [conciergeLoading, setConciergeLoading] = useState(false);
-  const [conciergeChat, setConciergeChat] = useState<{ role: "user" | "model"; text: string }[]>([
-    {
-      role: "model",
-      text: "Welcome to CineVenue Vicinity Concierge! Ask me about upcoming VIP concerts, theater acoustic specs, or valet parking in Guntur, Vijayawada, and Hyderabad."
-    }
-  ]);
+  const [trendingExperiences, setTrendingExperiences] = useState<TrendingExperienceItem[]>(() => getTrendingExperiences());
+  const [browseCategories, setBrowseCategories] = useState<BrowseLiveCategoryItem[]>(() => getBrowseLiveCategories());
 
-  const handleConciergeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!conciergePrompt.trim() || conciergeLoading) return;
-
-    const userQuery = conciergePrompt.trim();
-    setConciergePrompt("");
-    setConciergeChat(prev => [...prev, { role: "user", text: userQuery }]);
-    setConciergeLoading(true);
-
-    try {
-      const res = await fetch("/api/gemini/concierge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userQuery, city: selectedCity })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setConciergeChat(prev => [...prev, { role: "model", text: data.response || data.text || `For ${selectedCity}, we recommend securing VIP passes early for acoustic excellence!` }]);
+  useEffect(() => {
+    const handleTrendingUpdate = (e: any) => {
+      if (e?.detail) {
+        setTrendingExperiences(e.detail);
       } else {
-        setConciergeChat(prev => [...prev, { role: "model", text: `I found top VIP experiences in ${selectedCity}: Sunburn Arena, Zakir Khan Comedy, and Arijit Singh Symphony Tour. Passes are selling fast!` }]);
+        setTrendingExperiences(getTrendingExperiences());
       }
-    } catch (err) {
-      setConciergeChat(prev => [...prev, { role: "model", text: `For ${selectedCity}, we recommend reserving passes early at Prasads IMAX and Vijayawada Convention Hall for acoustic excellence.` }]);
-    } finally {
-      setConciergeLoading(false);
-    }
-  };
+    };
+    const handleCategoriesUpdate = (e: any) => {
+      if (e?.detail) {
+        setBrowseCategories(e.detail);
+      } else {
+        setBrowseCategories(getBrowseLiveCategories());
+      }
+    };
+    window.addEventListener("cinevenue:trending_experiences_updated", handleTrendingUpdate);
+    window.addEventListener("cinevenue:browse_categories_updated", handleCategoriesUpdate);
+    const handleStorage = () => {
+      setTrendingExperiences(getTrendingExperiences());
+      setBrowseCategories(getBrowseLiveCategories());
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("cinevenue:trending_experiences_updated", handleTrendingUpdate);
+      window.removeEventListener("cinevenue:browse_categories_updated", handleCategoriesUpdate);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   // Deep Link Listener for Shared Event Links
   useEffect(() => {
@@ -917,151 +918,111 @@ export default function EventsShowcase({
         </div>
       )}
 
-      {/* TRENDING EXPERIENCES, BROWSE CATEGORIES, GEMINI CONCIERGE & REGIONAL UPDATES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t border-gray-200 dark:border-white/5 text-left">
-        {/* LEFT 2 COLUMNS: TRENDING EXPERIENCES & BROWSE CATEGORIES */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* TRENDING LIVE EXPERIENCES */}
-            <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-xl space-y-4 shadow-xs">
-              <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-[#D4AF37]" /> Trending Live Experiences
-              </h5>
-              <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
-                Ticket demand is currently surging across our regional portals. Here is a live feed of active pass bookings over the last 15 minutes.
-              </p>
-              <div className="space-y-3 pt-1">
-                {[
-                  { title: "Sufi Symphony Night", location: "Vijayawada Convention Centre", dynamicStat: "🔥 85 passes booked in last 5 min" },
-                  { title: "Hyderabad Standup Fest", location: "Shilpakala Hall", dynamicStat: "⚡ 110 tickets secured in last 10 min" },
-                  { title: "Alan Walker Sunburn Arena", location: "Gachibowli Stadium", dynamicStat: "🔥 320 VIP passes sold in last 1 hr" }
-                ].map((item, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">{item.title}</span>
-                      <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 dark:text-white/50">{item.location}</p>
+      {/* TRENDING EXPERIENCES, BROWSE CATEGORIES & REGIONAL UPDATES (AI AGENT MOVED TO HOMEPAGE) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-8 border-t border-gray-200 dark:border-white/5 text-left">
+        {/* COLUMN 1: TRENDING LIVE EXPERIENCES (ADMIN CONTROLLED) */}
+        <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-2xl space-y-4 shadow-xs flex flex-col justify-between">
+          <div className="space-y-3">
+            <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-[#D4AF37]" /> Trending Live Experiences
+            </h5>
+            <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
+              Ticket demand is currently surging across regional portals. Live feed of active pass bookings over the last 15 minutes.
+            </p>
+            <div className="space-y-2.5 pt-1">
+              {trendingExperiences.filter(item => item.active !== false).map((item) => (
+                <div key={item.id} className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/5 space-y-1 hover:border-[#D4AF37]/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">{item.title}</span>
+                    <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-[10px] text-gray-500 dark:text-white/50">{item.location}</p>
+                </div>
+              ))}
+              {trendingExperiences.filter(item => item.active !== false).length === 0 && (
+                <p className="text-xs text-gray-400 py-4 text-center">No active trending experiences right now.</p>
+              )}
             </div>
-
-            {/* BROWSE LIVE CATEGORIES */}
-            <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-xl space-y-4 shadow-xs">
-              <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
-                <Sparkle className="w-4 h-4 text-[#D4AF37]" /> Browse Live Categories
-              </h5>
-              <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
-                Filter and browse high-society event passes based on premium regional categories:
-              </p>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                {[
-                  { name: "EDM & DJ Arenas", count: "4 Shows" },
-                  { name: "Standup Comedy", count: "6 Shows" },
-                  { name: "Symphony Tours", count: "3 Shows" },
-                  { name: "VIP Celeb Galas", count: "2 Shows" },
-                  { name: "Fan-Premieres", count: "5 Shows" },
-                  { name: "Sufi Evenings", count: "3 Shows" }
-                ].map((cat, i) => (
-                  <div key={i} className="p-2.5 rounded-lg bg-gray-50 hover:bg-amber-50/50 dark:bg-white/[0.04] dark:hover:bg-[#D4AF37]/10 border border-gray-200 dark:border-white/5 hover:border-[#D4AF37]/30 flex items-center justify-between transition-all cursor-pointer">
-                    <span className="text-xs font-medium text-gray-800 dark:text-white/90">{cat.name}</span>
-                    <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          </div>
+          <div className="pt-2 border-t border-gray-150 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Real-time portal feed
+            </span>
+            <span className="font-mono text-[#D4AF37]">Updated every 60s</span>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: CINEVENUE VICINITY CONCIERGE & REGIONAL UPDATES */}
-        <div className="space-y-6 flex flex-col justify-between">
-          {/* CINEVENUE VICINITY CONCIERGE */}
-          <div className="bg-white dark:bg-[#121216] dark:bg-gradient-to-b dark:from-white/[0.04] dark:to-transparent border border-gray-200 dark:border-[#D4AF37]/30 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10">
-                <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#D4AF37] animate-pulse" />
-                  <span className="font-cinevenue normal-case text-sm tracking-normal">
-                    <span className="text-gray-950 dark:text-white">Cine</span>
-                    <span className="text-[#D4AF37]">Venue</span>
-                  </span> Vicinity Concierge
-                </h5>
-                <span className="px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 text-[8px] font-mono font-bold rounded-full uppercase tracking-wider">
-                  AI Agent
-                </span>
-              </div>
-
-              {/* Chat Messages */}
-              <div className="h-56 overflow-y-auto space-y-3 pr-1 text-xs font-light scrollbar-thin">
-                {conciergeChat.map((msg, i) => (
-                  <div 
-                    key={i} 
-                    className={`p-3 rounded-xl leading-relaxed space-y-1 ${
-                      msg.role === "user" 
-                        ? "bg-gray-100 border border-gray-200 text-gray-900 dark:bg-white/10 dark:border-white/10 dark:text-white text-right ml-6" 
-                        : "bg-amber-50/80 border border-amber-200/60 text-gray-900 dark:bg-[#D4AF37]/10 dark:border-[#D4AF37]/25 dark:text-white/95 mr-6"
-                    }`}
-                  >
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block pb-0.5 text-left">
-                      {msg.role === "user" ? "You (VIP Guest)" : "CineVenue Concierge Agent"}
-                    </span>
-                    <p className="whitespace-pre-line text-left">{msg.text}</p>
-                  </div>
-                ))}
-
-                {conciergeLoading && (
-                  <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-[#D4AF37]/10 border border-amber-200 dark:border-[#D4AF37]/25 mr-6 space-y-2 text-left">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block">CineVenue Concierge Agent</span>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-white/70 font-mono text-[10px]">
-                      <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-ping" />
-                      Querying venue database...
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <form onSubmit={handleConciergeSubmit} className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/10">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ask Concierge (e.g. VIP lounges in Guntur?)"
-                  value={conciergePrompt}
-                  onChange={(e) => setConciergePrompt(e.target.value)}
-                  disabled={conciergeLoading}
-                  className="w-full pl-3 pr-10 py-2.5 bg-gray-50 hover:bg-white focus:bg-white dark:bg-[#18181E] dark:hover:bg-[#202028] dark:focus:bg-[#202028] text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 border border-gray-300 dark:border-white/15 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55"
-                />
-                <button 
-                  type="submit"
-                  disabled={conciergeLoading || !conciergePrompt.trim()}
-                  className="absolute right-2 top-1.5 p-1.5 text-[#D4AF37] hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* LIVE REGIONAL UPDATES */}
-          <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-4 rounded-xl space-y-2.5 shadow-xs">
-            <h5 className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5" /> Live Regional Updates
+        {/* COLUMN 2: BROWSE LIVE CATEGORIES (ADMIN CONTROLLED) */}
+        <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-2xl space-y-4 shadow-xs flex flex-col justify-between">
+          <div className="space-y-3">
+            <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
+              <Sparkle className="w-4 h-4 text-[#D4AF37]" /> Browse Live Categories
             </h5>
-            <div className="space-y-2 font-mono text-[9px] text-gray-700 dark:text-white/80 leading-relaxed uppercase">
-              <div className="flex items-start gap-1.5 border-b border-gray-150 dark:border-white/5 pb-1.5">
-                <span className="text-rose-400">●</span>
+            <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
+              Filter and browse high-society event passes based on premium regional categories:
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {browseCategories.filter(cat => cat.active !== false).map((cat) => (
+                <div
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryFilter(cat.filterTag || cat.name)}
+                  className={`p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
+                    selectedCategoryFilter === (cat.filterTag || cat.name)
+                      ? "bg-amber-100/70 dark:bg-[#D4AF37]/20 border-[#D4AF37]"
+                      : "bg-gray-50 hover:bg-amber-50/50 dark:bg-white/[0.04] dark:hover:bg-[#D4AF37]/10 border-gray-200 dark:border-white/5 hover:border-[#D4AF37]/30"
+                  }`}
+                >
+                  <span className="text-xs font-medium text-gray-800 dark:text-white/90">{cat.name}</span>
+                  <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
+                </div>
+              ))}
+              {browseCategories.filter(cat => cat.active !== false).length === 0 && (
+                <p className="col-span-2 text-xs text-gray-400 py-4 text-center">No categories configured.</p>
+              )}
+            </div>
+          </div>
+          <div className="pt-2 border-t border-gray-150 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400">
+            <span>Click any category to filter</span>
+            {selectedCategoryFilter !== "All Categories" && (
+              <button
+                onClick={() => setSelectedCategoryFilter("All Categories")}
+                className="text-[#D4AF37] hover:underline font-semibold cursor-pointer"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* COLUMN 3: LIVE REGIONAL BULLETINS & UPDATES */}
+        <div className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-2xl space-y-4 shadow-xs flex flex-col justify-between">
+          <div className="space-y-3">
+            <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.25em] flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4 text-[#D4AF37]" /> Live Regional Updates
+            </h5>
+            <p className="text-xs text-gray-600 dark:text-white/70 font-light leading-relaxed">
+              Official transit advisories, VIP lounge entries, and police clearances across Vijayawada, Guntur, and Hyderabad:
+            </p>
+            <div className="space-y-2.5 font-mono text-[10px] text-gray-700 dark:text-white/80 leading-relaxed uppercase pt-1">
+              <div className="flex items-start gap-2 border-b border-gray-150 dark:border-white/5 pb-2.5">
+                <span className="text-rose-400 shrink-0">●</span>
                 <p>HYDERABAD METRO EXTRA LATE TRAIN RUNS FOR SUNBURN ARENA ON OCT 12TH.</p>
               </div>
-              <div className="flex items-start gap-1.5 border-b border-gray-150 dark:border-white/5 pb-1.5">
-                <span className="text-[#D4AF37]">●</span>
+              <div className="flex items-start gap-2 border-b border-gray-150 dark:border-white/5 pb-2.5">
+                <span className="text-[#D4AF37] shrink-0">●</span>
                 <p>GUNTUR POLICE GRANTS SINGLE-WINDOW CLEARANCE FOR MIDNIGHT OPEN-AIR ACOUSTIC NIGHT.</p>
               </div>
-              <div className="flex items-start gap-1.5">
-                <span className="text-emerald-500 font-bold">●</span>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-500 font-bold shrink-0">●</span>
                 <p>PRASADS IMAX ANNOUNCES PRE-RELEASE CELEBRITY VIP LOUNGE ACCESS SLOTS.</p>
               </div>
             </div>
+          </div>
+          <div className="pt-2 border-t border-gray-150 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" /> Ground dispatch verified
+            </span>
+            <span className="text-[#D4AF37] font-semibold">City Control Active</span>
           </div>
         </div>
       </div>

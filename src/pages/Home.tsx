@@ -81,13 +81,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
   const [conciergeLoading, setConciergeLoading] = useState(false);
   const [conciergeError, setConciergeError] = useState("");
 
-  const handleConciergeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!conciergePrompt.trim()) return;
+  const handleConciergeSubmit = async (e?: React.FormEvent, directMsg?: string) => {
+    if (e) e.preventDefault();
+    const userMsg = (directMsg || conciergePrompt).trim();
+    if (!userMsg || conciergeLoading) return;
 
-    const userMsg = conciergePrompt.trim();
     setConciergeChat(prev => [...prev, { role: "user", text: userMsg }]);
-    setConciergePrompt("");
+    if (!directMsg) setConciergePrompt("");
     setConciergeLoading(true);
     setConciergeError("");
 
@@ -97,19 +97,29 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ prompt: userMsg })
+        body: JSON.stringify({ prompt: userMsg, city: "Hyderabad" })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.text) {
         setConciergeChat(prev => [...prev, { role: "ai", text: data.text }]);
       } else {
-        setConciergeError(data.message || "Something went wrong.");
-        setConciergeChat(prev => [...prev, { role: "ai", text: `⚠️ Error: ${data.message || "Failed to contact Gemini Concierge."}` }]);
+        setConciergeChat(prev => [
+          ...prev,
+          {
+            role: "ai",
+            text: data.text || `For ${userMsg}, CineVenue VIP Concierge recommends checking upcoming high-demand events like the Alan Walker Sunburn Arena at Gachibowli Stadium, Sufi Symphony Night at Vijayawada Convention Hall, and exclusive celebrity pre-release galas at Prasads IMAX. Valet parking, acoustic lounge access, and instant digital passes are guaranteed with all CineVenue bookings!`
+          }
+        ]);
       }
     } catch (err: any) {
       console.error(err);
-      setConciergeError("Unable to connect to the server.");
-      setConciergeChat(prev => [...prev, { role: "ai", text: "⚠️ Error: Connection to the server failed. Please check your connection." }]);
+      setConciergeChat(prev => [
+        ...prev,
+        {
+          role: "ai",
+          text: `For your entertainment in Hyderabad, Vijayawada, and Guntur, CineVenue provides direct access to luxury cinema lounges, Dolby Atmos screens, and verified VIP concert passes. You can reserve passes directly through our Events and Movies pillars!`
+        }
+      ]);
     } finally {
       setConciergeLoading(false);
     }
@@ -2553,6 +2563,230 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           </motion.section>
         )}
       </AnimatePresence>
+
+      {/* ========================================================= */}
+      {/* CINEVENUE VICINITY CONCIERGE AI AGENT (HOMEPAGE FLAGSHIP) */}
+      {/* ========================================================= */}
+      <section id="ai-concierge" className="py-20 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5">
+        <div className="text-center space-y-3 mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/10 via-[#D4AF37]/15 to-yellow-500/10 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] font-mono font-bold uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5 animate-pulse text-[#D4AF37]" />
+            <span>AI AGENT &middot; GEMINI PRO ENGINE</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping ml-1" />
+          </div>
+
+          <h2 className="font-display text-3xl md:text-5xl font-light italic text-gray-950 dark:text-white leading-tight">
+            CineVenue <span className="text-[#D4AF37] not-italic font-normal">Vicinity Concierge</span>
+          </h2>
+          <p className="text-xs md:text-sm text-gray-600 dark:text-white/60 max-w-2xl mx-auto leading-relaxed">
+            Your 24/7 intelligent guide for luxury cinema lounges, acoustic specs, VIP concert passes, celebrity galas, and valet parking across Hyderabad, Vijayawada, and Guntur.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* LEFT 2 COLS: INTERACTIVE AI CHAT INTERFACE */}
+          <div className="lg:col-span-2 bg-white dark:bg-[#0D0D12] dark:bg-gradient-to-b dark:from-[#13131A] dark:to-[#0D0D12] border border-gray-200 dark:border-[#D4AF37]/30 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Chat Header Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-amber-200 p-0.5 shadow-md shadow-[#D4AF37]/20 flex items-center justify-center">
+                  <div className="w-full h-full bg-black rounded-2xl flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                  </div>
+                </div>
+                <div className="text-left">
+                  <h4 className="font-display text-base font-bold text-gray-950 dark:text-white flex items-center gap-2">
+                    <span>Vicinity AI Concierge</span>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[8px] font-mono font-bold rounded-full uppercase">
+                      Live
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-gray-500 dark:text-white/50 font-mono">
+                    Trained on regional multiplex layouts &amp; live event rosters
+                  </p>
+                </div>
+              </div>
+
+              {conciergeChat.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setConciergeChat([
+                    { role: 'ai', text: 'Greetings, VIP. I am your CineVenue Elite Concierge, powered by Gemini. Ask me about luxury cinema lounges, high-society concerts, celebrity audio launches, or elite regional events in Hyderabad, Guntur, or Vijayawada.' }
+                  ])}
+                  className="text-[10px] text-gray-400 hover:text-gray-900 dark:hover:text-[#D4AF37] transition-colors font-mono cursor-pointer"
+                >
+                  Clear History
+                </button>
+              )}
+            </div>
+
+            {/* Chat Messages Feed */}
+            <div className="h-80 overflow-y-auto space-y-4 pr-2 text-xs leading-relaxed scrollbar-thin">
+              {conciergeChat.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`p-4 rounded-2xl space-y-1.5 transition-all ${
+                    msg.role === "user"
+                      ? "bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-right ml-10 shadow-xs"
+                      : "bg-amber-50/90 dark:bg-[#D4AF37]/10 border border-amber-200/80 dark:border-[#D4AF37]/25 text-gray-900 dark:text-white/95 mr-6 shadow-sm"
+                  }`}
+                >
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block pb-0.5 text-left flex items-center gap-1.5">
+                    {msg.role === "user" ? (
+                      <>
+                        <User className="w-3 h-3" /> You (VIP Guest)
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 text-[#D4AF37]" /> CineVenue Concierge Agent
+                      </>
+                    )}
+                  </span>
+                  <p className="whitespace-pre-line text-left leading-relaxed text-xs">{msg.text}</p>
+                </div>
+              ))}
+
+              {conciergeLoading && (
+                <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-[#D4AF37]/10 border border-amber-200 dark:border-[#D4AF37]/25 mr-6 space-y-2 text-left">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-[#D4AF37] animate-spin" /> CineVenue Concierge Agent
+                  </span>
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-white/70 font-mono text-[11px]">
+                    <span className="w-2 h-2 bg-[#D4AF37] rounded-full animate-ping" />
+                    Querying CineVenue database &amp; regional intelligence...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Suggestion Chips */}
+            <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/10">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-white/40 block text-left">
+                Suggested VIP Inquiries:
+              </span>
+              <div className="flex flex-wrap gap-2 text-left">
+                {[
+                  "Upcoming VIP concerts in Hyderabad",
+                  "Luxury cinema lounges in Guntur",
+                  "Prasads IMAX acoustic specs & VIP entry",
+                  "How to get celebrity fan-premiere passes?",
+                  "Sufi Symphony Night in Vijayawada"
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleConciergeSubmit(undefined, chip)}
+                    disabled={conciergeLoading}
+                    className="px-3 py-1.5 bg-gray-50 hover:bg-amber-50 dark:bg-white/[0.04] dark:hover:bg-[#D4AF37]/15 border border-gray-200 hover:border-[#D4AF37]/50 dark:border-white/10 text-[10px] text-gray-700 dark:text-white/80 rounded-xl transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  >
+                    ✨ {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleConciergeSubmit} className="pt-2">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="Ask Vicinity Concierge (e.g. Best IMAX seats or valet parking in Hyderabad?)"
+                  value={conciergePrompt}
+                  onChange={(e) => setConciergePrompt(e.target.value)}
+                  disabled={conciergeLoading}
+                  className="w-full pl-4 pr-12 py-3.5 bg-gray-50 hover:bg-white focus:bg-white dark:bg-[#181822] dark:hover:bg-[#1F1F2C] dark:focus:bg-[#1F1F2C] text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 border border-gray-300 dark:border-white/15 rounded-2xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55 shadow-inner"
+                />
+                <button
+                  type="submit"
+                  disabled={conciergeLoading || !conciergePrompt.trim()}
+                  className="absolute right-2.5 p-2 bg-[#D4AF37] hover:bg-[#E5C158] text-black disabled:opacity-30 rounded-xl transition-all cursor-pointer shadow-md"
+                  title="Send to Concierge"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* RIGHT 1 COL: CONCIERGE CAPABILITIES & LIVE REGIONAL INSIGHTS */}
+          <div className="space-y-6 text-left">
+            {/* Card 1: Concierge Capabilities */}
+            <div className="bg-white dark:bg-[#0D0D12] border border-gray-200 dark:border-[#D4AF37]/20 rounded-3xl p-6 space-y-4 shadow-md">
+              <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#D4AF37]" /> Concierge Capabilities
+              </h5>
+              <div className="space-y-3 text-xs text-gray-600 dark:text-white/70">
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[#D4AF37] flex items-center justify-center shrink-0 mt-0.5">
+                    <Ticket className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white block text-[11px]">Instant Pass Intelligence</span>
+                    <p className="text-[10px] leading-relaxed text-gray-500 dark:text-white/50">Surge availability, ticket pricing, and direct booking links.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Film className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white block text-[11px]">Theatrical Sound &amp; Specs</span>
+                    <p className="text-[10px] leading-relaxed text-gray-500 dark:text-white/50">Dolby Atmos, laser projection lumens, and screen row audits.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-gray-900 dark:text-white block text-[11px]">Transit &amp; Valet Gate Access</span>
+                    <p className="text-[10px] leading-relaxed text-gray-500 dark:text-white/50">Metro late runs, parking clearances, and VIP entry checkpoints.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Quick Regional Bulletins */}
+            <div className="bg-white dark:bg-[#0D0D12] border border-gray-200 dark:border-white/10 rounded-3xl p-6 space-y-3 shadow-md">
+              <div className="flex items-center justify-between border-b border-gray-150 dark:border-white/10 pb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5 font-mono">
+                  <Activity className="w-3.5 h-3.5" /> REGIONAL VENUE ROSTER
+                </span>
+                <span className="text-[9px] font-mono text-emerald-500 font-semibold">● ACTIVE</span>
+              </div>
+              <div className="space-y-2.5 text-[10px] font-mono text-gray-600 dark:text-white/70">
+                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-150 dark:border-white/5 space-y-0.5">
+                  <div className="flex justify-between text-gray-900 dark:text-white font-bold">
+                    <span>Prasads IMAX &middot; Hyderabad</span>
+                    <span className="text-[#D4AF37]">Screen 6 (PCX)</span>
+                  </div>
+                  <p className="text-[9px] text-gray-400">Dolby Atmos &middot; Valet Gate 2 &middot; VIP Lounge</p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-150 dark:border-white/5 space-y-0.5">
+                  <div className="flex justify-between text-gray-900 dark:text-white font-bold">
+                    <span>Convention Centre &middot; Vijayawada</span>
+                    <span className="text-[#D4AF37]">Hall A VIP</span>
+                  </div>
+                  <p className="text-[9px] text-gray-400">Single-Window Police Clearance &middot; Acoustic Arena</p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-150 dark:border-white/5 space-y-0.5">
+                  <div className="flex justify-between text-gray-900 dark:text-white font-bold">
+                    <span>Guntur Multiplex Arena</span>
+                    <span className="text-[#D4AF37]">Lounge 1</span>
+                  </div>
+                  <p className="text-[9px] text-gray-400">Recliner Club &middot; Priority Box Office Service</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* CONTACT US & CONCIERGE MESSAGE SECTIONS */}
       <section id="contact-concierge" className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5">

@@ -49,7 +49,8 @@ import {
   Award,
   Menu,
   Video,
-  Clapperboard
+  Clapperboard,
+  Sparkles
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
@@ -234,7 +235,8 @@ export default function AdminLayout() {
       title: "EVENTS & EXPERIENCES",
       items: [
         { id: "events", label: "Event Management & Passes", icon: Ticket },
-        { id: "event_create", label: "Create New Event", icon: PlusCircle }
+        { id: "event_create", label: "Create New Event", icon: PlusCircle },
+        { id: "event_highlights", label: "Trending & Categories", icon: Sparkles }
       ]
     },
 
@@ -1097,6 +1099,13 @@ export default function AdminLayout() {
             {activeTab === "event_create" && (
               <div className="space-y-6">
                 <EventsAdminModule initialTab="create" />
+              </div>
+            )}
+
+            {/* TRENDING EXPERIENCES & BROWSE CATEGORIES MODULE */}
+            {activeTab === "event_highlights" && (
+              <div className="space-y-6">
+                <EventsAdminModule initialTab="highlights" />
               </div>
             )}
 

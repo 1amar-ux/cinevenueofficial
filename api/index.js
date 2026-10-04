@@ -10894,6 +10894,40 @@ async function handler(req, res) {
     });
     return res.status(200).json(result);
   }
+  if ((url.includes("/gemini/concierge") || url.endsWith("/concierge")) && req.method === "POST") {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        body = {};
+      }
+    }
+    const { prompt, city = "Hyderabad" } = body || {};
+    if (!prompt) {
+      return res.status(400).json({ success: false, message: "Prompt is required." });
+    }
+    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const { GoogleGenAI } = await import("@google/genai");
+        const ai = new GoogleGenAI({ apiKey });
+        const systemInstruction = `You are the premium CineVenue VIP Event & Experience Concierge Assistant. Recommend luxury movies, live concerts, theatres, acoustic specs, and VIP lounges in Andhra Pradesh and Telangana (Hyderabad, Guntur, Vijayawada). Keep answers concise, helpful, and luxurious.`;
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: { systemInstruction, temperature: 0.7 }
+        });
+        return res.status(200).json({ success: true, text: response.text });
+      } catch (e) {
+        console.warn("[Gemini Concierge fallback]", e.message);
+      }
+    }
+    return res.status(200).json({
+      success: true,
+      text: `Greetings VIP Guest! For ${city}, our highest-rated live recommendations include the Alan Walker Sunburn Arena at Gachibowli Stadium, Sufi Symphony Night at Vijayawada Convention Hall, and exclusive celebrity pre-release events at Prasads IMAX. Valet parking, acoustic lounge access, and instant digital pass delivery are included with all CineVenue bookings!`
+    });
+  }
   syncServerlessStateFromDisk();
   if (globalServerlessState.globalSubwebsiteEnabled === false) {
     const isSubwebsiteApi = url.startsWith("/api/v1/events") || url.startsWith("/api/events") || url.startsWith("/api/v1/marketplace") || url.startsWith("/api/marketplace") || url.startsWith("/api/v1/productions") || url.startsWith("/api/productions");

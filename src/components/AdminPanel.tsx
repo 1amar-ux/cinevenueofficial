@@ -5333,6 +5333,11 @@ export default function AdminPanel({
               <EventsAdminModule initialTab="create" />
             </div>
           )}
+          {activeTab === "events_highlights" && (
+            <div className="space-y-8 animate-fade-in" id="tab-events-highlights">
+              <EventsAdminModule initialTab="highlights" />
+            </div>
+          )}
 
           {activeTab === "settings" && (
             <div className="space-y-8 animate-fade-in" id="tab-settings">
