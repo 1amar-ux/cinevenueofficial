@@ -2790,275 +2790,166 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       {/* ========================================================= */}
       {/* CINEVENUE VICINITY CONCIERGE AI AGENT (HOMEPAGE FLAGSHIP) */}
       {/* ========================================================= */}
-      <section id="ai-concierge" className="py-20 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5">
-        <div className="text-center space-y-3 mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/10 via-[#D4AF37]/15 to-yellow-500/10 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] font-mono font-bold uppercase tracking-widest">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse text-[#D4AF37]" />
-            <span>AI AGENT &middot; GEMINI PRO ENGINE</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping ml-1" />
-          </div>
+      {/* ========================================================= */}
+      {/* CINEVENUE VICINITY CONCIERGE AI AGENT (COMPACT SINGLE BOX) */}
+      {/* ========================================================= */}
+      <section id="ai-concierge" className="py-8 px-4 max-w-2xl mx-auto">
+        <div className="bg-white dark:bg-[#0D0D12] dark:bg-gradient-to-b dark:from-[#13131A] dark:to-[#0D0D12] border border-amber-300/70 dark:border-[#D4AF37]/35 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden space-y-3">
+          <div className="absolute top-0 right-0 w-44 h-44 bg-[#D4AF37]/5 rounded-full blur-2xl pointer-events-none" />
 
-          <h2 className="font-display text-3xl md:text-5xl font-light italic text-gray-950 dark:text-white leading-tight">
-            CineVenue <span className="text-[#D4AF37] not-italic font-normal">Vicinity Concierge</span>
-          </h2>
-          <p className="text-xs md:text-sm text-gray-600 dark:text-white/60 max-w-2xl mx-auto leading-relaxed">
-            Your 24/7 intelligent guide for luxury cinema lounges, acoustic specs, VIP concert passes, celebrity galas, and valet parking across Hyderabad, Vijayawada, and Guntur.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* LEFT 2 COLS: INTERACTIVE AI CHAT INTERFACE */}
-          <div className="lg:col-span-2 bg-white dark:bg-[#0D0D12] dark:bg-gradient-to-b dark:from-[#13131A] dark:to-[#0D0D12] border border-gray-200 dark:border-[#D4AF37]/30 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-72 h-72 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Chat Header Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#D4AF37] to-amber-200 p-0.5 shadow-md shadow-[#D4AF37]/20 flex items-center justify-center">
-                  <div className="w-full h-full bg-black rounded-2xl flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-                  </div>
-                </div>
-                <div className="text-left">
-                  <h4 className="font-display text-base font-bold text-gray-950 dark:text-white flex items-center gap-2">
-                    <span>Vicinity AI Concierge</span>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[8px] font-mono font-bold rounded-full uppercase">
-                      Live
-                    </span>
-                  </h4>
-                  <p className="text-[11px] text-gray-500 dark:text-white/50 font-mono">
-                    Trained on regional multiplex layouts &amp; live event rosters
-                  </p>
+          {/* Compact Header Bar */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-gray-200 dark:border-white/10 relative z-10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#D4AF37] to-amber-200 p-0.5 shadow-sm flex items-center justify-center shrink-0">
+                <div className="w-full h-full bg-black rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-[#D4AF37]" />
                 </div>
               </div>
-
-              {conciergeChat.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setConciergeChat([
-                    { role: 'ai', text: 'Greetings, VIP. I am your CineVenue Elite Concierge, powered by Gemini. Ask me about luxury cinema lounges, high-society concerts, celebrity audio launches, or elite regional events in Hyderabad, Guntur, or Vijayawada.' }
-                  ])}
-                  className="text-[10px] text-gray-400 hover:text-gray-900 dark:hover:text-[#D4AF37] transition-colors font-mono cursor-pointer"
-                >
-                  Clear History
-                </button>
-              )}
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-display text-sm font-bold text-gray-950 dark:text-white">
+                    CineVenue <span className="text-[#D4AF37]">AI Concierge</span>
+                  </h4>
+                  <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[8px] font-mono font-bold rounded-full uppercase">
+                    Live
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-500 dark:text-white/50">
+                  Ask about movies, live event passes, acoustic specs, or instant bookings
+                </p>
+              </div>
             </div>
 
-            {/* Chat Messages Feed */}
-            <div className="h-80 overflow-y-auto space-y-4 pr-2 text-xs leading-relaxed scrollbar-thin">
-              {conciergeChat.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`p-4 rounded-2xl space-y-1.5 transition-all ${
-                    msg.role === "user"
-                      ? "bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-right ml-10 shadow-xs"
-                      : "bg-amber-50/90 dark:bg-[#D4AF37]/10 border border-amber-200/80 dark:border-[#D4AF37]/25 text-gray-900 dark:text-white/95 mr-6 shadow-sm"
-                  }`}
-                >
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block pb-0.5 text-left flex items-center gap-1.5">
-                    {msg.role === "user" ? (
-                      <>
-                        <User className="w-3 h-3" /> You (VIP Guest)
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3 h-3 text-[#D4AF37]" /> CineVenue Concierge Agent
-                      </>
-                    )}
-                  </span>
-                  <p className="whitespace-pre-line text-left leading-relaxed text-xs">{msg.text}</p>
+            {conciergeChat.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setConciergeChat([
+                  { role: 'ai', text: 'Greetings, VIP! I am your CineVenue AI Concierge. What would you like to explore today? Ask me about movies, concert passes, or regional multiplexes.' }
+                ])}
+                className="text-[10px] text-gray-400 hover:text-gray-900 dark:hover:text-[#D4AF37] transition-colors font-mono cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
-                  {/* Auto-Redirect Notice */}
-                  {msg.autoRedirectNotice && (
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>{msg.autoRedirectNotice}</span>
-                    </div>
+          {/* Compact Messages Feed */}
+          <div className="max-h-52 overflow-y-auto space-y-2.5 pr-1 text-xs leading-relaxed scrollbar-thin">
+            {conciergeChat.map((msg, i) => (
+              <div
+                key={i}
+                className={`p-3 rounded-xl space-y-1 transition-all ${
+                  msg.role === "user"
+                    ? "bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-right ml-8 shadow-xs"
+                    : "bg-amber-50/90 dark:bg-[#D4AF37]/10 border border-amber-200/80 dark:border-[#D4AF37]/25 text-gray-900 dark:text-white/95 mr-4 shadow-xs"
+                }`}
+              >
+                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#D4AF37] block pb-0.5 text-left flex items-center gap-1">
+                  {msg.role === "user" ? (
+                    <>
+                      <User className="w-2.5 h-2.5" /> You
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-2.5 h-2.5 text-[#D4AF37]" /> CineVenue Concierge
+                    </>
                   )}
+                </span>
+                <p className="whitespace-pre-line text-left leading-relaxed text-[11px]">{msg.text}</p>
 
-                  {/* Clickable One-Click Portal Redirect & Booking Cards */}
-                  {msg.actions && msg.actions.length > 0 && (
-                    <div className="pt-3 space-y-2 border-t border-amber-200/60 dark:border-white/10">
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-[#D4AF37] block text-left flex items-center gap-1">
-                        <span>⚡ Direct Portal Redirect &amp; Booking:</span>
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {msg.actions.map((act, actIdx) => (
-                          <button
-                            key={actIdx}
-                            type="button"
-                            onClick={() => {
-                              if (act.targetUrl.startsWith('/')) {
-                                navigate(act.targetUrl);
-                              } else {
-                                window.location.href = act.targetUrl;
-                              }
-                            }}
-                            className="p-3 rounded-xl bg-white dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#D4AF37]/15 border border-amber-300/70 dark:border-[#D4AF37]/30 hover:border-[#D4AF37] text-left transition-all group cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="text-xs font-bold text-gray-950 dark:text-white group-hover:text-amber-700 dark:group-hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
-                                <span>{act.type === 'movie' || act.type === 'movies_portal' ? '🎬' : act.type === 'event' || act.type === 'events_portal' ? '🎟️' : act.type === 'production' ? '🎥' : '🪙'}</span>
-                                <span className="line-clamp-1">{act.title}</span>
-                              </span>
-                              <ExternalLink className="w-3.5 h-3.5 text-[#D4AF37] shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                            </div>
-                            {act.subtitle && (
-                              <p className="text-[10px] text-gray-500 dark:text-white/60 mt-1 line-clamp-1">
-                                {act.subtitle}
-                              </p>
-                            )}
-                            <span className="text-[9px] font-mono font-bold uppercase text-amber-700 dark:text-[#D4AF37] mt-2 inline-flex items-center gap-1 group-hover:underline">
+                {/* Auto-Redirect Notice */}
+                {msg.autoRedirectNotice && (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-[9px] animate-pulse">
+                    <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                    <span>{msg.autoRedirectNotice}</span>
+                  </div>
+                )}
+
+                {/* Clickable One-Click Portal Redirect & Booking Cards */}
+                {msg.actions && msg.actions.length > 0 && (
+                  <div className="pt-2 space-y-1 border-t border-amber-200/60 dark:border-white/10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {msg.actions.map((act, actIdx) => (
+                        <button
+                          key={actIdx}
+                          type="button"
+                          onClick={() => {
+                            if (act.targetUrl.startsWith('/')) {
+                              navigate(act.targetUrl);
+                            } else {
+                              window.location.href = act.targetUrl;
+                            }
+                          }}
+                          className="p-2 rounded-lg bg-white dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#D4AF37]/15 border border-amber-300/70 dark:border-[#D4AF37]/30 hover:border-[#D4AF37] text-left transition-all group cursor-pointer shadow-xs flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <span className="text-[11px] font-bold text-gray-950 dark:text-white group-hover:text-amber-700 dark:group-hover:text-[#D4AF37] transition-colors flex items-center gap-1 truncate">
+                              <span>{act.type === 'movie' || act.type === 'movies_portal' ? '🎬' : act.type === 'event' || act.type === 'events_portal' ? '🎟️' : act.type === 'production' ? '🎥' : '🪙'}</span>
+                              <span className="truncate">{act.title}</span>
+                            </span>
+                            <span className="text-[9px] font-mono text-amber-700 dark:text-[#D4AF37] group-hover:underline block">
                               {act.buttonText} &rarr;
                             </span>
-                          </button>
-                        ))}
-                      </div>
+                          </div>
+                          <ExternalLink className="w-3 h-3 text-[#D4AF37] shrink-0" />
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-              ))}
-
-              {conciergeLoading && (
-                <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-[#D4AF37]/10 border border-amber-200 dark:border-[#D4AF37]/25 mr-6 space-y-2 text-left">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-[#D4AF37] animate-spin" /> CineVenue Concierge Agent
-                  </span>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-white/70 font-mono text-[11px]">
-                    <span className="w-2 h-2 bg-[#D4AF37] rounded-full animate-ping" />
-                    Querying CineVenue database &amp; regional intelligence...
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Suggestion Chips */}
-            <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/10">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-white/40 block text-left">
-                Suggested VIP Inquiries &amp; Redirects:
-              </span>
-              <div className="flex flex-wrap gap-2 text-left">
-                {[
-                  "What is CineVenue?",
-                  "Book tickets for Coolie",
-                  "Book VIP passes for Sunburn",
-                  "Sufi Symphony Night in Vijayawada",
-                  "Explore Film Production (24 Crafts)",
-                  "Open CineCoins Rewards Vault",
-                  "Prasads IMAX acoustic specs"
-                ].map((chip, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleConciergeSubmit(undefined, chip)}
-                    disabled={conciergeLoading}
-                    className="px-3 py-1.5 bg-gray-50 hover:bg-amber-50 dark:bg-white/[0.04] dark:hover:bg-[#D4AF37]/15 border border-gray-200 hover:border-[#D4AF37]/50 dark:border-white/10 text-[10px] text-gray-700 dark:text-white/80 rounded-xl transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
-                  >
-                    ✨ {chip}
-                  </button>
-                ))}
+                )}
               </div>
-            </div>
+            ))}
 
-            {/* Input Form */}
-            <form onSubmit={handleConciergeSubmit} className="pt-2">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  placeholder="Ask Vicinity Concierge (e.g. Best IMAX seats or valet parking in Hyderabad?)"
-                  value={conciergePrompt}
-                  onChange={(e) => setConciergePrompt(e.target.value)}
-                  disabled={conciergeLoading}
-                  className="w-full pl-4 pr-12 py-3.5 bg-gray-50 hover:bg-white focus:bg-white dark:bg-[#181822] dark:hover:bg-[#1F1F2C] dark:focus:bg-[#1F1F2C] text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 border border-gray-300 dark:border-white/15 rounded-2xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55 shadow-inner"
-                />
-                <button
-                  type="submit"
-                  disabled={conciergeLoading || !conciergePrompt.trim()}
-                  className="absolute right-2.5 p-2 bg-[#D4AF37] hover:bg-[#E5C158] text-black disabled:opacity-30 rounded-xl transition-all cursor-pointer shadow-md"
-                  title="Send to Concierge"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* RIGHT 1 COL: CONCIERGE CAPABILITIES & LIVE REGIONAL INSIGHTS */}
-          <div className="space-y-6 text-left">
-            {/* Card 1: Concierge Capabilities */}
-            <div className="bg-white dark:bg-[#0D0D12] border border-gray-200 dark:border-[#D4AF37]/20 rounded-3xl p-6 space-y-4 shadow-md">
-              <h5 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#D4AF37]" /> Concierge Capabilities
-              </h5>
-              <div className="space-y-3 text-xs text-gray-600 dark:text-white/70">
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[#D4AF37] flex items-center justify-center shrink-0 mt-0.5">
-                    <Ticket className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-gray-900 dark:text-white block text-[11px]">Instant Pass Intelligence</span>
-                    <p className="text-[10px] leading-relaxed text-gray-500 dark:text-white/50">Surge availability, ticket pricing, and direct booking links.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <Film className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-gray-900 dark:text-white block text-[11px]">Theatrical Sound &amp; Specs</span>
-                    <p className="text-[10px] leading-relaxed text-gray-500 dark:text-white/50">Dolby Atmos, laser projection lumens, and screen row audits.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-gray-900 dark:text-white block text-[11px]">Transit &amp; Valet Gate Access</span>
-                    <p className="text-[10px] leading-relaxed text-gray-500 dark:text-white/50">Metro late runs, parking clearances, and VIP entry checkpoints.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Quick Regional Bulletins */}
-            <div className="bg-white dark:bg-[#0D0D12] border border-gray-200 dark:border-white/10 rounded-3xl p-6 space-y-3 shadow-md">
-              <div className="flex items-center justify-between border-b border-gray-150 dark:border-white/10 pb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5 font-mono">
-                  <Activity className="w-3.5 h-3.5" /> REGIONAL VENUE ROSTER
+            {conciergeLoading && (
+              <div className="p-2.5 rounded-xl bg-amber-50/90 dark:bg-[#D4AF37]/10 border border-amber-200 dark:border-[#D4AF37]/25 mr-4 space-y-1 text-left">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5 text-[#D4AF37] animate-spin" /> Querying CineVenue AI...
                 </span>
-                <span className="text-[9px] font-mono text-emerald-500 font-semibold">● ACTIVE</span>
               </div>
-              <div className="space-y-2.5 text-[10px] font-mono text-gray-600 dark:text-white/70">
-                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-150 dark:border-white/5 space-y-0.5">
-                  <div className="flex justify-between text-gray-900 dark:text-white font-bold">
-                    <span>Prasads IMAX &middot; Hyderabad</span>
-                    <span className="text-[#D4AF37]">Screen 6 (PCX)</span>
-                  </div>
-                  <p className="text-[9px] text-gray-400">Dolby Atmos &middot; Valet Gate 2 &middot; VIP Lounge</p>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-150 dark:border-white/5 space-y-0.5">
-                  <div className="flex justify-between text-gray-900 dark:text-white font-bold">
-                    <span>Convention Centre &middot; Vijayawada</span>
-                    <span className="text-[#D4AF37]">Hall A VIP</span>
-                  </div>
-                  <p className="text-[9px] text-gray-400">Single-Window Police Clearance &middot; Acoustic Arena</p>
-                </div>
-
-                <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-150 dark:border-white/5 space-y-0.5">
-                  <div className="flex justify-between text-gray-900 dark:text-white font-bold">
-                    <span>Guntur Multiplex Arena</span>
-                    <span className="text-[#D4AF37]">Lounge 1</span>
-                  </div>
-                  <p className="text-[9px] text-gray-400">Recliner Club &middot; Priority Box Office Service</p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
+
+          {/* Quick Suggestion Chips */}
+          <div className="flex flex-wrap gap-1.5 text-left pt-0.5">
+            {[
+              "What is CineVenue?",
+              "Book Coolie",
+              "VIP Sunburn Passes",
+              "Film Production (24 Crafts)"
+            ].map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleConciergeSubmit(undefined, chip)}
+                disabled={conciergeLoading}
+                className="px-2 py-0.5 bg-gray-50 hover:bg-amber-50 dark:bg-white/[0.04] dark:hover:bg-[#D4AF37]/15 border border-gray-200 hover:border-[#D4AF37]/50 dark:border-white/10 text-[9px] text-gray-700 dark:text-white/80 rounded-md transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+              >
+                ✨ {chip}
+              </button>
+            ))}
+          </div>
+
+          {/* Input Form */}
+          <form onSubmit={handleConciergeSubmit} className="pt-0.5">
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                placeholder="Ask Concierge (e.g. Book Coolie or Sunburn passes)..."
+                value={conciergePrompt}
+                onChange={(e) => setConciergePrompt(e.target.value)}
+                disabled={conciergeLoading}
+                className="w-full pl-3 pr-9 py-2 bg-gray-50 hover:bg-white focus:bg-white dark:bg-[#181822] dark:hover:bg-[#1F1F2C] dark:focus:bg-[#1F1F2C] text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 border border-gray-300 dark:border-white/15 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all disabled:opacity-55"
+              />
+              <button
+                type="submit"
+                disabled={conciergeLoading || !conciergePrompt.trim()}
+                className="absolute right-1.5 p-1 bg-[#D4AF37] hover:bg-[#E5C158] text-black disabled:opacity-30 rounded-lg transition-all cursor-pointer shadow-sm"
+                title="Send"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </form>
         </div>
       </section>
 
