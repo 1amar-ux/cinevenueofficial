@@ -2,6 +2,13 @@
   "globalSubwebsiteEnabled": true,
   "subwebsiteMaintenanceMessage": "CineVenue sub-websites are temporarily undergoing scheduled system upgrades.",
   "maintenanceMode": false,
+  "emailConfig": {
+    "user": "amarnathgattem@gmail.com",
+    "email": "amarnathgattem@gmail.com",
+    "pass": "qsbnpymiitrtumkn",
+    "service": "gmail",
+    "smtpHost": "smtp.gmail.com"
+  },
   "serviceControls": {
     "website": {
       "status": true
