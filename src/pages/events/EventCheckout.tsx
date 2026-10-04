@@ -10,6 +10,8 @@ import {
   verifyEventBookingCashfreePayment
 } from "../../services/cashfreeService";
 
+import LiveEventPassCard from "../../components/events/LiveEventPassCard";
+
 export default function EventCheckout() {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
@@ -169,43 +171,57 @@ export default function EventCheckout() {
   };
 
   const generatePass = () => {
+    const rawPassId = "CV-EVT-" + Math.floor(100000 + Math.random() * 900000).toString();
     setTimeout(() => {
       setConfirmedBooking({
-        passId: "CV-EVT-" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
-        name: attendeeName,
-        type: passType,
-        eventName: eventData?.title || "Special Event"
+        id: rawPassId,
+        passCode: rawPassId,
+        orderId: `CV-ORDER-2026-${rawPassId.slice(-5)}`,
+        eventId: eventId || "EVT-100",
+        eventTitle: eventData?.title || "Special Event",
+        eventDate: eventData?.date || "2026-10-18",
+        eventTime: eventData?.startTime || eventData?.time || "06:00 PM",
+        venueName: eventData?.venueName || (typeof eventData?.venue === 'string' ? eventData?.venue : eventData?.venue?.name) || "Grand Convention Hall",
+        city: eventData?.city || eventData?.venue?.city || "Hyderabad",
+        bannerUrl: eventData?.bannerUrl || eventData?.posterUrl || eventData?.image || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
+        ticketTypeName: passType || "General Admission",
+        ticketCount: quantity,
+        primaryAttendee: {
+          name: attendeeName,
+          email: userEmail || "guest@cinevenue.in",
+          phone: attendeeMobile,
+        },
+        pricing: {
+          finalAmount: calculatedBreakdown?.totalAmount || 0,
+        },
+        totalPrice: calculatedBreakdown?.totalAmount || 0,
+        qrCodePayload: rawPassId,
       });
       setLoading(false);
-    }, 1000);
+    }, 600);
   };
 
   if (confirmedBooking) {
     return (
-      <div className="min-h-screen bg-[#09090A] flex flex-col items-center justify-center p-4">
-        <div className="bg-[#111113] p-8 rounded-2xl border border-white/10 max-w-md w-full text-center space-y-6">
-          <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+      <div className="min-h-screen bg-[#07070A] flex flex-col items-center justify-center p-4 py-12 text-left">
+        <div className="w-full max-w-sm relative">
+          <div className="text-center mb-4">
+            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider font-mono bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+              Registration Confirmed & Verified
+            </span>
+            <h2 className="text-xl font-bold text-white mt-2 font-display">Your Official Event Pass</h2>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Registration Confirmed!</h2>
-            <p className="text-text-secondary">Your digital pass has been generated successfully.</p>
+
+          <LiveEventPassCard pass={confirmedBooking} showActions={true} />
+
+          <div className="text-center mt-6">
+            <button
+              onClick={() => navigate("/events")}
+              className="text-text-secondary hover:text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              ← Back to All Events
+            </button>
           </div>
-          
-          <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-left">
-            <p className="text-sm text-text-secondary mb-1">Pass ID</p>
-            <p className="font-mono text-gold font-bold text-lg mb-4">{confirmedBooking.passId}</p>
-            
-            <p className="text-sm text-text-secondary mb-1">Attendee</p>
-            <p className="text-white font-semibold mb-4">{confirmedBooking.name}</p>
-            
-            <p className="text-sm text-text-secondary mb-1">Pass Type</p>
-            <p className="text-white font-semibold">{confirmedBooking.type}</p>
-          </div>
-          
-          <button onClick={() => navigate(`/events/pass/${confirmedBooking.passId}`)} className="w-full bg-gold text-black font-bold py-3 rounded-full hover:bg-gold/90 transition-colors">
-            View Digital Pass
-          </button>
         </div>
       </div>
     );

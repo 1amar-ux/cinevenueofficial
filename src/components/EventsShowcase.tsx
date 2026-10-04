@@ -13,6 +13,7 @@ import type { EventItem, EventBookingRecord } from "../types/eventBooking";
 import { getEvents as getTicketedEvents, getBookings as getEventBookings, isMockOrDuplicateEvent } from "../services/eventBookingService";
 import EventBookingModal from "./events/EventBookingModal";
 import DigitalTicketPassModal from "./events/DigitalTicketPassModal";
+import LiveEventPassCard from "./events/LiveEventPassCard";
 import OrganizerEventHub from "./events/OrganizerEventHub";
 import CineVenueLiveBanner from "./advertising/CineVenueLiveBanner";
 import EventShareModal from "./events/EventShareModal";
@@ -1422,75 +1423,18 @@ export default function EventsShowcase({
                         )}
                       </div>
 
-                      {/* RETRO TICKET STUB */}
+                      {/* LIVE PASS DESIGN MATCHING ADMIN PANEL PREVIEW */}
                       {bookingPass.status !== "Pending" ? (
-                        <div className="bg-[#14141A] border border-white/10 rounded-xl overflow-hidden relative shadow-lg text-left" id="retro-ticket-stub">
-                          {/* Decorative dotted lines split */}
-                          <div className="p-4 space-y-4">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                              <span className="text-[10px] text-gold font-bold font-mono tracking-widest">CINEVENUE GALA PASS</span>
-                              <span className="text-[10px] text-text-muted font-mono">{bookingPass.id}</span>
-                            </div>
-
-                            <div className="space-y-2">
-                              <span className="text-[8px] text-text-muted block font-semibold uppercase">EVENT TITLE</span>
-                              <p className="text-xs font-semibold text-text-primary font-display">{bookingPass.eventTitle}</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 pt-1">
-                              <div>
-                                <span className="text-[8px] text-text-muted block font-semibold uppercase">VENUE</span>
-                                <p className="text-[11px] font-semibold text-text-primary truncate">{bookingPass.venueName}</p>
-                              </div>
-                              <div>
-                                <span className="text-[8px] text-text-muted block font-semibold uppercase">DATE & TIME</span>
-                                <p className="text-[11px] font-semibold text-text-primary">{bookingPass.date} • {bookingPass.time}</p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 border-t border-dashed border-white/10 pt-3">
-                              <div>
-                                <span className="text-[8px] text-text-muted block font-semibold uppercase">REGISTRANT</span>
-                                <p className="text-[11px] text-text-primary font-medium">{bookingPass.userName}</p>
-                                {bookingPass.mobileNumber && (
-                                  <p className="text-[9px] text-gold/80 font-mono mt-0.5">📱 {bookingPass.mobileNumber}</p>
-                                )}
-                              </div>
-                              <div>
-                                <span className="text-[8px] text-text-muted block font-semibold uppercase">CATEGORY</span>
-                                <p className="text-[11px] text-gold font-bold">{bookingPass.categoryName} (x{bookingPass.quantity})</p>
-                                <span className={`inline-block px-1.5 py-0.5 mt-1 rounded text-[8px] font-bold uppercase tracking-wider ${
-                                  bookingPass.status === 'Cancelled'
-                                    ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                }`}>
-                                  {bookingPass.status || 'Confirmed'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Footer Receipt stub */}
-                          <div className="bg-gold/5 border-t border-dashed border-white/10 px-4 py-3 flex justify-between items-center">
-                            <div>
-                              <span className="text-[8px] text-text-muted block font-semibold uppercase">GRAND TOTAL (SECURED)</span>
-                              {bookingPass.totalPrice === 0 ? (
-                                <p className="text-xs font-bold text-emerald-400 uppercase">COMPLIMENTARY PASS</p>
-                              ) : (
-                                <p className="text-sm font-bold text-gold font-mono">₹{bookingPass.totalPrice}</p>
-                              )}
-                            </div>
-                            
-                            {/* Simulated mini barcode */}
-                            <div className="flex flex-col items-center">
-                              <div className="flex gap-0.5 h-6 items-end select-none">
-                                {[1, 3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3].map((w, i) => (
-                                  <div key={i} className="bg-text-secondary w-[2px]" style={{ height: `${w * 5}px` }} />
-                                ))}
-                              </div>
-                              <span className="text-[7px] text-text-muted font-mono mt-1">VERIFIED REGISTRATION</span>
-                            </div>
-                          </div>
+                        <div className="flex justify-center w-full">
+                          <LiveEventPassCard
+                            pass={bookingPass}
+                            event={selectedEvent || undefined}
+                            showActions={true}
+                            onClose={() => {
+                              setSelectedEvent(null);
+                              setBookingPass(null);
+                            }}
+                          />
                         </div>
                       ) : (
                         <div className="bg-[#14141A] border border-amber-500/10 rounded-xl p-5 text-left space-y-4">
@@ -1507,70 +1451,19 @@ export default function EventsShowcase({
                               No passes or gate barcodes are generated at this stage. Once both parties approve your order, your pass will instantly unlock under your <strong className="text-gold">Orders & Passes</strong> tab.
                             </p>
                           </div>
-                        </div>
-                      )}
 
-                      {/* DOWNLOAD, MAIL & CLOSE OPTIONS */}
-                      <div className="flex flex-col gap-2.5 w-full mt-4">
-                        {/* Success Feedback Banner */}
-                        {actionSuccessMessage && (
-                          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10.5px] leading-relaxed text-center font-medium animate-fade-in">
-                            {actionSuccessMessage}
-                          </div>
-                        )}
-
-                        {bookingPass.status !== "Pending" ? (
-                          <>
-                            {/* Download & Mail Row (Always active for all booked passes) */}
-                            <div className="grid grid-cols-2 gap-2 w-full">
-                              <button
-                                type="button"
-                                onClick={handleDownloadPass}
-                                disabled={downloadingPass}
-                                className="px-3 py-2.5 bg-emerald-500/15 hover:bg-emerald-500 text-white hover:text-black rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-500/20 disabled:opacity-50 transition-all"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>{downloadingPass ? "Generating PDF..." : "Download PDF Pass"}</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleEmailPass}
-                                disabled={emailingPass}
-                                className="px-3 py-2.5 bg-blue-500/15 hover:bg-blue-500 text-white hover:text-black rounded text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer border border-blue-500/20 disabled:opacity-50 transition-all"
-                              >
-                                <Mail className="w-3.5 h-3.5" />
-                                <span>{emailingPass ? "Dispatching..." : "Send to Email"}</span>
-                              </button>
-                            </div>
-
-                            <div className="flex gap-2 w-full">
-                              <button
-                                onClick={handlePrintPass}
-                                className="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-text-primary rounded text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer"
-                                id="btn-print-event-pass"
-                              >
-                                <Printer className="w-4 h-4 text-gold" />
-                                <span>Print Ticket</span>
-                              </button>
-                              <button
-                                onClick={() => setSelectedEvent(null)}
-                                className="flex-1 px-3 py-2 bg-gold hover:bg-gold-light text-black rounded text-xs font-bold uppercase tracking-wider cursor-pointer border-0"
-                                id="btn-close-pass-modal"
-                              >
-                                Return to Lobby
-                              </button>
-                            </div>
-                          </>
-                        ) : (
                           <button
-                            onClick={() => setSelectedEvent(null)}
-                            className="w-full px-3 py-3 bg-gold hover:bg-gold-light text-black rounded text-xs font-bold uppercase tracking-wider cursor-pointer border-0"
+                            onClick={() => {
+                              setSelectedEvent(null);
+                              setBookingPass(null);
+                            }}
+                            className="w-full px-3 py-3 bg-gold hover:bg-gold-light text-black rounded text-xs font-bold uppercase tracking-wider cursor-pointer border-0 mt-4"
                             id="btn-close-pass-modal"
                           >
                             Return to Lobby
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ) : (selectedEvent.isActive === false || !isEventBookingSystemActive) ? (
                     <div className="space-y-6 flex flex-col justify-center items-center h-full text-center p-6 bg-rose-950/20 border border-rose-500/30 rounded-xl">
