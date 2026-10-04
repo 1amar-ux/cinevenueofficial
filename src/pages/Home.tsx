@@ -73,10 +73,216 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
   });
   const [proposalSuccess, setProposalSuccess] = useState(false);
 
+  // Gemini Concierge Types & Intelligent Redirect Parser
+  interface ConciergeAction {
+    type: 'movie' | 'event' | 'movies_portal' | 'events_portal' | 'production' | 'cinecoins';
+    title: string;
+    targetUrl: string;
+    buttonText: string;
+    subtitle?: string;
+  }
+
+  interface ConciergeMessage {
+    role: 'user' | 'ai';
+    text: string;
+    actions?: ConciergeAction[];
+    autoRedirectNotice?: string;
+  }
+
+  function parseConciergeResponse(rawText: string, userPrompt: string = ""): { displayText: string; actions: ConciergeAction[] } {
+    const actions: ConciergeAction[] = [];
+    const actionRegex = /\[\[ACTION\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|([^|\]]*))?\]\]/g;
+    let match;
+
+    while ((match = actionRegex.exec(rawText)) !== null) {
+      const [, type, title, targetUrl, buttonText, subtitle] = match;
+      actions.push({
+        type: type as any,
+        title: title.trim(),
+        targetUrl: targetUrl.trim(),
+        buttonText: buttonText.trim(),
+        subtitle: subtitle ? subtitle.trim() : undefined,
+      });
+    }
+
+    // Clean action tags out of display text
+    let displayText = rawText.replace(actionRegex, "").trim();
+
+    // Heuristics: ensure rich clickable actions even if raw AI text omitted tags
+    const combined = (userPrompt + " " + rawText).toLowerCase();
+
+    // 1. CineVenue overview match
+    const asksAboutCineVenue = 
+      combined.includes("what is cinevenue") || 
+      combined.includes("about cinevenue") || 
+      combined.includes("tell me about cinevenue") || 
+      combined.includes("what does cinevenue do") || 
+      combined.includes("cinevenue pillars") || 
+      combined.includes("cinevenue ecosystem");
+
+    if (asksAboutCineVenue && actions.length === 0) {
+      actions.push(
+        {
+          type: 'movies_portal',
+          title: 'Movie Ticket Engine',
+          targetUrl: '/booking',
+          buttonText: 'Explore Now Showing Movies',
+          subtitle: 'IMAX, Dolby Atmos & Luxury Lounges',
+        },
+        {
+          type: 'events_portal',
+          title: 'Live Events Portal',
+          targetUrl: '/events',
+          buttonText: 'Browse VIP Concerts & Passes',
+          subtitle: 'Instant QR Vertical A4 Passes',
+        },
+        {
+          type: 'production',
+          title: 'Film Production Studio',
+          targetUrl: '/productions',
+          buttonText: '24 Crafts Marketplace',
+          subtitle: 'Casting Calls & Pitch Decks',
+        },
+        {
+          type: 'cinecoins',
+          title: 'CineCoins Rewards',
+          targetUrl: '/cinecoins',
+          buttonText: 'Open CineCoins Vault',
+          subtitle: 'Cashback & Rewards Store',
+        }
+      );
+    }
+
+    // 2. Specific Movie matches
+    const movieMatches = [
+      { key: "coolie", title: "Coolie", url: "/booking?search=Coolie", sub: "Action / Thriller • Telugu/Tamil (UA16+)" },
+      { key: "trouble", title: "Don't Trouble the Trouble", url: "/booking?search=Don%27t%20Trouble", sub: "Comedy / Drama • Telugu (UA13+)" },
+      { key: "sigma", title: "Sigma", url: "/booking?search=Sigma", sub: "Action / Thriller • Telugu (UA16+)" },
+      { key: "paradise", title: "The Paradise", url: "/booking?search=The%20Paradise", sub: "Action / Period Drama • Telugu" },
+      { key: "avengers", title: "Avengers Endgame: Encore", url: "/booking?search=Avengers", sub: "Sci-Fi / Action • Telugu & English" },
+      { key: "thellakaagitham", title: "Thellakaagitham", url: "/booking?search=Thellakaagitham", sub: "Romantic Drama • Telugu" },
+      { key: "baththa", title: "Baththa", url: "/booking?search=Baththa", sub: "Action / Crime • Tamil" },
+      { key: "kalki", title: "Kalki 2898 AD", url: "/booking?search=Kalki", sub: "Sci-Fi Epic • Prasads IMAX" },
+      { key: "devara", title: "Devara: Part 1", url: "/booking?search=Devara", sub: "Action Spectacle • Telugu" },
+      { key: "pushpa", title: "Pushpa 2: The Rule", url: "/booking?search=Pushpa", sub: "Mass Action • High Demand" },
+    ];
+
+    for (const m of movieMatches) {
+      if (combined.includes(m.key) && !actions.some(a => a.targetUrl.toLowerCase().includes(m.key))) {
+        actions.push({
+          type: 'movie',
+          title: m.title,
+          targetUrl: m.url,
+          buttonText: `Book Tickets for ${m.title}`,
+          subtitle: m.sub,
+        });
+      }
+    }
+
+    // General movie / cinema match if no movie actions added yet
+    if ((combined.includes("movie") || combined.includes("cinema") || combined.includes("theatre") || combined.includes("tickets") || combined.includes("showtime")) && !actions.some(a => a.type === 'movie' || a.type === 'movies_portal')) {
+      actions.push({
+        type: 'movies_portal',
+        title: 'Now Showing Theatres',
+        targetUrl: '/booking',
+        buttonText: 'Launch Movie Ticket Engine',
+        subtitle: 'Browse all films & reserve luxury recliners',
+      });
+    }
+
+    // 3. Specific Event matches
+    const eventMatches = [
+      { key: "sunburn", alt: "alan walker", title: "Alan Walker Sunburn Arena", url: "/events?search=Alan%20Walker", sub: "Gachibowli Stadium, Hyderabad • VIP Pass" },
+      { key: "sufi", alt: "symphony night", title: "Sufi Symphony Night", url: "/events?search=Sufi", sub: "Vijayawada Convention Centre • Live Strings" },
+      { key: "standup", alt: "comedy", title: "Hyderabad Standup Fest", url: "/events?search=Standup", sub: "Shilpakala Hall • Top Comedians" },
+      { key: "symphony", alt: "orchestra", title: "Symphony Tours", url: "/events?search=Symphony", sub: "VIP Celeb Gala & Orchestra" },
+    ];
+
+    for (const e of eventMatches) {
+      if ((combined.includes(e.key) || combined.includes(e.alt)) && !actions.some(a => a.targetUrl.toLowerCase().includes(e.key))) {
+        actions.push({
+          type: 'event',
+          title: e.title,
+          targetUrl: e.url,
+          buttonText: `Book Passes for ${e.title}`,
+          subtitle: e.sub,
+        });
+      }
+    }
+
+    // General live events match
+    if ((combined.includes("event") || combined.includes("concert") || combined.includes("gala") || combined.includes("live show") || combined.includes("passes")) && !actions.some(a => a.type === 'event' || a.type === 'events_portal')) {
+      actions.push({
+        type: 'events_portal',
+        title: 'All Live Events',
+        targetUrl: '/events',
+        buttonText: 'Explore Events Portal',
+        subtitle: 'Concerts, Comedy & High-Society Galas',
+      });
+    }
+
+    // 4. Production match
+    if ((combined.includes("production") || combined.includes("24 craft") || combined.includes("audition") || combined.includes("casting") || combined.includes("pitch deck")) && !actions.some(a => a.type === 'production')) {
+      actions.push({
+        type: 'production',
+        title: 'Film Production Studio',
+        targetUrl: '/productions',
+        buttonText: 'Launch 24 Crafts Studio',
+        subtitle: 'Connect with verified filmmakers & talent',
+      });
+    }
+
+    // 5. CineCoins match
+    if ((combined.includes("cinecoin") || combined.includes("reward") || combined.includes("cashback") || combined.includes("coins")) && !actions.some(a => a.type === 'cinecoins')) {
+      actions.push({
+        type: 'cinecoins',
+        title: 'CineCoins Rewards Vault',
+        targetUrl: '/cinecoins',
+        buttonText: 'Open CineCoins Portal',
+        subtitle: 'Claim cashback & spin reward wheels',
+      });
+    }
+
+    return { displayText, actions };
+  }
+
   // Gemini Concierge States
   const [conciergePrompt, setConciergePrompt] = useState("");
-  const [conciergeChat, setConciergeChat] = useState<{role: 'user' | 'ai', text: string}[]>(() => [
-    { role: 'ai', text: 'Greetings, VIP. I am your CineVenue Elite Concierge, powered by Gemini. Ask me about luxury cinema lounges, high-society concerts, celebrity audio launches, or elite regional events in Hyderabad, Guntur, or Vijayawada.' }
+  const [conciergeChat, setConciergeChat] = useState<ConciergeMessage[]>(() => [
+    {
+      role: 'ai',
+      text: 'Greetings, VIP Guest! Welcome to CineVenue — India’s flagship integrated cinematic and luxury live entertainment ecosystem.\n\nI can explain all about CineVenue, recommend movies & acoustic specs, and instantly redirect you to book tickets for any Movie (like Coolie or The Paradise) or secure VIP Passes for Live Events (like Alan Walker Sunburn or Sufi Symphony Night). What would you like to explore today?',
+      actions: [
+        {
+          type: 'movies_portal',
+          title: 'Movie Ticket Engine',
+          targetUrl: '/booking',
+          buttonText: 'Explore Now Showing Movies',
+          subtitle: 'IMAX, Dolby Atmos & Luxury Lounges',
+        },
+        {
+          type: 'events_portal',
+          title: 'Live Events Portal',
+          targetUrl: '/events',
+          buttonText: 'Browse VIP Concerts & Galas',
+          subtitle: 'Instant QR Vertical A4 Passes',
+        },
+        {
+          type: 'production',
+          title: 'Film Production Studio',
+          targetUrl: '/productions',
+          buttonText: '24 Crafts Marketplace',
+          subtitle: 'Casting Calls & Pitch Decks',
+        },
+        {
+          type: 'cinecoins',
+          title: 'CineCoins Rewards',
+          targetUrl: '/cinecoins',
+          buttonText: 'CineCoins Vault',
+          subtitle: 'Cashback & Rewards Store',
+        }
+      ]
+    }
   ]);
   const [conciergeLoading, setConciergeLoading] = useState(false);
   const [conciergeError, setConciergeError] = useState("");
@@ -91,6 +297,9 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
     setConciergeLoading(true);
     setConciergeError("");
 
+    // Check if the user is asking for an explicit redirection
+    const isRedirectIntent = /^(redirect|take me|go to|open|launch|book)\s+(to\s+)?/i.test(userMsg);
+
     try {
       const res = await fetch("/api/gemini/concierge", {
         method: "POST",
@@ -100,24 +309,38 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         body: JSON.stringify({ prompt: userMsg, city: "Hyderabad" })
       });
       const data = await res.json();
-      if (data.success && data.text) {
-        setConciergeChat(prev => [...prev, { role: "ai", text: data.text }]);
-      } else {
-        setConciergeChat(prev => [
-          ...prev,
-          {
-            role: "ai",
-            text: data.text || `For ${userMsg}, CineVenue VIP Concierge recommends checking upcoming high-demand events like the Alan Walker Sunburn Arena at Gachibowli Stadium, Sufi Symphony Night at Vijayawada Convention Hall, and exclusive celebrity pre-release galas at Prasads IMAX. Valet parking, acoustic lounge access, and instant digital passes are guaranteed with all CineVenue bookings!`
-          }
-        ]);
+      const rawResponse = data.success && data.text ? data.text : (data.text || `Welcome to CineVenue! We offer luxury Movie Booking across Prasads IMAX, PVP Square INOX, and Naaz Cinemas, as well as VIP Live Event passes for concerts like Alan Walker Sunburn Arena and Sufi Symphony Night. Click below to book or explore!`);
+
+      const { displayText, actions } = parseConciergeResponse(rawResponse, userMsg);
+
+      let autoRedirectNotice: string | undefined;
+      if (isRedirectIntent && actions.length > 0) {
+        const primary = actions[0];
+        autoRedirectNotice = `⚡ Redirecting you to ${primary.title}...`;
+        setTimeout(() => {
+          navigate(primary.targetUrl);
+        }, 1800);
       }
-    } catch (err: any) {
-      console.error(err);
+
       setConciergeChat(prev => [
         ...prev,
         {
           role: "ai",
-          text: `For your entertainment in Hyderabad, Vijayawada, and Guntur, CineVenue provides direct access to luxury cinema lounges, Dolby Atmos screens, and verified VIP concert passes. You can reserve passes directly through our Events and Movies pillars!`
+          text: displayText,
+          actions,
+          autoRedirectNotice
+        }
+      ]);
+    } catch (err: any) {
+      console.error(err);
+      const fallbackRaw = `CineVenue is India's premier integrated cinematic & luxury entertainment ecosystem. We operate luxury Movie Bookings across Hyderabad, Vijayawada, and Guntur, as well as verified VIP Concert & Event Passes. Select below to book directly:`;
+      const { displayText, actions } = parseConciergeResponse(fallbackRaw, userMsg);
+      setConciergeChat(prev => [
+        ...prev,
+        {
+          role: "ai",
+          text: displayText,
+          actions
         }
       ]);
     } finally {
@@ -2645,6 +2868,55 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                     )}
                   </span>
                   <p className="whitespace-pre-line text-left leading-relaxed text-xs">{msg.text}</p>
+
+                  {/* Auto-Redirect Notice */}
+                  {msg.autoRedirectNotice && (
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>{msg.autoRedirectNotice}</span>
+                    </div>
+                  )}
+
+                  {/* Clickable One-Click Portal Redirect & Booking Cards */}
+                  {msg.actions && msg.actions.length > 0 && (
+                    <div className="pt-3 space-y-2 border-t border-amber-200/60 dark:border-white/10">
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-700 dark:text-[#D4AF37] block text-left flex items-center gap-1">
+                        <span>⚡ Direct Portal Redirect &amp; Booking:</span>
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {msg.actions.map((act, actIdx) => (
+                          <button
+                            key={actIdx}
+                            type="button"
+                            onClick={() => {
+                              if (act.targetUrl.startsWith('/')) {
+                                navigate(act.targetUrl);
+                              } else {
+                                window.location.href = act.targetUrl;
+                              }
+                            }}
+                            className="p-3 rounded-xl bg-white dark:bg-white/[0.04] hover:bg-amber-50 dark:hover:bg-[#D4AF37]/15 border border-amber-300/70 dark:border-[#D4AF37]/30 hover:border-[#D4AF37] text-left transition-all group cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-xs font-bold text-gray-950 dark:text-white group-hover:text-amber-700 dark:group-hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
+                                <span>{act.type === 'movie' || act.type === 'movies_portal' ? '🎬' : act.type === 'event' || act.type === 'events_portal' ? '🎟️' : act.type === 'production' ? '🎥' : '🪙'}</span>
+                                <span className="line-clamp-1">{act.title}</span>
+                              </span>
+                              <ExternalLink className="w-3.5 h-3.5 text-[#D4AF37] shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </div>
+                            {act.subtitle && (
+                              <p className="text-[10px] text-gray-500 dark:text-white/60 mt-1 line-clamp-1">
+                                {act.subtitle}
+                              </p>
+                            )}
+                            <span className="text-[9px] font-mono font-bold uppercase text-amber-700 dark:text-[#D4AF37] mt-2 inline-flex items-center gap-1 group-hover:underline">
+                              {act.buttonText} &rarr;
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -2664,15 +2936,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             {/* Quick Suggestion Chips */}
             <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-white/10">
               <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-white/40 block text-left">
-                Suggested VIP Inquiries:
+                Suggested VIP Inquiries &amp; Redirects:
               </span>
               <div className="flex flex-wrap gap-2 text-left">
                 {[
-                  "Upcoming VIP concerts in Hyderabad",
-                  "Luxury cinema lounges in Guntur",
-                  "Prasads IMAX acoustic specs & VIP entry",
-                  "How to get celebrity fan-premiere passes?",
-                  "Sufi Symphony Night in Vijayawada"
+                  "What is CineVenue?",
+                  "Book tickets for Coolie",
+                  "Book VIP passes for Sunburn",
+                  "Sufi Symphony Night in Vijayawada",
+                  "Explore Film Production (24 Crafts)",
+                  "Open CineCoins Rewards Vault",
+                  "Prasads IMAX acoustic specs"
                 ].map((chip, idx) => (
                   <button
                     key={idx}
