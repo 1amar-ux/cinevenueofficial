@@ -11,6 +11,7 @@ import {
 } from "../../services/cashfreeService";
 
 import LiveEventPassCard from "../../components/events/LiveEventPassCard";
+import { sendEventPassToEmail } from "../../utils/eventPassPdf";
 
 export default function EventCheckout() {
   const { eventId } = useParams();
@@ -173,7 +174,7 @@ export default function EventCheckout() {
   const generatePass = () => {
     const rawPassId = "CV-EVT-" + Math.floor(100000 + Math.random() * 900000).toString();
     setTimeout(() => {
-      setConfirmedBooking({
+      const bookingObj = {
         id: rawPassId,
         passCode: rawPassId,
         orderId: `CV-ORDER-2026-${rawPassId.slice(-5)}`,
@@ -196,7 +197,10 @@ export default function EventCheckout() {
         },
         totalPrice: calculatedBreakdown?.totalAmount || 0,
         qrCodePayload: rawPassId,
-      });
+      };
+
+      setConfirmedBooking(bookingObj);
+      sendEventPassToEmail(bookingObj);
       setLoading(false);
     }, 600);
   };

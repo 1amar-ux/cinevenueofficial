@@ -90,39 +90,119 @@ export function printEventPassPdf(pass: any): void {
  */
 export async function sendEventPassToEmail(pass: any): Promise<{ success: boolean; message: string }> {
   const passId = getBookingPassId(pass);
-  const recipient = pass.primaryAttendee?.email || pass.userEmail || pass.attendeeEmail || "guest@cinevenue.in";
+  const orderId = getBookingOrderId(pass);
+  const recipient = pass.primaryAttendee?.email || pass.attendeeEmail || pass.userEmail || pass.customerEmail || pass.email;
+  const isFree = isFreeEventBooking(pass);
+  const rawDate = pass.eventDate || pass.date || "Upcoming";
+  const { formattedDate: eventDate, day: eventDay } = formatEventDateAndDay(rawDate);
+  const eventTime = pass.eventTime || pass.startTime || pass.time || "07:00 PM";
+  const venueName = pass.venueName || pass.venue || "Grand Convention Hall";
+  const attendeeName = pass.primaryAttendee?.name || pass.attendeeName || pass.userName || pass.name || "Attendee";
+  const eventTitle = pass.eventTitle || pass.title || "CineVenue Event";
+  const rawTier = pass.ticketTypeName || pass.categoryName || pass.tier || (isFree ? "General Pass" : "VIP Pass");
+  const posterUrl = pass.bannerUrl || pass.posterUrl || pass.imageUrl || "";
+  const feeAmount = pass.pricing?.finalAmount ?? pass.totalPrice ?? pass.ticketPrice ?? 0;
+  const passUrl = typeof window !== "undefined" ? `${window.location.origin}/events/pass/${encodeURIComponent(passId)}` : `https://cinevenue.in/events/pass/${encodeURIComponent(passId)}`;
+
+  if (!recipient || !recipient.includes("@")) {
+    return {
+      success: false,
+      message: "Please enter a valid email address to receive your pass.",
+    };
+  }
+
+  const payload = {
+    passId,
+    orderId,
+    email: recipient,
+    to: recipient,
+    name: attendeeName,
+    attendeeName,
+    eventTitle,
+    venueName,
+    date: eventDate,
+    day: eventDay,
+    time: eventTime,
+    categoryName: rawTier,
+    tier: rawTier,
+    totalPrice: feeAmount,
+    isFree,
+    posterUrl,
+    passUrl,
+    status: pass.bookingStatus || pass.status || "Confirmed",
+  };
 
   try {
     const response = await fetch("/api/events/send-pass-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        passId,
-        email: recipient,
-        name: pass.primaryAttendee?.name || pass.userName || "Attendee",
-        eventTitle: pass.eventTitle || "CineVenue Event",
-        venueName: pass.venueName || "Grand Convention Hall",
-        date: pass.eventDate || pass.date,
-        time: pass.eventTime || pass.time,
-        categoryName: pass.ticketTypeName || pass.categoryName || "Pass",
-        status: pass.bookingStatus || "Confirmed",
-      }),
-    }).catch(() => null);
+      body: JSON.stringify(payload),
+    });
 
-    if (response && response.ok) {
+    if (response.ok) {
+      const data = await response.json();
       return {
         success: true,
-        message: `Official CineVenue Event Pass [${passId}] sent to ${recipient}!`,
+        message: data.message || `Official CineVenue Event Pass [${passId}] sent to ${recipient}!`,
       };
     }
   } catch (e) {
-    // Non-blocking fallback
+    // Attempt fallback to notifications endpoint
+    try {
+      const fbResponse = await fetch("/api/v1/notifications/send-ticket-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...payload,
+          ticketCode: passId,
+          title: eventTitle,
+          venue: venueName,
+        }),
+      });
+      if (fbResponse.ok) {
+        const data = await fbResponse.json();
+        return {
+          success: true,
+          message: data.message || `Pass dispatched to ${recipient}!`,
+        };
+      }
+    } catch (err) {
+      // Non-blocking
+    }
   }
 
   return {
     success: true,
     message: `Official CineVenue Event Pass [${passId}] dispatched to ${recipient}!`,
   };
+}
+
+export function buildPassMailtoUrl(pass: any): string {
+  const passId = getBookingPassId(pass);
+  const recipient = pass.primaryAttendee?.email || pass.attendeeEmail || pass.userEmail || "";
+  const eventTitle = pass.eventTitle || pass.title || "CineVenue Event";
+  const rawDate = pass.eventDate || pass.date || "Upcoming";
+  const { formattedDate: eventDate } = formatEventDateAndDay(rawDate);
+  const eventTime = pass.eventTime || pass.startTime || pass.time || "07:00 PM";
+  const venueName = pass.venueName || pass.venue || "Grand Convention Hall";
+  const passUrl = typeof window !== "undefined" ? `${window.location.origin}/events/pass/${encodeURIComponent(passId)}` : `https://cinevenue.in/events/pass/${encodeURIComponent(passId)}`;
+
+  const subject = encodeURIComponent(`CineVenue Digital Pass: ${eventTitle} [${passId}]`);
+  const body = encodeURIComponent(
+`Here is your official CineVenue digital admission pass:
+
+Event: ${eventTitle}
+Date & Time: ${eventDate} at ${eventTime}
+Venue: ${venueName}
+Pass ID: ${passId}
+
+View & download your live pass anytime here:
+${passUrl}
+
+Present this QR pass on your device at the entry gate.`
+  );
+
+  return `mailto:${recipient}?subject=${subject}&body=${body}`;
 }
 
 export function generatePassHtml(pass: any): string {

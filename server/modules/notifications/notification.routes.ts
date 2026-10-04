@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { logger } from "../../shared/logger";
+import { sendEventPassEmail } from "../../services/emailService";
 
 const router = Router();
 
@@ -31,22 +32,26 @@ router.post("/send-ticket-email", async (req: Request, res: Response, next: Next
       type
     } = req.body;
 
-    const subject = `CineVenue Booking Confirmed — ${title || "Premium Entertainment"}`;
-
-    logger.info(`[NotificationService:Email] Dispatched ticket confirmation email to ${email}`, {
-      subject,
-      bookingId,
-      ticketCode,
-      title
+    const emailResult = await sendEventPassEmail({
+      to: email,
+      passId: ticketCode || bookingId || `TKT-${Date.now()}`,
+      orderId: bookingId,
+      eventTitle: title || "CineVenue Entertainment",
+      attendeeName: name || "Customer",
+      venueName: venue || "CineVenue Multiplex",
+      date: date || "Upcoming",
+      time: time || "Showtime",
+      tier: category || (type === "MOVIE" ? "Cinema Ticket" : "Event Pass"),
+      passUrl: ticketUrl
     });
 
     return res.json({
       success: true,
-      message: `CineVenue confirmation email and digital ticket pass dispatched to ${email}`,
+      message: emailResult.message || `CineVenue confirmation email and digital ticket pass dispatched to ${email}`,
       data: {
         recipient: email,
-        subject,
-        bookingId,
+        bookingId: bookingId || ticketCode,
+        liveSent: emailResult.liveSent,
         sentAt: new Date().toISOString()
       }
     });

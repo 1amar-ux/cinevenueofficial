@@ -25,6 +25,7 @@ import {
   triggerCashfreeCheckout,
 } from '../../services/cashfreeService';
 import DigitalTicketPassModal from './DigitalTicketPassModal';
+import { sendEventPassToEmail } from '../../utils/eventPassPdf';
 
 interface EventBookingModalProps {
   event: EventItem;
@@ -327,6 +328,9 @@ export default function EventBookingModal({
 
       setConfirmedBooking(booking);
       if (onBookingSuccess) onBookingSuccess(booking);
+
+      // Automatically dispatch event pass directly to attendee's email
+      sendEventPassToEmail(booking);
     } catch (err) {
       console.error('Booking failed:', err);
       alert('Failed to process booking. Please try again.');

@@ -25,6 +25,7 @@ import type {
 } from '../types/eventBooking';
 import apiClient from './apiClient';
 import { dispatchTicketEmail, dispatchTicketSms } from '../utils/ticketDeliveryService';
+import { sendEventPassToEmail } from '../utils/eventPassPdf';
 
 const STORAGE_KEYS = {
   EVENTS: 'cv_ticketed_events',
@@ -1327,6 +1328,9 @@ export function createEventBooking(params: {
       paymentMethod: record.paymentMethod,
       posterUrl: record.bannerUrl,
     }).catch(() => {});
+
+    // Send full digital pass email with QR and direct live link
+    sendEventPassToEmail(record).catch(() => {});
 
     if (record.primaryAttendee.phone) {
       dispatchTicketSms({

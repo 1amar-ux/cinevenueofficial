@@ -38,6 +38,17 @@ const envSchema = z.object({
   SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
   SUPABASE_SECRET_KEY: z.string().optional(),
   
+  // Email & SMTP Notification Gateway
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.union([z.string(), z.number()]).optional().transform((val) => val ? Number(val) : 587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.string().optional().default("false"),
+  SMTP_FROM: z.string().optional(),
+  EMAIL_USER: z.string().optional(),
+  EMAIL_PASS: z.string().optional(),
+
   // CORS & Network
   CORS_ORIGIN: z.string().default("*"),
   FRONTEND_URL: z.string().optional().default("http://localhost:3000")

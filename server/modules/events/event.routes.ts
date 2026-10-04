@@ -3,8 +3,65 @@ import { prisma } from "../../config/database";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
 import { NotFoundError } from "../../shared/errors";
+import { sendEventPassEmail } from "../../services/emailService";
 
 const router = Router();
+
+// 0. Send Event Pass via Email (SMTP / Live Gateway)
+router.post("/send-pass-email", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      email,
+      to,
+      passId,
+      orderId,
+      eventTitle,
+      attendeeName,
+      userName,
+      name,
+      venueName,
+      venueAddress,
+      date,
+      day,
+      time,
+      categoryName,
+      tier,
+      totalPrice,
+      qrCodeUrl,
+      passUrl,
+      posterUrl,
+      isFree
+    } = req.body;
+
+    const recipient = email || to;
+    if (!recipient) {
+      return res.status(400).json({ success: false, message: "Recipient email address is required." });
+    }
+
+    const result = await sendEventPassEmail({
+      to: recipient,
+      passId: passId || `PASS-${Math.floor(100000 + Math.random() * 900000)}`,
+      orderId,
+      eventTitle: eventTitle || "CineVenue Live Event",
+      attendeeName: attendeeName || userName || name || "Valued Guest",
+      venueName: venueName || "Event Arena",
+      venueAddress,
+      date: date || "Upcoming",
+      day,
+      time: time || "07:00 PM",
+      tier: tier || categoryName || "VIP PASS",
+      totalPrice,
+      qrCodeUrl,
+      passUrl,
+      posterUrl,
+      isFree
+    });
+
+    return res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // 1. List Public Events
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
