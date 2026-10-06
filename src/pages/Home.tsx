@@ -461,57 +461,41 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
     <div className="home-page bg-[#EFEFED] dark:bg-[#09090A] min-h-screen text-gray-950 dark:text-[#F3F4F6] font-sans selection:bg-[#D4AF37] selection:text-black antialiased">
       
       {/* LUXURY FLOATING NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#EFEFED]/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-gray-300 dark:border-white/10 py-3 px-4 sm:px-6 md:px-12 flex items-center justify-between shadow-xs dark:shadow-none">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#EFEFED]/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-gray-300 dark:border-white/10 py-2.5 sm:py-3 px-3 sm:px-6 xl:px-10 2xl:px-12 flex items-center justify-between gap-2 shadow-xs dark:shadow-none">
         <div 
           onClick={() => {
             setActiveDivision("none");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className="flex items-center gap-3 cursor-pointer"
+          className="flex items-center gap-3 cursor-pointer shrink-0"
         >
           <CineVenueLogo size="md" />
         </div>
 
-        {/* Sub-Website Navigation Links beside Sign In */}
-        <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-[13px] 2xl:text-sm font-extrabold uppercase tracking-wide text-gray-950 dark:text-white">
-          <button onClick={() => navigate("/booking")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
-          <button onClick={() => navigate("/events")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
-          <button onClick={() => navigate("/productions")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎥 Film Production</button>
-          <button onClick={() => navigate("/proposals")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">📢 Brand Publicity</button>
-          <button onClick={() => navigate("/cinecoins")} className="whitespace-nowrap rounded-full px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🪙 CineCoins</button>
+        {/* Sub-Website Navigation Links */}
+        <div className="hidden xl:flex items-center gap-1 2xl:gap-2 text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-gray-950 dark:text-white shrink min-w-0">
+          <button onClick={() => navigate("/booking")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
+          <button onClick={() => navigate("/events")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
+          <button onClick={() => navigate("/productions")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎥 Film Production</button>
+          <button onClick={() => navigate("/proposals")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">📢 Brand Publicity</button>
+          <button onClick={() => navigate("/cinecoins")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🪙 CineCoins</button>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Theme switcher: segmented on 2xl+, compact dropdown on laptop/tablet */}
+          <div className="hidden 2xl:flex items-center">
             <ThemeToggle variant="segmented" />
           </div>
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-400 dark:border-white/15 text-gray-950 dark:text-white/80 transition hover:border-gray-900 hover:text-black md:hidden"
-            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-          <button
-            onClick={() => {
-              setActiveDivision("none");
-              setTimeout(() => {
-                document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
-              }, 50);
-            }}
-            className="hidden md:inline-flex items-center gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-4 py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap"
-          >
-            <span>☰</span>
-            <span>Menu</span>
-          </button>
+          <div className="flex 2xl:hidden items-center">
+            <ThemeToggle variant="dropdown" />
+          </div>
 
+          {/* User Profile or Sign In / Sign Up CTAs */}
           {userEmail ? (
-            <div className="flex items-center gap-2 bg-gray-200/70 dark:bg-white/[0.03] border border-gray-400 dark:border-gold/40 px-3 py-1.5 rounded-full shadow-xs dark:shadow-none">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-200/70 dark:bg-white/[0.03] border border-gray-400 dark:border-gold/40 px-2.5 sm:px-3 py-1.5 rounded-full shadow-xs dark:shadow-none shrink-0">
               <button
                 onClick={() => navigate("/account")}
-                className="flex items-center gap-2 text-xs sm:text-[13px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-[13px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
                 title={`Logged in as ${userEmail}`}
               >
                 <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
@@ -532,21 +516,49 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               )}
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
+                type="button"
                 onClick={() => onOpenAuth?.("signin")}
-                className="hidden sm:inline-flex rounded-full border border-gray-400 dark:border-white/15 bg-transparent px-4 py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap"
+                className="inline-flex rounded-full border border-gray-400 dark:border-white/20 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/95 hover:border-gray-900 hover:text-black dark:hover:border-gold dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign In
               </button>
               <button
+                type="button"
                 onClick={() => onOpenAuth?.("signup")}
-                className="hidden sm:inline-flex rounded-full bg-gold px-4 py-2 text-xs sm:text-[13px] uppercase tracking-wider text-black font-extrabold hover:bg-gold-light shadow-md shadow-gold/15 transition-all cursor-pointer border-none whitespace-nowrap"
+                className="hidden sm:inline-flex rounded-full bg-gold px-3.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider text-black font-extrabold hover:bg-gold-light shadow-md shadow-gold/15 transition-all cursor-pointer border-none whitespace-nowrap shrink-0"
               >
                 Sign Up
               </button>
-            </>
+            </div>
           )}
+
+          {/* Desktop Menu Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveDivision("none");
+              setTimeout(() => {
+                document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
+              }, 50);
+            }}
+            className="hidden md:inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <span>☰</span>
+            <span>Menu</span>
+          </button>
+
+          {/* Mobile Menu Hamburger */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-400 dark:border-white/15 text-gray-950 dark:text-white/80 transition hover:border-gray-900 hover:text-black md:hidden shrink-0"
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </header>
 

@@ -283,16 +283,18 @@ export default function Navbar({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
+                type="button"
                 onClick={() => onOpenAuth?.("signin")}
-                className="hidden sm:inline-flex rounded-full border border-gray-300 dark:border-white/15 bg-transparent px-3.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-white/80 hover:border-gold/60 hover:text-gold dark:hover:border-gold/40 dark:hover:text-gold transition-all cursor-pointer"
+                className="inline-flex rounded-full border border-gray-300 dark:border-white/15 bg-transparent px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-white/80 hover:border-gold/60 hover:text-gold dark:hover:border-gold/40 dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign In
               </button>
               <button
+                type="button"
                 onClick={() => onOpenAuth?.("signup")}
-                className="inline-flex rounded-full bg-gold px-3.5 py-1.5 text-xs text-black font-bold hover:bg-gold-light shadow-md shadow-gold/20 transition-all cursor-pointer border-none"
+                className="hidden sm:inline-flex rounded-full bg-gold px-3 sm:px-3.5 py-1.5 text-xs text-black font-bold hover:bg-gold-light shadow-md shadow-gold/20 transition-all cursor-pointer border-none whitespace-nowrap shrink-0"
               >
                 Sign Up
               </button>
