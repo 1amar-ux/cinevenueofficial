@@ -2352,6 +2352,8 @@ export default function App() {
         }
       />
       <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/staff-login" element={<AdminLogin defaultMode="employee" />} />
+      <Route path="/employee-login" element={<AdminLogin defaultMode="employee" />} />
 
       {/* JWT-Protected Material UI Admin Routes */}
       <Route

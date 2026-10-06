@@ -25,7 +25,9 @@ import {
   Activity,
   AlertTriangle,
   X,
-  Check
+  Check,
+  Link2,
+  Share2
 } from "lucide-react";
 import {
   Employee,
@@ -36,6 +38,7 @@ import {
 import EmployeeResetPasswordModal from "./EmployeeResetPasswordModal";
 import EmployeePermissionsModal from "./EmployeePermissionsModal";
 import EmployeeAuditLogsModal from "./EmployeeAuditLogsModal";
+import EmployeeShareLoginModal from "./EmployeeShareLoginModal";
 
 export default function EmployeeManagementModule() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -51,6 +54,8 @@ export default function EmployeeManagementModule() {
   // Modals & Drawers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareEmployee, setShareEmployee] = useState<Employee | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const [permissionEmployee, setPermissionEmployee] = useState<Employee | null>(null);
@@ -135,6 +140,10 @@ export default function EmployeeManagementModule() {
       showToast(`Employee ${formFullName} created successfully!`);
       setIsAddModalOpen(false);
       fetchEmployees();
+      if (res.employee) {
+        setShareEmployee(res.employee);
+        setIsShareModalOpen(true);
+      }
     } else {
       setFormError(res.message);
     }
@@ -275,6 +284,18 @@ export default function EmployeeManagementModule() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShareEmployee(null);
+              setIsShareModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] text-xs font-semibold rounded-xl border border-[#D4AF37]/30 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+            title="Generate & Share Staff Login Links"
+          >
+            <Link2 className="w-4 h-4" />
+            <span>Staff Login Link</span>
+          </button>
+
           <button
             onClick={() => setIsAuditModalOpen(true)}
             className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold rounded-xl border border-white/10 transition-all flex items-center gap-2 cursor-pointer"
@@ -507,6 +528,18 @@ export default function EmployeeManagementModule() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           
+                          {/* Share Staff Login Link */}
+                          <button
+                            onClick={() => {
+                              setShareEmployee(emp);
+                              setIsShareModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg text-text-muted hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all cursor-pointer"
+                            title={`Get Staff Login Link for ${emp.fullName}`}
+                          >
+                            <Link2 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          </button>
+
                           {/* View */}
                           <button
                             onClick={() => setViewingEmployee(emp)}
@@ -1087,6 +1120,18 @@ export default function EmployeeManagementModule() {
       <EmployeeAuditLogsModal
         isOpen={isAuditModalOpen}
         onClose={() => setIsAuditModalOpen(false)}
+      />
+
+      {/* Staff Login Link Generator & Share Modal */}
+      <EmployeeShareLoginModal
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false);
+          setShareEmployee(null);
+        }}
+        employee={shareEmployee}
+        employeesList={employees}
+        onSuccessToast={showToast}
       />
     </div>
   );

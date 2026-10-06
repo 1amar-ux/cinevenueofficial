@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer, { Transporter } from "nodemailer";
 import { env } from "../config/env";
 import { logger } from "../shared/logger";
 import { readPersistedFileSettings } from "../middleware/maintenance";
@@ -32,7 +32,7 @@ export interface GenericTicketEmailParams {
 /**
  * Returns a configured Nodemailer transporter or null if credentials are not configured.
  */
-export function getMailTransporter(): nodemailer.Transporter | null {
+export function getMailTransporter(): Transporter | null {
   const fileSettings = (typeof readPersistedFileSettings === 'function' ? readPersistedFileSettings() : {}) || {};
   const emailCfg = fileSettings.emailConfig || {};
 

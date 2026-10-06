@@ -34,6 +34,7 @@ interface AdminEventItem {
   id: string;
   _id?: string;
   title: string;
+  description?: string;
   slug?: string;
   category?: string;
   eventType: 'PAID' | 'FREE';

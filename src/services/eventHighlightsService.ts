@@ -60,15 +60,16 @@ export const DEFAULT_BROWSE_CATEGORIES: BrowseLiveCategoryItem[] = [
 ];
 
 /**
- * Loads trending experiences with graceful fallback to default seeds
+ * Loads trending experiences with graceful fallback to default seeds only when uninitialized
  */
 export function getTrendingExperiences(): TrendingExperienceItem[] {
   if (typeof window === 'undefined') return DEFAULT_TRENDING_EXPERIENCES;
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.TRENDING_EXPERIENCES);
-    if (!raw) return DEFAULT_TRENDING_EXPERIENCES;
+    // Only fallback to defaults if storage has never been initialized
+    if (raw === null) return DEFAULT_TRENDING_EXPERIENCES;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_TRENDING_EXPERIENCES;
+    return Array.isArray(parsed) ? parsed : DEFAULT_TRENDING_EXPERIENCES;
   } catch {
     return DEFAULT_TRENDING_EXPERIENCES;
   }
@@ -80,14 +81,15 @@ export function getTrendingExperiences(): TrendingExperienceItem[] {
 export function saveTrendingExperiences(items: TrendingExperienceItem[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEYS.TRENDING_EXPERIENCES, JSON.stringify(items));
-    window.dispatchEvent(new CustomEvent('cinevenue:trending_experiences_updated', { detail: items }));
+    const safeItems = Array.isArray(items) ? items : [];
+    localStorage.setItem(STORAGE_KEYS.TRENDING_EXPERIENCES, JSON.stringify(safeItems));
+    window.dispatchEvent(new CustomEvent('cinevenue:trending_experiences_updated', { detail: safeItems }));
     
     // Also sync to serverless global settings
     fetch('/api/v1/admin/platform-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trendingExperiences: items }),
+      body: JSON.stringify({ trendingExperiences: safeItems }),
     }).catch(() => {});
   } catch (e) {
     console.error('Failed to save trending experiences:', e);
@@ -95,15 +97,16 @@ export function saveTrendingExperiences(items: TrendingExperienceItem[]): void {
 }
 
 /**
- * Loads browse live categories with graceful fallback to default seeds
+ * Loads browse live categories with graceful fallback to default seeds only when uninitialized
  */
 export function getBrowseLiveCategories(): BrowseLiveCategoryItem[] {
   if (typeof window === 'undefined') return DEFAULT_BROWSE_CATEGORIES;
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.BROWSE_CATEGORIES);
-    if (!raw) return DEFAULT_BROWSE_CATEGORIES;
+    // Only fallback to defaults if storage has never been initialized
+    if (raw === null) return DEFAULT_BROWSE_CATEGORIES;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_BROWSE_CATEGORIES;
+    return Array.isArray(parsed) ? parsed : DEFAULT_BROWSE_CATEGORIES;
   } catch {
     return DEFAULT_BROWSE_CATEGORIES;
   }
@@ -115,16 +118,31 @@ export function getBrowseLiveCategories(): BrowseLiveCategoryItem[] {
 export function saveBrowseLiveCategories(items: BrowseLiveCategoryItem[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEYS.BROWSE_CATEGORIES, JSON.stringify(items));
-    window.dispatchEvent(new CustomEvent('cinevenue:browse_categories_updated', { detail: items }));
+    const safeItems = Array.isArray(items) ? items : [];
+    localStorage.setItem(STORAGE_KEYS.BROWSE_CATEGORIES, JSON.stringify(safeItems));
+    window.dispatchEvent(new CustomEvent('cinevenue:browse_categories_updated', { detail: safeItems }));
     
     // Also sync to serverless global settings
     fetch('/api/v1/admin/platform-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ browseLiveCategories: items }),
+      body: JSON.stringify({ browseLiveCategories: safeItems }),
     }).catch(() => {});
   } catch (e) {
     console.error('Failed to save browse categories:', e);
   }
+}
+
+/**
+ * Wipes all trending experiences and persists empty list
+ */
+export function clearAllTrendingExperiences(): void {
+  saveTrendingExperiences([]);
+}
+
+/**
+ * Wipes all browse categories and persists empty list
+ */
+export function clearAllBrowseCategories(): void {
+  saveBrowseLiveCategories([]);
 }

@@ -10,6 +10,7 @@ export interface GlobalAppSettings {
   maintenanceEndTime: string | null;
   globalSubwebsiteEnabled: boolean;
   subwebsiteMaintenanceMessage: string;
+  emailConfig?: Record<string, any>;
   serviceControls?: Record<string, any>;
   updatedAt?: string;
   updatedBy?: string;

@@ -85,19 +85,26 @@ export interface EventOrganizerProfile {
 
 export interface EventItem {
   id: string;
+  _id?: string;
   title: string;
   slug: string;
   description: string;
   category: EventCategoryType;
+  categories?: any[];
   bannerUrl: string;
   galleryUrls?: string[];
+  posterUrl?: string;
+  image?: string;
+  price?: number | string;
   organizer: EventOrganizerProfile;
   date: string; // YYYY-MM-DD
+  time?: string;
   startTime: string; // e.g., "07:00 PM"
   endTime?: string;
   duration?: string; // e.g., "2h 30m"
   venueName: string;
   venueAddress: string;
+  venue?: any;
   city: string;
   latitude?: number;
   longitude?: number;
@@ -114,10 +121,13 @@ export interface EventItem {
   eventType?: EventType;
   isWaitlistEnabled?: boolean;
   waitlistCount?: number;
+  featured?: boolean;
   isFeatured?: boolean;
+  isActive?: boolean;
   isSellingFast?: boolean;
   rating?: number;
   reviewCount?: number;
+  reviews?: any[];
   passSettings?: {
     enabled: boolean;
     passTypes?: string[];

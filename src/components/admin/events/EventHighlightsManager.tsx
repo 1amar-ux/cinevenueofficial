@@ -27,6 +27,7 @@ export default function EventHighlightsManager() {
   const [trendingList, setTrendingList] = useState<TrendingExperienceItem[]>([]);
   const [categoriesList, setCategoriesList] = useState<BrowseLiveCategoryItem[]>([]);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [savedMessage, setSavedMessage] = useState('Live highlights updated! Changes are now actively broadcasting to the public website.');
 
   // New Trending Item Form State
   const [newTrendTitle, setNewTrendTitle] = useState('');
@@ -43,15 +44,50 @@ export default function EventHighlightsManager() {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
 
   useEffect(() => {
-    setTrendingList(getTrendingExperiences());
-    setCategoriesList(getBrowseLiveCategories());
+    const syncState = () => {
+      setTrendingList(getTrendingExperiences());
+      setCategoriesList(getBrowseLiveCategories());
+    };
+
+    syncState();
+
+    const handleTrendUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setTrendingList(e.detail);
+      } else {
+        setTrendingList(getTrendingExperiences());
+      }
+    };
+
+    const handleCatUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCategoriesList(e.detail);
+      } else {
+        setCategoriesList(getBrowseLiveCategories());
+      }
+    };
+
+    window.addEventListener('cinevenue:trending_experiences_updated', handleTrendUpdate);
+    window.addEventListener('cinevenue:browse_categories_updated', handleCatUpdate);
+    window.addEventListener('storage', syncState);
+
+    return () => {
+      window.removeEventListener('cinevenue:trending_experiences_updated', handleTrendUpdate);
+      window.removeEventListener('cinevenue:browse_categories_updated', handleCatUpdate);
+      window.removeEventListener('storage', syncState);
+    };
   }, []);
+
+  const triggerFeedback = (msg: string) => {
+    setSavedMessage(msg);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+  };
 
   const handleSaveAll = () => {
     saveTrendingExperiences(trendingList);
     saveBrowseLiveCategories(categoriesList);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    triggerFeedback('All Trending Experiences & Categories saved successfully!');
   };
 
   const handleResetDefaults = () => {
@@ -60,8 +96,7 @@ export default function EventHighlightsManager() {
       setCategoriesList(DEFAULT_BROWSE_CATEGORIES);
       saveTrendingExperiences(DEFAULT_TRENDING_EXPERIENCES);
       saveBrowseLiveCategories(DEFAULT_BROWSE_CATEGORIES);
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+      triggerFeedback('Factory defaults restored and broadcasting to portal.');
     }
   };
 
@@ -81,6 +116,7 @@ export default function EventHighlightsManager() {
     const updated = [...trendingList, newItem];
     setTrendingList(updated);
     saveTrendingExperiences(updated);
+    triggerFeedback(`"${newItem.title}" added to trending experiences.`);
 
     setNewTrendTitle('');
     setNewTrendLocation('');
@@ -88,9 +124,19 @@ export default function EventHighlightsManager() {
   };
 
   const handleDeleteTrending = (id: string) => {
+    const itemToDelete = trendingList.find((item) => item.id === id);
     const updated = trendingList.filter((item) => item.id !== id);
     setTrendingList(updated);
     saveTrendingExperiences(updated);
+    triggerFeedback(itemToDelete ? `"${itemToDelete.title}" removed from trending experiences.` : 'Trending experience removed successfully.');
+  };
+
+  const handleClearAllTrending = () => {
+    if (window.confirm('Are you sure you want to delete all trending experiences? The section will be empty.')) {
+      setTrendingList([]);
+      saveTrendingExperiences([]);
+      triggerFeedback('All trending experiences have been deleted.');
+    }
   };
 
   const handleUpdateTrending = (id: string, updates: Partial<TrendingExperienceItem>) => {
@@ -115,6 +161,7 @@ export default function EventHighlightsManager() {
     const updated = [...categoriesList, newItem];
     setCategoriesList(updated);
     saveBrowseLiveCategories(updated);
+    triggerFeedback(`Category "${newItem.name}" added.`);
 
     setNewCatName('');
     setNewCatCount('');
@@ -122,9 +169,19 @@ export default function EventHighlightsManager() {
   };
 
   const handleDeleteCategory = (id: string) => {
+    const catToDelete = categoriesList.find((item) => item.id === id);
     const updated = categoriesList.filter((item) => item.id !== id);
     setCategoriesList(updated);
     saveBrowseLiveCategories(updated);
+    triggerFeedback(catToDelete ? `Category "${catToDelete.name}" removed.` : 'Browse category removed.');
+  };
+
+  const handleClearAllCategories = () => {
+    if (window.confirm('Are you sure you want to delete all browse categories?')) {
+      setCategoriesList([]);
+      saveBrowseLiveCategories([]);
+      triggerFeedback('All browse categories have been deleted.');
+    }
   };
 
   const handleUpdateCategory = (id: string, updates: Partial<BrowseLiveCategoryItem>) => {
@@ -173,8 +230,8 @@ export default function EventHighlightsManager() {
       {/* Success Notification Banner */}
       {savedSuccess && (
         <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Live highlights updated! Changes are now actively broadcasting to the public website.</span>
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{savedMessage}</span>
         </div>
       )}
 
@@ -199,9 +256,21 @@ export default function EventHighlightsManager() {
                 </span>
               </div>
             </div>
-            <span className="text-xs font-mono font-bold text-gold px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
-              {trendingList.length} Items
-            </span>
+            <div className="flex items-center gap-2">
+              {trendingList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllTrending}
+                  className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] font-bold uppercase transition-all cursor-pointer"
+                  title="Remove all trending experiences"
+                >
+                  Clear All
+                </button>
+              )}
+              <span className="text-xs font-mono font-bold text-gold px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
+                {trendingList.length} Items
+              </span>
+            </div>
           </div>
 
           {/* Add New Trending Form */}
@@ -350,9 +419,21 @@ export default function EventHighlightsManager() {
                 </span>
               </div>
             </div>
-            <span className="text-xs font-mono font-bold text-gold px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
-              {categoriesList.length} Categories
-            </span>
+            <div className="flex items-center gap-2">
+              {categoriesList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllCategories}
+                  className="px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] font-bold uppercase transition-all cursor-pointer"
+                  title="Remove all categories"
+                >
+                  Clear All
+                </button>
+              )}
+              <span className="text-xs font-mono font-bold text-gold px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
+                {categoriesList.length} Categories
+              </span>
+            </div>
           </div>
 
           {/* Add New Category Form */}
@@ -484,15 +565,21 @@ export default function EventHighlightsManager() {
               Ticket demand is currently surging across our regional portals. Here is a live feed of active pass bookings over the last 15 minutes.
             </p>
             <div className="space-y-3 pt-1">
-              {trendingList.map((item, i) => (
-                <div key={i} className="p-3 rounded-lg bg-white/[0.04] border border-white/5 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">{item.title}</span>
-                    <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
-                  </div>
-                  <p className="text-[10px] text-white/50">{item.location}</p>
+              {trendingList.length === 0 ? (
+                <div className="p-4 rounded-lg bg-white/[0.02] border border-dashed border-white/10 text-center text-xs text-white/40">
+                  No trending experiences currently active. Feed will be empty on portal.
                 </div>
-              ))}
+              ) : (
+                trendingList.map((item, i) => (
+                  <div key={item.id || i} className="p-3 rounded-lg bg-white/[0.04] border border-white/5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">{item.title}</span>
+                      <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
+                    </div>
+                    <p className="text-[10px] text-white/50">{item.location}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -505,12 +592,18 @@ export default function EventHighlightsManager() {
               Filter and browse high-society event passes based on premium regional categories:
             </p>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              {categoriesList.map((cat, i) => (
-                <div key={i} className="p-2.5 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-between">
-                  <span className="text-xs font-medium text-white/90">{cat.name}</span>
-                  <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
+              {categoriesList.length === 0 ? (
+                <div className="col-span-2 p-4 rounded-lg bg-white/[0.02] border border-dashed border-white/10 text-center text-xs text-white/40">
+                  No browse categories active.
                 </div>
-              ))}
+              ) : (
+                categoriesList.map((cat, i) => (
+                  <div key={cat.id || i} className="p-2.5 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                    <span className="text-xs font-medium text-white/90">{cat.name}</span>
+                    <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

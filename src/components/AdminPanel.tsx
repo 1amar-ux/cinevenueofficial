@@ -9,8 +9,9 @@ import {
   Sparkles, Clock, DollarSign, CalendarRange, Wallet, CheckCircle, Ticket, 
   Layers, Users, LayoutDashboard, Bell, LogOut, Search, Menu, Monitor, QrCode, 
   Play, Pause, RotateCcw, Thermometer, Volume2, ArrowLeft, Edit, Shield, Lock, 
-  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins
+  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck
 } from "lucide-react";
+import EmployeeManagementModule from "./admin/employees/EmployeeManagementModule";
 import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction } from "../types";
 import { DEFAULT_CINECOINS_SETTINGS } from "../data";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
@@ -137,7 +138,7 @@ interface AdminPanelProps {
   onUpdateCineCoinsTransactions?: (txs: CineCoinsTransaction[]) => void;
 }
 
-type TabType = "integration_testing" | "system_monitoring" | "overview" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
+type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
 
 export default function AdminPanel({
   isOpen,
@@ -795,6 +796,7 @@ export default function AdminPanel({
       case "settings":
       case "service_control":
         return true; // Settings is accessible to all admins
+      case "employees":
       case "access":
       case "rentals_messages":
       case "cinecoins_admin":
@@ -1930,6 +1932,27 @@ export default function AdminPanel({
                   </button>
                 )}
 
+                {/* Tab Item - Staff & Employee Access (Super Admin Only) */}
+                {effectiveSuperAdmin && (
+                  <button
+                    onClick={() => { setActiveTab("employees"); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      activeTab === "employees" 
+                        ? "bg-gold/10 text-gold border-l-2 border-gold" 
+                        : "text-text-secondary hover:bg-white/[0.02] hover:text-text-primary"
+                    }`}
+                    id="tab-btn-employees"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="w-4 h-4 text-gold shrink-0" />
+                      <span>Staff & Employee Access</span>
+                    </div>
+                    <span className="text-[9px] font-bold bg-gold/15 border border-gold/30 text-gold px-1.5 py-0.5 rounded">
+                      STAFF
+                    </span>
+                  </button>
+                )}
+
                 {/* Tab Item - CineCoins Standalone Loyalty Management */}
                 {effectiveSuperAdmin && (
                   <button
@@ -2455,6 +2478,15 @@ export default function AdminPanel({
                 transactions={cineCoinsTransactions || []}
                 onUpdateTransactions={onUpdateCineCoinsTransactions || (() => {})}
               />
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: STAFF & EMPLOYEE ACCESS MANAGEMENT MODULE */}
+          {/* ========================================================= */}
+          {activeTab === "employees" && (
+            <div className="space-y-6 animate-fade-in" id="tab-employees">
+              <EmployeeManagementModule />
             </div>
           )}
 

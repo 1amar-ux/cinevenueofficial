@@ -303,6 +303,7 @@ export interface Event {
   image: string;
   imageUrl?: string;
   bannerUrl?: string;
+  category?: string;
   categories: EventCategory[];
   reviews: EventReview[];
   featured?: boolean;

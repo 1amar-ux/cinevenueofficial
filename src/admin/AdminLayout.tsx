@@ -221,7 +221,7 @@ export default function AdminLayout() {
     {
       title: "IDENTITY & ACCESS",
       items: [
-        { id: "employees", label: "Employee Management", icon: UserCheck },
+        { id: "employees", label: "Staff & Employee Access", icon: UserCheck },
         { id: "admins", label: "Admin Management", icon: ShieldAlert },
         { id: "owners", label: "Theatre Owners", icon: Users },
         { id: "users", label: "Platform Users", icon: Users }
@@ -353,6 +353,7 @@ export default function AdminLayout() {
   const [broadcastStatus, setBroadcastStatus] = useState("");
 
   const { settings: globalAppSettings, updateGlobalSettings } = useAppSettings();
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
 
   // Platform setting states
   const [platformName, setPlatformName] = useState("Cinevenue Premium Booking");

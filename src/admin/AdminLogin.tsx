@@ -1,18 +1,41 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Shield, Lock, Mail, ArrowRight, UserCheck, KeyRound, AlertCircle, HelpCircle, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Shield, Lock, Mail, ArrowRight, UserCheck, KeyRound, AlertCircle, HelpCircle, X, Sparkles } from "lucide-react";
 import CineVenueLogo from "../components/CineVenueLogo";
 import ThemeToggle from "../components/ThemeToggle";
 import { employeeService } from "../services/employeeService";
 
-export default function AdminLogin() {
-  const [loginMode, setLoginMode] = useState<"admin" | "employee">("employee");
-  const [identifier, setIdentifier] = useState(""); // Username or Email
+interface AdminLoginProps {
+  defaultMode?: "admin" | "employee";
+}
+
+export default function AdminLogin({ defaultMode }: AdminLoginProps = {}) {
+  const [searchParams] = useSearchParams();
+  const urlMode = searchParams.get("mode");
+  const urlUsername = searchParams.get("username") || searchParams.get("user") || searchParams.get("email") || "";
+
+  const [loginMode, setLoginMode] = useState<"admin" | "employee">(() => {
+    if (urlMode === "admin") return "admin";
+    if (urlMode === "employee") return "employee";
+    return defaultMode || "employee";
+  });
+  const [identifier, setIdentifier] = useState(() => urlUsername); // Username or Email
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (urlUsername && !identifier) {
+      setIdentifier(urlUsername);
+    }
+    if (urlMode === "employee" && loginMode !== "employee") {
+      setLoginMode("employee");
+    } else if (urlMode === "admin" && loginMode !== "admin") {
+      setLoginMode("admin");
+    }
+  }, [urlUsername, urlMode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,6 +170,17 @@ export default function AdminLogin() {
           <div className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-semibold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {urlUsername && loginMode === "employee" && (
+          <div className="p-3 bg-gold/10 border border-gold/30 rounded-xl text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="text-text-secondary">Staff Link Activated:</span>
+              <span className="font-mono font-bold text-gold">@{urlUsername}</span>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/20 text-gold font-bold">PRE-FILLED</span>
           </div>
         )}
 

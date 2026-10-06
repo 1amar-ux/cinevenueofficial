@@ -15,6 +15,12 @@ import {
   Target, FileText, Tv, X, UserCheck, Coins, PlusCircle, ExternalLink, Clapperboard,
   User, LogOut
 } from "lucide-react";
+import {
+  TrendingExperienceItem,
+  BrowseLiveCategoryItem,
+  getTrendingExperiences,
+  getBrowseLiveCategories,
+} from "../services/eventHighlightsService";
 
 type DivisionType = "none" | "live_booking" | "production" | "events" | "promotions";
 type SubWebsiteKey = "movieBooking" | "eventBooking" | "filmProduction" | "eventManagement" | "brandPromotion" | "cineCoinsLoyalty";
@@ -72,6 +78,40 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
     message: ""
   });
   const [proposalSuccess, setProposalSuccess] = useState(false);
+  
+  // Real-time Event Highlights State (Synced with Admin Panel)
+  const [trendingExperiencesList, setTrendingExperiencesList] = useState<TrendingExperienceItem[]>(() => getTrendingExperiences());
+  const [browseLiveCategoriesList, setBrowseLiveCategoriesList] = useState<BrowseLiveCategoryItem[]>(() => getBrowseLiveCategories());
+
+  React.useEffect(() => {
+    const handleTrendUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setTrendingExperiencesList(e.detail);
+      } else {
+        setTrendingExperiencesList(getTrendingExperiences());
+      }
+    };
+    const handleCatUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setBrowseLiveCategoriesList(e.detail);
+      } else {
+        setBrowseLiveCategoriesList(getBrowseLiveCategories());
+      }
+    };
+    const handleStorage = () => {
+      setTrendingExperiencesList(getTrendingExperiences());
+      setBrowseLiveCategoriesList(getBrowseLiveCategories());
+    };
+
+    window.addEventListener("cinevenue:trending_experiences_updated", handleTrendUpdate);
+    window.addEventListener("cinevenue:browse_categories_updated", handleCatUpdate);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("cinevenue:trending_experiences_updated", handleTrendUpdate);
+      window.removeEventListener("cinevenue:browse_categories_updated", handleCatUpdate);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   // Gemini Concierge Types & Intelligent Redirect Parser
   interface ConciergeAction {
@@ -1093,11 +1133,8 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                           Ticket demand is currently surging across our regional portals. Here is a live feed of active pass bookings over the last 15 minutes.
                         </p>
                         <div className="space-y-3 pt-1">
-                          {[
-                            { title: "Sufi Symphony Night", location: "Vijayawada Convention Centre", dynamicStat: "🔥 85 passes booked in last 5 min" },
-                            { title: "Hyderabad Standup Fest", location: "Shilpakala Hall", dynamicStat: "⚡ 110 tickets secured in last 10 min" }
-                          ].map((item, i) => (
-                            <div key={i} className="p-3 rounded bg-white/[0.02] border border-white/5 space-y-1">
+                          {trendingExperiencesList.map((item, i) => (
+                            <div key={item.id || i} className="p-3 rounded bg-white/[0.02] border border-white/5 space-y-1">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-white">{item.title}</span>
                                 <span className="text-[9px] font-mono text-[#D4AF37] font-semibold">{item.dynamicStat}</span>
@@ -1105,6 +1142,11 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                               <p className="text-[10px] text-white/40">{item.location}</p>
                             </div>
                           ))}
+                          {trendingExperiencesList.length === 0 && (
+                            <div className="p-4 rounded bg-white/[0.01] border border-dashed border-white/5 text-center text-xs text-white/30">
+                              No live trending experiences at this time.
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1116,17 +1158,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                           Quickly filter and browse high-society event passes based on premium categories:
                         </p>
                         <div className="grid grid-cols-2 gap-2 pt-1">
-                          {[
-                            { name: "EDM & DJ Arenas", count: "4 Shows" },
-                            { name: "Standup Comedy", count: "6 Shows" },
-                            { name: "Symphony Tours", count: "3 Shows" },
-                            { name: "VIP Celeb Galas", count: "2 Shows" }
-                          ].map((cat, i) => (
-                            <div key={i} className="p-2.5 rounded bg-white/5 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/30 border border-white/5 flex items-center justify-between transition-all cursor-pointer">
+                          {browseLiveCategoriesList.map((cat, i) => (
+                            <div key={cat.id || i} className="p-2.5 rounded bg-white/5 hover:bg-[#D4AF37]/5 hover:border-[#D4AF37]/30 border border-white/5 flex items-center justify-between transition-all cursor-pointer">
                               <span className="text-xs font-medium text-white/80">{cat.name}</span>
                               <span className="text-[9px] font-mono text-[#D4AF37] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 font-bold">{cat.count}</span>
                             </div>
                           ))}
+                          {browseLiveCategoriesList.length === 0 && (
+                            <div className="col-span-2 p-4 rounded bg-white/[0.01] border border-dashed border-white/5 text-center text-xs text-white/30">
+                              No browse categories active.
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

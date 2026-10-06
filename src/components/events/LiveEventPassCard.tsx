@@ -5,6 +5,7 @@ import { getBookingPassId, getBookingOrderId, isFreeEventBooking } from '../../s
 
 interface LiveEventPassCardProps {
   pass: any;
+  event?: any;
   showActions?: boolean;
   onClose?: () => void;
   className?: string;

@@ -1,33 +1,4 @@
 {
-  "globalSubwebsiteEnabled": true,
-  "subwebsiteMaintenanceMessage": "CineVenue sub-websites are temporarily undergoing scheduled system upgrades.",
-  "maintenanceMode": false,
-  "emailConfig": {
-    "user": "amarnathgattem@gmail.com",
-    "email": "amarnathgattem@gmail.com",
-    "pass": "qsbnpymiitrtumkn",
-    "service": "gmail",
-    "smtpHost": "smtp.gmail.com"
-  },
-  "serviceControls": {
-    "website": {
-      "status": true
-    },
-    "eventBooking": {
-      "status": true
-    },
-    "movieBooking": {
-      "status": true
-    },
-    "filmProduction": {
-      "title": "Film Production Division Scheduled Maintenance",
-      "status": true,
-      "message": "Film production maintenance only"
-    },
-    "eventManagement": {
-      "status": true,
-      "message": "Device A triggered event maintenance."
-    }
-  },
-  "updatedAt": "2026-09-30T10:08:09.679Z"
+  "globalSubwebsiteEnabled": false,
+  "updatedAt": "2026-10-06T14:26:26.631Z"
 }
