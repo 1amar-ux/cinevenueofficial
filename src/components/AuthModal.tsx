@@ -257,8 +257,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6">
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0B0B0D] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0B0B0D] shadow-2xl overflow-hidden my-auto">
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div className="flex items-center gap-3">
             <CineVenueLogo size="sm" />

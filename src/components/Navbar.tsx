@@ -172,31 +172,6 @@ export default function Navbar({
               <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">OFF</span>
             )}
           </button>
-
-          <button
-            onClick={() => {
-              window.location.href = "/productions";
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 whitespace-nowrap ${
-              isFilmProductionLive ? "text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
-            }`}
-          >
-            <span>Productions</span>
-            {!isFilmProductionLive && (
-              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">OFF</span>
-            )}
-          </button>
-
-          <button
-            onClick={() => {
-              if (onOpenCineCoins) onOpenCineCoins();
-              else window.location.href = "/cinecoins";
-            }}
-            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-amber-400 hover:text-black dark:hover:text-amber-300 hover:bg-gray-300/80 dark:hover:bg-white/5 flex items-center gap-1 whitespace-nowrap"
-          >
-            <Coins className="w-3.5 h-3.5 text-gray-950 dark:text-amber-400" />
-            <span>CineCoins</span>
-          </button>
         </div>
 
         {/* Right: Search, Member Actions & Avatar */}

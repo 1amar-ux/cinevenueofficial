@@ -472,21 +472,18 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <CineVenueLogo size="md" />
         </div>
 
-        {/* Sub-Website Navigation Links */}
-        <div className="hidden xl:flex items-center gap-1 2xl:gap-2 text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-gray-950 dark:text-white shrink min-w-0">
-          <button onClick={() => navigate("/booking")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
-          <button onClick={() => navigate("/events")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
-          <button onClick={() => navigate("/productions")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎥 Film Production</button>
-          <button onClick={() => navigate("/proposals")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">📢 Brand Publicity</button>
-          <button onClick={() => navigate("/cinecoins")} className="whitespace-nowrap rounded-full px-2.5 2xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🪙 CineCoins</button>
+        {/* Sub-Website Navigation Links: Movie Booking & Events */}
+        <div className="hidden md:flex items-center gap-2 text-xs sm:text-sm font-extrabold uppercase tracking-wide text-gray-950 dark:text-white shrink-0">
+          <button onClick={() => navigate("/booking")} className="whitespace-nowrap rounded-full px-3.5 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
+          <button onClick={() => navigate("/events")} className="whitespace-nowrap rounded-full px-3.5 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Theme switcher: segmented on 2xl+, compact dropdown on laptop/tablet */}
-          <div className="hidden 2xl:flex items-center">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Theme switcher */}
+          <div className="hidden xl:flex items-center">
             <ThemeToggle variant="segmented" />
           </div>
-          <div className="flex 2xl:hidden items-center">
+          <div className="flex xl:hidden items-center">
             <ThemeToggle variant="dropdown" />
           </div>
 
