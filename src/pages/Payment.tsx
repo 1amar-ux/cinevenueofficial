@@ -16,11 +16,13 @@ import { BookingContext } from "../context/BookingContext";
 import api from "../services/api";
 
 import { triggerCashfreeCheckout, createMovieBookingCashfreeOrder, verifyMovieBookingCashfreePayment } from "../services/cashfreeService";
+import { triggerRazorpayCheckout, createRazorpayOrder, verifyRazorpayPayment } from "../services/razorpayService";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "../utils/ticketDeliveryService";
 
 export default function Payment() {
   const navigate = useNavigate();
   const { booking, setBooking } = useContext(BookingContext);
+  const [selectedGateway, setSelectedGateway] = useState<"razorpay" | "cashfree">("razorpay");
   const [loading, setLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
@@ -36,7 +38,62 @@ export default function Payment() {
     setLoading(true);
 
     try {
-      // 1. Create Cashfree Order on Backend
+      if (selectedGateway === "razorpay") {
+        // ==========================================
+        // 1. RAZORPAY TEST MODE CHECKOUT
+        // ==========================================
+        const orderData = await createRazorpayOrder({
+          amount: total,
+          customerName: "CineVenue Guest",
+          customerEmail: "guest@cinevenue.in",
+          customerPhone: "9876543210",
+          tickets: booking.seats.map((s: string) => ({ seatId: s, price: total / (booking.seats.length || 1) }))
+        });
+
+        await triggerRazorpayCheckout({
+          orderData,
+          prefill: {
+            name: "CineVenue Guest",
+            email: "guest@cinevenue.in",
+            contact: "9876543210"
+          },
+          onSuccess: async (paymentResult) => {
+            try {
+              setLoading(true);
+              setPaymentSuccess("Payment authorized! Verifying Razorpay test signature...");
+
+              await verifyRazorpayPayment({
+                razorpay_order_id: paymentResult.razorpay_order_id,
+                razorpay_payment_id: paymentResult.razorpay_payment_id,
+                razorpay_signature: paymentResult.razorpay_signature,
+                bookingId: orderData.bookingId
+              });
+
+              setPaymentSuccess("Payment verified successfully via Razorpay! Generating ticket...");
+              setTimeout(() => {
+                completeBooking("Razorpay (Test Mode)");
+              }, 1200);
+            } catch (vErr: any) {
+              console.error("Razorpay verification error:", vErr);
+              setPaymentError(vErr.message || "Razorpay signature verification failed.");
+              setLoading(false);
+            }
+          },
+          onFailure: (err: any) => {
+            console.error("Razorpay checkout failed:", err);
+            setPaymentError(err?.message || "Razorpay payment cancelled or declined.");
+            setLoading(false);
+          },
+          onDismiss: () => {
+            setLoading(false);
+          }
+        });
+        return;
+      }
+
+      // ==========================================
+      // 2. CASHFREE GATEWAY FALLBACK
+      // ==========================================
       const orderData = await createMovieBookingCashfreeOrder({
         amount: total,
         customerName: "CineVenue Guest",
@@ -49,7 +106,6 @@ export default function Payment() {
         throw new Error(orderData?.message || "Failed to initialize Cashfree payment order on the server.");
       }
 
-      // 2. Open Cashfree Drop Checkout Modal
       await triggerCashfreeCheckout({
         paymentSessionId: orderData.paymentSessionId,
         orderId: orderData.orderId,
@@ -59,7 +115,6 @@ export default function Payment() {
             setLoading(true);
             setPaymentSuccess("Payment authorized! Verifying secure transaction signature...");
 
-            // 3. Verify payment on server
             await verifyMovieBookingCashfreePayment({
               orderId: orderData.orderId,
               bookingId: orderData.bookingId
@@ -67,8 +122,8 @@ export default function Payment() {
 
             setPaymentSuccess("Payment verified successfully! Generating your ticket...");
             setTimeout(() => {
-              completeBooking();
-            }, 1500);
+              completeBooking("Cashfree");
+            }, 1200);
           } catch (verifyErr: any) {
             console.error("Cashfree verification error:", verifyErr);
             setPaymentError(verifyErr.message || "Signature verification failed.");
@@ -92,7 +147,7 @@ export default function Payment() {
     }
   };
 
-  const completeBooking = async () => {
+  const completeBooking = async (methodUsed: string = "Razorpay (Test Mode)") => {
     const bookingId = "BMS" + Math.floor(10000000 + Math.random() * 90000000);
     const qrToken = generateSecureTicketToken(bookingId);
 
@@ -202,11 +257,54 @@ export default function Payment() {
       <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom align="center">
-            Payment Options
+            Payment Gateway
           </Typography>
           <Typography sx={{ textAlign: "center", color: "text.secondary", mb: 2 }}>
-            Secure checkout powered by Cashfree Payments
+            Instant digital ticket checkout with verified encryption
           </Typography>
+
+          {/* Gateway Selector Tabs */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5, my: 2 }}>
+            <Box
+              onClick={() => setSelectedGateway("razorpay")}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                cursor: "pointer",
+                border: selectedGateway === "razorpay" ? "2px solid #D4AF37" : "1px solid #e0e0e0",
+                backgroundColor: selectedGateway === "razorpay" ? "rgba(212, 175, 55, 0.08)" : "transparent",
+                textAlign: "center",
+                transition: "all 0.2s"
+              }}
+            >
+              <Typography sx={{ fontWeight: "bold", fontSize: "14px", color: selectedGateway === "razorpay" ? "#D4AF37" : "text.primary" }}>
+                ⚡ Razorpay
+              </Typography>
+              <Typography sx={{ fontSize: "10px", color: "#10B981", fontWeight: "bold", mt: 0.5 }}>
+                ● TEST MODE ACTIVE
+              </Typography>
+            </Box>
+
+            <Box
+              onClick={() => setSelectedGateway("cashfree")}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                cursor: "pointer",
+                border: selectedGateway === "cashfree" ? "2px solid #F84464" : "1px solid #e0e0e0",
+                backgroundColor: selectedGateway === "cashfree" ? "rgba(248, 68, 100, 0.08)" : "transparent",
+                textAlign: "center",
+                transition: "all 0.2s"
+              }}
+            >
+              <Typography sx={{ fontWeight: "bold", fontSize: "14px", color: selectedGateway === "cashfree" ? "#F84464" : "text.primary" }}>
+                🛡️ Cashfree
+              </Typography>
+              <Typography sx={{ fontSize: "10px", color: "text.secondary", mt: 0.5 }}>
+                Sandbox Gateway
+              </Typography>
+            </Box>
+          </Box>
           <Divider sx={{ my: 2 }} />
 
           {/* Real-time Alerts */}

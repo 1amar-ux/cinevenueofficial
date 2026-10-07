@@ -9,6 +9,11 @@ import {
   triggerCashfreeCheckout,
   verifyEventBookingCashfreePayment
 } from "../../services/cashfreeService";
+import {
+  createRazorpayOrder,
+  triggerRazorpayCheckout,
+  verifyRazorpayPayment
+} from "../../services/razorpayService";
 
 import LiveEventPassCard from "../../components/events/LiveEventPassCard";
 import { sendEventPassToEmail } from "../../utils/eventPassPdf";
@@ -31,6 +36,7 @@ export default function EventCheckout() {
   const [calculatedBreakdown, setCalculatedBreakdown] = useState<any>(null);
   const [paymentError, setPaymentError] = useState("");
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
+  const [paymentGateway, setPaymentGateway] = useState<"razorpay" | "cashfree">("razorpay");
 
   useEffect(() => {
     if (!eventId) return;
@@ -131,36 +137,81 @@ export default function EventCheckout() {
 
     try {
       if (calculatedBreakdown && calculatedBreakdown.totalAmount > 0) {
-        const orderData = await createEventBookingCashfreeOrder({
-          eventId: eventId || "evt_general",
-          amount: calculatedBreakdown.totalAmount,
-          customerName: attendeeName.trim(),
-          customerPhone: attendeeMobile.trim(),
-          customerEmail: userEmail || "guest@cinevenue.in",
-          ticketCount: quantity
-        });
+        if (paymentGateway === "razorpay") {
+          const orderData = await createRazorpayOrder({
+            amount: calculatedBreakdown.totalAmount,
+            currency: "INR",
+            receipt: `CV-EVT-${Date.now()}`,
+            notes: {
+              eventId: eventId || "evt_general",
+              ticketCount: quantity,
+              customerName: attendeeName.trim(),
+              customerEmail: userEmail || "guest@cinevenue.in",
+            }
+          });
 
-        await triggerCashfreeCheckout({
-          paymentSessionId: orderData.paymentSessionId,
-          orderId: orderData.orderId,
-          environment: orderData.environment || "TEST",
-          onSuccess: async () => {
-            try {
-              await verifyEventBookingCashfreePayment({
-                orderId: orderData.orderId,
-                bookingId: orderData.bookingId
-              });
-              generatePass();
-            } catch (vErr: any) {
-              setPaymentError(vErr.message || "Payment verification failed");
+          await triggerRazorpayCheckout({
+            orderId: orderData.orderId,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            keyId: orderData.keyId,
+            name: "CineVenue Live Events",
+            description: `${passType || "Pass"} - ${eventData?.title || "Special Event"}`,
+            prefill: {
+              name: attendeeName.trim(),
+              email: userEmail || "guest@cinevenue.in",
+              contact: attendeeMobile.trim(),
+            },
+            onSuccess: async (paymentResponse) => {
+              try {
+                await verifyRazorpayPayment({
+                  razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature,
+                });
+                generatePass();
+              } catch (vErr: any) {
+                setPaymentError(vErr.message || "Razorpay signature verification failed");
+                setLoading(false);
+              }
+            },
+            onFailure: (err: any) => {
+              setPaymentError(err?.message || "Razorpay payment cancelled or failed");
               setLoading(false);
             }
-          },
-          onFailure: (err: any) => {
-            setPaymentError(err?.message || "Cashfree payment failed or was cancelled");
-            setLoading(false);
-          }
-        });
+          });
+        } else {
+          const orderData = await createEventBookingCashfreeOrder({
+            eventId: eventId || "evt_general",
+            amount: calculatedBreakdown.totalAmount,
+            customerName: attendeeName.trim(),
+            customerPhone: attendeeMobile.trim(),
+            customerEmail: userEmail || "guest@cinevenue.in",
+            ticketCount: quantity
+          });
+
+          await triggerCashfreeCheckout({
+            paymentSessionId: orderData.paymentSessionId,
+            orderId: orderData.orderId,
+            environment: orderData.environment || "TEST",
+            onSuccess: async () => {
+              try {
+                await verifyEventBookingCashfreePayment({
+                  orderId: orderData.orderId,
+                  bookingId: orderData.bookingId
+                });
+                generatePass();
+              } catch (vErr: any) {
+                setPaymentError(vErr.message || "Payment verification failed");
+                setLoading(false);
+              }
+            },
+            onFailure: (err: any) => {
+              setPaymentError(err?.message || "Cashfree payment failed or was cancelled");
+              setLoading(false);
+            }
+          });
+        }
       } else {
         // Free ticket
         generatePass();
@@ -271,6 +322,55 @@ export default function EventCheckout() {
                 </div>
               </div>
             </div>
+
+            {calculatedBreakdown?.totalAmount > 0 && (
+              <div className="bg-[#111113] p-6 rounded-2xl border border-white/5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-white">Payment Gateway</h3>
+                  <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    TEST MODE ACTIVE
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentGateway("razorpay")}
+                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      paymentGateway === "razorpay"
+                        ? "border-gold bg-gold/10 text-white shadow-lg shadow-gold/10"
+                        : "border-white/10 bg-white/5 text-text-secondary hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="font-bold text-sm text-white">⚡ Razorpay</span>
+                      {paymentGateway === "razorpay" && (
+                        <span className="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-secondary">Cards, UPI & Netbanking (Instant Test Mode)</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentGateway("cashfree")}
+                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      paymentGateway === "cashfree"
+                        ? "border-gold bg-gold/10 text-white shadow-lg shadow-gold/10"
+                        : "border-white/10 bg-white/5 text-text-secondary hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="font-bold text-sm text-white">🛡️ Cashfree</span>
+                      {paymentGateway === "cashfree" && (
+                        <span className="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-secondary">Cashfree Sandbox Gateway</p>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="lg:col-span-1">
