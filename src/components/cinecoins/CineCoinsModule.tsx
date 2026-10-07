@@ -490,7 +490,7 @@ export default function CineCoinsModule({
               </span>
               <span className="text-text-muted">|</span>
               <span className="text-white font-medium max-w-[120px] truncate">
-                {userEmail ? userEmail.split("@")[0] : "superadmin"}
+                {userEmail ? (userEmail.toLowerCase().includes("superadmin") ? "Admin" : userEmail.split("@")[0]) : "Member"}
               </span>
             </div>
 

@@ -149,7 +149,7 @@ export default function AdminLayout() {
     const cached = localStorage.getItem("sa_admin_list");
     if (cached) return JSON.parse(cached);
     return [
-      { email: "superadmin@cinevenue.com", role: "Super Admin", level: "L10", active: true, logsCount: 384 },
+      { email: "admin@cinevenue.com", role: "Super Admin", level: "L10", active: true, logsCount: 384 },
       { email: "moderator_ramesh@cinevenue.com", role: "Content Moderator", level: "L3", active: true, logsCount: 12 },
       { email: "fin_kiran@cinevenue.com", role: "Financial Auditor", level: "L5", active: false, logsCount: 145 }
     ];
@@ -159,7 +159,7 @@ export default function AdminLayout() {
     const cached = localStorage.getItem("sa_audit_logs");
     if (cached) return JSON.parse(cached);
     return [
-      { timestamp: "2026-07-08 01:45 PM", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: "Approved multiplex screening schedule Kalki 2898 AD" },
+      { timestamp: "2026-07-08 01:45 PM", actor: "admin@cinevenue.com", ip: "103.22.41.8", action: "Approved multiplex screening schedule Kalki 2898 AD" },
       { timestamp: "2026-07-08 12:20 PM", actor: "fin_kiran@cinevenue.com", ip: "192.168.1.104", action: "Triggered direct clearing settlement (₹25,000) for IMAX Prasads" },
       { timestamp: "2026-07-08 11:05 AM", actor: "system-cron", ip: "localhost", action: "Database daily backup compilation completed successfully" },
       { timestamp: "2026-07-08 09:30 AM", actor: "moderator_ramesh@cinevenue.com", ip: "45.112.55.19", action: "De-listed archive movie record: 'Major'" }
@@ -1548,7 +1548,7 @@ export default function AdminLayout() {
                       {auditLogs.slice(0, 4).map((log, index) => (
                         <div key={index} className="flex gap-2 items-start text-text-secondary border-b border-white/5 pb-2">
                           <span className="text-gold shrink-0">[{log.timestamp.split(" ")[1] || "Just Now"}]</span>
-                          <span className="text-white shrink-0 font-bold">{log.actor.split("@")[0]}:</span>
+                          <span className="text-white shrink-0 font-bold">{log.actor.toLowerCase().includes("admin") ? "System Admin" : log.actor.split("@")[0]}:</span>
                           <span className="leading-relaxed text-[10px]">{log.action}</span>
                         </div>
                       ))}
@@ -3043,7 +3043,7 @@ export default function AdminLayout() {
                       {auditLogs.map((log, index) => (
                         <div key={index} className="flex gap-2 items-start border-b border-white/5 pb-2">
                           <span className="text-gold shrink-0">[{log.timestamp.split(" ")[1] || "UTC"}]</span>
-                          <span className="text-white font-bold block shrink-0">{log.actor.split("@")[0]}</span>
+                          <span className="text-white font-bold block shrink-0">{log.actor.toLowerCase().includes("admin") ? "System Admin" : log.actor.split("@")[0]}</span>
                           <span className="leading-relaxed block">{log.action}</span>
                         </div>
                       ))}

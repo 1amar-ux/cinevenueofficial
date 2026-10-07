@@ -341,7 +341,7 @@ export default function EventsShowcase({
 
   // Pre-fill user details if logged in
   useEffect(() => {
-    if (userEmail) {
+    if (userEmail && !userEmail.toLowerCase().includes("superadmin")) {
       setBookingEmail(userEmail);
       setReviewEmail(userEmail);
       setNotifyEmail(userEmail);

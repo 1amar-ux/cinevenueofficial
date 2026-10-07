@@ -493,13 +493,13 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               <button
                 onClick={() => navigate("/account")}
                 className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-[13px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
-                title={`Logged in as ${userEmail}`}
+                title={userEmail.toLowerCase().includes("superadmin") ? "Logged in as Administrator" : `Logged in as ${userEmail}`}
               >
                 <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
                   <User className="w-3 h-3 text-gold" />
                 </div>
                 <span className="hidden sm:inline max-w-[120px] truncate font-extrabold text-gray-950 dark:text-text-primary">
-                  {userEmail.split("@")[0]}
+                  {userEmail.toLowerCase().includes("superadmin") ? "Admin" : userEmail.split("@")[0]}
                 </span>
               </button>
               {onLogout && (

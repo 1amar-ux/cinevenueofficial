@@ -192,8 +192,11 @@ export default function Navbar({
           )}
 
           {/* Theme Toggle */}
-          <div className="flex items-center">
+          <div className="hidden 2xl:flex items-center">
             <ThemeToggle variant="segmented" />
+          </div>
+          <div className="flex 2xl:hidden items-center">
+            <ThemeToggle variant="dropdown" />
           </div>
 
           {/* User Member Actions */}
@@ -237,13 +240,13 @@ export default function Navbar({
                   if (onOpenAccount) onOpenAccount();
                   else window.location.href = "/account";
                 }}
-                title={`Account: ${userEmail}`}
+                title={userEmail?.toLowerCase().includes("superadmin") ? "Account Profile" : `Account: ${userEmail}`}
               >
                 <div className="w-6 h-6 rounded-full bg-gold text-black flex items-center justify-center text-[11px] font-extrabold shadow-sm">
-                  {userInitials || <User className="w-3 h-3 text-black" />}
+                  {userEmail?.toLowerCase().includes("superadmin") ? <User className="w-3 h-3 text-black" /> : (userInitials || <User className="w-3 h-3 text-black" />)}
                 </div>
                 <span className="hidden md:inline text-[11px] font-semibold text-gray-800 dark:text-white/90 max-w-[90px] truncate">
-                  {userEmail.split("@")[0]}
+                  {userEmail?.toLowerCase().includes("superadmin") ? "Admin" : userEmail.split("@")[0]}
                 </span>
                 <button
                   onClick={(e) => {

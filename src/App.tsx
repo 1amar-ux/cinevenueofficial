@@ -355,7 +355,7 @@ export default function App() {
     {
       id: "LOG-1",
       serviceKey: "movieBooking",
-      changedBy: "superadmin@cinevenue.com",
+      changedBy: "System",
       action: "EDIT",
       timestamp: "2026-08-04, 10:15 AM",
       reason: "Initial setup of maintenance schedules"
