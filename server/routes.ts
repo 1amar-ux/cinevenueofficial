@@ -17,6 +17,7 @@ import { advertisingPublicRouter, adminAdvertisingRouter } from "./modules/adver
 import employeeRouter from "./modules/admin/employee.routes";
 import { checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
+import { razorpayService } from "./modules/payments/razorpay.service";
 
 const router = Router();
 
@@ -67,6 +68,90 @@ router.use("/admin/advertising", adminAdvertisingRouter);
 router.use("/admin", adminRoutes);
 router.use("/", employeeRouter);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
+
+// ==========================================
+// 2A. RAZORPAY STANDARD WEB CHECKOUT ENDPOINTS
+// ==========================================
+router.post(["/create-order", "/razorpay/create-order"], async (req, res, next) => {
+  try {
+    const { amount, currency = "INR", receipt, notes } = req.body;
+    
+    // Validate amount: must be present and >= 100 paise
+    if (!amount || Number(amount) < 100) {
+      return res.status(400).json({
+        success: false,
+        error: "ValidationError",
+        message: "Amount must be at least 100 paise (₹1.00)."
+      });
+    }
+
+    const order = await razorpayService.createOrder({
+      amount: Number(amount),
+      currency: String(currency).toUpperCase(),
+      receipt: receipt || `rcpt_${Date.now()}`,
+      notes: notes || {}
+    });
+
+    return res.json({
+      success: true,
+      order_id: order.order_id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: razorpayService.getKeyId()
+    });
+  } catch (err: any) {
+    const statusCode = err?.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: err?.name || "OrderCreationError",
+      message: err?.message || "Failed to create Razorpay order"
+    });
+  }
+});
+
+router.post(["/verify-payment", "/razorpay/verify-payment"], async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id, payment_id, signature } = req.body;
+    
+    const rzpOrderId = razorpay_order_id || order_id;
+    const rzpPaymentId = razorpay_payment_id || payment_id;
+    const rzpSignature = razorpay_signature || signature;
+
+    if (!rzpOrderId || !rzpPaymentId || !rzpSignature) {
+      return res.status(400).json({
+        success: false,
+        error: "ValidationError",
+        message: "Missing required verification fields (order_id, payment_id, or signature)."
+      });
+    }
+
+    const result = razorpayService.verifyPayment({
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: rzpPaymentId,
+      razorpay_signature: rzpSignature
+    });
+
+    if (!result.verified) {
+      return res.status(400).json({
+        success: false,
+        error: "SignatureMismatch",
+        message: "Payment signature mismatch! Transaction rejected."
+      });
+    }
+
+    return res.json({
+      success: true,
+      verified: true,
+      message: "Payment signature verified successfully."
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: "VerificationError",
+      message: err.message || "Payment verification failed"
+    });
+  }
+});
 
 // ==========================================
 // 3. PUBLIC APP SETTINGS & CANONICAL PLATFORM CONFIG ROUTES
