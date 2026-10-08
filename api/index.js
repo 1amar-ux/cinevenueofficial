@@ -5356,8 +5356,8 @@ import crypto4 from "crypto";
 var RazorpayService = class {
   constructor() {
     this.razorpayInstance = null;
-    this.keyId = process.env.RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "";
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET || "";
+    this.keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID || "rzp_test_TkyaAeNaWcbJho";
+    this.keySecret = process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET || "ITHbuLYVvMoVEix3n6N90p2t";
     this.initClient();
   }
   initClient() {
@@ -5375,10 +5375,10 @@ var RazorpayService = class {
     }
   }
   getKeyId() {
-    return process.env.RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || this.keyId || "";
+    return process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID || this.keyId || "rzp_test_TkyaAeNaWcbJho";
   }
   getKeySecret() {
-    return process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET || this.keySecret || "";
+    return process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET || this.keySecret || "ITHbuLYVvMoVEix3n6N90p2t";
   }
   isTestMode() {
     const key = this.getKeyId();

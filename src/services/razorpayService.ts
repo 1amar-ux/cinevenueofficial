@@ -128,11 +128,15 @@ export async function triggerRazorpayCheckout(options: RazorpayCheckoutOptions):
   const { orderData, prefill, notes, onSuccess, onFailure, onDismiss } = options;
 
   const resolvedOrderId = options.orderId || orderData?.orderId || orderData?.order_id || "";
-  const resolvedKey = options.keyId || orderData?.keyId || orderData?.key_id || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "";
+  const resolvedKey = options.keyId || orderData?.keyId || orderData?.key_id || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "rzp_test_TkyaAeNaWcbJho";
   const resolvedAmount = options.amount !== undefined ? options.amount : (orderData?.amount || 0);
   const resolvedCurrency = options.currency || orderData?.currency || "INR";
   const resolvedName = options.name || "CineVenue Entertainments";
   const resolvedDesc = options.description || (orderData?.isTestMode ? "🎟️ CineVenue Test Mode Checkout" : "🎟️ CineVenue Ticket Checkout");
+
+  const logoUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/logo.jpg`
+    : "https://www.cinevenue.com/logo.jpg";
 
   const rzpOptions: any = {
     key: resolvedKey,
@@ -140,12 +144,13 @@ export async function triggerRazorpayCheckout(options: RazorpayCheckoutOptions):
     currency: resolvedCurrency,
     name: resolvedName,
     description: resolvedDesc,
-    image: "/logo.jpg",
+    image: logoUrl,
     order_id: resolvedOrderId,
     prefill: {
       name: prefill?.name || "CineVenue Guest",
       email: prefill?.email || "guest@cinevenue.in",
-      contact: prefill?.contact || "9876543210"
+      contact: prefill?.contact || "9876543210",
+      method: options.preferredMethod === 'card' ? 'card' : 'upi'
     },
     notes: {
       ...(notes || {}),
