@@ -10,6 +10,7 @@ import fs from "fs";
 import path from "path";
 import { createApp } from "../server/app";
 import { prisma } from "../server/config/database";
+import { supabaseAdmin } from "../server/config/supabaseAdmin";
 import { writePersistedFileSettings, invalidateMaintenanceCache } from "../server/middleware/maintenance";
 
 // 1. Persistent fallback store for serverless lambdas
@@ -594,11 +595,142 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  // 5D. High-Priority Direct Route: Admin Event Management & Publishing
+  // Helper: Format database event row into full client EventItem
+  const formatDbEventToClient = (evt: any) => {
+    const price = Number(evt.price) || 0;
+    const capacity = Number(evt.capacity) || 1000;
+    const isFree = price === 0;
+    const status = evt.status || "PUBLISHED";
+    const dateStr = evt.date ? (typeof evt.date === "string" ? evt.date.split("T")[0] : new Date(evt.date).toISOString().split("T")[0]) : "2026-10-30";
+    const timeStr = evt.time || "06:30 PM";
+
+    return {
+      id: evt.id,
+      title: evt.title,
+      slug: evt.title ? evt.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : evt.id,
+      description: evt.description || `${evt.title} live in ${evt.city || "Hyderabad"}`,
+      category: evt.category || "Concerts",
+      bannerUrl: evt.bannerUrl,
+      posterUrl: evt.bannerUrl,
+      image: evt.bannerUrl,
+      imageUrl: evt.bannerUrl,
+      date: dateStr,
+      time: timeStr,
+      startTime: timeStr,
+      city: evt.city || "Hyderabad",
+      venueName: evt.venue || "Convention Arena",
+      venueAddress: `${evt.venue || "Convention Arena"}, ${evt.city || "Hyderabad"}`,
+      price,
+      totalCapacity: capacity,
+      totalTicketCapacity: capacity,
+      soldCount: 0,
+      soldTicketCount: 0,
+      status,
+      bookingStatus: status === "PUBLISHED" ? "OPEN" : "CLOSED",
+      eventType: isFree ? "FREE" : "PAID",
+      isFeatured: true,
+      isActive: status !== "DRAFT" && status !== "CANCELLED",
+      ticketTypes: [
+        {
+          id: `TKT-${evt.id}-GEN`,
+          eventId: evt.id,
+          name: "General Admission",
+          tier: "General",
+          description: "General Entry Pass",
+          price,
+          availableQuantity: capacity,
+          soldQuantity: 0,
+          isFree,
+          status: "Active"
+        }
+      ],
+      createdAt: evt.createdAt || new Date().toISOString(),
+      updatedAt: evt.updatedAt || new Date().toISOString()
+    };
+  };
+
+  // 5D-1. High-Priority Direct Route: Public Events Discovery (Web, Mobile & Native Apps)
+  const isPublicEventsEndpoint =
+    url === "/api/v1/events" ||
+    url === "/api/events" ||
+    url === "/events";
+
+  if (isPublicEventsEndpoint && req.method === "GET") {
+    try {
+      const { data: dbEvents, error } = await supabaseAdmin
+        .from("Event")
+        .select("*")
+        .neq("status", "CANCELLED")
+        .order("date", { ascending: true });
+
+      if (dbEvents && dbEvents.length > 0) {
+        const events = dbEvents.map(formatDbEventToClient);
+        return res.status(200).json({
+          success: true,
+          count: events.length,
+          events,
+          data: { events }
+        });
+      }
+    } catch (e: any) {
+      console.warn("[Serverless Events GET] Supabase query notice:", e?.message || e);
+    }
+  }
+
+  // 5D-2. High-Priority Direct Route: Single Event Details
+  const isSingleEventEndpoint =
+    (url.startsWith("/api/v1/events/") || url.startsWith("/api/events/") || url.startsWith("/events/")) &&
+    !url.includes("/send-pass-email") &&
+    !url.includes("/book") &&
+    req.method === "GET";
+
+  if (isSingleEventEndpoint) {
+    const parts = url.split("/");
+    const eventId = parts[parts.length - 1];
+    try {
+      const { data: evt } = await supabaseAdmin
+        .from("Event")
+        .select("*")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      if (evt) {
+        const event = formatDbEventToClient(evt);
+        return res.status(200).json({
+          success: true,
+          event,
+          data: { event }
+        });
+      }
+    } catch (e) {}
+  }
+
+  // 5D-3. High-Priority Direct Route: Admin Event Management & Publishing
   const isAdminEventsEndpoint =
     url === "/api/v1/admin/events" ||
     url === "/api/admin/events" ||
     url === "/admin/events";
+
+  if (isAdminEventsEndpoint && req.method === "GET") {
+    try {
+      const { data: dbEvents } = await supabaseAdmin
+        .from("Event")
+        .select("*")
+        .order("createdAt", { ascending: false });
+
+      if (dbEvents && dbEvents.length > 0) {
+        const events = dbEvents.map(formatDbEventToClient);
+        return res.status(200).json({
+          success: true,
+          count: events.length,
+          events,
+          data: { events }
+        });
+      }
+    } catch (e: any) {
+      console.warn("[Serverless Admin Events GET] Notice:", e?.message || e);
+    }
+  }
 
   if (isAdminEventsEndpoint && req.method === "POST") {
     let body = req.body;
@@ -608,7 +740,7 @@ export default async function handler(req: any, res: any) {
     const title = body?.title ? String(body.title).trim() : "Untitled Event";
     const description = body?.description ? String(body.description).trim() : `${title} live in ${body?.venue?.city || body?.city || "Hyderabad"}`;
     const category = body?.category || "Concerts";
-    const bannerUrl = body?.banner?.url || body?.bannerUrl || body?.poster?.url || body?.posterUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+    const bannerUrl = body?.banner?.url || body?.bannerUrl || body?.poster?.url || body?.posterUrl || body?.image || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
     const posterUrl = body?.poster?.url || body?.posterUrl || bannerUrl;
 
     let eventDate = new Date();
@@ -618,11 +750,35 @@ export default async function handler(req: any, res: any) {
     }
     const time = body?.time || body?.startTime || "07:00 PM";
     const city = body?.venue?.city || body?.city || "Hyderabad";
-    const venue = body?.venue?.name || body?.venueName || "Convention Arena";
+    const venue = body?.venue?.name || body?.venueName || body?.venue || "Convention Arena";
     const capacity = Number(body?.totalTicketCapacity || body?.totalCapacity || body?.capacity) || 1000;
     const price = Number(body?.eventType === "FREE" ? 0 : (body?.ticketTypes?.[0]?.price || body?.price || 0));
     const status = (body?.status === "DRAFT" || body?.status === "Draft") ? "DRAFT" : "PUBLISHED";
     const eventId = body?.id || `EVT-${Date.now().toString().slice(-4)}`;
+
+    const eventRecord = {
+      id: eventId,
+      title,
+      description,
+      category,
+      bannerUrl,
+      date: eventDate.toISOString(),
+      time,
+      city,
+      venue,
+      price,
+      capacity,
+      organizerId: "ORG-ADMIN",
+      status,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Authoritative direct cloud database write
+    try {
+      await supabaseAdmin.from("Event").upsert(eventRecord);
+    } catch (sbErr: any) {
+      console.warn("[Serverless Event] Supabase upsert notice:", sbErr?.message || sbErr);
+    }
 
     try {
       await Promise.race([
@@ -664,44 +820,53 @@ export default async function handler(req: any, res: any) {
       });
     } catch (e) {}
 
+    const formattedEvent = formatDbEventToClient(eventRecord);
+
     return res.status(200).json({
       success: true,
       message: `Event "${title}" saved and published successfully.`,
-      event: {
-        id: eventId,
-        title,
-        description,
-        category,
-        bannerUrl,
-        posterUrl,
-        date: eventDate.toISOString().split("T")[0],
-        time,
-        startTime: time,
-        city,
-        venueName: venue,
-        totalCapacity: capacity,
-        totalTicketCapacity: capacity,
-        soldTicketCount: 0,
-        status,
-        bookingStatus: status === "PUBLISHED" ? "OPEN" : "CLOSED",
-        eventType: price === 0 ? "FREE" : "PAID",
-        ticketTypes: body?.ticketTypes || []
-      }
+      event: formattedEvent
     });
+  }
+
+  // 5D-4. High-Priority Direct Route: Admin Delete Event
+  if (
+    url.includes("/admin/events/") &&
+    req.method === "DELETE"
+  ) {
+    const parts = url.split("/");
+    const eventId = parts[parts.length - 1];
+    try {
+      await supabaseAdmin.from("Event").delete().eq("id", eventId);
+      await (prisma.event as any).delete({ where: { id: eventId } }).catch(() => {});
+    } catch (e) {}
+    return res.status(200).json({ success: true, message: `Event ${eventId} deleted successfully.` });
   }
 
   // 5E. High-Priority Direct Route: Admin Publish / Unpublish / Cancel Event
   if (
     url.includes("/admin/events/") &&
-    (url.endsWith("/publish") || url.endsWith("/unpublish") || url.endsWith("/cancel")) &&
-    req.method === "POST"
+    (url.endsWith("/publish") || url.endsWith("/unpublish") || url.endsWith("/cancel") || url.endsWith("/status")) &&
+    (req.method === "POST" || req.method === "PATCH")
   ) {
     const parts = url.split("/");
-    const action = parts[parts.length - 1]; // "publish" | "unpublish" | "cancel"
-    const eventId = parts[parts.length - 2];
+    let action = parts[parts.length - 1]; // "publish" | "unpublish" | "cancel" | "status"
+    let eventId = parts[parts.length - 2];
+    if (action === "status") {
+      let b = req.body;
+      if (typeof b === "string") {
+        try { b = JSON.parse(b); } catch (e) { b = {}; }
+      }
+      action = (b?.status === "PUBLISHED" || b?.status === "Published") ? "publish" : "unpublish";
+    }
     const newStatus = action === "publish" ? "PUBLISHED" : action === "unpublish" ? "DRAFT" : "CANCELLED";
 
     try {
+      await supabaseAdmin
+        .from("Event")
+        .update({ status: newStatus, updatedAt: new Date().toISOString() })
+        .eq("id", eventId);
+
       await Promise.race([
         prisma.event.update({
           where: { id: eventId },
@@ -713,7 +878,7 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({
       success: true,
-      message: `Event ${eventId} successfully ${action}ed.`,
+      message: `Event ${eventId} successfully updated to ${newStatus}.`,
       status: newStatus,
       bookingStatus: newStatus === "PUBLISHED" ? "OPEN" : "CLOSED"
     });

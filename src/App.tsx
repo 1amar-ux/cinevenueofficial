@@ -74,7 +74,7 @@ import { INITIAL_MOVIES, INITIAL_THEATRES, INITIAL_EVENTS, DEFAULT_SPOTLIGHT, CI
 import { Movie, Theatre, Booking, MovieSchedule, RentalRequest, ContactMessage, TheatreAdmin, Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest, EventOrganizer, SpotlightMovie, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CineCoinsUserWallet, CastingApplication } from "./types";
 import apiClient from "./services/apiClient";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
-import { getEvents as getTicketedEvents, isMockOrDuplicateEvent } from "./services/eventBookingService";
+import { getEvents as getTicketedEvents, fetchLiveEvents, isMockOrDuplicateEvent } from "./services/eventBookingService";
 
 export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = [], initialEvents: Event[] = []): Event[] {
   let deletedIds = new Set<string>();
@@ -202,6 +202,31 @@ export default function App() {
       return INITIAL_EVENTS;
     }
   });
+
+  // Authoritative real-time sync for events created in Admin Panel across web, mobile & apps
+  useEffect(() => {
+    const handleEventsSync = () => {
+      try {
+        const savedRaw = localStorage.getItem("cine_events");
+        const saved = savedRaw ? JSON.parse(savedRaw) : [];
+        const ticketed = getTicketedEvents();
+        setEvents(mergeCineEvents(saved, ticketed, INITIAL_EVENTS));
+      } catch {}
+    };
+
+    window.addEventListener("cine_events_updated", handleEventsSync);
+    window.addEventListener("storage", handleEventsSync);
+
+    // Pull fresh events on load from cloud / API
+    fetchLiveEvents().then(() => {
+      handleEventsSync();
+    });
+
+    return () => {
+      window.removeEventListener("cine_events_updated", handleEventsSync);
+      window.removeEventListener("storage", handleEventsSync);
+    };
+  }, []);
 
   const [spotlight, setSpotlight] = useState<SpotlightMovie>(() => {
     const saved = localStorage.getItem("cine_spotlight");

@@ -24,6 +24,7 @@ import type {
   EventPass,
 } from '../types/eventBooking';
 import apiClient from './apiClient';
+import { supabase } from '../lib/supabase';
 import { dispatchTicketEmail, dispatchTicketSms } from '../utils/ticketDeliveryService';
 import { sendEventPassToEmail } from '../utils/eventPassPdf';
 
@@ -545,6 +546,88 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
       },
     ],
   },
+  {
+    id: 'EVT-MUSICAL-CLUB',
+    title: 'Cinevenue Musical Club',
+    slug: 'cinevenue-musical-club',
+    description:
+      'Join the premier Cinevenue Musical Club for an electrifying night of live musical sets, acoustic unplugged sessions, trending movie sound-tracks, and VIP networking.',
+    category: 'Concerts',
+    bannerUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&q=80',
+    galleryUrls: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=75',
+      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=75',
+    ],
+    organizer: {
+      id: 'ORG-ADMIN',
+      name: 'CineVenue Music Club',
+      email: 'events@cinevenue.in',
+      phone: '+91 99887 76655',
+      companyName: 'CineVenue Entertainments',
+      logoUrl: '/logo.jpg',
+      isVerified: true,
+      rating: 4.95,
+      eventsCount: 15,
+    },
+    date: '2026-10-30',
+    startTime: '06:30 PM',
+    endTime: '10:00 PM',
+    duration: '3h 30m',
+    venueName: 'CineVenue Music Arena & Lounge',
+    venueAddress: 'Road No. 36, Jubilee Hills, Hyderabad, Telangana 500033',
+    city: 'Hyderabad',
+    latitude: 17.4325,
+    longitude: 78.4071,
+    language: 'Telugu / Hindi / English',
+    ageRestriction: 'All Ages',
+    termsAndConditions: [
+      'Entry gates open 45 minutes prior to showtime.',
+      'Digital ticket / vertical mobile pass required at gate entrance.',
+      'Food & beverages available at the VIP lounge.',
+    ],
+    cancellationPolicy: 'Refundable up to 24 hours prior to event start.',
+    seatingType: 'GeneralAdmission',
+    eventType: 'PAID',
+    totalCapacity: 500,
+    soldCount: 180,
+    status: 'Published',
+    isFeatured: true,
+    isSellingFast: true,
+    rating: 4.9,
+    reviewCount: 94,
+    createdAt: '2026-10-01T10:00:00Z',
+    updatedAt: '2026-10-08T10:00:00Z',
+    ticketTypes: [
+      {
+        id: 'TKT-CLUB-VIP',
+        eventId: 'EVT-MUSICAL-CLUB',
+        name: 'VIP Club Experience Pass',
+        tier: 'VIP',
+        description: 'Front-row stage seating, complimentary signature beverage, and backstage artist meet & greet.',
+        price: 999,
+        availableQuantity: 100,
+        soldQuantity: 40,
+        maxPerUser: 4,
+        minPerUser: 1,
+        status: 'Active',
+        isRefundable: true,
+      },
+      {
+        id: 'TKT-CLUB-GEN',
+        eventId: 'EVT-MUSICAL-CLUB',
+        name: 'General Admission Pass',
+        tier: 'General',
+        description: 'Open club floor access, live acoustic stage view, and club networking.',
+        price: 499,
+        availableQuantity: 400,
+        soldQuantity: 140,
+        maxPerUser: 6,
+        minPerUser: 1,
+        status: 'Active',
+        isRefundable: true,
+      },
+    ],
+  },
 ];
 
 // ─── Local Storage Helper Functions with In-Memory SSR Fallback ───
@@ -668,7 +751,59 @@ export function getEvents(): EventItem[] {
 export async function fetchLiveEvents(): Promise<EventItem[]> {
   try {
     const res = await apiClient.get('/events');
-    const live = res.data?.events || res.data?.data?.events;
+    let live = res.data?.events || res.data?.data?.events;
+
+    // Dual-channel cloud fallback: If API returned empty, query Supabase directly
+    if (!Array.isArray(live) || live.length === 0) {
+      try {
+        const { data: sbEvents } = await supabase
+          .from('Event')
+          .select('*')
+          .neq('status', 'CANCELLED');
+        if (Array.isArray(sbEvents) && sbEvents.length > 0) {
+          live = sbEvents.map((evt: any) => ({
+            id: evt.id,
+            title: evt.title,
+            slug: evt.title ? evt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : evt.id,
+            description: evt.description || `${evt.title} live in ${evt.city || 'Hyderabad'}`,
+            category: evt.category || 'Concerts',
+            bannerUrl: evt.bannerUrl,
+            posterUrl: evt.bannerUrl,
+            image: evt.bannerUrl,
+            imageUrl: evt.bannerUrl,
+            date: evt.date ? (typeof evt.date === 'string' ? evt.date.split('T')[0] : new Date(evt.date).toISOString().split('T')[0]) : '2026-10-30',
+            time: evt.time || '06:30 PM',
+            startTime: evt.time || '06:30 PM',
+            city: evt.city || 'Hyderabad',
+            venueName: evt.venue || 'Convention Arena',
+            venueAddress: `${evt.venue || 'Convention Arena'}, ${evt.city || 'Hyderabad'}`,
+            price: Number(evt.price) || 0,
+            totalCapacity: Number(evt.capacity) || 1000,
+            status: evt.status || 'Published',
+            eventType: Number(evt.price) === 0 ? 'FREE' : 'PAID',
+            isFeatured: true,
+            isActive: evt.status !== 'DRAFT' && evt.status !== 'CANCELLED',
+            ticketTypes: [
+              {
+                id: `TKT-${evt.id}-GEN`,
+                eventId: evt.id,
+                name: 'General Admission',
+                tier: 'General',
+                description: 'General Entry Pass',
+                price: Number(evt.price) || 0,
+                availableQuantity: Number(evt.capacity) || 1000,
+                soldQuantity: 0,
+                isFree: Number(evt.price) === 0,
+                status: 'Active'
+              }
+            ]
+          }));
+        }
+      } catch (sbErr) {
+        console.warn('Supabase direct query fallback notice:', sbErr);
+      }
+    }
+
     if (Array.isArray(live) && live.length > 0) {
       const current = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
       const liveMap = new Map(live.map((e: any) => [e.id || e._id, e]));
@@ -679,6 +814,39 @@ export async function fetchLiveEvents(): Promise<EventItem[]> {
         }
       }
       saveStorage(STORAGE_KEYS.EVENTS, merged);
+
+      // Also sync to cine_events and dispatch event so all views update
+      if (typeof window !== 'undefined') {
+        try {
+          const cineMapped = merged.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description || '',
+            venueName: e.venueName,
+            venueAddress: e.venueAddress || '',
+            city: e.city || 'Hyderabad',
+            date: e.date,
+            time: e.startTime || e.time || '18:30',
+            image: e.bannerUrl || e.posterUrl || e.image || 'https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800',
+            imageUrl: e.bannerUrl || e.posterUrl,
+            bannerUrl: e.bannerUrl || e.posterUrl,
+            category: e.category || 'Concerts',
+            categories: (e.ticketTypes || []).map((t: any) => ({
+              name: t.name,
+              price: t.price,
+              availableSeats: t.availableQuantity || 100,
+            })),
+            reviews: [],
+            featured: true,
+            isPaid: e.eventType === 'PAID' || e.ticketTypes?.some((t: any) => t.price > 0),
+            isActive: e.isActive !== false && String(e.status || '').toUpperCase() !== 'CANCELLED' && String(e.status || '').toUpperCase() !== 'DRAFT',
+          }));
+          localStorage.setItem('cine_events', JSON.stringify(cineMapped));
+          window.dispatchEvent(new CustomEvent('cine_events_updated', { detail: cineMapped }));
+          window.dispatchEvent(new Event('storage'));
+        } catch (e) {}
+      }
+
       return merged;
     }
   } catch (err) {
@@ -766,6 +934,29 @@ export function saveEvent(event: EventItem): EventItem {
       window.dispatchEvent(new Event('storage'));
     } catch (e) {}
   }
+
+  // Direct Supabase Cloud Save for immediate multi-device visibility
+  try {
+    const eventDate = event.date ? new Date(event.date).toISOString() : new Date().toISOString();
+    supabase.from('Event').upsert({
+      id: event.id,
+      title: event.title,
+      description: event.description || `${event.title} live in ${event.city || 'Hyderabad'}`,
+      category: event.category || 'Concerts',
+      bannerUrl: event.bannerUrl || (event as any).posterUrl || (event as any).image,
+      date: eventDate,
+      time: event.startTime || (event as any).time || '06:30 PM',
+      city: event.city || 'Hyderabad',
+      venue: event.venueName || (event as any).venue || 'Convention Arena',
+      price: event.eventType === 'FREE' ? 0 : (event.ticketTypes?.[0]?.price || (event as any).price || 0),
+      capacity: event.totalCapacity || 1000,
+      organizerId: 'ORG-ADMIN',
+      status: String(event.status || 'PUBLISHED').toUpperCase() === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
+      updatedAt: new Date().toISOString()
+    }).then(({ error }) => {
+      if (error) console.warn('[Supabase Direct Save] Notice:', error.message);
+    });
+  } catch (e) {}
 
   // Authoritative sync to backend admin API
   apiClient.post('/admin/events', event).catch((err) => {

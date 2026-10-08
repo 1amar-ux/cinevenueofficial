@@ -8,9 +8,8 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest } from "../types";
 import MaintenancePage from "./MaintenancePage";
-import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
 import type { EventItem, EventBookingRecord } from "../types/eventBooking";
-import { getEvents as getTicketedEvents, getBookings as getEventBookings, isMockOrDuplicateEvent } from "../services/eventBookingService";
+import { getEvents as getTicketedEvents, fetchLiveEvents, getBookings as getEventBookings, isMockOrDuplicateEvent } from "../services/eventBookingService";
 import EventBookingModal from "./events/EventBookingModal";
 import DigitalTicketPassModal from "./events/DigitalTicketPassModal";
 import LiveEventPassCard from "./events/LiveEventPassCard";
@@ -75,16 +74,48 @@ export default function EventsShowcase({
     setTicketedEventsList(getTicketedEvents());
   }, [events]);
 
-  // Real-time synchronization for events created, updated, or published
+  // Real-time synchronization for events created, updated, or published across all devices
   useEffect(() => {
     const handleUpdate = () => {
       setTicketedEventsList(getTicketedEvents());
     };
     window.addEventListener("cine_events_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
+
+    // Immediately fetch authoritative live events from cloud/API on mount (mobile & web)
+    fetchLiveEvents().then((live) => {
+      if (Array.isArray(live) && live.length > 0) {
+        setTicketedEventsList(live);
+      }
+    });
+
+    // Real-time synchronization via Supabase Postgres Changes
+    let channel: any = null;
+    try {
+      import("../lib/supabase").then(({ supabase }) => {
+        channel = supabase
+          .channel("public:Event:showcase")
+          .on("postgres_changes", { event: "*", schema: "public", table: "Event" }, () => {
+            fetchLiveEvents().then((live) => {
+              if (Array.isArray(live) && live.length > 0) {
+                setTicketedEventsList(live);
+              }
+            });
+          })
+          .subscribe();
+      });
+    } catch (e) {}
+
     return () => {
       window.removeEventListener("cine_events_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
+      if (channel) {
+        try {
+          import("../lib/supabase").then(({ supabase }) => {
+            supabase.removeChannel(channel);
+          });
+        } catch (e) {}
+      }
     };
   }, []);
 
