@@ -24,6 +24,11 @@ import {
   verifyEventBookingCashfreePayment,
   triggerCashfreeCheckout,
 } from '../../services/cashfreeService';
+import {
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  triggerRazorpayCheckout,
+} from '../../services/razorpayService';
 import DigitalTicketPassModal from './DigitalTicketPassModal';
 import { sendEventPassToEmail } from '../../utils/eventPassPdf';
 
@@ -356,42 +361,93 @@ export default function EventBookingModal({
     setIsProcessingPayment(true);
 
     try {
-      const orderData = await createEventBookingCashfreeOrder({
-        eventId: event.id,
-        amount: fees.finalAmount,
+      // 1. Calculate amount in paise (e.g. ₹99 = 9900 paise, ₹500 = 50000 paise)
+      const amountInPaise = Math.round(fees.finalAmount * 100);
+
+      const orderData = await createRazorpayOrder({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: `EVT-${Date.now().toString().slice(-8)}`,
         customerName: primaryName.trim(),
         customerEmail: primaryEmail.trim(),
         customerPhone: primaryPhone.trim(),
-        ticketCount: totalTicketCount,
+        eventId: event.id,
+        eventTitle: event.title,
+        notes: {
+          eventId: event.id,
+          ticketCount: totalTicketCount,
+          ticketTypeName: selectedTicketType?.name || 'Pass',
+          paymentChannel: paymentMethod,
+        }
       });
 
-      await triggerCashfreeCheckout({
-        paymentSessionId: orderData.paymentSessionId,
-        orderId: orderData.orderId,
-        environment: orderData.environment || 'TEST',
-        onSuccess: async () => {
+      await triggerRazorpayCheckout({
+        orderData,
+        preferredMethod: paymentMethod === 'UPI' ? 'upi' : paymentMethod === 'Card' ? 'card' : 'netbanking',
+        name: 'CineVenue Live Events',
+        description: `${event.title} - ${selectedTicketType?.name || 'VIP Pass'}`,
+        prefill: {
+          name: primaryName.trim(),
+          email: primaryEmail.trim(),
+          contact: primaryPhone.trim(),
+        },
+        onSuccess: async (paymentResult) => {
           try {
-            await verifyEventBookingCashfreePayment({
-              orderId: orderData.orderId,
+            await verifyRazorpayPayment({
+              razorpay_order_id: paymentResult.razorpay_order_id,
+              razorpay_payment_id: paymentResult.razorpay_payment_id,
+              razorpay_signature: paymentResult.razorpay_signature,
               bookingId: orderData.bookingId,
             });
-            finalizeBooking(`CF-${orderData.orderId}`);
+            finalizeBooking(`RZP-${paymentResult.razorpay_payment_id}`);
           } catch (vErr: any) {
-            console.error('Cashfree event verification error:', vErr);
+            console.error('Razorpay event verification error:', vErr);
             alert(vErr.message || 'Payment verification could not be confirmed.');
             setIsProcessingPayment(false);
           }
         },
         onFailure: (err: any) => {
-          console.error('Cashfree checkout error:', err);
-          alert(err?.message || 'Cashfree payment failed or was cancelled.');
+          console.error('Razorpay checkout error:', err);
+          alert(err?.message || 'Payment was cancelled or declined.');
           setIsProcessingPayment(false);
         },
+        onDismiss: () => {
+          setIsProcessingPayment(false);
+        }
       });
     } catch (err: any) {
-      console.error('Cashfree Order Error:', err);
-      alert(err.message || 'Failed to initialize Cashfree payment.');
-      setIsProcessingPayment(false);
+      console.warn('Razorpay checkout fallback check:', err.message);
+      // Fallback to Cashfree if Razorpay fails
+      try {
+        const cfOrder = await createEventBookingCashfreeOrder({
+          eventId: event.id,
+          amount: fees.finalAmount,
+          customerName: primaryName.trim(),
+          customerEmail: primaryEmail.trim(),
+          customerPhone: primaryPhone.trim(),
+          ticketCount: totalTicketCount,
+        });
+
+        await triggerCashfreeCheckout({
+          paymentSessionId: cfOrder.paymentSessionId,
+          orderId: cfOrder.orderId,
+          environment: cfOrder.environment || 'TEST',
+          onSuccess: async () => {
+            await verifyEventBookingCashfreePayment({
+              orderId: cfOrder.orderId,
+              bookingId: cfOrder.bookingId,
+            });
+            finalizeBooking(`CF-${cfOrder.orderId}`);
+          },
+          onFailure: (cErr: any) => {
+            alert(cErr?.message || 'Payment failed or cancelled.');
+            setIsProcessingPayment(false);
+          }
+        });
+      } catch (cfErr: any) {
+        alert(err.message || cfErr.message || 'Failed to initialize payment.');
+        setIsProcessingPayment(false);
+      }
     }
   };
 
@@ -895,9 +951,9 @@ export default function EventBookingModal({
                   </div>
                   <div>
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      Cashfree Payments <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold text-black font-extrabold uppercase">Official Gateway</span>
+                      ⚡ Razorpay Standard Checkout <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold text-black font-extrabold uppercase">Official Gateway</span>
                     </span>
-                    <span className="text-[10px] text-white/60 block">Instant Zero-Surcharge Checkout · UPI, Cards, NetBanking</span>
+                    <span className="text-[10px] text-white/60 block">Instant Zero-Surcharge Checkout · UPI (Google Pay, PhonePe, Paytm, QR), Cards, NetBanking</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
@@ -912,7 +968,7 @@ export default function EventBookingModal({
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'UPI', label: 'UPI / GPay', icon: Smartphone },
+                    { id: 'UPI', label: 'UPI / GPay / QR', icon: Smartphone },
                     { id: 'Card', label: 'Credit/Debit', icon: CreditCard },
                     { id: 'NetBanking', label: 'Net Banking', icon: Building2 },
                   ].map((method) => (
@@ -922,7 +978,7 @@ export default function EventBookingModal({
                       onClick={() => setPaymentMethod(method.id as any)}
                       className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                         paymentMethod === method.id
-                          ? 'bg-gold/15 border-gold text-gold font-bold'
+                          ? 'bg-gold/20 border-gold text-gold font-bold shadow-lg shadow-gold/10 ring-1 ring-gold/40'
                           : 'bg-white/[0.02] border-white/10 text-white/70 hover:bg-white/5'
                       }`}
                     >

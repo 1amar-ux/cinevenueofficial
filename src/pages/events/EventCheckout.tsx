@@ -138,8 +138,10 @@ export default function EventCheckout() {
     try {
       if (calculatedBreakdown && calculatedBreakdown.totalAmount > 0) {
         if (paymentGateway === "razorpay") {
+          const amountInPaise = Math.round(calculatedBreakdown.totalAmount * 100);
+
           const orderData = await createRazorpayOrder({
-            amount: calculatedBreakdown.totalAmount,
+            amount: amountInPaise,
             currency: "INR",
             receipt: `CV-EVT-${Date.now()}`,
             notes: {
@@ -151,10 +153,12 @@ export default function EventCheckout() {
           });
 
           await triggerRazorpayCheckout({
+            orderData,
             orderId: orderData.orderId,
             amount: orderData.amount,
             currency: orderData.currency,
             keyId: orderData.keyId,
+            preferredMethod: "upi",
             name: "CineVenue Live Events",
             description: `${passType || "Pass"} - ${eventData?.title || "Special Event"}`,
             prefill: {

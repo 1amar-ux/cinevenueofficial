@@ -42,8 +42,9 @@ export default function Payment() {
         // ==========================================
         // 1. RAZORPAY TEST MODE CHECKOUT
         // ==========================================
+        const amountInPaise = Math.round(total * 100);
         const orderData = await createRazorpayOrder({
-          amount: total,
+          amount: amountInPaise,
           customerName: "CineVenue Guest",
           customerEmail: "guest@cinevenue.in",
           customerPhone: "9876543210",
@@ -52,6 +53,7 @@ export default function Payment() {
 
         await triggerRazorpayCheckout({
           orderData,
+          preferredMethod: "upi",
           prefill: {
             name: "CineVenue Guest",
             email: "guest@cinevenue.in",

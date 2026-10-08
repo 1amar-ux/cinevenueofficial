@@ -40,6 +40,7 @@ export interface RazorpayCheckoutOptions {
     email?: string;
     contact?: string;
   };
+  preferredMethod?: 'upi' | 'card' | 'netbanking' | 'wallet' | string;
   notes?: Record<string, string>;
   onSuccess: (paymentResult: {
     razorpay_order_id: string;
@@ -146,7 +147,36 @@ export async function triggerRazorpayCheckout(options: RazorpayCheckoutOptions):
       email: prefill?.email || "guest@cinevenue.in",
       contact: prefill?.contact || "9876543210"
     },
-    notes: notes || {},
+    notes: {
+      ...(notes || {}),
+      ...(options.preferredMethod ? { preferred_channel: options.preferredMethod } : {})
+    },
+    config: {
+      display: {
+        blocks: {
+          upi: {
+            name: "Pay using UPI (Google Pay, PhonePe, Paytm, QR)",
+            instruments: [
+              { method: "upi" }
+            ]
+          },
+          other: {
+            name: "Cards, NetBanking & Wallets",
+            instruments: [
+              { method: "card" },
+              { method: "netbanking" },
+              { method: "wallet" }
+            ]
+          }
+        },
+        sequence: options.preferredMethod === 'card'
+          ? ["block.other", "block.upi"]
+          : ["block.upi", "block.other"],
+        preferences: {
+          show_default_blocks: true
+        }
+      }
+    },
     theme: {
       color: "#D4AF37", // CineVenue Luxury Gold
       backdrop_color: "rgba(0, 0, 0, 0.85)"
