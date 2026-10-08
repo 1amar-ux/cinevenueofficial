@@ -134,15 +134,56 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const event = await prisma.event.findUnique({
+    let event = await prisma.event.findUnique({
       where: { id },
       include: { ticketTypes: true }
     });
+
+    if (!event) {
+      try {
+        const { supabaseAdmin } = await import("../../config/supabaseAdmin");
+        const { data: dbEvt } = await supabaseAdmin
+          .from("Event")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (dbEvt) {
+          event = {
+            id: dbEvt.id,
+            title: dbEvt.title,
+            description: dbEvt.description || `${dbEvt.title} live in ${dbEvt.city || "Hyderabad"}`,
+            category: dbEvt.category || "Concerts",
+            bannerUrl: dbEvt.bannerUrl,
+            posterUrl: dbEvt.bannerUrl,
+            date: dbEvt.date,
+            time: dbEvt.time || "06:30 PM",
+            city: dbEvt.city || "Hyderabad",
+            venue: dbEvt.venue || "Convention Arena",
+            price: Number(dbEvt.price) || 0,
+            capacity: Number(dbEvt.capacity) || 1000,
+            status: dbEvt.status || "PUBLISHED",
+            ticketTypes: [
+              {
+                id: `TKT-${dbEvt.id}-GEN`,
+                eventId: dbEvt.id,
+                name: "General Admission",
+                tier: "General",
+                price: Number(dbEvt.price) || 0,
+                capacity: Number(dbEvt.capacity) || 1000,
+                available: Number(dbEvt.capacity) || 1000
+              }
+            ]
+          } as any;
+        }
+      } catch (e) {}
+    }
 
     if (!event) throw new NotFoundError("Event", id);
 
     return res.json({
       success: true,
+      event,
       data: { event }
     });
   } catch (error) {
