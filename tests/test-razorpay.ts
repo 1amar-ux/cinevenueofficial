@@ -7,8 +7,8 @@ async function testRazorpayStandardCheckout() {
   console.log("isTestMode:", razorpayService.isTestMode());
   console.log("Key ID:", razorpayService.getKeyId());
   
-  if (razorpayService.getKeyId() !== "rzp_test_TkvVUV4mqkHoT9") {
-    throw new Error(`Expected Key ID rzp_test_TkvVUV4mqkHoT9, got: ${razorpayService.getKeyId()}`);
+  if (razorpayService.getKeyId() !== "rzp_test_TkyaAeNaWcbJho") {
+    throw new Error(`Expected Key ID rzp_test_TkyaAeNaWcbJho, got: ${razorpayService.getKeyId()}`);
   }
 
   // 1. Test Minimum Amount Validation (< 100 paise)

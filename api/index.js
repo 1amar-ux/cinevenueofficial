@@ -31,12 +31,15 @@ var init_env = __esm({
       GOOGLE_CLIENT_ID: z.string().optional(),
       GOOGLE_CLIENT_SECRET: z.string().optional(),
       GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
-      // Payment Gateways (Cashfree)
+      // Payment Gateways (Razorpay & Cashfree)
+      RAZORPAY_KEY_ID: z.string().optional(),
+      RAZORPAY_KEY_SECRET: z.string().optional(),
+      RAZORPAY_ENV: z.enum(["TEST", "LIVE"]).default("TEST"),
       CASHFREE_APP_ID: z.string().optional(),
       CASHFREE_SECRET_KEY: z.string().optional(),
       CASHFREE_ENV: z.enum(["TEST", "PROD"]).default("TEST"),
       CASHFREE_API_VERSION: z.string().default("2023-08-01"),
-      DEFAULT_PAYMENT_GATEWAY: z.literal("CASHFREE").default("CASHFREE"),
+      DEFAULT_PAYMENT_GATEWAY: z.enum(["CASHFREE", "RAZORPAY"]).default("RAZORPAY"),
       // AI Service
       GEMINI_API_KEY: z.string().optional(),
       // Supabase Platform
@@ -5345,14 +5348,201 @@ var CashfreeService = class {
 };
 var cashfreeService = new CashfreeService();
 
+// server/modules/payments/razorpay.service.ts
+init_env();
+init_logger();
+import Razorpay from "razorpay";
+import crypto4 from "crypto";
+var RazorpayService = class {
+  constructor() {
+    this.razorpayInstance = null;
+    this.keyId = process.env.RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "";
+    this.keySecret = process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET || "";
+    this.initClient();
+  }
+  initClient() {
+    const key = this.getKeyId();
+    const secret = this.getKeySecret();
+    if (key && secret) {
+      try {
+        this.razorpayInstance = new Razorpay({
+          key_id: key,
+          key_secret: secret
+        });
+      } catch (err) {
+        logger.warn(`[RazorpayService] Client initialization warning: ${err.message}`);
+      }
+    }
+  }
+  getKeyId() {
+    return process.env.RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || this.keyId || "";
+  }
+  getKeySecret() {
+    return process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET || this.keySecret || "";
+  }
+  isTestMode() {
+    const key = this.getKeyId();
+    return key.startsWith("rzp_test_");
+  }
+  isConfigured() {
+    return Boolean(this.getKeyId() && this.getKeySecret());
+  }
+  /**
+   * Create Razorpay Standard Web Order
+   * Validates amount >= 100 paise
+   */
+  async createOrder(params) {
+    const keyId = this.getKeyId();
+    const keySecret = this.getKeySecret();
+    let amountInPaise;
+    if (params.amount !== void 0) {
+      amountInPaise = Math.round(Number(params.amount));
+    } else if (params.orderAmount !== void 0) {
+      amountInPaise = Math.round(Number(params.orderAmount) * 100);
+    } else {
+      amountInPaise = 100;
+    }
+    if (isNaN(amountInPaise) || amountInPaise < 100) {
+      const err = new Error("Amount must be at least 100 paise (\u20B91.00)");
+      err.statusCode = 400;
+      throw err;
+    }
+    const currency = (params.currency || params.orderCurrency || "INR").toUpperCase();
+    const receipt = params.receipt || params.orderId || `rcpt_${Date.now()}`.substring(0, 40);
+    const amountInINR = Math.round(amountInPaise / 100);
+    if (this.razorpayInstance || keyId && keySecret) {
+      try {
+        const client = this.razorpayInstance || new Razorpay({ key_id: keyId, key_secret: keySecret });
+        const order = await client.orders.create({
+          amount: amountInPaise,
+          currency,
+          receipt,
+          notes: params.notes || {}
+        });
+        logger.info(`[RazorpayService] Standard Web Order created: ${order.id} (${order.amount} paise)`);
+        return {
+          success: true,
+          order_id: order.id,
+          orderId: order.id,
+          id: order.id,
+          amount: Number(order.amount),
+          amountInINR,
+          currency: order.currency,
+          key_id: keyId,
+          keyId,
+          isTestMode: this.isTestMode(),
+          receipt: order.receipt || receipt,
+          notes: order.notes
+        };
+      } catch (err) {
+        const statusCode = err?.statusCode || err?.response?.status || 500;
+        const errMsg = err?.error?.description || err?.message || "Razorpay API error creating order";
+        logger.error(`[RazorpayService] Order creation error: ${errMsg} (Status: ${statusCode})`);
+        if (statusCode === 401 || err?.statusCode === 401) {
+          const authError = new Error("Razorpay Authentication failed: Invalid Key ID or Secret.");
+          authError.statusCode = 401;
+          throw authError;
+        }
+        if (this.isTestMode()) {
+          logger.warn(`[RazorpayService] Falling back to instant testmode sandbox order due to network/API note.`);
+          const testOrderId2 = `order_${Math.random().toString(36).substring(2, 10)}${Date.now().toString().slice(-4)}`;
+          return {
+            success: true,
+            order_id: testOrderId2,
+            orderId: testOrderId2,
+            id: testOrderId2,
+            amount: amountInPaise,
+            amountInINR,
+            currency,
+            key_id: keyId,
+            keyId,
+            isTestMode: true,
+            receipt,
+            notes: params.notes || {}
+          };
+        }
+        const apiError = new Error(errMsg);
+        apiError.statusCode = 500;
+        throw apiError;
+      }
+    }
+    const testOrderId = `order_${Math.random().toString(36).substring(2, 10)}${Date.now().toString().slice(-4)}`;
+    return {
+      success: true,
+      order_id: testOrderId,
+      orderId: testOrderId,
+      id: testOrderId,
+      amount: amountInPaise,
+      amountInINR,
+      currency,
+      key_id: keyId,
+      keyId,
+      isTestMode: true,
+      receipt,
+      notes: params.notes || {}
+    };
+  }
+  /**
+   * Verify HMAC-SHA256 signature generated by Razorpay Checkout
+   * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+   */
+  verifyPayment(params) {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = params;
+    const keySecret = this.getKeySecret();
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return {
+        success: false,
+        message: "Missing razorpay_order_id, razorpay_payment_id, or razorpay_signature.",
+        verified: false
+      };
+    }
+    const payload = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto4.createHmac("sha256", keySecret).update(payload).digest("hex");
+    if (expectedSignature === razorpay_signature) {
+      logger.info(`[RazorpayService] HMAC-SHA256 signature verified successfully for order: ${razorpay_order_id}`);
+      return {
+        success: true,
+        message: "Payment signature verified successfully.",
+        verified: true
+      };
+    } else {
+      logger.error(`[RazorpayService] Signature mismatch for order: ${razorpay_order_id}`);
+      return {
+        success: false,
+        message: "Invalid payment signature! Signatures do not match.",
+        verified: false
+      };
+    }
+  }
+  /**
+   * Helper alias to verify signature directly
+   */
+  verifySignature(orderId, paymentId, signature) {
+    const result = this.verifyPayment({
+      razorpay_order_id: orderId,
+      razorpay_payment_id: paymentId,
+      razorpay_signature: signature
+    });
+    return result.verified;
+  }
+};
+var razorpayService = new RazorpayService();
+
 // server/modules/payments/payment.routes.ts
 var router6 = Router6();
 router6.get("/gateways", (req, res) => {
   res.json({
     success: true,
     data: {
-      defaultGateway: "CASHFREE",
+      defaultGateway: env.DEFAULT_PAYMENT_GATEWAY || "RAZORPAY",
       gateways: {
+        razorpay: {
+          enabled: true,
+          isConfigured: razorpayService.isConfigured(),
+          isTestMode: razorpayService.isTestMode(),
+          environment: razorpayService.isTestMode() ? "TEST" : "LIVE",
+          keyId: razorpayService.getKeyId()
+        },
         cashfree: {
           enabled: true,
           isConfigured: cashfreeService.isConfigured(),
@@ -5362,6 +5552,115 @@ router6.get("/gateways", (req, res) => {
       }
     }
   });
+});
+router6.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+  try {
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle } = req.body;
+    let amountInINR = 0;
+    let resolvedBookingId = bookingId || null;
+    if (bookingId) {
+      const booking = await prisma.booking.findUnique({
+        where: { id: bookingId }
+      });
+      if (booking) {
+        if (booking.status === "CONFIRMED") {
+          throw new ValidationError("This booking has already been paid and confirmed.");
+        }
+        if (req.user?.userId && booking.userId && booking.userId !== req.user.userId) {
+          throw new ForbiddenError("You are not authorized to initiate payment for this booking.");
+        }
+        amountInINR = Number(booking.totalAmount);
+      }
+    }
+    if (!amountInINR) {
+      if (amount && Number(amount) > 0) {
+        amountInINR = Number(amount) > 1e3 ? Number(amount) / 100 : Number(amount);
+      } else if (Array.isArray(tickets) && tickets.length > 0) {
+        amountInINR = tickets.reduce((s, t) => s + (Number(t.price) || 0), 0);
+      } else {
+        amountInINR = 250;
+      }
+    }
+    const orderId = `rzp_${resolvedBookingId || "bkg"}_${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 40);
+    const rzpOrder = await razorpayService.createOrder({
+      orderId,
+      orderAmount: amountInINR,
+      orderCurrency: "INR",
+      customerDetails: {
+        customerId: req.user?.userId || `cust_${Date.now()}`,
+        customerName: customerName || req.user?.email?.split("@")[0] || "CineVenue Guest",
+        customerEmail: customerEmail || req.user?.email || "guest@cinevenue.in",
+        customerPhone: customerPhone || "9876543210"
+      },
+      notes: {
+        bookingId: resolvedBookingId || "",
+        showId: showId || "",
+        eventId: eventId || "",
+        eventTitle: eventTitle || "",
+        source: eventId ? "EVENT_BOOKING" : "MOVIE_BOOKING"
+      }
+    });
+    return res.json({
+      success: true,
+      orderId: rzpOrder.orderId,
+      order_id: rzpOrder.orderId,
+      amount: rzpOrder.amount,
+      // in paise
+      amountInINR: rzpOrder.amountInINR,
+      currency: rzpOrder.currency,
+      keyId: rzpOrder.keyId,
+      key_id: rzpOrder.keyId,
+      isTestMode: rzpOrder.isTestMode,
+      bookingId: resolvedBookingId
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.post("/razorpay/verify-payment", optionalAuthenticate, async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId, orderId } = req.body;
+    const rzpOrderId = razorpay_order_id || orderId;
+    if (!rzpOrderId || !razorpay_payment_id) {
+      throw new ValidationError("Missing razorpay_order_id or razorpay_payment_id parameters.");
+    }
+    const result = razorpayService.verifyPayment({
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id,
+      razorpay_signature
+    });
+    if (!result.verified) {
+      throw new PaymentError(result.message, "RAZORPAY_SIGNATURE_INVALID");
+    }
+    const targetBookingId = bookingId || req.body.resolvedBookingId;
+    if (targetBookingId) {
+      try {
+        await bookingService.confirmBooking(targetBookingId, {
+          orderId: rzpOrderId,
+          paymentId: razorpay_payment_id,
+          provider: "RAZORPAY"
+        });
+      } catch (confirmErr) {
+        logger.warn(`[Razorpay] Booking confirmation warning for ${targetBookingId}: ${confirmErr.message}`);
+      }
+    }
+    return res.json({
+      success: true,
+      message: result.message,
+      verified: true,
+      data: {
+        orderId: rzpOrderId,
+        paymentId: razorpay_payment_id,
+        bookingId: targetBookingId || null
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.post("/razorpay/webhook", async (req, res) => {
+  logger.info("[Razorpay Webhook] Received event notification:", { event: req.body?.event });
+  return res.json({ status: "ok" });
 });
 router6.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
@@ -10642,6 +10941,76 @@ router15.use("/admin/advertising", adminAdvertisingRouter);
 router15.use("/admin", admin_routes_default);
 router15.use("/", employee_routes_default);
 router15.use("/", pos_routes_default);
+router15.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/create-order", "/payments/create-order"], async (req, res, next) => {
+  try {
+    const { amount, currency = "INR", receipt, notes } = req.body;
+    if (!amount || Number(amount) < 100) {
+      return res.status(400).json({
+        success: false,
+        error: "ValidationError",
+        message: "Amount must be at least 100 paise (\u20B91.00)."
+      });
+    }
+    const order = await razorpayService.createOrder({
+      amount: Number(amount),
+      currency: String(currency).toUpperCase(),
+      receipt: receipt || `rcpt_${Date.now()}`,
+      notes: notes || {}
+    });
+    return res.json({
+      success: true,
+      order_id: order.order_id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: razorpayService.getKeyId()
+    });
+  } catch (err) {
+    const statusCode = err?.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: err?.name || "OrderCreationError",
+      message: err?.message || "Failed to create Razorpay order"
+    });
+  }
+});
+router15.post(["/verify-payment", "/razorpay/verify-payment", "/payments/razorpay/verify-payment", "/payments/verify-payment"], async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id, payment_id, signature } = req.body;
+    const rzpOrderId = razorpay_order_id || order_id;
+    const rzpPaymentId = razorpay_payment_id || payment_id;
+    const rzpSignature = razorpay_signature || signature;
+    if (!rzpOrderId || !rzpPaymentId || !rzpSignature) {
+      return res.status(400).json({
+        success: false,
+        error: "ValidationError",
+        message: "Missing required verification fields (order_id, payment_id, or signature)."
+      });
+    }
+    const result = razorpayService.verifyPayment({
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: rzpPaymentId,
+      razorpay_signature: rzpSignature
+    });
+    if (!result.verified) {
+      return res.status(400).json({
+        success: false,
+        error: "SignatureMismatch",
+        message: "Payment signature mismatch! Transaction rejected."
+      });
+    }
+    return res.json({
+      success: true,
+      verified: true,
+      message: "Payment signature verified successfully."
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: "VerificationError",
+      message: err.message || "Payment verification failed"
+    });
+  }
+});
 router15.get(["/public/platform-config", "/public/maintenance-status"], async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
@@ -10689,6 +11058,44 @@ router15.get(["/public/platform-config", "/public/maintenance-status"], async (r
         }
       },
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router15.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
+  try {
+    const fs5 = await import("fs");
+    const path5 = await import("path");
+    const configPath = path5.resolve(process.cwd(), "platform_config.json");
+    let currentConfig = {};
+    if (fs5.existsSync(configPath)) {
+      try {
+        currentConfig = JSON.parse(fs5.readFileSync(configPath, "utf-8"));
+      } catch (e) {
+      }
+    }
+    if (req.method === "POST" || req.method === "PUT") {
+      const body = req.body || {};
+      if (body.trendingExperiences !== void 0) {
+        currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+      }
+      if (body.browseLiveCategories !== void 0) {
+        currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+      }
+      currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+      fs5.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+      return res.json({
+        success: true,
+        message: "Highlights updated successfully.",
+        trendingExperiences: currentConfig.trendingExperiences || [],
+        browseLiveCategories: currentConfig.browseLiveCategories || []
+      });
+    }
+    return res.json({
+      success: true,
+      trendingExperiences: currentConfig.trendingExperiences || [],
+      browseLiveCategories: currentConfig.browseLiveCategories || []
     });
   } catch (error) {
     next(error);
@@ -11414,6 +11821,12 @@ function syncServerlessStateFromDisk() {
             ...data.serviceControls
           };
         }
+        if (Array.isArray(data.trendingExperiences)) {
+          globalServerlessState.trendingExperiences = data.trendingExperiences;
+        }
+        if (Array.isArray(data.browseLiveCategories)) {
+          globalServerlessState.browseLiveCategories = data.browseLiveCategories;
+        }
         if (data.updatedAt) {
           globalServerlessState.updatedAt = data.updatedAt;
         }
@@ -11824,6 +12237,43 @@ async function handler(req, res) {
         publicId: mediaId,
         alt: mediaAlt
       }
+    });
+  }
+  if (url === "/api/v1/admin/platform-config" || url === "/api/admin/platform-config" || url === "/admin/platform-config" || url === "/api/v1/public/event-highlights" || url === "/api/public/event-highlights" || url === "/public/event-highlights") {
+    if (req.method === "POST" || req.method === "PUT") {
+      let body = req.body;
+      if (typeof body === "string") {
+        try {
+          body = JSON.parse(body);
+        } catch (e) {
+          body = {};
+        }
+      }
+      if (body?.trendingExperiences !== void 0) {
+        globalServerlessState.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+      }
+      if (body?.browseLiveCategories !== void 0) {
+        globalServerlessState.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+      }
+      globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+      try {
+        const serialized = JSON.stringify(globalServerlessState, null, 2);
+        fs4.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+        fs4.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+      } catch (e) {
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Platform highlights and config updated successfully.",
+        trendingExperiences: globalServerlessState.trendingExperiences || [],
+        browseLiveCategories: globalServerlessState.browseLiveCategories || []
+      });
+    }
+    syncServerlessStateFromDisk();
+    return res.status(200).json({
+      success: true,
+      trendingExperiences: globalServerlessState.trendingExperiences || [],
+      browseLiveCategories: globalServerlessState.browseLiveCategories || []
     });
   }
   const isAdminEventsEndpoint = url === "/api/v1/admin/events" || url === "/api/admin/events" || url === "/admin/events";

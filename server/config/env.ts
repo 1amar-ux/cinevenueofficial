@@ -23,8 +23,8 @@ const envSchema = z.object({
   GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
   
   // Payment Gateways (Razorpay & Cashfree)
-  RAZORPAY_KEY_ID: z.string().optional().default("rzp_test_TkvVUV4mqkHoT9"),
-  RAZORPAY_KEY_SECRET: z.string().optional().default("60cM0Gtr0HGjnanWORmYPrQ9"),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_ENV: z.enum(["TEST", "LIVE"]).default("TEST"),
   CASHFREE_APP_ID: z.string().optional(),
   CASHFREE_SECRET_KEY: z.string().optional(),

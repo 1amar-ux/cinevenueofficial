@@ -2,7 +2,10 @@ import apiClient from "./apiClient";
 
 export interface CreateRazorpayOrderRequest {
   bookingId?: string;
-  amount: number; // in rupees
+  amount: number; // in rupees or paise
+  currency?: string;
+  receipt?: string;
+  notes?: Record<string, any>;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -25,7 +28,13 @@ export interface RazorpayOrderData {
 }
 
 export interface RazorpayCheckoutOptions {
-  orderData: RazorpayOrderData;
+  orderData?: RazorpayOrderData;
+  orderId?: string;
+  amount?: number;
+  currency?: string;
+  keyId?: string;
+  name?: string;
+  description?: string;
   prefill?: {
     name?: string;
     email?: string;
@@ -117,14 +126,21 @@ export async function triggerRazorpayCheckout(options: RazorpayCheckoutOptions):
 
   const { orderData, prefill, notes, onSuccess, onFailure, onDismiss } = options;
 
+  const resolvedOrderId = options.orderId || orderData?.orderId || orderData?.order_id || "";
+  const resolvedKey = options.keyId || orderData?.keyId || orderData?.key_id || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "";
+  const resolvedAmount = options.amount !== undefined ? options.amount : (orderData?.amount || 0);
+  const resolvedCurrency = options.currency || orderData?.currency || "INR";
+  const resolvedName = options.name || "CineVenue Entertainments";
+  const resolvedDesc = options.description || (orderData?.isTestMode ? "🎟️ CineVenue Test Mode Checkout" : "🎟️ CineVenue Ticket Checkout");
+
   const rzpOptions: any = {
-    key: orderData.keyId || orderData.key_id || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "rzp_test_TkvVUV4mqkHoT9",
-    amount: orderData.amount, // in paise
-    currency: orderData.currency || "INR",
-    name: "CineVenue Entertainments",
-    description: orderData.isTestMode ? "🎟️ CineVenue Test Mode Checkout" : "🎟️ CineVenue Ticket Checkout",
+    key: resolvedKey,
+    amount: resolvedAmount, // in paise
+    currency: resolvedCurrency,
+    name: resolvedName,
+    description: resolvedDesc,
     image: "/logo.jpg",
-    order_id: orderData.orderId,
+    order_id: resolvedOrderId,
     prefill: {
       name: prefill?.name || "CineVenue Guest",
       email: prefill?.email || "guest@cinevenue.in",
@@ -145,7 +161,7 @@ export async function triggerRazorpayCheckout(options: RazorpayCheckoutOptions):
     handler: async (response: any) => {
       try {
         await onSuccess({
-          razorpay_order_id: response.razorpay_order_id || orderData.orderId,
+          razorpay_order_id: response.razorpay_order_id || resolvedOrderId,
           razorpay_payment_id: response.razorpay_payment_id,
           razorpay_signature: response.razorpay_signature
         });
@@ -204,7 +220,7 @@ export async function standardRazorpayCheckout(params: {
     throw new Error(orderData.message || "Failed to create order on server.");
   }
 
-  const key = orderData.key_id || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "rzp_test_TkvVUV4mqkHoT9";
+  const key = orderData.key_id || orderData.keyId || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "";
 
   // 2. Open Razorpay Checkout Modal
   const options = {

@@ -72,7 +72,7 @@ router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 // ==========================================
 // 2A. RAZORPAY STANDARD WEB CHECKOUT ENDPOINTS
 // ==========================================
-router.post(["/create-order", "/razorpay/create-order"], async (req, res, next) => {
+router.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/create-order", "/payments/create-order"], async (req, res, next) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;
     
@@ -109,7 +109,7 @@ router.post(["/create-order", "/razorpay/create-order"], async (req, res, next) 
   }
 });
 
-router.post(["/verify-payment", "/razorpay/verify-payment"], async (req, res, next) => {
+router.post(["/verify-payment", "/razorpay/verify-payment", "/payments/razorpay/verify-payment", "/payments/verify-payment"], async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id, payment_id, signature } = req.body;
     

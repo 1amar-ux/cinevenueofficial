@@ -46,8 +46,8 @@ export class RazorpayService {
   private razorpayInstance: Razorpay | null = null;
 
   constructor() {
-    this.keyId = process.env.RAZORPAY_KEY_ID || (env as any).RAZORPAY_KEY_ID || "rzp_test_TkvVUV4mqkHoT9";
-    this.keySecret = process.env.RAZORPAY_KEY_SECRET || (env as any).RAZORPAY_KEY_SECRET || "60cM0Gtr0HGjnanWORmYPrQ9";
+    this.keyId = process.env.RAZORPAY_KEY_ID || (env as any).RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "";
+    this.keySecret = process.env.RAZORPAY_KEY_SECRET || (env as any).RAZORPAY_KEY_SECRET || "";
     this.initClient();
   }
 
@@ -67,11 +67,11 @@ export class RazorpayService {
   }
 
   public getKeyId(): string {
-    return process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || this.keyId || "rzp_test_TkvVUV4mqkHoT9";
+    return process.env.RAZORPAY_KEY_ID || (env as any).RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || this.keyId || "";
   }
 
   public getKeySecret(): string {
-    return process.env.RAZORPAY_KEY_SECRET || (env as any).RAZORPAY_KEY_SECRET || this.keySecret || "60cM0Gtr0HGjnanWORmYPrQ9";
+    return process.env.RAZORPAY_KEY_SECRET || (env as any).RAZORPAY_KEY_SECRET || this.keySecret || "";
   }
 
   public isTestMode(): boolean {

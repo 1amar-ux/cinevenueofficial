@@ -138,7 +138,11 @@ router.post("/razorpay/verify-payment", optionalAuthenticate, async (req: Reques
     const targetBookingId = bookingId || req.body.resolvedBookingId;
     if (targetBookingId) {
       try {
-        await bookingService.confirmBooking(targetBookingId);
+        await bookingService.confirmBooking(targetBookingId, {
+          orderId: rzpOrderId,
+          paymentId: razorpay_payment_id,
+          provider: "RAZORPAY"
+        });
       } catch (confirmErr: any) {
         logger.warn(`[Razorpay] Booking confirmation warning for ${targetBookingId}: ${confirmErr.message}`);
       }

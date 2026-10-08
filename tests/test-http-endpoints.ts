@@ -20,7 +20,7 @@ async function testHttpEndpoints() {
 
   const orderId = createRes.data.order_id;
   const paymentId = `pay_test_${Date.now()}`;
-  const secret = "60cM0Gtr0HGjnanWORmYPrQ9";
+  const secret = process.env.RAZORPAY_KEY_SECRET || "ITHbuLYVvMoVEix3n6N90p2t";
 
   // 2. Generate valid HMAC signature
   const validSignature = crypto
