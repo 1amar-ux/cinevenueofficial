@@ -192,10 +192,15 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins();
               else window.location.href = "/cinecoins";
             }}
-            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-amber-400 hover:text-black dark:hover:text-amber-300 hover:bg-gray-300/80 dark:hover:bg-white/5 flex items-center gap-1 whitespace-nowrap"
+            className={`px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 whitespace-nowrap ${
+              isCineCoinsLive ? "text-gray-950 dark:text-amber-400 hover:text-black dark:hover:text-amber-300 hover:bg-gray-300/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
+            }`}
           >
-            <Coins className="w-3.5 h-3.5 text-gray-950 dark:text-amber-400" />
+            <Coins className={`w-3.5 h-3.5 ${isCineCoinsLive ? "text-gray-950 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`} />
             <span>CineCoins</span>
+            {!isCineCoinsLive && (
+              <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">OFF</span>
+            )}
           </button>
         </div>
 

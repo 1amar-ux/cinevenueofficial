@@ -9,8 +9,9 @@ import {
   Sparkles, Clock, DollarSign, CalendarRange, Wallet, CheckCircle, Ticket, 
   Layers, Users, LayoutDashboard, Bell, LogOut, Search, Menu, Monitor, QrCode, 
   Play, Pause, RotateCcw, Thermometer, Volume2, ArrowLeft, Edit, Shield, Lock, 
-  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins
+  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck
 } from "lucide-react";
+import EmployeeManagementModule from "./admin/employees/EmployeeManagementModule";
 import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction } from "../types";
 import { DEFAULT_CINECOINS_SETTINGS } from "../data";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
@@ -137,7 +138,7 @@ interface AdminPanelProps {
   onUpdateCineCoinsTransactions?: (txs: CineCoinsTransaction[]) => void;
 }
 
-type TabType = "integration_testing" | "system_monitoring" | "overview" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
+type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
 
 export default function AdminPanel({
   isOpen,
@@ -795,6 +796,7 @@ export default function AdminPanel({
       case "settings":
       case "service_control":
         return true; // Settings is accessible to all admins
+      case "employees":
       case "access":
       case "rentals_messages":
       case "cinecoins_admin":
@@ -827,6 +829,8 @@ export default function AdminPanel({
   const [movieImg, setMovieImg] = useState("https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&q=60");
   const [movieFormats, setMovieFormats] = useState<string[]>(["2D"]);
   const [movieActors, setMovieActors] = useState("");
+  const [movieDescription, setMovieDescription] = useState("");
+  const [movieDirector, setMovieDirector] = useState("");
   const [movieTrailerUrl, setMovieTrailerUrl] = useState("");
   const [movieDuration, setMovieDuration] = useState("148 mins");
   const [movieCertificate, setMovieCertificate] = useState<'U' | 'UA' | 'A'>("UA");
@@ -1432,13 +1436,17 @@ export default function AdminPanel({
         onUpdateMovie(editingMovieTitle, {
           id: editingMovieId || undefined,
           title: movieTitle,
+          description: movieDescription.trim(),
+          cast: actorsArray,
+          actors: actorsArray,
+          director: movieDirector.trim(),
           genre: movieGenre,
           lang: movieLang,
           rating: movieRating,
           img: movieImg,
+          poster: movieImg,
           langKey: movieLangKey,
           formats: movieFormats,
-          actors: actorsArray,
           trailerUrl: movieTrailerUrl,
           duration: movieDuration,
           certificate: movieCertificate,
@@ -1451,13 +1459,17 @@ export default function AdminPanel({
     } else {
       onAddMovie({
         title: movieTitle,
+        description: movieDescription.trim(),
+        cast: actorsArray,
+        actors: actorsArray,
+        director: movieDirector.trim(),
         genre: movieGenre,
         lang: movieLang,
         rating: movieRating,
         img: movieImg,
+        poster: movieImg,
         langKey: movieLangKey,
         formats: movieFormats,
-        actors: actorsArray,
         trailerUrl: movieTrailerUrl,
         duration: movieDuration,
         certificate: movieCertificate,
@@ -1467,6 +1479,8 @@ export default function AdminPanel({
     }
 
     setMovieTitle("");
+    setMovieDescription("");
+    setMovieDirector("");
     setMovieGenre("Sci-Fi");
     setMovieLang("English");
     setMovieLangKey("english");
@@ -1927,6 +1941,27 @@ export default function AdminPanel({
                   >
                     <LayoutDashboard className="w-4 h-4 text-gold shrink-0" />
                     <span>Dashboard Overview</span>
+                  </button>
+                )}
+
+                {/* Tab Item - Staff & Employee Access (Super Admin Only) */}
+                {effectiveSuperAdmin && (
+                  <button
+                    onClick={() => { setActiveTab("employees"); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      activeTab === "employees" 
+                        ? "bg-gold/10 text-gold border-l-2 border-gold" 
+                        : "text-text-secondary hover:bg-white/[0.02] hover:text-text-primary"
+                    }`}
+                    id="tab-btn-employees"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="w-4 h-4 text-gold shrink-0" />
+                      <span>Staff & Employee Access</span>
+                    </div>
+                    <span className="text-[9px] font-bold bg-gold/15 border border-gold/30 text-gold px-1.5 py-0.5 rounded">
+                      STAFF
+                    </span>
                   </button>
                 )}
 
@@ -2455,6 +2490,15 @@ export default function AdminPanel({
                 transactions={cineCoinsTransactions || []}
                 onUpdateTransactions={onUpdateCineCoinsTransactions || (() => {})}
               />
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: STAFF & EMPLOYEE ACCESS MANAGEMENT MODULE */}
+          {/* ========================================================= */}
+          {activeTab === "employees" && (
+            <div className="space-y-6 animate-fade-in" id="tab-employees">
+              <EmployeeManagementModule />
             </div>
           )}
 
@@ -3876,14 +3920,41 @@ export default function AdminPanel({
                     </div>
 
                     <div className="space-y-1.5 text-left">
-                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Actors / Cast (comma-separated)</label>
-                      <input 
-                        type="text"
-                        value={movieActors}
-                        onChange={(e) => setMovieActors(e.target.value)}
-                        placeholder="e.g. Brad Pitt, Paul Mescal, Denzel Washington"
-                        className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
+                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider flex items-center justify-between">
+                        <span>Movie Description / Synopsis</span>
+                        <span className="text-[9px] text-gold/80 font-normal lowercase tracking-normal">shows in ticket booking flow</span>
+                      </label>
+                      <textarea 
+                        rows={3}
+                        value={movieDescription}
+                        onChange={(e) => setMovieDescription(e.target.value)}
+                        placeholder="Enter comprehensive movie plot overview, storyline synopsis, or theatrical highlights..."
+                        className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold resize-none leading-relaxed"
                       />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Director / Filmmaker</label>
+                        <input 
+                          type="text"
+                          value={movieDirector}
+                          onChange={(e) => setMovieDirector(e.target.value)}
+                          placeholder="e.g. Lokesh Kanagaraj, Christopher Nolan"
+                          className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Starring Cast (comma-separated)</label>
+                        <input 
+                          type="text"
+                          value={movieActors}
+                          onChange={(e) => setMovieActors(e.target.value)}
+                          placeholder="e.g. Rajinikanth, Nagarjuna, Shruti Haasan"
+                          className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-1.5 text-left">
@@ -3940,6 +4011,8 @@ export default function AdminPanel({
                           type="button"
                           onClick={() => {
                             setMovieTitle("");
+                            setMovieDescription("");
+                            setMovieDirector("");
                             setEditingMovieTitle(null);
                             setEditingMovieId(null);
                           }}
@@ -3978,7 +4051,7 @@ export default function AdminPanel({
                             <p className="font-bold text-text-primary truncate block" title={m.title}>{m.title}</p>
                             <p className="text-[10px] text-text-secondary">{m.genre} · {m.lang}</p>
                             
-                            {/* Display Formats & Trailer & Actors */}
+                            {/* Display Formats & Trailer & Actors & Description */}
                             <div className="space-y-0.5 mt-1 border-t border-white/5 pt-1">
                               <div className="flex wrap gap-1 items-center">
                                 {(m.formats || ["2D"]).map((fmt) => (
@@ -3997,14 +4070,24 @@ export default function AdminPanel({
                                   </span>
                                 )}
                               </div>
+                              {m.description && (
+                                <p className="text-[8px] text-text-secondary/80 line-clamp-2 leading-tight italic">
+                                  "{m.description}"
+                                </p>
+                              )}
+                              {m.director && (
+                                <p className="text-[8px] text-text-muted truncate">
+                                  <span className="font-semibold text-text-secondary">Director:</span> {m.director}
+                                </p>
+                              )}
+                              {(m.cast || m.actors) && (m.cast || m.actors)!.length > 0 && (
+                                <p className="text-[8px] text-text-muted truncate">
+                                  <span className="font-semibold text-gold/90">Cast:</span> {((m.cast || m.actors) || []).join(", ")}
+                                </p>
+                              )}
                               {m.distributor && (
                                 <p className="text-[8px] text-text-muted truncate">
                                   <span className="font-semibold text-text-secondary">Distributor:</span> {m.distributor}
-                                </p>
-                              )}
-                              {m.actors && m.actors.length > 0 && (
-                                <p className="text-[8px] text-text-muted truncate">
-                                  <span className="font-semibold text-text-secondary">Cast:</span> {(m.actors || []).join(", ")}
                                 </p>
                               )}
                               {m.trailerUrl && (
@@ -4038,13 +4121,15 @@ export default function AdminPanel({
                                   setEditingMovieTitle(m.title);
                                   setEditingMovieId(m.id ? String(m.id) : null);
                                   setMovieTitle(m.title);
+                                  setMovieDescription(m.description || "");
+                                  setMovieDirector(m.director || "");
                                   setMovieGenre(m.genre);
                                   setMovieLang(m.lang);
                                   setMovieLangKey(m.langKey);
                                   setMovieRating(m.rating);
                                   setMovieImg(m.img);
                                   setMovieFormats(m.formats || ["2D"]);
-                                  setMovieActors(m.actors ? (m.actors || []).join(", ") : "");
+                                  setMovieActors(m.cast ? m.cast.join(", ") : (m.actors ? m.actors.join(", ") : ""));
                                   setMovieTrailerUrl(m.trailerUrl || "");
                                   setMovieDuration(m.duration || "148 mins");
                                   setMovieCertificate(m.certificate || "UA");

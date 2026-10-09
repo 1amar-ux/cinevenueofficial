@@ -127,6 +127,48 @@ router.get(["/public/platform-config", "/public/maintenance-status"], async (req
   }
 });
 
+router.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const configPath = path.resolve(process.cwd(), "platform_config.json");
+
+    let currentConfig: any = {};
+    if (fs.existsSync(configPath)) {
+      try {
+        currentConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      } catch (e) {}
+    }
+
+    if (req.method === "POST" || req.method === "PUT") {
+      const body = req.body || {};
+      if (body.trendingExperiences !== undefined) {
+        currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+      }
+      if (body.browseLiveCategories !== undefined) {
+        currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+      }
+      currentConfig.updatedAt = new Date().toISOString();
+      fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+
+      return res.json({
+        success: true,
+        message: "Highlights updated successfully.",
+        trendingExperiences: currentConfig.trendingExperiences || [],
+        browseLiveCategories: currentConfig.browseLiveCategories || []
+      });
+    }
+
+    return res.json({
+      success: true,
+      trendingExperiences: currentConfig.trendingExperiences || [],
+      browseLiveCategories: currentConfig.browseLiveCategories || []
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/settings/app", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");

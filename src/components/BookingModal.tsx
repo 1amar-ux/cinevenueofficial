@@ -3,7 +3,7 @@ import {
   X, Calendar, MapPin, Armchair, CheckCircle, ShieldCheck, CreditCard, 
   AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info,
   Download, Printer, Share2, Mail, Smartphone, Heart, SlidersHorizontal, ArrowLeft, Clock,
-  Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search
+  Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search, Users
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { MovieSchedule, Booking, Theatre, Movie } from "../types";
@@ -49,6 +49,8 @@ interface BookingModalProps {
   theatres?: Theatre[];
   registeredUsers?: { email: string; passwordHash: string; joinedAt: string; mobile?: string; name?: string }[];
   isMovieBookingSystemActive?: boolean;
+  movies?: Movie[];
+  onUpdateMovie?: (title: string, updatedMovie: Movie) => void;
 }
 
 export default function BookingModal({
@@ -65,6 +67,8 @@ export default function BookingModal({
   theatres = [],
   registeredUsers = [],
   isMovieBookingSystemActive = true,
+  movies = [],
+  onUpdateMovie,
 }: BookingModalProps) {
   // Step state: "theatres_showtimes" (District Showtimes View) -> "seat_selection" -> "confirm_booking" -> "confirmed"
   const [bookingStep, setBookingStep] = useState<"theatres_showtimes" | "seat_selection" | "confirm_booking" | "confirmed">("theatres_showtimes");
@@ -112,21 +116,89 @@ export default function BookingModal({
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<{ paymentId?: string; orderId?: string; method?: string }>({});
 
-  // Lookup target movie metadata
-  const cachedMovies: Movie[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("cine_movies") || "[]") : [];
-  const movieObj = INITIAL_MOVIES.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) ||
-    cachedMovies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) || {
-      title: movieTitle,
-      genre: "Animation, Adventure",
-      lang: "Telugu",
-      certification: "U",
-      duration: "1h 41m",
-      rating: "8.8",
-      poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-      img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-      releaseYear: 2026,
-      trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0"
+  // Lookup target movie metadata with live local storage and prop fallback
+  const getResolvedMovie = (): Movie => {
+    const cachedMovies: Movie[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("cine_movies") || "[]") : [];
+    return (
+      movies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) ||
+      cachedMovies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) ||
+      INITIAL_MOVIES.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) || {
+        title: movieTitle,
+        genre: "Action / Drama",
+        lang: "Telugu",
+        certification: "UA",
+        duration: "2h 30m",
+        rating: "8.5",
+        poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+        img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+        releaseYear: 2026,
+        trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
+        description: "Experience world-class cinematic excellence at CineVenue with high-fidelity sound and immersive screens.",
+        cast: ["Lead Star", "Supporting Artist"],
+        actors: ["Lead Star", "Supporting Artist"],
+        director: "Acclaimed Filmmaker"
+      }
+    );
+  };
+
+  const [currentMovie, setCurrentMovie] = useState<Movie>(getResolvedMovie);
+
+  useEffect(() => {
+    setCurrentMovie(getResolvedMovie());
+  }, [movieTitle, movies]);
+
+  const movieObj = currentMovie;
+
+  // Add / Edit Description and Casting State in Ticket Booking
+  const [showEditInfoModal, setShowEditInfoModal] = useState<boolean>(false);
+  const [infoDescription, setInfoDescription] = useState<string>("");
+  const [infoCast, setInfoCast] = useState<string>("");
+  const [infoDirector, setInfoDirector] = useState<string>("");
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState<boolean>(false);
+  const [infoSavedSuccess, setInfoSavedSuccess] = useState<string | null>(null);
+
+  const handleOpenEditInfo = () => {
+    setInfoDescription(movieObj.description || "");
+    const castList = movieObj.cast || movieObj.actors || [];
+    setInfoCast(castList.join(", "));
+    setInfoDirector(movieObj.director || "");
+    setShowEditInfoModal(true);
+  };
+
+  const handleSaveMovieInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsedCast = infoCast.split(",").map((c) => c.trim()).filter(Boolean);
+    const updatedMovie: Movie = {
+      ...movieObj,
+      description: infoDescription.trim(),
+      cast: parsedCast,
+      actors: parsedCast,
+      director: infoDirector.trim() || undefined,
     };
+    setCurrentMovie(updatedMovie);
+
+    // Save to localStorage
+    try {
+      const existing: Movie[] = JSON.parse(localStorage.getItem("cine_movies") || "[]");
+      const idx = existing.findIndex((m) => m.title.toLowerCase() === movieObj.title.toLowerCase());
+      if (idx >= 0) {
+        existing[idx] = { ...existing[idx], ...updatedMovie };
+      } else {
+        existing.push(updatedMovie);
+      }
+      localStorage.setItem("cine_movies", JSON.stringify(existing));
+    } catch (err) {
+      console.warn("Local storage sync error", err);
+    }
+
+    if (onUpdateMovie) {
+      onUpdateMovie(movieObj.title, updatedMovie);
+    }
+
+    setShowEditInfoModal(false);
+    setInfoSavedSuccess("Movie description & casting updated successfully!");
+    setTimeout(() => setInfoSavedSuccess(null), 3500);
+  };
 
   // Primary trailer resolution
   const primaryTrailer = getPrimaryMovieTrailer(movieObj);
@@ -471,9 +543,22 @@ export default function BookingModal({
 
               {/* Movie Meta Details */}
               <div className="space-y-1.5 flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
-                  {movieTitle} <span className="text-white/40 font-normal">({movieObj.releaseYear || 2026})</span>
-                </h1>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                    {movieTitle} <span className="text-white/40 font-normal">({movieObj.releaseYear || 2026})</span>
+                  </h1>
+
+                  {/* Direct Access: Add / Edit Description and Casting */}
+                  <button
+                    type="button"
+                    onClick={handleOpenEditInfo}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 hover:border-gold/50 text-xs font-bold transition-all shadow-md cursor-pointer hover:scale-105"
+                    title="Add or edit movie description and casting for ticket booking"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Add / Edit Info</span>
+                  </button>
+                </div>
                 
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70 font-medium">
                   <span className="border border-white/30 px-1.5 py-0.5 rounded text-[11px] font-bold text-white/90">
@@ -481,6 +566,14 @@ export default function BookingModal({
                   </span>
                   <span>|</span>
                   <span>{movieObj.duration || "1h 41m"}</span>
+                  {movieObj.rating && (
+                    <>
+                      <span>|</span>
+                      <span className="flex items-center gap-1 text-gold font-bold">
+                        <Star className="w-3.5 h-3.5 fill-gold" /> {movieObj.rating}/10
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <p className="text-xs sm:text-sm text-white/60 font-medium">
@@ -490,6 +583,138 @@ export default function BookingModal({
                 <p className="text-xs sm:text-sm text-white/50">
                   {movieObj.genre || "Drama"}
                 </p>
+              </div>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* DEDICATED MOVIE DESCRIPTION & CASTING BLOCK IN TICKET BOOKING              */}
+            {/* ========================================================================= */}
+            <div className="bg-[#141418] border border-white/10 rounded-2xl p-4 sm:p-5 text-left space-y-4 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-gold/10 text-gold border border-gold/20">
+                    <Sparkles className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
+                      <span>Storyline & Starring Cast</span>
+                      {movieObj.director && (
+                        <span className="hidden sm:inline-block text-[11px] font-normal text-text-muted">
+                          • Directed by <strong className="text-gold font-semibold">{movieObj.director}</strong>
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[11px] text-text-muted">
+                      Movie synopsis and cast ensemble details
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenEditInfo}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 hover:text-white border border-white/10 text-[11px] font-semibold transition-all cursor-pointer self-start sm:self-auto hover:border-gold/40"
+                >
+                  <Pencil className="w-3 h-3 text-gold" />
+                  <span>
+                    {(movieObj.description || (movieObj.cast && movieObj.cast.length > 0)) 
+                      ? "Edit Description & Cast" 
+                      : "Add Description & Cast"}
+                  </span>
+                </button>
+              </div>
+
+              {/* Movie Description / Storyline */}
+              <div className="space-y-1.5">
+                <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <Film className="w-3 h-3 text-gold" />
+                  <span>Movie Synopsis</span>
+                </div>
+                {movieObj.description ? (
+                  <div>
+                    <p className={`text-xs text-white/85 leading-relaxed font-sans ${!isSynopsisExpanded && movieObj.description.length > 220 ? 'line-clamp-2' : ''}`}>
+                      {movieObj.description}
+                    </p>
+                    {movieObj.description.length > 220 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+                        className="text-[11px] text-gold hover:underline font-semibold mt-1 bg-transparent border-0 cursor-pointer p-0 block"
+                      >
+                        {isSynopsisExpanded ? "Show Less ▲" : "Read Full Synopsis ▼"}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl bg-white/[0.02] border border-dashed border-white/10">
+                    <p className="text-xs text-text-muted italic">No storyline description added yet for this movie.</p>
+                    <button
+                      type="button"
+                      onClick={handleOpenEditInfo}
+                      className="text-xs font-bold text-gold hover:underline bg-transparent border-0 cursor-pointer p-0"
+                    >
+                      + Add Movie Description
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Starring Cast Ensemble */}
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3 h-3 text-gold" />
+                    <span>Starring Cast & Crew</span>
+                  </div>
+                  {movieObj.director && (
+                    <span className="sm:hidden text-[11px] text-white/70">
+                      Dir: <strong className="text-gold">{movieObj.director}</strong>
+                    </span>
+                  )}
+                </div>
+
+                {(movieObj.cast || movieObj.actors) && (movieObj.cast || movieObj.actors)!.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {(movieObj.cast || movieObj.actors)!.map((actor, idx) => {
+                      const initials = actor
+                        .split(" ")
+                        .map((n) => n[0])
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase();
+                      return (
+                        <div
+                          key={actor + idx}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] transition-all group"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gold/30 to-amber-500/20 text-gold flex items-center justify-center text-[10px] font-bold shrink-0 border border-gold/30">
+                            {initials || "★"}
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-semibold text-white/90 group-hover:text-gold transition-colors">
+                              {actor}
+                            </span>
+                            <span className="text-[9px] text-text-muted uppercase tracking-wider">
+                              Cast
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl bg-white/[0.02] border border-dashed border-white/10">
+                    <p className="text-xs text-text-muted italic">No casting members listed yet for this movie.</p>
+                    <button
+                      type="button"
+                      onClick={handleOpenEditInfo}
+                      className="text-xs font-bold text-gold hover:underline bg-transparent border-0 cursor-pointer p-0"
+                    >
+                      + Add Movie Casting
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1344,6 +1569,103 @@ export default function BookingModal({
             </div>
           );
         })()}
+
+        {/* ADD / EDIT MOVIE DESCRIPTION & CASTING MODAL IN TICKET BOOKING */}
+        {showEditInfoModal && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in text-white">
+            <div className="bg-[#141418] border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-left space-y-5 animate-scale-in">
+              <button
+                type="button"
+                onClick={() => setShowEditInfoModal(false)}
+                className="absolute top-5 right-5 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border-0 cursor-pointer transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold block">
+                  Movie Ticket Booking Details
+                </span>
+                <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                  <Film className="w-5 h-5 text-gold" />
+                  <span>Add / Edit Movie Description & Casting</span>
+                </h3>
+                <p className="text-xs text-text-muted">
+                  Update "{movieObj.title}" storyline synopsis and cast list. Changes will immediately update your booking experience and movie catalog.
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveMovieInfo} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary flex justify-between">
+                    <span>Movie Description / Synopsis</span>
+                    <span className="text-[10px] text-gold/80 font-normal">Plot summary</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={infoDescription}
+                    onChange={(e) => setInfoDescription(e.target.value)}
+                    placeholder="Enter storyline overview, plot highlights, or theatrical synopsis..."
+                    className="w-full bg-white/[0.03] border border-white/15 focus:border-gold rounded-xl p-3 text-xs text-white focus:outline-none resize-none leading-relaxed"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary flex justify-between">
+                    <span>Starring Cast (comma-separated)</span>
+                    <span className="text-[10px] text-text-muted font-normal">Actors</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={infoCast}
+                    onChange={(e) => setInfoCast(e.target.value)}
+                    placeholder="e.g. Rajinikanth, Nagarjuna, Shruti Haasan, Upendra"
+                    className="w-full bg-white/[0.03] border border-white/15 focus:border-gold rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                  <p className="text-[10px] text-text-muted">Separate multiple actors with commas.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                    Director / Filmmaker
+                  </label>
+                  <input
+                    type="text"
+                    value={infoDirector}
+                    onChange={(e) => setInfoDirector(e.target.value)}
+                    placeholder="e.g. Lokesh Kanagaraj, S. S. Rajamouli"
+                    className="w-full bg-white/[0.03] border border-white/15 focus:border-gold rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditInfoModal(false)}
+                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-white transition-colors cursor-pointer border-0"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-gold/20 cursor-pointer border-0"
+                  >
+                    Save & Update Booking
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Success Alert Toast */}
+        {infoSavedSuccess && (
+          <div className="fixed top-6 right-6 z-50 bg-emerald-500 text-black px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
+            <CheckCircle className="w-4 h-4 text-black" />
+            <span>{infoSavedSuccess}</span>
+          </div>
+        )}
 
       </div>
     </div>

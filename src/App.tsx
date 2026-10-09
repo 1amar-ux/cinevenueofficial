@@ -1346,6 +1346,9 @@ export default function App() {
       await apiClient.post('/movies', {
         title: m.title,
         description: m.description,
+        cast: m.cast || m.actors,
+        actors: m.actors || m.cast,
+        director: m.director,
         duration: parseInt(m.duration || "150") || 150,
         durationMins: parseInt(m.duration || "150") || 150,
         language: m.language || m.lang || "Hindi",
@@ -1368,6 +1371,9 @@ export default function App() {
       await apiClient.put(`/movies/${m.id || oldTitle}`, {
         title: m.title,
         description: m.description,
+        cast: m.cast || m.actors,
+        actors: m.actors || m.cast,
+        director: m.director,
         duration: parseInt(m.duration || "150") || 150,
         durationMins: parseInt(m.duration || "150") || 150,
         language: m.language || m.lang || "Hindi",
@@ -1965,6 +1971,8 @@ export default function App() {
               theatres={theatres}
               registeredUsers={registeredUsers}
               isMovieBookingSystemActive={isMovieBookingSystemActive}
+              movies={movies}
+              onUpdateMovie={handleUpdateMovie}
             />
 
             <UserDashboardModal
@@ -2352,6 +2360,8 @@ export default function App() {
         }
       />
       <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/staff-login" element={<AdminLogin defaultMode="employee" />} />
+      <Route path="/employee-login" element={<AdminLogin defaultMode="employee" />} />
 
       {/* JWT-Protected Material UI Admin Routes */}
       <Route

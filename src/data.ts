@@ -13,7 +13,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
     duration: "2h 45m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A retired operative is pulled back into the perilous underworld when an international gold smuggling syndicate targets his former docks. Packed with high-octane action and edge-of-the-seat suspense.",
+    cast: ["Rajinikanth", "Nagarjuna", "Soubin Shahir", "Shruti Haasan", "Upendra", "Sathyaraj"],
+    actors: ["Rajinikanth", "Nagarjuna", "Soubin Shahir", "Shruti Haasan", "Upendra", "Sathyaraj"],
+    director: "Lokesh Kanagaraj"
   },
   {
     title: "Don't Trouble the Trouble",
@@ -26,7 +30,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
     duration: "2h 15m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A heartwarming fantasy comedy about a young boy whose mischievous adventures collide with an unexpected supernatural companion, turning a sleepy town upside down.",
+    cast: ["Fahadh Faasil", "Sunil", "Priyamani", "Brahmanandam"],
+    actors: ["Fahadh Faasil", "Sunil", "Priyamani", "Brahmanandam"],
+    director: "Shashank Yeleti"
   },
   {
     title: "Doraemon the Movie: New Nobita and the...",
@@ -39,7 +47,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=vV_CqGfN5iI",
     duration: "1h 44m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "Nobita and Doraemon journey through time and space to rescue an ancient subterranean civilization using futuristic 22nd-century gadgets, friendship, and unyielding courage.",
+    cast: ["Wasabi Mizuta", "Megumi Ohara", "Yumi Kakazu", "Tomokazu Seki"],
+    actors: ["Wasabi Mizuta", "Megumi Ohara", "Yumi Kakazu", "Tomokazu Seki"],
+    director: "Shinnosuke Yakuwa"
   },
   {
     title: "Doraemon: Castle of the Undersea Devil",
@@ -52,7 +64,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=vV_CqGfN5iI",
     duration: "1h 41m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "Doraemon and the crew dive to the deepest trenches of the Bermuda Triangle to stop an ancient automated battle fortress from destroying world peace.",
+    cast: ["Wasabi Mizuta", "Megumi Ohara", "Subaru Kimura", "Tomokazu Seki"],
+    actors: ["Wasabi Mizuta", "Megumi Ohara", "Subaru Kimura", "Tomokazu Seki"],
+    director: "Tsutomu Shibayama"
   },
   {
     title: "Sigma",
@@ -65,7 +81,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=1kVK0MZlbI4",
     duration: "2h 32m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A psychological espionage thriller tracking an elite cyber intelligence specialist racing against time to intercept a shadowy quantum encryption syndicate.",
+    cast: ["Adivi Sesh", "Mrunal Thakur", "Anurag Kashyap"],
+    actors: ["Adivi Sesh", "Mrunal Thakur", "Anurag Kashyap"],
+    director: "Sailesh Kolanu"
   },
   {
     title: "Thellakaagitham",
@@ -78,7 +98,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
     duration: "2h 10m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "An emotional, poignant romantic drama revolving around an aspiring writer whose undiscovered manuscript bridges generations of lost love and resilience.",
+    cast: ["Roshan Kanakala", "Manasa Varanasi", "Tanikella Bharani"],
+    actors: ["Roshan Kanakala", "Manasa Varanasi", "Tanikella Bharani"],
+    director: "Sandeep Raj"
   },
   {
     title: "Baththa",
@@ -91,7 +115,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "tamil",
     trailerUrl: "https://www.youtube.com/watch?v=qeVfT2i_2kM",
     duration: "2h 28m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "Set along the rugged coastal corridors of southern Tamil Nadu, an honest fisherman stands up against a ruthless port conglomerate to protect his ancestral shoreline.",
+    cast: ["Suriya", "Dulquer Salmaan", "Pooja Hegde"],
+    actors: ["Suriya", "Dulquer Salmaan", "Pooja Hegde"],
+    director: "Sudha Kongara"
   },
   {
     title: "Verity",
@@ -104,7 +132,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "english",
     trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
     duration: "2h 05m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A struggling writer accepts the assignment of a lifetime to complete the remaining books of a paralyzed bestselling author, uncovering disturbing secrets in the family mansion.",
+    cast: ["Anne Hathaway", "Dakota Johnson", "Josh Hartnett"],
+    actors: ["Anne Hathaway", "Dakota Johnson", "Josh Hartnett"],
+    director: "Michael Showalter"
   },
   {
     title: "The Paradise",
@@ -117,7 +149,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
     duration: "2h 40m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "An opulent period action drama set in the royal courts of the Deccan, portraying an epic clash for succession, honor, and sovereignty.",
+    cast: ["Nani", "Keerthy Suresh", "Samuthirakani"],
+    actors: ["Nani", "Keerthy Suresh", "Samuthirakani"],
+    director: "Srikanth Odela"
   },
   {
     title: "Avengers Endgame: Encore",
@@ -131,7 +167,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
     duration: "3h 02m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "After the devastating events of Infinity War, the universe is in ruins. The remaining Avengers assemble once more in an ultimate showdown against the Mad Titan.",
+    cast: ["Robert Downey Jr.", "Chris Evans", "Chris Hemsworth", "Scarlett Johansson", "Mark Ruffalo"],
+    actors: ["Robert Downey Jr.", "Chris Evans", "Chris Hemsworth", "Scarlett Johansson", "Mark Ruffalo"],
+    director: "Anthony Russo, Joe Russo"
   },
   {
     title: "Heart of the Beast",
@@ -144,7 +184,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "english",
     trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
     duration: "2h 18m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A gripping survival drama following a wilderness tracker stranded in the harsh sub-zero Alaskan wilderness alongside an enigmatic wounded predator.",
+    cast: ["Christian Bale", "Florence Pugh", "Willem Dafoe"],
+    actors: ["Christian Bale", "Florence Pugh", "Willem Dafoe"],
+    director: "Alejandro G. Iñárritu"
   },
   {
     title: "Resident Evil",
@@ -158,7 +202,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=4q6UacW8N9I",
     duration: "1h 58m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A special military task force battles an escaped genetic virus and mutant abominations inside an underground biotech research facility known as the Hive.",
+    cast: ["Milla Jovovich", "Michelle Rodriguez", "Colin Salmon"],
+    actors: ["Milla Jovovich", "Michelle Rodriguez", "Colin Salmon"],
+    director: "Paul W. S. Anderson"
   },
   {
     title: "Sub-Inspector Yugandhar",
@@ -171,7 +219,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=1kVK0MZlbI4",
     duration: "2h 35m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A relentless sub-inspector takes on political kingpins and corrupt law enforcement rings to bring justice to an abandoned rural outpost.",
+    cast: ["Rana Daggubati", "Sai Pallavi", "Naveen Chandra"],
+    actors: ["Rana Daggubati", "Sai Pallavi", "Naveen Chandra"],
+    director: "Venu Udugula"
   },
   {
     title: "Sanchari",
@@ -184,7 +236,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
     duration: "2h 12m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A scenic road-trip romance that chronicles two free-spirited wanderers finding solace, truth, and redemption across the valleys of the Western Ghats.",
+    cast: ["Vijay Deverakonda", "Rashmika Mandanna", "Vennela Kishore"],
+    actors: ["Vijay Deverakonda", "Rashmika Mandanna", "Vennela Kishore"],
+    director: "Shiva Nirvana"
   },
   {
     title: "Kalki 2898 AD",
@@ -198,7 +254,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
     duration: "3h 01m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "A modern avatar of the Hindu god Vishnu is believed to have descended on Earth to protect the world from evil forces in the dystopian futuristic city of Kasi.",
+    cast: ["Prabhas", "Amitabh Bachchan", "Kamal Haasan", "Deepika Padukone", "Disha Patani"],
+    actors: ["Prabhas", "Amitabh Bachchan", "Kamal Haasan", "Deepika Padukone", "Disha Patani"],
+    director: "Nag Ashwin"
   },
   {
     title: "Devara",
@@ -212,7 +272,11 @@ export const INITIAL_MOVIES: Movie[] = [
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
     duration: "2h 58m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    description: "An epic coastal saga detailing an intrepid warrior chieftain who vows to eradicate illicit trade across the treacherous sea borders of his village.",
+    cast: ["N. T. Rama Rao Jr.", "Janhvi Kapoor", "Saif Ali Khan", "Prakash Raj"],
+    actors: ["N. T. Rama Rao Jr.", "Janhvi Kapoor", "Saif Ali Khan", "Prakash Raj"],
+    director: "Koratala Siva"
   }
 ];
 

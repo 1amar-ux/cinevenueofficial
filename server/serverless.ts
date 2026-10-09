@@ -72,6 +72,12 @@ function syncServerlessStateFromDisk() {
             ...data.serviceControls
           };
         }
+        if (Array.isArray(data.trendingExperiences)) {
+          (globalServerlessState as any).trendingExperiences = data.trendingExperiences;
+        }
+        if (Array.isArray(data.browseLiveCategories)) {
+          (globalServerlessState as any).browseLiveCategories = data.browseLiveCategories;
+        }
         if (data.updatedAt) {
           globalServerlessState.updatedAt = data.updatedAt;
         }
@@ -539,6 +545,52 @@ export default async function handler(req: any, res: any) {
         publicId: mediaId,
         alt: mediaAlt
       }
+    });
+  }
+
+  // 5C-2. High-Priority Direct Route: Platform Config & Trending Live Highlights
+  if (
+    url === "/api/v1/admin/platform-config" ||
+    url === "/api/admin/platform-config" ||
+    url === "/admin/platform-config" ||
+    url === "/api/v1/public/event-highlights" ||
+    url === "/api/public/event-highlights" ||
+    url === "/public/event-highlights"
+  ) {
+    if (req.method === "POST" || req.method === "PUT") {
+      let body = req.body;
+      if (typeof body === "string") {
+        try { body = JSON.parse(body); } catch (e) { body = {}; }
+      }
+
+      if (body?.trendingExperiences !== undefined) {
+        (globalServerlessState as any).trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+      }
+      if (body?.browseLiveCategories !== undefined) {
+        (globalServerlessState as any).browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+      }
+      globalServerlessState.updatedAt = new Date().toISOString();
+
+      try {
+        const serialized = JSON.stringify(globalServerlessState, null, 2);
+        fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
+        fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+      } catch (e) {}
+
+      return res.status(200).json({
+        success: true,
+        message: "Platform highlights and config updated successfully.",
+        trendingExperiences: (globalServerlessState as any).trendingExperiences || [],
+        browseLiveCategories: (globalServerlessState as any).browseLiveCategories || []
+      });
+    }
+
+    // GET Request
+    syncServerlessStateFromDisk();
+    return res.status(200).json({
+      success: true,
+      trendingExperiences: (globalServerlessState as any).trendingExperiences || [],
+      browseLiveCategories: (globalServerlessState as any).browseLiveCategories || []
     });
   }
 

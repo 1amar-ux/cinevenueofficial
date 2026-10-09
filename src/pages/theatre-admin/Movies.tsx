@@ -19,7 +19,9 @@ import {
   FileText,
   AlertCircle,
   ThumbsUp,
-  Inbox
+  Inbox,
+  Pencil,
+  Users
 } from "lucide-react";
 import { Movie } from "../../types";
 
@@ -48,6 +50,49 @@ export default function Movies({ movies }: MoviesProps) {
   // Detailed Modal Movie state
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [showTrailer, setShowTrailer] = useState(false);
+
+  // Edit Description & Casting State
+  const [editingMovieInfo, setEditingMovieInfo] = useState(false);
+  const [editDesc, setEditDesc] = useState("");
+  const [editCast, setEditCast] = useState("");
+  const [editDirector, setEditDirector] = useState("");
+
+  const handleStartEditMovieInfo = () => {
+    if (!selectedMovie) return;
+    setEditDesc(selectedMovie.description || "");
+    const castList = selectedMovie.cast || selectedMovie.actors || [];
+    setEditCast(castList.join(", "));
+    setEditDirector(selectedMovie.director || "");
+    setEditingMovieInfo(true);
+  };
+
+  const handleSaveMovieInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMovie) return;
+    const castArr = editCast.split(",").map(c => c.trim()).filter(Boolean);
+    const updated: Movie = {
+      ...selectedMovie,
+      description: editDesc.trim(),
+      cast: castArr,
+      actors: castArr,
+      director: editDirector.trim() || undefined,
+    };
+    setSelectedMovie(updated);
+
+    try {
+      const existing: Movie[] = JSON.parse(localStorage.getItem("cine_movies") || "[]");
+      const idx = existing.findIndex(m => m.title.toLowerCase() === selectedMovie.title.toLowerCase());
+      if (idx >= 0) {
+        existing[idx] = { ...existing[idx], ...updated };
+      } else {
+        existing.push(updated);
+      }
+      localStorage.setItem("cine_movies", JSON.stringify(existing));
+    } catch (err) {}
+
+    setEditingMovieInfo(false);
+    showToastMsg(`Updated description & casting for "${selectedMovie.title}" successfully!`);
+  };
 
   // New Movie Request Form states
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -590,40 +635,121 @@ export default function Movies({ movies }: MoviesProps) {
             <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
               {/* Synopsis & Actions */}
               <div className="md:col-span-2 space-y-5">
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">Synopsis & Storyline</h4>
-                  <p className="text-text-secondary leading-relaxed text-[11px]">
-                    {selectedMovie.title} delivers an unparalleled cinematic journey full of magnificent sequences, dynamic plot twist progressions, and superb background orchestration. A must-watch blockbuster!
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-[11px]">
-                  <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
-                    <span className="text-text-muted block text-[10px]">DISTRIBUTOR</span>
-                    <strong className="text-white font-mono">{selectedMovie.distributor || "Universal Pictures Ltd"}</strong>
-                  </div>
-                  <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
-                    <span className="text-text-muted block text-[10px]">POPULARITY / RATING</span>
-                    <strong className="text-gold font-mono flex items-center gap-1">
-                      ★ {selectedMovie.rating || "8.5"}/10 Audience Score
-                    </strong>
-                  </div>
-                </div>
-
-                {/* Director & Cast */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">Creative Cast & Director</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-                    <div>
-                      <span className="text-text-muted block">Director:</span>
-                      <strong className="text-text-primary">S. S. Rajamouli / Prashanth Neel</strong>
+                {editingMovieInfo ? (
+                  <form onSubmit={handleSaveMovieInfo} className="space-y-4 p-4 rounded-2xl bg-white/[0.02] border border-gold/30">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                      <span className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                        <Pencil className="w-3.5 h-3.5" /> Edit Movie Description & Casting
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingMovieInfo(false)}
+                        className="text-[10px] text-text-muted hover:text-white bg-transparent border-0 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                    <div>
-                      <span className="text-text-muted block">Starring Cast:</span>
-                      <strong className="text-text-primary">Prabhas, Amitabh Bachchan, Deepika Padukone</strong>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Storyline Synopsis</label>
+                      <textarea
+                        rows={3}
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        placeholder="Enter movie storyline and synopsis..."
+                        className="w-full bg-[#0A0A0B] border border-white/10 focus:border-gold rounded-xl p-2.5 text-xs text-text-primary focus:outline-none resize-none"
+                      />
                     </div>
-                  </div>
-                </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Starring Cast (comma-separated)</label>
+                        <input
+                          type="text"
+                          value={editCast}
+                          onChange={(e) => setEditCast(e.target.value)}
+                          placeholder="e.g. Prabhas, Amitabh Bachchan"
+                          className="w-full bg-[#0A0A0B] border border-white/10 focus:border-gold rounded-xl px-2.5 py-2 text-xs text-text-primary focus:outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Director</label>
+                        <input
+                          type="text"
+                          value={editDirector}
+                          onChange={(e) => setEditDirector(e.target.value)}
+                          placeholder="e.g. S. S. Rajamouli"
+                          className="w-full bg-[#0A0A0B] border border-white/10 focus:border-gold rounded-xl px-2.5 py-2 text-xs text-text-primary focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingMovieInfo(false)}
+                        className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-text-secondary rounded-lg text-xs font-semibold cursor-pointer border-0"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 bg-gold hover:bg-gold-light text-black rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border-0"
+                      >
+                        Save Info
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <h4 className="font-bold text-white uppercase text-[10px] tracking-wider">Synopsis & Storyline</h4>
+                        <button
+                          type="button"
+                          onClick={handleStartEditMovieInfo}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-gold hover:underline bg-transparent border-0 cursor-pointer"
+                        >
+                          <Pencil className="w-3 h-3" /> Edit Info
+                        </button>
+                      </div>
+                      <p className="text-text-secondary leading-relaxed text-[11px]">
+                        {selectedMovie.description ||
+                          `${selectedMovie.title} delivers an unparalleled cinematic journey full of magnificent sequences, dynamic plot twist progressions, and superb background orchestration. A must-watch blockbuster!`}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-[11px]">
+                      <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
+                        <span className="text-text-muted block text-[10px]">DISTRIBUTOR</span>
+                        <strong className="text-white font-mono">{selectedMovie.distributor || "Universal Pictures Ltd"}</strong>
+                      </div>
+                      <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
+                        <span className="text-text-muted block text-[10px]">POPULARITY / RATING</span>
+                        <strong className="text-gold font-mono flex items-center gap-1">
+                          ★ {selectedMovie.rating || "8.5"}/10 Audience Score
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Director & Cast */}
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">Creative Cast & Director</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                        <div>
+                          <span className="text-text-muted block">Director:</span>
+                          <strong className="text-text-primary">{selectedMovie.director || "S. S. Rajamouli"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-text-muted block">Starring Cast:</span>
+                          <strong className="text-text-primary">
+                            {(selectedMovie.cast || selectedMovie.actors || []).join(", ") || "Prabhas, Amitabh Bachchan, Deepika Padukone"}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Sidebar Action Deck */}
