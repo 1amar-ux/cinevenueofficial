@@ -323,11 +323,17 @@ export default function MovieDetails() {
       timeAgo: "Just now",
     };
 
+    const currVotes = parseInt(String(movie.votes || "2600").replace(/[^0-9]/g, "")) || 2600;
+    const currRating = parseFloat(movie.rating || "9.4") || 9.4;
+    const newRatingScore = ((currRating * currVotes + userRatingScore) / (currVotes + 1)).toFixed(1);
+    const newVotesStr = `${(currVotes + 1).toLocaleString()}+ Votes`;
+
     const updatedReviews = [newRev, ...reviewsList];
     const updatedMovie: Movie = {
       ...movie,
+      rating: newRatingScore,
+      votes: newVotesStr,
       reviews: updatedReviews,
-      votes: `${parseInt(String(movie.votes || "2600").replace(/[^0-9]/g, "")) + 1}+ Votes`,
     };
 
     setMovie(updatedMovie);
@@ -342,6 +348,7 @@ export default function MovieDetails() {
         localStorage.setItem("cine_movies", JSON.stringify(list));
       }
     }
+    window.dispatchEvent(new Event("storage"));
 
     setUserReviewText("");
     setUserReviewerName("");

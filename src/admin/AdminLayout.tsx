@@ -54,7 +54,7 @@ import {
   UserCheck,
   Users
 } from "lucide-react";
-import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
+import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin, CastMember, CrewMember } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
@@ -348,6 +348,25 @@ export default function AdminLayout() {
   const [newMoviePoster, setNewMoviePoster] = useState("");
   const [newMovieTrailerUrl, setNewMovieTrailerUrl] = useState("");
   const [newMovieCertification, setNewMovieCertification] = useState("UA16+");
+  const [newMovieDescription, setNewMovieDescription] = useState("");
+  const [newMovieRating, setNewMovieRating] = useState("9.0");
+  const [newMovieVotes, setNewMovieVotes] = useState("2.5K+ Votes");
+  const [newMovieCast, setNewMovieCast] = useState<CastMember[]>([]);
+  const [newMovieCrew, setNewMovieCrew] = useState<CrewMember[]>([]);
+  const [showAddCastSection, setShowAddCastSection] = useState(false);
+  const [showAddCrewSection, setShowAddCrewSection] = useState(false);
+  const [formActorName, setFormActorName] = useState("");
+  const [formActorCharacter, setFormActorCharacter] = useState("");
+  const [formActorImage, setFormActorImage] = useState("");
+  const [formCrewName, setFormCrewName] = useState("");
+  const [formCrewRole, setFormCrewRole] = useState("Director");
+  const [formCrewImage, setFormCrewImage] = useState("");
+
+  // Direct quick rating edit states for catalogue cards
+  const [quickEditingRatingMovie, setQuickEditingRatingMovie] = useState<string | null>(null);
+  const [quickRatingValue, setQuickRatingValue] = useState<string>("");
+  const [quickVotesValue, setQuickVotesValue] = useState<string>("");
+
   const [newCouponCode, setNewCouponCode] = useState("");
   const [newCouponDiscount, setNewCouponDiscount] = useState("");
   const [newCouponMin, setNewCouponMin] = useState("");
@@ -622,10 +641,17 @@ export default function AdminLayout() {
       lang: newMovieLang || "Telugu",
       langKey: (newMovieLang || "Telugu").toLowerCase().slice(0, 2),
       duration: newMovieDuration || "2h 45m",
-      rating: "8.5",
+      description: newMovieDescription.trim() || undefined,
+      rating: newMovieRating.trim() || "9.0",
+      votes: newMovieVotes.trim() || "2.5K+ Votes",
       certification: newMovieCertification || "UA16+",
       img: newMoviePoster || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
       poster: newMoviePoster || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+      castMembers: newMovieCast.length > 0 ? newMovieCast : undefined,
+      cast: newMovieCast.length > 0 ? newMovieCast : undefined,
+      crewMembers: newMovieCrew.length > 0 ? newMovieCrew : undefined,
+      crew: newMovieCrew.length > 0 ? newMovieCrew : undefined,
+      director: newMovieCrew.find((c) => c.role?.toLowerCase() === "director")?.name || undefined,
       trailerUrl: trailer || "https://www.youtube.com/watch?v=bC36d8e3bb0",
       releaseYear: 2026,
     };
@@ -661,10 +687,43 @@ export default function AdminLayout() {
     setNewMoviePoster("");
     setNewMovieTrailerUrl("");
     setNewMovieCertification("UA16+");
+    setNewMovieDescription("");
+    setNewMovieRating("9.0");
+    setNewMovieVotes("2.5K+ Votes");
+    setNewMovieCast([]);
+    setNewMovieCrew([]);
+    setShowAddCastSection(false);
+    setShowAddCrewSection(false);
     showToast(`Created movie master record [${movieId}] for '${added.title}'!`);
     setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie master record [${movieId}]: ${added.title}` },
+      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie master record [${movieId}]: ${added.title} with rating ${added.rating}/10 and ${added.castMembers?.length || 0} cast members` },
       ...auditLogs
+    ]);
+  };
+
+  const handleSaveQuickRating = (movieTitle: string) => {
+    if (!quickRatingValue.trim()) return;
+    const updated = movies.map((m) =>
+      m.title === movieTitle
+        ? {
+            ...m,
+            rating: quickRatingValue.trim(),
+            votes: quickVotesValue.trim() || m.votes || "2.5K+ Votes",
+          }
+        : m
+    );
+    setMovies(updated);
+    saveState("cine_movies", updated);
+    setQuickEditingRatingMovie(null);
+    showToast(`Updated rating for '${movieTitle}' to ${quickRatingValue}/10!`);
+    setAuditLogs([
+      {
+        timestamp: "Just Now",
+        actor: "superadmin@cinevenue.com",
+        ip: "103.22.41.8",
+        action: `Updated audience rating score for '${movieTitle}' to ${quickRatingValue}/10`,
+      },
+      ...auditLogs,
     ]);
   };
 
@@ -2013,6 +2072,46 @@ export default function AdminLayout() {
                         </div>
                       </div>
                     </div>
+                    {/* Story Synopsis */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-text-secondary">About The Movie (Synopsis)</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Comprehensive plot synopsis or storyline..."
+                        value={newMovieDescription}
+                        onChange={(e) => setNewMovieDescription(e.target.value)}
+                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold text-[10px] resize-none leading-relaxed text-white font-normal"
+                      />
+                    </div>
+
+                    {/* Ratings & Votes Config */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold uppercase text-text-secondary flex items-center gap-1">
+                          <Star className="w-3 h-3 text-gold fill-gold" />
+                          <span>Audience Rating (/10)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="9.2"
+                          value={newMovieRating}
+                          onChange={(e) => setNewMovieRating(e.target.value)}
+                          className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold text-white font-bold text-[10px]"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold uppercase text-text-secondary">Total Votes Display</label>
+                        <input
+                          type="text"
+                          placeholder="2.5K+ Votes"
+                          value={newMovieVotes}
+                          onChange={(e) => setNewMovieVotes(e.target.value)}
+                          className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold text-white text-[10px]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Poster Cloudinary Uploader */}
                     <div className="pt-1">
                       <CloudinaryPhotoUploader
                         label="Movie Poster (Upload via Cloudinary)"
@@ -2023,6 +2122,193 @@ export default function AdminLayout() {
                         placeholder="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70"
                       />
                     </div>
+
+                    {/* Casting Section (Near Creating New Movie) */}
+                    <div className="p-3 bg-white/[0.01] border border-white/10 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-[#eb4e62] flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>Cast Members ({newMovieCast.length})</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCastSection(!showAddCastSection)}
+                          className="text-[9px] font-bold uppercase tracking-wider text-white hover:text-[#eb4e62] transition-colors cursor-pointer"
+                        >
+                          {showAddCastSection ? "Close" : "+ Add Actor"}
+                        </button>
+                      </div>
+
+                      {/* Added Cast Chips */}
+                      {newMovieCast.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                          {newMovieCast.map((c, i) => (
+                            <div key={i} className="flex items-center gap-1.5 bg-black/60 border border-white/10 pl-1 pr-2 py-0.5 rounded-lg text-[9px]">
+                              <img src={c.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80"} alt={c.name} className="w-4 h-4 rounded-full object-cover" />
+                              <span className="text-white font-bold">{c.name}</span>
+                              <span className="text-text-secondary">({c.character || c.role})</span>
+                              <button
+                                type="button"
+                                onClick={() => setNewMovieCast(newMovieCast.filter((_, idx) => idx !== i))}
+                                className="text-red-400 hover:text-white ml-0.5 cursor-pointer"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Expandable Add Actor Form */}
+                      {showAddCastSection && (
+                        <div className="p-2.5 bg-black/50 border border-[#eb4e62]/30 rounded-lg space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Actor Name"
+                              value={formActorName}
+                              onChange={(e) => setFormActorName(e.target.value)}
+                              className="bg-white/5 border border-white/10 px-2 py-1 rounded text-[10px] text-white focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Role / Character"
+                              value={formActorCharacter}
+                              onChange={(e) => setFormActorCharacter(e.target.value)}
+                              className="bg-white/5 border border-white/10 px-2 py-1 rounded text-[10px] text-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="bg-white/[0.02] p-1.5 rounded border border-white/5">
+                            <CloudinaryPhotoUploader
+                              value={formActorImage}
+                              onChange={(url) => setFormActorImage(url)}
+                              label="Actor Photo"
+                              shape="circle"
+                              compact={true}
+                              folder="cinevenue/movies/cast"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!formActorName.trim()) return;
+                              setNewMovieCast([
+                                ...newMovieCast,
+                                {
+                                  name: formActorName.trim(),
+                                  character: formActorCharacter.trim() || undefined,
+                                  role: "Actor",
+                                  image: formActorImage.trim() || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80",
+                                },
+                              ]);
+                              setFormActorName("");
+                              setFormActorCharacter("");
+                              setFormActorImage("");
+                              setShowAddCastSection(false);
+                            }}
+                            className="w-full py-1 bg-[#eb4e62] hover:bg-[#d63e51] text-white text-[9px] font-bold uppercase rounded cursor-pointer"
+                          >
+                            Add To Movie Cast
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Crew Members Section (Near Creating New Movie) */}
+                    <div className="p-3 bg-white/[0.01] border border-white/10 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-gold flex items-center gap-1">
+                          <Clapperboard className="w-3 h-3" />
+                          <span>Key Crew ({newMovieCrew.length})</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCrewSection(!showAddCrewSection)}
+                          className="text-[9px] font-bold uppercase tracking-wider text-white hover:text-gold transition-colors cursor-pointer"
+                        >
+                          {showAddCrewSection ? "Close" : "+ Add Crew"}
+                        </button>
+                      </div>
+
+                      {/* Added Crew Chips */}
+                      {newMovieCrew.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                          {newMovieCrew.map((cr, i) => (
+                            <div key={i} className="flex items-center gap-1.5 bg-black/60 border border-white/10 pl-1 pr-2 py-0.5 rounded-lg text-[9px]">
+                              <img src={cr.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"} alt={cr.name} className="w-4 h-4 rounded-full object-cover" />
+                              <span className="text-white font-bold">{cr.name}</span>
+                              <span className="text-gold font-mono">({cr.role})</span>
+                              <button
+                                type="button"
+                                onClick={() => setNewMovieCrew(newMovieCrew.filter((_, idx) => idx !== i))}
+                                className="text-red-400 hover:text-white ml-0.5 cursor-pointer"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Expandable Add Crew Form */}
+                      {showAddCrewSection && (
+                        <div className="p-2.5 bg-black/50 border border-gold/30 rounded-lg space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Filmmaker Name"
+                              value={formCrewName}
+                              onChange={(e) => setFormCrewName(e.target.value)}
+                              className="bg-white/5 border border-white/10 px-2 py-1 rounded text-[10px] text-white focus:outline-none"
+                            />
+                            <select
+                              value={formCrewRole}
+                              onChange={(e) => setFormCrewRole(e.target.value)}
+                              className="bg-black/60 border border-white/10 px-2 py-1 rounded text-[10px] text-white focus:outline-none"
+                            >
+                              <option value="Director">Director</option>
+                              <option value="Producer">Producer</option>
+                              <option value="Musician">Musician / Music</option>
+                              <option value="Cinematographer">Cinematographer</option>
+                              <option value="Editor">Editor</option>
+                              <option value="Writer">Writer</option>
+                            </select>
+                          </div>
+                          <div className="bg-white/[0.02] p-1.5 rounded border border-white/5">
+                            <CloudinaryPhotoUploader
+                              value={formCrewImage}
+                              onChange={(url) => setFormCrewImage(url)}
+                              label="Crew Photo"
+                              shape="circle"
+                              compact={true}
+                              folder="cinevenue/movies/crew"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!formCrewName.trim()) return;
+                              setNewMovieCrew([
+                                ...newMovieCrew,
+                                {
+                                  name: formCrewName.trim(),
+                                  role: formCrewRole.trim() || "Director",
+                                  image: formCrewImage.trim() || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80",
+                                },
+                              ]);
+                              setFormCrewName("");
+                              setFormCrewRole("Director");
+                              setFormCrewImage("");
+                              setShowAddCrewSection(false);
+                            }}
+                            className="w-full py-1 bg-gold hover:bg-gold-light text-black text-[9px] font-bold uppercase rounded cursor-pointer"
+                          >
+                            Add To Movie Crew
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex flex-col gap-1">
                       <label className="text-[9px] font-bold uppercase text-text-secondary">Trailer Link / YouTube URL (Optional)</label>
                       <input
@@ -2033,8 +2319,9 @@ export default function AdminLayout() {
                         className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none font-mono text-[10px]"
                       />
                     </div>
-                    <button type="submit" className="w-full bg-gold hover:bg-gold-light text-black py-2 rounded-xl font-bold uppercase text-[9px] tracking-wider mt-2 cursor-pointer shadow-lg shadow-gold/20 border-0">
-                      Publish Movie Listing
+                    <button type="submit" className="w-full bg-gold hover:bg-gold-light text-black py-2.5 rounded-xl font-bold uppercase text-[9px] tracking-wider mt-2 cursor-pointer shadow-lg shadow-gold/20 border-0 flex items-center justify-center gap-1.5">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Publish Movie Listing</span>
                     </button>
                   </form>
 
@@ -2059,6 +2346,7 @@ export default function AdminLayout() {
                         .map((m, idx) => {
                           const videoCount = m.videos?.length || 0;
                           const currentStatus = m.releaseStatus || "NOW_SHOWING";
+                          const isEditingRating = quickEditingRatingMovie === m.title;
 
                           return (
                             <div key={m.title} className="bg-white/[0.01] border border-white/5 rounded-2xl p-3.5 flex flex-col justify-between space-y-3">
@@ -2077,6 +2365,62 @@ export default function AdminLayout() {
                                     </span>
                                     {m.genre} • {m.lang}
                                   </p>
+
+                                  {/* Direct Audience Rating Score & Edit Access */}
+                                  {isEditingRating ? (
+                                    <div className="pt-1 flex items-center gap-1 bg-black/80 p-1.5 rounded-lg border border-gold/40">
+                                      <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
+                                      <input
+                                        type="text"
+                                        placeholder="9.4"
+                                        value={quickRatingValue}
+                                        onChange={(e) => setQuickRatingValue(e.target.value)}
+                                        className="w-10 bg-white/10 text-white font-bold text-[10px] px-1 py-0.5 rounded border border-white/20 focus:outline-none"
+                                      />
+                                      <span className="text-[9px] text-white/50">/10</span>
+                                      <input
+                                        type="text"
+                                        placeholder="Votes"
+                                        value={quickVotesValue}
+                                        onChange={(e) => setQuickVotesValue(e.target.value)}
+                                        className="w-16 bg-white/10 text-white text-[8.5px] px-1 py-0.5 rounded border border-white/20 focus:outline-none"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSaveQuickRating(m.title)}
+                                        className="p-1 rounded bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer"
+                                        title="Save rating"
+                                      >
+                                        <Check className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setQuickEditingRatingMovie(null)}
+                                        className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white cursor-pointer"
+                                        title="Cancel"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="pt-1 flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setQuickEditingRatingMovie(m.title);
+                                          setQuickRatingValue(m.rating || "9.0");
+                                          setQuickVotesValue(m.votes ? String(m.votes) : "2.5K+ Votes");
+                                        }}
+                                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gold/10 hover:bg-gold/20 border border-gold/30 text-gold text-[10px] font-bold cursor-pointer transition-all group/rate"
+                                        title="Click to edit audience rating directly"
+                                      >
+                                        <Star className="w-3 h-3 text-gold fill-gold" />
+                                        <span>{m.rating || "9.0"}/10</span>
+                                        <span className="text-[9px] text-white/60 font-normal">({m.votes || "2.5K+ Votes"})</span>
+                                        <Edit2 className="w-2.5 h-2.5 opacity-60 group-hover/rate:opacity-100 ml-0.5" />
+                                      </button>
+                                    </div>
+                                  )}
                                   
                                   {/* Release status pill */}
                                   <div className="pt-1">
