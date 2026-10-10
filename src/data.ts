@@ -2,18 +2,183 @@ import { Movie, Theatre, Testimonial, Event, CineCoinsUserWallet, CineCoinsSetti
 
 export const INITIAL_MOVIES: Movie[] = [
   {
+    id: "mov_comrade_kalyan",
+    title: "Comrade Kalyan",
+    genre: "Comedy, Period, Romantic",
+    lang: "Telugu",
+    additionalLanguages: ["Hindi", "Tamil"],
+    certification: "UA16+",
+    rating: "9.4",
+    votes: "2.6K+ Votes",
+    duration: "2h 25m",
+    releaseYear: 2026,
+    releaseDate: "9 Oct, 2026",
+    formats: ["2D", "EPIQ"],
+    langKey: "telugu",
+    img: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80",
+    poster: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80",
+    banner: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&q=85",
+    trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
+    description: "Set against the backdrop of the early '90s Andhra Pradesh, Kalyan, a sharp-witted theatre operator, falls for Sitara, a young woman from Odisha. What begins as a lighthearted pursuit of love soon spirals into a chaotic series of misunderstandings, comic mishaps, and unexpected danger.",
+    castMembers: [
+      {
+        name: "Sree Vishnu",
+        role: "Actor",
+        character: "Kalyan",
+        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"
+      },
+      {
+        name: "Mahima Nambiar",
+        role: "Actor",
+        character: "Sitara",
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80"
+      },
+      {
+        name: "Radhika Sarathkumar",
+        role: "Actor",
+        character: "Kalyan's Mother",
+        image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=80"
+      },
+      {
+        name: "Shine Tom Chacko",
+        role: "Actor",
+        character: "Antagonist",
+        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80"
+      },
+      {
+        name: "Upendra Limaye",
+        role: "Actor",
+        character: "Inspector",
+        image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&q=80"
+      },
+      {
+        name: "Sathya",
+        role: "Actor",
+        character: "Friend / Projectionist",
+        image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&q=80"
+      }
+    ],
+    crewMembers: [
+      {
+        name: "Kishore Tirumala",
+        role: "Director",
+        image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"
+      },
+      {
+        name: "TG Vishwa Prasad",
+        role: "Producer",
+        image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=300&q=80"
+      },
+      {
+        name: "Vivek Sagar",
+        role: "Musician",
+        image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80"
+      },
+      {
+        name: "Venu Udugula",
+        role: "Cinematographer",
+        image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300&q=80"
+      },
+      {
+        name: "Sreekar Prasad",
+        role: "Editor",
+        image: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80"
+      }
+    ],
+    offers: [
+      {
+        id: "off-1",
+        title: "Enjoy B1G1 Ticket Free!* with Bandhan Bank Credit Cards",
+        subtitle: "Tap to view terms & eligibility details",
+        bankName: "Bandhan Bank",
+        discountBadge: "B1G1 FREE"
+      },
+      {
+        id: "off-2",
+        title: "Get up to ₹1000 off per calendar month with Axis Bank Delight Cards",
+        subtitle: "Applicable on 2D and EPIQ ticket bookings",
+        bankName: "Axis Bank",
+        discountBadge: "FLAT ₹1000"
+      },
+      {
+        id: "off-3",
+        title: "Pay via CineCoins & get 20% instant cashback to your wallet",
+        subtitle: "Redeem CineCoins on snacks and movie tickets",
+        bankName: "CineVenue Vault",
+        discountBadge: "20% CASHBACK"
+      }
+    ],
+    reviews: [
+      {
+        id: "rev-1",
+        userName: "User",
+        userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80",
+        isVerifiedBooking: true,
+        rating: 10,
+        tags: ["#GreatActing", "#AwesomeStory", "#Blockbuster"],
+        comment: "'కామ్రేడ్ కళ్యాణ్' అంటే ఎవరు? కామెడీతో అలరించే కళ్యాణ్ 💥 Superb storyline with vintage 90s atmosphere!",
+        likes: 67,
+        dislikes: 0,
+        timeAgo: "19 Hours ago"
+      },
+      {
+        id: "rev-2",
+        userName: "User",
+        userAvatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&q=80",
+        isVerifiedBooking: true,
+        rating: 10,
+        tags: ["#SuperDirection", "#GreatActing", "#AwesomeStory"],
+        comment: "Entertainer movie tho osthadu, blockbuster kodthadu... 😂🔥 Sree Vishnu nailed every scene with effortless comedy.",
+        likes: 42,
+        dislikes: 1,
+        timeAgo: "19 Hours ago"
+      },
+      {
+        id: "rev-3",
+        userName: "Praveen Kumar",
+        userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
+        isVerifiedBooking: true,
+        rating: 9,
+        tags: ["#Wellmade", "#Blockbuster", "#AwesomeMusic"],
+        comment: "Music by Vivek Sagar and the cinematography took me back to early 90s Godavari villages. Absolute family entertainer!",
+        likes: 29,
+        dislikes: 0,
+        timeAgo: "1 Day ago"
+      }
+    ]
+  },
+  {
     title: "Coolie",
     genre: "Action / Thriller",
     lang: "Telugu",
     additionalLanguages: ["Tamil", "Hindi"],
     certification: "UA16+",
     rating: "9.1",
+    votes: "4.8K+ Votes",
     img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
     poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+    banner: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&q=80",
     langKey: "telugu",
     trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
     duration: "2h 45m",
-    releaseYear: 2026
+    releaseYear: 2026,
+    releaseDate: "15 Aug, 2026",
+    formats: ["2D", "IMAX", "Dolby Atmos"],
+    description: "An explosive mass action entertainer starring Superstar Rajinikanth directed by Lokesh Kanagaraj, featuring high-octane sequences, pristine 4K laser projection, and earth-shattering Dolby Atmos surround sound.",
+    castMembers: [
+      { name: "Rajinikanth", role: "Actor", character: "Deva", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80" },
+      { name: "Nagarjuna Akkineni", role: "Actor", character: "Simon", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&q=80" },
+      { name: "Soubin Shahir", role: "Actor", character: "Dayal", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&q=80" },
+      { name: "Shruti Haasan", role: "Actor", character: "Preethi", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80" },
+      { name: "Upendra", role: "Actor", character: "Kaleesha", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80" }
+    ],
+    crewMembers: [
+      { name: "Lokesh Kanagaraj", role: "Director", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80" },
+      { name: "Kalanithi Maran", role: "Producer", image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=300&q=80" },
+      { name: "Anirudh Ravichander", role: "Musician", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80" },
+      { name: "Girish Gangadharan", role: "Cinematographer", image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300&q=80" },
+      { name: "Philomin Raj", role: "Editor", image: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80" }
+    ]
   },
   {
     title: "Don't Trouble the Trouble",

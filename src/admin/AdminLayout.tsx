@@ -51,7 +51,8 @@ import {
   Video,
   Clapperboard,
   Sparkles,
-  UserCheck
+  UserCheck,
+  Users
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
@@ -59,6 +60,7 @@ import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
+import MovieCastCrewEditorModal from "../components/admin/movies/MovieCastCrewEditorModal";
 import EmployeeManagementModule from "../components/admin/employees/EmployeeManagementModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import { employeeService, Employee } from "../services/employeeService";
@@ -382,6 +384,7 @@ export default function AdminLayout() {
 
   // Video Manager & Movie Release Window states
   const [selectedMovieForVideos, setSelectedMovieForVideos] = useState<Movie | null>(null);
+  const [editingMovieForCastCrew, setEditingMovieForCastCrew] = useState<Movie | null>(null);
 
   // New interactive states for superadmin features
   const [editingAdminEmail, setEditingAdminEmail] = useState<string | null>(null);
@@ -681,6 +684,23 @@ export default function AdminLayout() {
         actor: "superadmin@cinevenue.com",
         ip: "103.22.41.8",
         action: `Updated trailer & teaser video registry for movie: ${updatedMovie.title}`,
+      },
+      ...auditLogs,
+    ]);
+  };
+
+  const handleSaveMovieCastCrew = (updatedMovie: Movie) => {
+    const updated = movies.map((m) => (m.title === updatedMovie.title ? updatedMovie : m));
+    setMovies(updated);
+    saveState("cine_movies", updated);
+    setEditingMovieForCastCrew(null);
+    showToast(`Updated synopsis, rating, cast & crew for '${updatedMovie.title}'!`);
+    setAuditLogs([
+      {
+        timestamp: "Just Now",
+        actor: "superadmin@cinevenue.com",
+        ip: "103.22.41.8",
+        action: `Updated story synopsis, rating, cast and crew credentials for movie: ${updatedMovie.title}`,
       },
       ...auditLogs,
     ]);
@@ -2027,15 +2047,24 @@ export default function AdminLayout() {
                                 </div>
                               </div>
 
-                              {/* Trailer & Teasers Manager Trigger */}
-                              <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                              {/* Movie Actions (Cast & Story, Trailers, Delete) */}
+                              <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMovieForCastCrew(m)}
+                                  className="flex-1 py-1.5 px-2 bg-white/5 hover:bg-[#eb4e62] hover:text-white border border-white/10 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Users className="w-3.5 h-3.5 text-[#eb4e62]" />
+                                  <span>Cast & Story</span>
+                                </button>
+
                                 <button
                                   type="button"
                                   onClick={() => setSelectedMovieForVideos(m)}
-                                  className="flex-1 py-1.5 px-3 bg-gold/10 hover:bg-gold hover:text-black border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                  className="py-1.5 px-2 bg-gold/10 hover:bg-gold hover:text-black border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                   <Video className="w-3.5 h-3.5" />
-                                  <span>Trailers & Teasers ({videoCount})</span>
+                                  <span>Trailers ({videoCount})</span>
                                 </button>
 
                                 <button
@@ -3114,6 +3143,16 @@ export default function AdminLayout() {
           movie={selectedMovieForVideos}
           onClose={() => setSelectedMovieForVideos(null)}
           onSaveVideos={handleSaveMovieVideos}
+        />
+      )}
+
+      {/* Movie Cast, Crew, Story & Rating Editor Modal */}
+      {editingMovieForCastCrew && (
+        <MovieCastCrewEditorModal
+          isOpen={!!editingMovieForCastCrew}
+          movie={editingMovieForCastCrew}
+          onClose={() => setEditingMovieForCastCrew(null)}
+          onSave={handleSaveMovieCastCrew}
         />
       )}
     </div>

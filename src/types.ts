@@ -62,6 +62,41 @@ export type BookingBlockedReason =
   | 'ADMIN_BOOKING_DISABLED'
   | 'BOOKING_RESTRICTED';
 
+export interface CastMember {
+  name: string;
+  role?: string;
+  image?: string;
+  character?: string;
+}
+
+export interface CrewMember {
+  name: string;
+  role?: string;
+  image?: string;
+}
+
+export interface MovieReview {
+  id: string;
+  userName: string;
+  userAvatar?: string;
+  isVerifiedBooking?: boolean;
+  rating: number; // 1 to 10
+  tags?: string[];
+  comment: string;
+  likes: number;
+  dislikes?: number;
+  timeAgo: string;
+}
+
+export interface MovieOffer {
+  id: string;
+  title: string;
+  subtitle: string;
+  code?: string;
+  bankName?: string;
+  discountBadge?: string;
+}
+
 export interface Movie {
   id?: string | number;
   _id?: string | number;
@@ -69,6 +104,7 @@ export interface Movie {
   genre?: string;
   lang?: string;
   rating?: string;
+  votes?: string | number;
   img?: string;
   langKey?: string;
   formats?: string[];
@@ -95,10 +131,15 @@ export interface Movie {
   videos?: MovieVideo[];
   poster?: string;
   banner?: string;
-  cast?: string[];
+  cast?: (string | CastMember)[];
+  castMembers?: CastMember[];
+  crewMembers?: CrewMember[];
+  crew?: CrewMember[];
   director?: string;
   isSpotlight?: boolean;
   status?: string;
+  reviews?: MovieReview[];
+  offers?: MovieOffer[];
 }
 
 export interface Screen {
