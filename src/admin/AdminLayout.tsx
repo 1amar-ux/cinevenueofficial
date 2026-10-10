@@ -61,11 +61,13 @@ import IntegrationTestingModule from "../components/admin/integration-testing/In
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
 import MovieCastCrewEditorModal from "../components/admin/movies/MovieCastCrewEditorModal";
+import CloudinaryPhotoUploader from "../components/admin/common/CloudinaryPhotoUploader";
+import { getCloudinaryConfig, saveCloudinaryConfig, testCloudinaryConnection } from "../services/cloudinaryService";
 import EmployeeManagementModule from "../components/admin/employees/EmployeeManagementModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import { employeeService, Employee } from "../services/employeeService";
 import { parseAndValidateYouTubeUrl } from "../utils/youtube";
-import { Server, Cpu } from "lucide-react";
+import { Server, Cpu, Cloud, UploadCloud } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 
 
@@ -365,6 +367,13 @@ export default function AdminLayout() {
   const [gmailUser, setGmailUser] = useState(() => (globalAppSettings as any)?.emailConfig?.user || localStorage.getItem("cine_admin_gmail_user") || "");
   const [gmailAppPass, setGmailAppPass] = useState(() => (globalAppSettings as any)?.emailConfig?.pass || localStorage.getItem("cine_admin_gmail_pass") || "");
   const [testingEmail, setTestingEmail] = useState(false);
+
+  // Cloudinary settings state
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState(() => getCloudinaryConfig().cloudName || "");
+  const [cloudinaryApiKey, setCloudinaryApiKey] = useState(() => getCloudinaryConfig().apiKey || "");
+  const [cloudinaryUploadPreset, setCloudinaryUploadPreset] = useState(() => getCloudinaryConfig().uploadPreset || "cinevenue_uploads");
+  const [testingCloudinary, setTestingCloudinary] = useState(false);
+  const [cloudinaryStatusMsg, setCloudinaryStatusMsg] = useState<{ success: boolean; text: string } | null>(null);
 
   useEffect(() => {
     setMaintenanceMode(globalAppSettings.maintenanceMode);
@@ -936,11 +945,48 @@ export default function AdminLayout() {
     });
     localStorage.setItem("cine_admin_gmail_user", gmailUser.trim());
     localStorage.setItem("cine_admin_gmail_pass", gmailAppPass.trim());
-    showToast("Platform configurations & email delivery credentials saved successfully!");
+    
+    // Save Cloudinary settings
+    saveCloudinaryConfig({
+      cloudName: cloudinaryCloudName.trim(),
+      apiKey: cloudinaryApiKey.trim(),
+      uploadPreset: cloudinaryUploadPreset.trim(),
+    });
+
+    showToast("Platform configurations, email delivery & Cloudinary media settings saved successfully!");
     setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Updated platform settings and Gmail ticket delivery gateway (${gmailUser.trim() || 'Not configured'})` },
+      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Updated platform settings, Gmail gateway (${gmailUser.trim() || 'Not configured'}), and Cloudinary media (${cloudinaryCloudName.trim() || 'Default'})` },
       ...auditLogs
     ]);
+  };
+
+  const handleTestCloudinary = async () => {
+    if (!cloudinaryCloudName.trim()) {
+      alert("Please enter your Cloudinary Cloud Name first.");
+      return;
+    }
+    setTestingCloudinary(true);
+    setCloudinaryStatusMsg(null);
+    try {
+      const res = await testCloudinaryConnection({
+        cloudName: cloudinaryCloudName.trim(),
+        apiKey: cloudinaryApiKey.trim(),
+        uploadPreset: cloudinaryUploadPreset.trim(),
+      });
+      setCloudinaryStatusMsg({ success: res.success, text: res.message });
+      if (res.success) {
+        saveCloudinaryConfig({
+          cloudName: cloudinaryCloudName.trim(),
+          apiKey: cloudinaryApiKey.trim(),
+          uploadPreset: cloudinaryUploadPreset.trim(),
+        });
+        showToast("Cloudinary connection verified & credentials saved!");
+      }
+    } catch (e: any) {
+      setCloudinaryStatusMsg({ success: false, text: e.message || "Failed to reach Cloudinary." });
+    } finally {
+      setTestingCloudinary(false);
+    }
   };
 
   const handleTestGmailDelivery = async () => {
@@ -1967,14 +2013,14 @@ export default function AdminLayout() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-bold uppercase text-text-secondary">Poster URL (Optional)</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
+                    <div className="pt-1">
+                      <CloudinaryPhotoUploader
+                        label="Movie Poster (Upload via Cloudinary)"
+                        shape="portrait"
                         value={newMoviePoster}
-                        onChange={(e) => setNewMoviePoster(e.target.value)}
-                        className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none font-mono text-[10px]"
+                        onChange={(url) => setNewMoviePoster(url)}
+                        folder="cinevenue/movies/posters"
+                        placeholder="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
@@ -3008,6 +3054,89 @@ export default function AdminLayout() {
                         <p>1. Open your Google Account (<a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" className="text-gold underline">myaccount.google.com/security</a>) and turn on <strong>2-Step Verification</strong>.</p>
                         <p>2. Search for <strong>App Passwords</strong> (or visit <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-gold underline">myaccount.google.com/apppasswords</a>).</p>
                         <p>3. Create an app password named &ldquo;CineVenue&rdquo; and paste the 16-character code here.</p>
+                      </div>
+                    </div>
+
+                    {/* Cloudinary / Cloud Media Asset Storage Configuration */}
+                    <div className="bg-white/[0.02] border border-[#eb4e62]/30 rounded-2xl p-4 space-y-4">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <div>
+                          <span className="text-[10px] font-bold text-[#eb4e62] uppercase tracking-wider block font-mono flex items-center gap-1.5">
+                            <Cloud className="w-3.5 h-3.5" />
+                            CLOUDINARY MEDIA CLOUD STORAGE & CDN
+                          </span>
+                          <span className="text-[9px] text-text-secondary">
+                            Configure Cloudinary credentials for instant uploading of high-resolution Movie Posters, Cast Photos, and Crew Avatars.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleTestCloudinary}
+                          disabled={testingCloudinary}
+                          className="px-3 py-1.5 bg-[#eb4e62]/15 hover:bg-[#eb4e62] text-[#eb4e62] hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-wider border border-[#eb4e62]/30 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${testingCloudinary ? "animate-spin" : ""}`} />
+                          <span>{testingCloudinary ? "Testing..." : "Test Cloudinary"}</span>
+                        </button>
+                      </div>
+
+                      {cloudinaryStatusMsg && (
+                        <div
+                          className={`p-2 rounded-xl text-xs flex items-center gap-2 border ${
+                            cloudinaryStatusMsg.success
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                              : "bg-red-500/10 border-red-500/20 text-red-400"
+                          }`}
+                        >
+                          {cloudinaryStatusMsg.success ? (
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                          )}
+                          <span>{cloudinaryStatusMsg.text}</span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold uppercase text-text-secondary">Cloud Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. dine-cine"
+                            value={cloudinaryCloudName}
+                            onChange={(e) => setCloudinaryCloudName(e.target.value)}
+                            className="bg-white/[0.02] border border-white/10 px-3 py-2 rounded-xl text-white focus:outline-none font-mono text-xs"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold uppercase text-text-secondary">Upload Preset</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. cinevenue_uploads"
+                            value={cloudinaryUploadPreset}
+                            onChange={(e) => setCloudinaryUploadPreset(e.target.value)}
+                            className="bg-white/[0.02] border border-white/10 px-3 py-2 rounded-xl text-white focus:outline-none font-mono text-xs"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold uppercase text-text-secondary">API Key (Optional)</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 98127391283"
+                            value={cloudinaryApiKey}
+                            onChange={(e) => setCloudinaryApiKey(e.target.value)}
+                            className="bg-white/[0.02] border border-white/10 px-3 py-2 rounded-xl text-white focus:outline-none font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 text-[9px] text-text-secondary space-y-1">
+                        <p className="font-semibold text-white/80">Cloudinary Setup Quick Guide:</p>
+                        <p>1. Create a free account at <a href="https://cloudinary.com" target="_blank" rel="noreferrer" className="text-[#eb4e62] underline">cloudinary.com</a>.</p>
+                        <p>2. In Settings → <strong>Upload</strong>, add an <em>Unsigned Upload Preset</em> named &ldquo;cinevenue_uploads&rdquo;.</p>
+                        <p>3. Enter your Cloud Name and Preset above. Automatic local fallback will be active if not configured.</p>
                       </div>
                     </div>
 

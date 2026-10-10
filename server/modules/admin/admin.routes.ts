@@ -1234,13 +1234,72 @@ router.delete("/events/:eventId", async (req: Request, res: Response, next: Next
 });
 
 // ==========================================
-// EVENT POSTER & BANNER UPLOAD ENDPOINTS
+// EVENT POSTER & BANNER UPLOAD ENDPOINTS (CLOUDINARY INTEGRATION)
 // ==========================================
-router.post("/uploads/event-poster", (req: Request, res: Response) => {
+let cloudinaryV2: any = null;
+try {
+  // Dynamically load cloudinary if available
+  cloudinaryV2 = require("cloudinary").v2;
+} catch (e) {
+  // Cloudinary module not loaded
+}
+
+async function uploadToCloudinaryIfConfigured(
+  dataUrlOrUrl: string,
+  folder: string = "cinevenue/general",
+  customConfig?: { cloudName?: string; apiKey?: string; apiSecret?: string }
+): Promise<{ url: string; publicId: string; format?: string } | null> {
+  const cloudName = customConfig?.cloudName || process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = customConfig?.apiKey || process.env.CLOUDINARY_API_KEY;
+  const apiSecret = customConfig?.apiSecret || process.env.CLOUDINARY_API_SECRET;
+
+  if (cloudinaryV2 && cloudName && apiKey && apiSecret && dataUrlOrUrl && dataUrlOrUrl.startsWith("data:")) {
+    try {
+      cloudinaryV2.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+      });
+
+      const res = await cloudinaryV2.uploader.upload(dataUrlOrUrl, {
+        folder,
+        resource_type: "image",
+      });
+
+      return {
+        url: res.secure_url,
+        publicId: res.public_id,
+        format: res.format,
+      };
+    } catch (err: any) {
+      console.warn("Cloudinary upload failed on server, falling back:", err?.message || err);
+    }
+  }
+  return null;
+}
+
+router.post("/uploads/event-poster", async (req: Request, res: Response) => {
   const body = req.body || {};
-  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
-  const publicId = `poster_${Date.now()}`;
+  const rawImage = body.image || body.url || body.dataUrl || "";
   const alt = body.alt || "Event Poster";
+
+  if (rawImage) {
+    const cloudRes = await uploadToCloudinaryIfConfigured(rawImage, "cinevenue/events/posters", body.cloudinaryConfig);
+    if (cloudRes) {
+      return res.status(200).json({
+        success: true,
+        message: "Event poster uploaded to Cloudinary successfully",
+        url: cloudRes.url,
+        publicId: cloudRes.publicId,
+        format: cloudRes.format,
+        alt,
+        file: { url: cloudRes.url, publicId: cloudRes.publicId, alt },
+      });
+    }
+  }
+
+  const url = rawImage || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+  const publicId = `poster_${Date.now()}`;
   return res.status(200).json({
     success: true,
     message: "Event poster processed successfully",
@@ -1251,11 +1310,28 @@ router.post("/uploads/event-poster", (req: Request, res: Response) => {
   });
 });
 
-router.post("/uploads/event-banner", (req: Request, res: Response) => {
+router.post("/uploads/event-banner", async (req: Request, res: Response) => {
   const body = req.body || {};
-  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200";
-  const publicId = `banner_${Date.now()}`;
+  const rawImage = body.image || body.url || body.dataUrl || "";
   const alt = body.alt || "Event Banner";
+
+  if (rawImage) {
+    const cloudRes = await uploadToCloudinaryIfConfigured(rawImage, "cinevenue/events/banners", body.cloudinaryConfig);
+    if (cloudRes) {
+      return res.status(200).json({
+        success: true,
+        message: "Event banner uploaded to Cloudinary successfully",
+        url: cloudRes.url,
+        publicId: cloudRes.publicId,
+        format: cloudRes.format,
+        alt,
+        file: { url: cloudRes.url, publicId: cloudRes.publicId, alt },
+      });
+    }
+  }
+
+  const url = rawImage || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200";
+  const publicId = `banner_${Date.now()}`;
   return res.status(200).json({
     success: true,
     message: "Event banner processed successfully",
@@ -1266,11 +1342,29 @@ router.post("/uploads/event-banner", (req: Request, res: Response) => {
   });
 });
 
-router.post("/uploads/image", (req: Request, res: Response) => {
+router.post("/uploads/image", async (req: Request, res: Response) => {
   const body = req.body || {};
-  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+  const rawImage = body.image || body.url || body.dataUrl || "";
+  const folder = body.folder || "cinevenue/movies";
+  const alt = body.alt || body.fileName || "Uploaded Image";
+
+  if (rawImage) {
+    const cloudRes = await uploadToCloudinaryIfConfigured(rawImage, folder, body.cloudinaryConfig);
+    if (cloudRes) {
+      return res.status(200).json({
+        success: true,
+        message: "Image uploaded to Cloudinary successfully",
+        url: cloudRes.url,
+        publicId: cloudRes.publicId,
+        format: cloudRes.format,
+        alt,
+        file: { url: cloudRes.url, publicId: cloudRes.publicId, alt },
+      });
+    }
+  }
+
+  const url = rawImage || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
   const publicId = `img_${Date.now()}`;
-  const alt = body.alt || "Uploaded Image";
   return res.status(200).json({
     success: true,
     message: "Image processed successfully",

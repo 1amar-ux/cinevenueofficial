@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { X, Save, Plus, Trash2, Star, Users, Film, Award, CheckCircle2, Image as ImageIcon } from "lucide-react";
+import { X, Save, Plus, Trash2, Star, Users, Film, Award, CheckCircle2, Image as ImageIcon, Camera } from "lucide-react";
 import { Movie, CastMember, CrewMember } from "../../../types";
+import CloudinaryPhotoUploader from "../common/CloudinaryPhotoUploader";
 
 interface MovieCastCrewEditorModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function MovieCastCrewEditorModal({
   const [genre, setGenre] = useState(movie.genre || "Comedy, Period, Romantic");
   const [lang, setLang] = useState(movie.lang || movie.language || "Telugu");
   const [certification, setCertification] = useState(movie.certification || "UA16+");
+  const [moviePoster, setMoviePoster] = useState(movie.img || movie.poster || "");
   const [formats, setFormats] = useState<string[]>(
     movie.formats && movie.formats.length > 0 ? movie.formats : ["2D", "EPIQ"]
   );
@@ -96,6 +98,12 @@ export default function MovieCastCrewEditorModal({
     setNewActorImage("");
   };
 
+  const handleUpdateCastMemberImage = (index: number, newImageUrl: string) => {
+    const updated = [...castList];
+    updated[index] = { ...updated[index], image: newImageUrl };
+    setCastList(updated);
+  };
+
   const handleRemoveCastMember = (index: number) => {
     setCastList(castList.filter((_, idx) => idx !== index));
   };
@@ -114,6 +122,12 @@ export default function MovieCastCrewEditorModal({
     setNewCrewImage("");
   };
 
+  const handleUpdateCrewMemberImage = (index: number, newImageUrl: string) => {
+    const updated = [...crewList];
+    updated[index] = { ...updated[index], image: newImageUrl };
+    setCrewList(updated);
+  };
+
   const handleRemoveCrewMember = (index: number) => {
     setCrewList(crewList.filter((_, idx) => idx !== index));
   };
@@ -129,6 +143,8 @@ export default function MovieCastCrewEditorModal({
       lang: lang.trim(),
       language: lang.trim(),
       certification: certification.trim(),
+      img: moviePoster.trim() || movie.img || movie.poster,
+      poster: moviePoster.trim() || movie.poster || movie.img,
       formats: formats.length > 0 ? formats : ["2D", "EPIQ"],
       castMembers: castList,
       cast: castList,
@@ -138,14 +154,13 @@ export default function MovieCastCrewEditorModal({
     };
 
     onSave(updated);
-    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-[#121214] border border-white/15 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-[#121214] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-black/40">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#eb4e62]/20 border border-[#eb4e62]/30 flex items-center justify-center text-[#eb4e62]">
               <Film className="w-5 h-5" />
@@ -155,7 +170,7 @@ export default function MovieCastCrewEditorModal({
                 Edit Movie Master Details: <span className="text-[#eb4e62]">{movie.title}</span>
               </h3>
               <p className="text-xs text-text-secondary">
-                Update synopsis, rating scores, cast avatars, and crew credentials (BookMyShow sync format)
+                Upload photos via Cloudinary, update synopsis, rating scores, cast & crew
               </p>
             </div>
           </div>
@@ -177,7 +192,7 @@ export default function MovieCastCrewEditorModal({
                 : "border-transparent text-text-secondary hover:text-white"
             }`}
           >
-            Story & Rating
+            Story, Poster & Rating
           </button>
           <button
             onClick={() => setActiveTab("cast")}
@@ -203,9 +218,21 @@ export default function MovieCastCrewEditorModal({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          {/* TAB 1: DETAILS */}
+          {/* TAB 1: DETAILS & POSTER */}
           {activeTab === "details" && (
-            <div className="space-y-5">
+            <div className="space-y-6">
+              {/* Movie Poster Cloudinary Uploader */}
+              <div className="bg-white/[0.02] border border-white/10 p-4 rounded-2xl">
+                <CloudinaryPhotoUploader
+                  label="Official Movie Poster (Cloudinary)"
+                  shape="portrait"
+                  value={moviePoster}
+                  onChange={(url) => setMoviePoster(url)}
+                  folder="cinevenue/movies/posters"
+                  placeholder={movie.img || movie.poster}
+                />
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-white block mb-1.5 uppercase tracking-wider">
                   About The Movie (Synopsis)
@@ -266,7 +293,7 @@ export default function MovieCastCrewEditorModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-white block mb-1.5 uppercase tracking-wider">
-                    Genres
+                    Genre Tags
                   </label>
                   <input
                     type="text"
@@ -292,7 +319,7 @@ export default function MovieCastCrewEditorModal({
 
                 <div>
                   <label className="text-xs font-bold text-white block mb-1.5 uppercase tracking-wider">
-                    Certification
+                    Age Certification
                   </label>
                   <select
                     value={certification}
@@ -343,13 +370,14 @@ export default function MovieCastCrewEditorModal({
           {/* TAB 2: CAST MEMBERS */}
           {activeTab === "cast" && (
             <div className="space-y-6">
-              {/* Add Cast Form */}
-              <div className="bg-black/40 border border-white/10 p-4 rounded-2xl space-y-3">
+              {/* Add Cast Form with Cloudinary Photo Upload */}
+              <div className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#eb4e62] flex items-center gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
-                  Add Actor / Cast Member
+                  Add Actor / Cast Member (Upload Photo to Cloudinary)
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     type="text"
                     placeholder="Actor Name (e.g. Sree Vishnu)"
@@ -364,14 +392,20 @@ export default function MovieCastCrewEditorModal({
                     onChange={(e) => setNewActorCharacter(e.target.value)}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#eb4e62]"
                   />
-                  <input
-                    type="text"
-                    placeholder="Photo Image URL (Optional)"
+                </div>
+
+                {/* Cloudinary photo uploader */}
+                <div className="bg-white/[0.02] border border-white/5 p-3 rounded-xl">
+                  <CloudinaryPhotoUploader
                     value={newActorImage}
-                    onChange={(e) => setNewActorImage(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#eb4e62]"
+                    onChange={(url) => setNewActorImage(url)}
+                    label="Actor Portrait Photo"
+                    shape="circle"
+                    compact={true}
+                    folder="cinevenue/movies/cast"
                   />
                 </div>
+
                 <button
                   type="button"
                   onClick={handleAddCastMember}
@@ -385,20 +419,24 @@ export default function MovieCastCrewEditorModal({
               {/* Current Cast List */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">
-                  Current Cast Registry ({castList.length})
+                  Current Cast Registry ({castList.length}) — Click Photo to Update via Cloudinary
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {castList.map((actor, idx) => (
                     <div
                       key={idx}
-                      className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between gap-3"
+                      className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between gap-3 group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/60 border border-white/10 shrink-0">
-                          <img
-                            src={actor.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"}
-                            alt={actor.name}
-                            className="w-full h-full object-cover"
+                        {/* Compact Avatar with Cloudinary replace trigger */}
+                        <div className="shrink-0">
+                          <CloudinaryPhotoUploader
+                            value={actor.image}
+                            onChange={(newUrl) => handleUpdateCastMemberImage(idx, newUrl)}
+                            shape="circle"
+                            compact={true}
+                            folder="cinevenue/movies/cast"
+                            allowUrlInput={false}
                           />
                         </div>
                         <div className="min-w-0">
@@ -425,16 +463,17 @@ export default function MovieCastCrewEditorModal({
           {/* TAB 3: CREW MEMBERS */}
           {activeTab === "crew" && (
             <div className="space-y-6">
-              {/* Add Crew Form */}
-              <div className="bg-black/40 border border-white/10 p-4 rounded-2xl space-y-3">
+              {/* Add Crew Form with Cloudinary Photo Upload */}
+              <div className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#eb4e62] flex items-center gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
-                  Add Filmmaker / Crew Member
+                  Add Filmmaker / Crew Member (Upload Photo to Cloudinary)
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     type="text"
-                    placeholder="Crew Member Name"
+                    placeholder="Crew Member Name (e.g. Kishore Tirumala)"
                     value={newCrewName}
                     onChange={(e) => setNewCrewName(e.target.value)}
                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#eb4e62]"
@@ -452,14 +491,20 @@ export default function MovieCastCrewEditorModal({
                     <option value="Writer">Writer / Screenplay</option>
                     <option value="Action Choreographer">Action Choreographer</option>
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Photo Image URL (Optional)"
+                </div>
+
+                {/* Cloudinary photo uploader */}
+                <div className="bg-white/[0.02] border border-white/5 p-3 rounded-xl">
+                  <CloudinaryPhotoUploader
                     value={newCrewImage}
-                    onChange={(e) => setNewCrewImage(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#eb4e62]"
+                    onChange={(url) => setNewCrewImage(url)}
+                    label="Crew Member Photo"
+                    shape="circle"
+                    compact={true}
+                    folder="cinevenue/movies/crew"
                   />
                 </div>
+
                 <button
                   type="button"
                   onClick={handleAddCrewMember}
@@ -473,20 +518,24 @@ export default function MovieCastCrewEditorModal({
               {/* Current Crew List */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">
-                  Current Crew Registry ({crewList.length})
+                  Current Crew Registry ({crewList.length}) — Click Photo to Update via Cloudinary
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {crewList.map((crewItem, idx) => (
                     <div
                       key={idx}
-                      className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between gap-3"
+                      className="bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-between gap-3 group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/60 border border-white/10 shrink-0">
-                          <img
-                            src={crewItem.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"}
-                            alt={crewItem.name}
-                            className="w-full h-full object-cover"
+                        {/* Compact Avatar with Cloudinary replace trigger */}
+                        <div className="shrink-0">
+                          <CloudinaryPhotoUploader
+                            value={crewItem.image}
+                            onChange={(newUrl) => handleUpdateCrewMemberImage(idx, newUrl)}
+                            shape="circle"
+                            compact={true}
+                            folder="cinevenue/movies/crew"
+                            allowUrlInput={false}
                           />
                         </div>
                         <div className="min-w-0">

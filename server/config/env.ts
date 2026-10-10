@@ -41,6 +41,12 @@ const envSchema = z.object({
   SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
   SUPABASE_SECRET_KEY: z.string().optional(),
   
+  // Cloudinary Cloud Media Gateway
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
+  
   // Email & SMTP Notification Gateway
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.union([z.string(), z.number()]).optional().transform((val) => val ? Number(val) : 587),

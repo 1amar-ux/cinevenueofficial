@@ -593,37 +593,71 @@ export default function Movies({ movies }: MoviesProps) {
                 <div className="space-y-2">
                   <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">Synopsis & Storyline</h4>
                   <p className="text-text-secondary leading-relaxed text-[11px]">
-                    {selectedMovie.title} delivers an unparalleled cinematic journey full of magnificent sequences, dynamic plot twist progressions, and superb background orchestration. A must-watch blockbuster!
+                    {selectedMovie.description ||
+                      `${selectedMovie.title} delivers an unparalleled cinematic journey full of magnificent sequences, dynamic plot twist progressions, and superb background orchestration. A must-watch blockbuster!`}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-[11px]">
                   <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
-                    <span className="text-text-muted block text-[10px]">DISTRIBUTOR</span>
-                    <strong className="text-white font-mono">{selectedMovie.distributor || "Universal Pictures Ltd"}</strong>
+                    <span className="text-text-muted block text-[10px]">DIRECTOR</span>
+                    <strong className="text-white font-mono">{selectedMovie.director || "Kishore Tirumala"}</strong>
                   </div>
                   <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
-                    <span className="text-text-muted block text-[10px]">POPULARITY / RATING</span>
+                    <span className="text-text-muted block text-[10px]">AUDIENCE RATING</span>
                     <strong className="text-gold font-mono flex items-center gap-1">
-                      ★ {selectedMovie.rating || "8.5"}/10 Audience Score
+                      ★ {selectedMovie.rating || "9.4"}/10 ({selectedMovie.votes ? String(selectedMovie.votes) : "2.6K+ Votes"})
                     </strong>
                   </div>
                 </div>
 
-                {/* Director & Cast */}
-                <div className="space-y-2">
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">Creative Cast & Director</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-                    <div>
-                      <span className="text-text-muted block">Director:</span>
-                      <strong className="text-text-primary">S. S. Rajamouli / Prashanth Neel</strong>
-                    </div>
-                    <div>
-                      <span className="text-text-muted block">Starring Cast:</span>
-                      <strong className="text-text-primary">Prabhas, Amitabh Bachchan, Deepika Padukone</strong>
+                {/* Cast Members with Avatars */}
+                {selectedMovie.castMembers && selectedMovie.castMembers.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">
+                      Starring Cast ({selectedMovie.castMembers.length})
+                    </h4>
+                    <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+                      {selectedMovie.castMembers.map((actor, idx) => (
+                        <div key={idx} className="flex flex-col items-center shrink-0 w-16 text-center">
+                          <img
+                            src={actor.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"}
+                            alt={actor.name}
+                            className="w-11 h-11 rounded-full object-cover border border-white/10"
+                          />
+                          <span className="text-[10px] font-bold text-white mt-1 truncate w-full">{actor.name}</span>
+                          <span className="text-[8px] text-text-secondary truncate w-full">
+                            {actor.character || actor.role || "Actor"}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Crew Members */}
+                {selectedMovie.crewMembers && selectedMovie.crewMembers.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-white uppercase text-[10px] tracking-wider border-b border-white/5 pb-2">
+                      Key Crew & Filmmakers
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {selectedMovie.crewMembers.slice(0, 6).map((crew, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-white/[0.02] border border-white/5 p-1.5 rounded-lg">
+                          <img
+                            src={crew.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"}
+                            alt={crew.name}
+                            className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="text-[9px] font-bold text-white block truncate">{crew.name}</span>
+                            <span className="text-[8px] text-[#eb4e62] block truncate">{crew.role}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Sidebar Action Deck */}
