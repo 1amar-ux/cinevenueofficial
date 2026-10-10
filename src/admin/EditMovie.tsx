@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { formatRating } from "../utils/ratingFormatter";
 
 const languages = [
   "Telugu",
@@ -80,18 +81,22 @@ export default function EditMovie() {
 
   const updateMovie = async () => {
     try {
+      const payload = {
+        ...movie,
+        rating: movie.rating ? formatRating(movie.rating, "9.0/10") : "9.0/10"
+      };
       if (id === "new") {
         try {
-          await api.post("/movies", movie);
+          await api.post("/movies", payload);
         } catch {
-          await api.post("/admin/movie", movie);
+          await api.post("/admin/movie", payload);
         }
         alert("Movie Created Successfully");
       } else {
         try {
-          await api.put(`/admin/movie/${id}`, movie);
+          await api.put(`/admin/movie/${id}`, payload);
         } catch {
-          await api.put(`/movies/${id}`, movie);
+          await api.put(`/movies/${id}`, payload);
         }
         alert("Movie Updated Successfully");
       }
@@ -215,7 +220,8 @@ export default function EditMovie() {
           <Grid sx={{ width: "50%", p: 1.5 }}>
             <TextField
               fullWidth
-              label="IMDb Rating"
+              label="Audience Rating (e.g. 9.0/10)"
+              placeholder="9.0/10"
               value={movie.rating}
               onChange={(e) =>
                 setMovie({

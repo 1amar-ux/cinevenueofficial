@@ -67,6 +67,7 @@ import EmployeeManagementModule from "../components/admin/employees/EmployeeMana
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import { employeeService, Employee } from "../services/employeeService";
 import { parseAndValidateYouTubeUrl } from "../utils/youtube";
+import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
 import { Server, Cpu, Cloud, UploadCloud } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 
@@ -349,7 +350,7 @@ export default function AdminLayout() {
   const [newMovieTrailerUrl, setNewMovieTrailerUrl] = useState("");
   const [newMovieCertification, setNewMovieCertification] = useState("UA16+");
   const [newMovieDescription, setNewMovieDescription] = useState("");
-  const [newMovieRating, setNewMovieRating] = useState("9.0");
+  const [newMovieRating, setNewMovieRating] = useState("9.0/10");
   const [newMovieVotes, setNewMovieVotes] = useState("2.5K+ Votes");
   const [newMovieCast, setNewMovieCast] = useState<CastMember[]>([]);
   const [newMovieCrew, setNewMovieCrew] = useState<CrewMember[]>([]);
@@ -642,7 +643,7 @@ export default function AdminLayout() {
       langKey: (newMovieLang || "Telugu").toLowerCase().slice(0, 2),
       duration: newMovieDuration || "2h 45m",
       description: newMovieDescription.trim() || undefined,
-      rating: newMovieRating.trim() || "9.0",
+      rating: formatRating(newMovieRating.trim(), "9.0/10"),
       votes: newMovieVotes.trim() || "2.5K+ Votes",
       certification: newMovieCertification || "UA16+",
       img: newMoviePoster || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
@@ -688,7 +689,7 @@ export default function AdminLayout() {
     setNewMovieTrailerUrl("");
     setNewMovieCertification("UA16+");
     setNewMovieDescription("");
-    setNewMovieRating("9.0");
+    setNewMovieRating("9.0/10");
     setNewMovieVotes("2.5K+ Votes");
     setNewMovieCast([]);
     setNewMovieCrew([]);
@@ -696,18 +697,19 @@ export default function AdminLayout() {
     setShowAddCrewSection(false);
     showToast(`Created movie master record [${movieId}] for '${added.title}'!`);
     setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie master record [${movieId}]: ${added.title} with rating ${added.rating}/10 and ${added.castMembers?.length || 0} cast members` },
+      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Created movie master record [${movieId}]: ${added.title} with rating ${formatRating(added.rating)} and ${added.castMembers?.length || 0} cast members` },
       ...auditLogs
     ]);
   };
 
   const handleSaveQuickRating = (movieTitle: string) => {
     if (!quickRatingValue.trim()) return;
+    const formattedRating = formatRating(quickRatingValue.trim(), "9.0/10");
     const updated = movies.map((m) =>
       m.title === movieTitle
         ? {
             ...m,
-            rating: quickRatingValue.trim(),
+            rating: formattedRating,
             votes: quickVotesValue.trim() || m.votes || "2.5K+ Votes",
           }
         : m
@@ -715,13 +717,13 @@ export default function AdminLayout() {
     setMovies(updated);
     saveState("cine_movies", updated);
     setQuickEditingRatingMovie(null);
-    showToast(`Updated rating for '${movieTitle}' to ${quickRatingValue}/10!`);
+    showToast(`Updated rating for '${movieTitle}' to ${formattedRating}!`);
     setAuditLogs([
       {
         timestamp: "Just Now",
         actor: "superadmin@cinevenue.com",
         ip: "103.22.41.8",
-        action: `Updated audience rating score for '${movieTitle}' to ${quickRatingValue}/10`,
+        action: `Updated audience rating score for '${movieTitle}' to ${formattedRating}`,
       },
       ...auditLogs,
     ]);
@@ -2089,11 +2091,11 @@ export default function AdminLayout() {
                       <div className="flex flex-col gap-1">
                         <label className="text-[9px] font-bold uppercase text-text-secondary flex items-center gap-1">
                           <Star className="w-3 h-3 text-gold fill-gold" />
-                          <span>Audience Rating (/10)</span>
+                          <span>Audience Rating (e.g. 9.0/10)</span>
                         </label>
                         <input
                           type="text"
-                          placeholder="9.2"
+                          placeholder="9.0/10"
                           value={newMovieRating}
                           onChange={(e) => setNewMovieRating(e.target.value)}
                           className="bg-white/[0.02] border border-white/10 px-3 py-1.5 rounded-lg focus:outline-none focus:border-gold text-white font-bold text-[10px]"
@@ -2372,12 +2374,11 @@ export default function AdminLayout() {
                                       <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
                                       <input
                                         type="text"
-                                        placeholder="9.4"
+                                        placeholder="9.0/10"
                                         value={quickRatingValue}
                                         onChange={(e) => setQuickRatingValue(e.target.value)}
-                                        className="w-10 bg-white/10 text-white font-bold text-[10px] px-1 py-0.5 rounded border border-white/20 focus:outline-none"
+                                        className="w-16 bg-white/10 text-white font-bold text-[10px] px-1.5 py-0.5 rounded border border-white/20 focus:outline-none"
                                       />
-                                      <span className="text-[9px] text-white/50">/10</span>
                                       <input
                                         type="text"
                                         placeholder="Votes"
@@ -2408,14 +2409,14 @@ export default function AdminLayout() {
                                         type="button"
                                         onClick={() => {
                                           setQuickEditingRatingMovie(m.title);
-                                          setQuickRatingValue(m.rating || "9.0");
+                                          setQuickRatingValue(formatRating(m.rating, "9.0/10"));
                                           setQuickVotesValue(m.votes ? String(m.votes) : "2.5K+ Votes");
                                         }}
                                         className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gold/10 hover:bg-gold/20 border border-gold/30 text-gold text-[10px] font-bold cursor-pointer transition-all group/rate"
                                         title="Click to edit audience rating directly"
                                       >
                                         <Star className="w-3 h-3 text-gold fill-gold" />
-                                        <span>{m.rating || "9.0"}/10</span>
+                                        <span>{formatRating(m.rating, "9.0/10")}</span>
                                         <span className="text-[9px] text-white/60 font-normal">({m.votes || "2.5K+ Votes"})</span>
                                         <Edit2 className="w-2.5 h-2.5 opacity-60 group-hover/rate:opacity-100 ml-0.5" />
                                       </button>

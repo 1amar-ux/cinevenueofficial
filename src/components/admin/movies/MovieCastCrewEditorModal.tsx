@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, Save, Plus, Trash2, Star, Users, Film, Award, CheckCircle2, Image as ImageIcon, Camera } from "lucide-react";
 import { Movie, CastMember, CrewMember } from "../../../types";
 import CloudinaryPhotoUploader from "../common/CloudinaryPhotoUploader";
+import { formatRating } from "../../../utils/ratingFormatter";
 
 interface MovieCastCrewEditorModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export default function MovieCastCrewEditorModal({
     movie.description ||
       "Set against the backdrop of the early '90s Andhra Pradesh, Kalyan, a sharp-witted theatre operator, falls for Sitara, a young woman from Odisha. What begins as a lighthearted pursuit of love soon spirals into a chaotic series of misunderstandings, comic mishaps, and unexpected danger."
   );
-  const [rating, setRating] = useState(movie.rating || "9.4");
+  const [rating, setRating] = useState(formatRating(movie.rating, "9.4/10"));
   const [votes, setVotes] = useState(movie.votes ? String(movie.votes) : "2.6K+ Votes");
   const [duration, setDuration] = useState(movie.duration || "2h 25m");
   const [genre, setGenre] = useState(movie.genre || "Comedy, Period, Romantic");
@@ -136,7 +137,7 @@ export default function MovieCastCrewEditorModal({
     const updated: Movie = {
       ...movie,
       description: description.trim(),
-      rating: rating.trim(),
+      rating: formatRating(rating.trim(), "9.4/10"),
       votes: votes.trim(),
       duration: duration.trim(),
       genre: genre.trim(),
@@ -249,7 +250,7 @@ export default function MovieCastCrewEditorModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-white block mb-1.5 uppercase tracking-wider">
-                    Rating Score (/10)
+                    Rating Score (e.g. 9.0/10)
                   </label>
                   <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
                     <Star className="w-4 h-4 fill-[#eb4e62] text-[#eb4e62]" />
@@ -257,7 +258,7 @@ export default function MovieCastCrewEditorModal({
                       type="text"
                       value={rating}
                       onChange={(e) => setRating(e.target.value)}
-                      placeholder="9.4"
+                      placeholder="9.0/10"
                       className="w-full bg-transparent text-xs sm:text-sm text-white font-bold focus:outline-none"
                     />
                   </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Star, Film, Eye, Play, Sparkles, Calendar, Clapperboard, ChevronRight, Flame, ArrowLeft, X, CheckCircle2, MessageSquare } from "lucide-react";
 import { Movie, MovieVideo, Advertisement } from "../types";
 import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAvailability";
+import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
 import EmptyState from "./common/EmptyState";
 import YouTubePlayerModal from "./video/YouTubePlayerModal";
 
@@ -57,8 +58,9 @@ export default function NowShowing({
     if (!ratingMovie) return;
 
     const currentVotesNum = parseInt(String(ratingMovie.votes || "2500").replace(/[^0-9]/g, "")) || 2500;
-    const currentRatingNum = parseFloat(ratingMovie.rating || "9.0") || 9.0;
-    const newRating = ((currentRatingNum * currentVotesNum + audienceRatingScore) / (currentVotesNum + 1)).toFixed(1);
+    const currentRatingNum = parseRatingNumber(ratingMovie.rating, 9.0);
+    const calculatedScore = ((currentRatingNum * currentVotesNum + audienceRatingScore) / (currentVotesNum + 1)).toFixed(1);
+    const newRating = `${calculatedScore}/10`;
     const newVotes = `${(currentVotesNum + 1).toLocaleString()}+ Votes`;
 
     const newReview = {
@@ -201,7 +203,7 @@ export default function NowShowing({
               title="Click to rate this movie"
             >
               <Star className="w-3 h-3 text-amber-400 fill-amber-400 group-hover/ratebadge:text-white group-hover/ratebadge:fill-white" />
-              <span>{movie.rating}</span>
+              <span>{formatRating(movie.rating)}</span>
             </button>
           )}
 
@@ -486,7 +488,9 @@ export default function NowShowing({
                   <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
                   Rate & Review {ratingMovie.title}
                 </h3>
-                <p className="text-xs text-white/60">Share your audience rating with fellow moviegoers</p>
+                <p className="text-xs text-white/60">
+                  Current Audience Score: <span className="text-amber-400 font-bold">{formatRating(ratingMovie.rating)}</span> ({ratingMovie.votes || "2.5K+ Votes"})
+                </p>
               </div>
               <button
                 type="button"
@@ -519,8 +523,7 @@ export default function NowShowing({
                     ))}
                   </div>
                   <div className="text-right pl-2 shrink-0">
-                    <span className="text-lg font-black text-[#eb4e62]">{audienceRatingScore}</span>
-                    <span className="text-xs text-white/40">/10</span>
+                    <span className="text-lg font-black text-[#eb4e62]">{audienceRatingScore.toFixed(1)}/10</span>
                   </div>
                 </div>
               </div>

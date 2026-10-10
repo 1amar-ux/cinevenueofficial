@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Clock, Star, Film, Award } from "lucide-react";
 import { SpotlightMovie } from "../types";
+import { formatRating } from "../utils/ratingFormatter";
 
 interface FeaturedProps {
   onBookMovie: (movieTitle: string, selectedTimeSlot?: string) => void;
@@ -66,8 +67,8 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
               </div>
               <div className="flex items-center gap-1.5">
                 <Star className="w-4 h-4 text-amber-500 dark:text-gold fill-amber-500 dark:fill-gold stroke-none" />
-                <span className="font-bold text-text-primary">{spotlight.rating}</span>
-                <span className="text-text-muted">/ 10 Rating</span>
+                <span className="font-bold text-text-primary">{formatRating(spotlight.rating)}</span>
+                <span className="text-text-muted">Rating</span>
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/10" />
               <div>{spotlight.genre}</div>

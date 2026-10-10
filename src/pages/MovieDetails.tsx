@@ -27,6 +27,7 @@ import { BookingContext } from "../context/BookingContext";
 import { Movie, MovieVideo, CastMember, CrewMember, MovieReview, MovieOffer } from "../types";
 import { INITIAL_MOVIES } from "../data";
 import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAvailability";
+import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
 import YouTubePlayerModal from "../components/video/YouTubePlayerModal";
 
 export default function MovieDetails() {
@@ -277,7 +278,7 @@ export default function MovieDetails() {
       navigator
         .share({
           title: `${movie.title} - CineVenue`,
-          text: `Book tickets for ${movie.title} (${movie.rating}/10 rating) on CineVenue!`,
+          text: `Book tickets for ${movie.title} (${formatRating(movie.rating, "9.4/10")} rating) on CineVenue!`,
           url: window.location.href,
         })
         .catch(() => {});
@@ -324,14 +325,14 @@ export default function MovieDetails() {
     };
 
     const currVotes = parseInt(String(movie.votes || "2600").replace(/[^0-9]/g, "")) || 2600;
-    const currRating = parseFloat(movie.rating || "9.4") || 9.4;
+    const currRating = parseRatingNumber(movie.rating, 9.4);
     const newRatingScore = ((currRating * currVotes + userRatingScore) / (currVotes + 1)).toFixed(1);
     const newVotesStr = `${(currVotes + 1).toLocaleString()}+ Votes`;
 
     const updatedReviews = [newRev, ...reviewsList];
     const updatedMovie: Movie = {
       ...movie,
-      rating: newRatingScore,
+      rating: `${newRatingScore}/10`,
       votes: newVotesStr,
       reviews: updatedReviews,
     };
@@ -445,7 +446,7 @@ export default function MovieDetails() {
                 >
                   <div className="flex items-center gap-2">
                     <Star className="w-6 h-6 fill-[#eb4e62] text-[#eb4e62]" />
-                    <span className="text-xl sm:text-2xl font-black text-white">{movie.rating || "9.4"}/10</span>
+                    <span className="text-xl sm:text-2xl font-black text-white">{formatRating(movie.rating, "9.4/10")}</span>
                   </div>
                   <span className="text-xs sm:text-sm font-semibold text-white/70 group-hover:text-white transition-colors flex items-center gap-1">
                     ({movie.votes || "2.6K+ Votes"})
@@ -911,8 +912,7 @@ export default function MovieDetails() {
                     ))}
                   </div>
                   <div className="text-right pl-2">
-                    <span className="text-base font-black text-[#eb4e62]">{userRatingScore}</span>
-                    <span className="text-xs text-white/40">/10</span>
+                    <span className="text-base font-black text-[#eb4e62]">{userRatingScore.toFixed(1)}/10</span>
                   </div>
                 </div>
               </div>

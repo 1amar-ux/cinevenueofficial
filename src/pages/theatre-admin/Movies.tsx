@@ -22,6 +22,7 @@ import {
   Inbox
 } from "lucide-react";
 import { Movie } from "../../types";
+import { formatRating } from "../../utils/ratingFormatter";
 
 interface MoviesProps {
   movies: Movie[];
@@ -326,7 +327,7 @@ export default function Movies({ movies }: MoviesProps) {
                     
                     <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-[#0A0A0B]/90 text-gold text-[9px] font-bold font-mono flex items-center gap-1">
                       <Star className="w-3 h-3 fill-gold text-gold" />
-                      <span>{m.rating || "8.5"}</span>
+                      <span>{formatRating(m.rating, "8.5/10")}</span>
                     </div>
 
                     {/* Quick view prompt on hover */}
@@ -606,7 +607,7 @@ export default function Movies({ movies }: MoviesProps) {
                   <div className="p-3.5 bg-white/[0.01] border border-white/5 rounded-xl">
                     <span className="text-text-muted block text-[10px]">AUDIENCE RATING</span>
                     <strong className="text-gold font-mono flex items-center gap-1">
-                      ★ {selectedMovie.rating || "9.4"}/10 ({selectedMovie.votes ? String(selectedMovie.votes) : "2.6K+ Votes"})
+                      ★ {formatRating(selectedMovie.rating, "9.4/10")} ({selectedMovie.votes ? String(selectedMovie.votes) : "2.6K+ Votes"})
                     </strong>
                   </div>
                 </div>
