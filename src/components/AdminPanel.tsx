@@ -9,10 +9,13 @@ import {
   Sparkles, Clock, DollarSign, CalendarRange, Wallet, CheckCircle, Ticket, 
   Layers, Users, LayoutDashboard, Bell, LogOut, Search, Menu, Monitor, QrCode, 
   Play, Pause, RotateCcw, Thermometer, Volume2, ArrowLeft, Edit, Shield, Lock, 
-  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck
+  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck, Star, Edit2
 } from "lucide-react";
 import EmployeeManagementModule from "./admin/employees/EmployeeManagementModule";
-import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction } from "../types";
+import CloudinaryPhotoUploader from "./admin/common/CloudinaryPhotoUploader";
+import MovieCastCrewEditorModal from "./admin/movies/MovieCastCrewEditorModal";
+import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
+import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CastMember, CrewMember } from "../types";
 import { DEFAULT_CINECOINS_SETTINGS } from "../data";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import CineVenueLogo from "./CineVenueLogo";
@@ -825,7 +828,9 @@ export default function AdminPanel({
   const [movieGenre, setMovieGenre] = useState("Sci-Fi");
   const [movieLang, setMovieLang] = useState("English");
   const [movieLangKey, setMovieLangKey] = useState("english");
-  const [movieRating, setMovieRating] = useState("8.5");
+  const [movieRating, setMovieRating] = useState("9.0/10");
+  const [movieVotes, setMovieVotes] = useState("2.5K+ Votes");
+  const [movieDescription, setMovieDescription] = useState("");
   const [movieImg, setMovieImg] = useState("https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&q=60");
   const [movieFormats, setMovieFormats] = useState<string[]>(["2D"]);
   const [movieActors, setMovieActors] = useState("");
@@ -835,6 +840,26 @@ export default function AdminPanel({
   const [movieDistributor, setMovieDistributor] = useState("");
   const [editingMovieTitle, setEditingMovieTitle] = useState<string | null>(null);
   const [editingMovieId, setEditingMovieId] = useState<string | null>(null);
+
+  // Cast & Crew states inside AdminPanel movie creation
+  const [movieCast, setMovieCast] = useState<CastMember[]>([]);
+  const [movieCrew, setMovieCrew] = useState<CrewMember[]>([]);
+  const [showAddCastSection, setShowAddCastSection] = useState(false);
+  const [showAddCrewSection, setShowAddCrewSection] = useState(false);
+  const [panelActorName, setPanelActorName] = useState("");
+  const [panelActorCharacter, setPanelActorCharacter] = useState("");
+  const [panelActorImage, setPanelActorImage] = useState("");
+  const [panelCrewName, setPanelCrewName] = useState("");
+  const [panelCrewRole, setPanelCrewRole] = useState("Director");
+  const [panelCrewImage, setPanelCrewImage] = useState("");
+
+  // Direct Quick Rating Edit state on movie cards
+  const [quickEditingMovieTitle, setQuickEditingMovieTitle] = useState<string | null>(null);
+  const [quickRatingValue, setQuickRatingValue] = useState("9.0/10");
+  const [quickVotesValue, setQuickVotesValue] = useState("2.5K+ Votes");
+
+  // Detailed Modal editing
+  const [activeCastCrewModalMovie, setActiveCastCrewModalMovie] = useState<Movie | null>(null);
 
   // State: Event Management & Client Requests
   const [adminEventRequests, setAdminEventRequests] = useState<EventManagementRequest[]>(() => { try { const raw = localStorage.getItem("cine_event_requests") || localStorage.getItem("cinevenue_event_requests"); if (raw) return JSON.parse(raw); } catch (e) {} return INITIAL_EVENT_MANAGEMENT_REQUESTS; });
@@ -1428,6 +1453,8 @@ export default function AdminPanel({
     if (!movieTitle) return;
 
     const actorsArray = movieActors.split(",").map(a => a.trim()).filter(Boolean);
+    const finalRating = formatRating(movieRating, "9.0/10");
+    const finalVotes = movieVotes.trim() || "2.5K+ Votes";
 
     if (editingMovieTitle) {
       if (onUpdateMovie) {
@@ -1436,11 +1463,19 @@ export default function AdminPanel({
           title: movieTitle,
           genre: movieGenre,
           lang: movieLang,
-          rating: movieRating,
+          rating: finalRating,
+          votes: finalVotes,
+          description: movieDescription.trim() || undefined,
           img: movieImg,
+          poster: movieImg,
           langKey: movieLangKey,
           formats: movieFormats,
           actors: actorsArray,
+          castMembers: movieCast.length > 0 ? movieCast : undefined,
+          cast: movieCast.length > 0 ? movieCast : undefined,
+          crewMembers: movieCrew.length > 0 ? movieCrew : undefined,
+          crew: movieCrew.length > 0 ? movieCrew : undefined,
+          director: movieCrew.find(c => c.role?.toLowerCase() === "director")?.name || undefined,
           trailerUrl: movieTrailerUrl,
           duration: movieDuration,
           certificate: movieCertificate,
@@ -1455,11 +1490,19 @@ export default function AdminPanel({
         title: movieTitle,
         genre: movieGenre,
         lang: movieLang,
-        rating: movieRating,
+        rating: finalRating,
+        votes: finalVotes,
+        description: movieDescription.trim() || undefined,
         img: movieImg,
+        poster: movieImg,
         langKey: movieLangKey,
         formats: movieFormats,
         actors: actorsArray,
+        castMembers: movieCast.length > 0 ? movieCast : undefined,
+        cast: movieCast.length > 0 ? movieCast : undefined,
+        crewMembers: movieCrew.length > 0 ? movieCrew : undefined,
+        crew: movieCrew.length > 0 ? movieCrew : undefined,
+        director: movieCrew.find(c => c.role?.toLowerCase() === "director")?.name || undefined,
         trailerUrl: movieTrailerUrl,
         duration: movieDuration,
         certificate: movieCertificate,
@@ -1472,14 +1515,20 @@ export default function AdminPanel({
     setMovieGenre("Sci-Fi");
     setMovieLang("English");
     setMovieLangKey("english");
-    setMovieRating("8.5");
+    setMovieRating("9.0/10");
+    setMovieVotes("2.5K+ Votes");
+    setMovieDescription("");
     setMovieImg("https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&q=60");
     setMovieFormats(["2D"]);
     setMovieActors("");
+    setMovieCast([]);
+    setMovieCrew([]);
     setMovieTrailerUrl("");
     setMovieDuration("148 mins");
     setMovieCertificate("UA");
     setMovieDistributor("");
+    setShowAddCastSection(false);
+    setShowAddCrewSection(false);
   };
 
   // Add/Update Schedule Submit Handler
@@ -3832,16 +3881,31 @@ export default function AdminPanel({
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Rating Score</label>
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1">
+                          <Star className="w-3 h-3 text-gold fill-gold" />
+                          <span>Audience Rating (e.g. 9.0/10)</span>
+                        </label>
                         <input 
                           type="text"
                           value={movieRating}
                           onChange={(e) => setMovieRating(e.target.value)}
-                          placeholder="8.5"
-                          className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
+                          placeholder="9.0/10"
+                          className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-bold"
                           required
                         />
                       </div>
+                    </div>
+
+                    {/* Story Synopsis */}
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">About The Movie (Synopsis)</label>
+                      <textarea 
+                        rows={2}
+                        value={movieDescription}
+                        onChange={(e) => setMovieDescription(e.target.value)}
+                        placeholder="Comprehensive plot synopsis or storyline..."
+                        className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-md p-2 text-xs text-text-primary focus:outline-none focus:border-gold resize-none leading-relaxed font-normal"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-left">
@@ -3858,27 +3922,220 @@ export default function AdminPanel({
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Language Key (Query)</label>
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Total Votes</label>
                         <input 
                           type="text"
-                          value={movieLangKey}
-                          onChange={(e) => setMovieLangKey(e.target.value)}
-                          placeholder="english"
+                          value={movieVotes}
+                          onChange={(e) => setMovieVotes(e.target.value)}
+                          placeholder="2.5K+ Votes"
                           className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
-                          required
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5 text-left">
-                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Poster Image URL</label>
+                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Language Key (Query)</label>
                       <input 
                         type="text"
-                        value={movieImg}
-                        onChange={(e) => setMovieImg(e.target.value)}
-                        className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
+                        value={movieLangKey}
+                        onChange={(e) => setMovieLangKey(e.target.value)}
+                        placeholder="english"
+                        className="w-full bg-white/[0.02] border border-white/10 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
                         required
                       />
+                    </div>
+
+                    {/* Movie Poster Cloudinary Uploader */}
+                    <div className="space-y-1.5 text-left">
+                      <CloudinaryPhotoUploader
+                        label="Movie Poster (Upload via Cloudinary)"
+                        shape="portrait"
+                        value={movieImg}
+                        onChange={(url) => setMovieImg(url)}
+                        folder="cinevenue/movies/posters"
+                        placeholder="https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&q=60"
+                      />
+                    </div>
+
+                    {/* Casting Section (Near Creating New Movie) */}
+                    <div className="p-3 bg-white/[0.02] border border-white/10 rounded-xl space-y-2 text-left">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-gold flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Cast Members ({movieCast.length})</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCastSection(!showAddCastSection)}
+                          className="text-[9px] font-bold uppercase tracking-wider text-white hover:text-gold transition-colors cursor-pointer bg-white/5 px-2 py-0.5 rounded border-0"
+                        >
+                          {showAddCastSection ? "Close" : "+ Add Actor"}
+                        </button>
+                      </div>
+
+                      {/* Added Cast Chips */}
+                      {movieCast.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-1">
+                          {movieCast.map((c, i) => (
+                            <div key={i} className="flex items-center gap-1.5 bg-black/60 border border-white/10 pl-1 pr-2 py-0.5 rounded-lg text-[9px]">
+                              <img src={c.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80"} alt={c.name} className="w-4 h-4 rounded-full object-cover" />
+                              <span className="text-white font-bold">{c.name}</span>
+                              <span className="text-text-secondary">({c.character || c.role})</span>
+                              <button
+                                type="button"
+                                onClick={() => setMovieCast(movieCast.filter((_, idx) => idx !== i))}
+                                className="text-red-400 hover:text-white ml-0.5 cursor-pointer bg-transparent border-0"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add Actor Form Dropdown */}
+                      {showAddCastSection && (
+                        <div className="p-2.5 bg-black/70 border border-white/10 rounded-lg space-y-2 mt-2">
+                          <input
+                            type="text"
+                            placeholder="Actor Name (e.g. Sree Vishnu)"
+                            value={panelActorName}
+                            onChange={(e) => setPanelActorName(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 px-2.5 py-1 text-[10px] rounded text-white focus:outline-none focus:border-gold"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Character Name (e.g. Kalyan)"
+                            value={panelActorCharacter}
+                            onChange={(e) => setPanelActorCharacter(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 px-2.5 py-1 text-[10px] rounded text-white focus:outline-none focus:border-gold"
+                          />
+                          <CloudinaryPhotoUploader
+                            label="Actor Photo (Upload or Paste URL)"
+                            shape="circle"
+                            value={panelActorImage}
+                            onChange={(url) => setPanelActorImage(url)}
+                            folder="cinevenue/cast"
+                            placeholder="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"
+                          />
+                          <div className="flex justify-end gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!panelActorName.trim()) return;
+                                setMovieCast([
+                                  ...movieCast,
+                                  {
+                                    name: panelActorName.trim(),
+                                    character: panelActorCharacter.trim() || undefined,
+                                    role: "Actor",
+                                    image: panelActorImage.trim() || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"
+                                  }
+                                ]);
+                                setPanelActorName("");
+                                setPanelActorCharacter("");
+                                setPanelActorImage("");
+                                setShowAddCastSection(false);
+                              }}
+                              className="px-3 py-1 bg-gold text-black font-bold text-[9px] rounded uppercase cursor-pointer border-0"
+                            >
+                              Save Cast Member
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Crew Members Section */}
+                    <div className="p-3 bg-white/[0.02] border border-white/10 rounded-xl space-y-2 text-left">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1">
+                          <Film className="w-3.5 h-3.5" />
+                          <span>Crew Members ({movieCrew.length})</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCrewSection(!showAddCrewSection)}
+                          className="text-[9px] font-bold uppercase tracking-wider text-white hover:text-gold transition-colors cursor-pointer bg-white/5 px-2 py-0.5 rounded border-0"
+                        >
+                          {showAddCrewSection ? "Close" : "+ Add Crew"}
+                        </button>
+                      </div>
+
+                      {/* Added Crew Chips */}
+                      {movieCrew.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-1">
+                          {movieCrew.map((c, i) => (
+                            <div key={i} className="flex items-center gap-1.5 bg-black/60 border border-white/10 pl-1 pr-2 py-0.5 rounded-lg text-[9px]">
+                              <img src={c.image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"} alt={c.name} className="w-4 h-4 rounded-full object-cover" />
+                              <span className="text-white font-bold">{c.name}</span>
+                              <span className="text-gold">({c.role})</span>
+                              <button
+                                type="button"
+                                onClick={() => setMovieCrew(movieCrew.filter((_, idx) => idx !== i))}
+                                className="text-red-400 hover:text-white ml-0.5 cursor-pointer bg-transparent border-0"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add Crew Form */}
+                      {showAddCrewSection && (
+                        <div className="p-2.5 bg-black/70 border border-white/10 rounded-lg space-y-2 mt-2">
+                          <input
+                            type="text"
+                            placeholder="Crew Name (e.g. Kishore Tirumala)"
+                            value={panelCrewName}
+                            onChange={(e) => setPanelCrewName(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 px-2.5 py-1 text-[10px] rounded text-white focus:outline-none focus:border-gold"
+                          />
+                          <select
+                            value={panelCrewRole}
+                            onChange={(e) => setPanelCrewRole(e.target.value)}
+                            className="w-full bg-black/90 border border-white/10 px-2.5 py-1 text-[10px] rounded text-white focus:outline-none"
+                          >
+                            <option value="Director">Director</option>
+                            <option value="Producer">Producer</option>
+                            <option value="Musician">Musician</option>
+                            <option value="Cinematographer">Cinematographer</option>
+                            <option value="Writer">Writer</option>
+                            <option value="Editor">Editor</option>
+                          </select>
+                          <CloudinaryPhotoUploader
+                            label="Crew Photo"
+                            shape="circle"
+                            value={panelCrewImage}
+                            onChange={(url) => setPanelCrewImage(url)}
+                            folder="cinevenue/crew"
+                            placeholder="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"
+                          />
+                          <div className="flex justify-end gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!panelCrewName.trim()) return;
+                                setMovieCrew([
+                                  ...movieCrew,
+                                  {
+                                    name: panelCrewName.trim(),
+                                    role: panelCrewRole,
+                                    image: panelCrewImage.trim() || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"
+                                  }
+                                ]);
+                                setPanelCrewName("");
+                                setPanelCrewImage("");
+                                setShowAddCrewSection(false);
+                              }}
+                              className="px-3 py-1 bg-gold text-black font-bold text-[9px] rounded uppercase cursor-pointer border-0"
+                            >
+                              Save Crew Member
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-1.5 text-left">
@@ -4051,53 +4308,133 @@ export default function AdminPanel({
                               )}
                             </div>
                           </div>
-                          <div className="flex justify-between items-center gap-2 mt-2">
-                            <span className="text-[10px] font-bold text-gold font-mono bg-gold/10 px-1.5 py-0.5 rounded">★ {m.rating}</span>
-                            <div className="flex gap-1 items-center">
-                              <button
-                                onClick={() => onToggleMovieActive && onToggleMovieActive(m.title)}
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border cursor-pointer transition-colors ${
-                                  m.isActive !== false
-                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                                    : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
-                                }`}
-                                title={m.isActive !== false ? "Disable movie booking" : "Enable movie booking"}
-                              >
-                                {m.isActive !== false ? "ON" : "OFF"}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingMovieTitle(m.title);
-                                  setEditingMovieId(m.id ? String(m.id) : null);
-                                  setMovieTitle(m.title);
-                                  setMovieGenre(m.genre);
-                                  setMovieLang(m.lang);
-                                  setMovieLangKey(m.langKey);
-                                  setMovieRating(m.rating);
-                                  setMovieImg(m.img);
-                                  setMovieFormats(m.formats || ["2D"]);
-                                  setMovieActors(m.actors ? (m.actors || []).join(", ") : "");
-                                  setMovieTrailerUrl(m.trailerUrl || "");
-                                  setMovieDuration(m.duration || "148 mins");
-                                  setMovieCertificate(m.certificate || "UA");
-                                  setMovieDistributor(m.distributor || "");
-                                }}
-                                className="p-1 rounded bg-white/5 hover:bg-gold hover:text-black text-text-secondary border-0 cursor-pointer"
-                                title="Edit specs"
-                              >
-                                <Edit className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (confirm(`Remove "${m.title}" from now showing?`)) {
-                                    onDeleteMovie(m.title);
-                                  }
-                                }}
-                                className="p-1 rounded bg-red-500/10 hover:bg-red-500 hover:text-black text-red-400 border border-red-500/10 cursor-pointer"
-                                title="Remove film"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                          <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-white/5">
+                            {quickEditingMovieTitle === m.title ? (
+                              <div className="flex items-center gap-1 bg-black/90 p-1 rounded-md border border-gold/40">
+                                <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
+                                <input 
+                                  type="text"
+                                  placeholder="9.0/10"
+                                  value={quickRatingValue}
+                                  onChange={(e) => setQuickRatingValue(e.target.value)}
+                                  className="w-14 bg-white/10 text-white font-bold text-[9px] px-1 py-0.5 rounded border border-white/20 focus:outline-none"
+                                />
+                                <input 
+                                  type="text"
+                                  placeholder="Votes"
+                                  value={quickVotesValue}
+                                  onChange={(e) => setQuickVotesValue(e.target.value)}
+                                  className="w-14 bg-white/10 text-white text-[8px] px-1 py-0.5 rounded border border-white/20 focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const formatted = formatRating(quickRatingValue, "9.0/10");
+                                    if (onUpdateMovie) {
+                                      onUpdateMovie(m.title, {
+                                        ...m,
+                                        rating: formatted,
+                                        votes: quickVotesValue.trim() || m.votes || "2.5K+ Votes",
+                                      });
+                                    }
+                                    setQuickEditingMovieTitle(null);
+                                  }}
+                                  className="p-1 rounded bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer border-0"
+                                  title="Save rating"
+                                >
+                                  <Check className="w-2.5 h-2.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setQuickEditingMovieTitle(null)}
+                                  className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white cursor-pointer border-0"
+                                  title="Cancel"
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setQuickEditingMovieTitle(m.title);
+                                    setQuickRatingValue(formatRating(m.rating, "9.0/10"));
+                                    setQuickVotesValue(m.votes ? String(m.votes) : "2.5K+ Votes");
+                                  }}
+                                  className="flex items-center gap-1 text-[9px] font-bold text-gold font-mono bg-gold/10 hover:bg-gold/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors border border-gold/20 group/rate"
+                                  title="Click to edit audience rating directly"
+                                >
+                                  <Star className="w-2.5 h-2.5 fill-gold text-gold" />
+                                  <span>{formatRating(m.rating, "9.0/10")}</span>
+                                  <span className="text-[8px] text-text-muted font-normal">({m.votes || "2.5K+ Votes"})</span>
+                                  <Edit2 className="w-2 h-2 opacity-60 group-hover/rate:opacity-100 ml-0.5" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveCastCrewModalMovie(m)}
+                                  className="px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-gold text-gold hover:text-black text-[8px] font-bold border border-gold/20 cursor-pointer flex items-center gap-0.5 transition-colors"
+                                  title="Edit Cast Members, Crew, Synopsis & Media"
+                                >
+                                  <Users className="w-2.5 h-2.5" />
+                                  <span>Cast & Crew</span>
+                                </button>
+                              </div>
+                            )}
+
+                            <div className="flex justify-between items-center gap-2 pt-1">
+                              <span className="text-[8.5px] text-text-secondary font-mono">Status Control</span>
+                              <div className="flex gap-1 items-center">
+                                <button
+                                  onClick={() => onToggleMovieActive && onToggleMovieActive(m.title)}
+                                  className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border cursor-pointer transition-colors ${
+                                    m.isActive !== false
+                                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                      : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
+                                  }`}
+                                  title={m.isActive !== false ? "Disable movie booking" : "Enable movie booking"}
+                                >
+                                  {m.isActive !== false ? "ON" : "OFF"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingMovieTitle(m.title);
+                                    setEditingMovieId(m.id ? String(m.id) : null);
+                                    setMovieTitle(m.title);
+                                    setMovieGenre(m.genre);
+                                    setMovieLang(m.lang);
+                                    setMovieLangKey(m.langKey);
+                                    setMovieRating(formatRating(m.rating, "9.0/10"));
+                                    setMovieVotes(m.votes ? String(m.votes) : "2.5K+ Votes");
+                                    setMovieDescription(m.description || "");
+                                    setMovieImg(m.poster || m.img);
+                                    setMovieFormats(m.formats || ["2D"]);
+                                    setMovieActors(m.actors ? (m.actors || []).join(", ") : "");
+                                    setMovieCast(m.castMembers || (Array.isArray(m.cast) && typeof m.cast[0] === "object" ? m.cast as any : []));
+                                    setMovieCrew(m.crewMembers || (Array.isArray(m.crew) && typeof m.crew[0] === "object" ? m.crew as any : []));
+                                    setMovieTrailerUrl(m.trailerUrl || "");
+                                    setMovieDuration(m.duration || "148 mins");
+                                    setMovieCertificate(m.certificate || "UA");
+                                    setMovieDistributor(m.distributor || "");
+                                  }}
+                                  className="p-1 rounded bg-white/5 hover:bg-gold hover:text-black text-text-secondary border-0 cursor-pointer"
+                                  title="Edit full movie specs in form"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Remove "${m.title}" from now showing?`)) {
+                                      onDeleteMovie(m.title);
+                                    }
+                                  }}
+                                  className="p-1 rounded bg-red-500/10 hover:bg-red-500 hover:text-black text-red-400 border border-red-500/10 cursor-pointer"
+                                  title="Remove film"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -9443,6 +9780,21 @@ export default function AdminPanel({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Movie Cast, Crew, Synopsis and Media Editor Modal */}
+          {activeCastCrewModalMovie && (
+            <MovieCastCrewEditorModal
+              isOpen={true}
+              movie={activeCastCrewModalMovie}
+              onClose={() => setActiveCastCrewModalMovie(null)}
+              onSave={(updatedMovie) => {
+                if (onUpdateMovie) {
+                  onUpdateMovie(activeCastCrewModalMovie.title, updatedMovie);
+                }
+                setActiveCastCrewModalMovie(null);
+              }}
+            />
           )}
         </div>
       </div>
