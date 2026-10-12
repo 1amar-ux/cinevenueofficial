@@ -163,12 +163,17 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/events";
             }}
-            className={`px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1.5 whitespace-nowrap ${
               isEventsLive ? "text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
             }`}
           >
-            <span>Events</span>
-            {!isEventsLive && (
+            <span>Event Booking</span>
+            {isEventsLive ? (
+              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.2 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                LIVE
+              </span>
+            ) : (
               <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">OFF</span>
             )}
           </button>

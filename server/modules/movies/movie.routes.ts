@@ -166,9 +166,21 @@ router.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: 
     if (updateData.poster && !updateData.posterUrl) updateData.posterUrl = updateData.poster;
     if (updateData.banner && !updateData.backdropUrl) updateData.backdropUrl = updateData.banner;
 
+    const allowedFields = [
+      'title', 'description', 'posterUrl', 'backdropUrl', 'trailerUrl',
+      'duration', 'rating', 'votes', 'genres', 'languages', 'formats',
+      'status', 'releaseDate', 'isActive'
+    ];
+    const sanitizedData: any = {};
+    for (const key of allowedFields) {
+      if (updateData[key] !== undefined) {
+        sanitizedData[key] = updateData[key];
+      }
+    }
+
     const movie = await prisma.movie.update({
       where: { id: targetId },
-      data: updateData
+      data: sanitizedData
     });
 
     return res.json({

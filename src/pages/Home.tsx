@@ -472,10 +472,73 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <CineVenueLogo size="md" />
         </div>
 
-        {/* Sub-Website Navigation Links: Movie Booking & Events */}
-        <div className="hidden md:flex items-center gap-2 text-xs sm:text-sm font-extrabold uppercase tracking-wide text-gray-950 dark:text-white shrink-0">
-          <button onClick={() => navigate("/booking")} className="whitespace-nowrap rounded-full px-3.5 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎬 Movie Booking</button>
-          <button onClick={() => navigate("/events")} className="whitespace-nowrap rounded-full px-3.5 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer">🎟 Events</button>
+        {/* Sub-Website Navigation Links in Top Bar */}
+        <div className="hidden md:flex items-center gap-1 lg:gap-1.5 xl:gap-2 text-xs xl:text-[13px] font-extrabold uppercase tracking-wide text-gray-950 dark:text-white">
+          <button 
+            onClick={() => navigate("/booking")} 
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+          >
+            <span>🎬 Movie Booking</span>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </button>
+          
+          <button 
+            onClick={() => navigate("/events")} 
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+          >
+            <span>🎟️ Event Booking</span>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </button>
+
+          <button 
+            onClick={() => navigate("/productions")} 
+            className="hidden lg:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+          >
+            <span>🎥 Film Production</span>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </button>
+
+          <button 
+            onClick={() => navigate("/events")} 
+            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+          >
+            <span>🎤 Event Management</span>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </button>
+
+          <button 
+            onClick={() => navigate("/proposals")} 
+            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+          >
+            <span>📢 Brand Publicity</span>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </button>
+
+          <button 
+            onClick={() => navigate("/cinecoins")} 
+            className="hidden 2xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+          >
+            <span>🪙 CineCoins</span>
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -565,11 +628,11 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             {[
               ["Home", "/"],
               ["Movie Booking", "/booking"],
-              ["Events", "/events"],
-              ["Film Production", "/film-production"],
-              ["Event Management", "/event-management"],
-              ["Brand Publicity", "/media-promotions"],
-              ["CineCoins", "/cinecoins"],
+              ["Event Booking", "/events"],
+              ["Film Production", "/productions"],
+              ["Event Management", "/events"],
+              ["Brand Publicity", "/proposals"],
+              ["CineCoins Loyalty", "/cinecoins"],
               ["About", "#contact"],
             ].map(([label, path]) => (
               <button
@@ -583,9 +646,15 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                     navigate(path);
                   }
                 }}
-                className="min-h-11 rounded-xl px-4 text-left transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold"
+                className="min-h-11 rounded-xl px-4 flex items-center justify-between transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold"
               >
-                {label}
+                <span>{label}</span>
+                {path !== "/" && !path.startsWith("#") && (
+                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE
+                  </span>
+                )}
               </button>
             ))}
             <div className="flex items-center justify-between px-3 py-2 border-t border-gray-200 dark:border-white/10 mt-1">
@@ -681,6 +750,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 {/* Live Status Badge */}
                 {(serviceControl?.movieBooking?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : (
@@ -728,6 +798,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 {/* Live Status Badge */}
                 {(serviceControl?.eventBooking?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : (
@@ -747,21 +818,15 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             </div>
             <div className="pt-6">
               <button
-                onClick={() => {
-                  if ((serviceControl?.eventBooking?.status ?? true)) {
-                    navigate("/events");
-                  } else {
-                    navigate("/events");
-                  }
-                }}
-                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer font-bold ${
+                onClick={() => navigate("/events")}
+                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
                   (serviceControl?.eventBooking?.status ?? true)
-                    ? "bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white dark:border-white/10"
-                    : "bg-rose-500/80 hover:bg-rose-600 text-white border-none"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-[#D4AF37] dark:hover:bg-[#E5C158] dark:text-black"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
                 <span>{(serviceControl?.eventBooking?.status ?? true) ? "Explore Live Events" : "Under Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-gray-700 dark:text-[#D4AF37]" />
+                <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -781,6 +846,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 {/* Live Status Badge */}
                 {(serviceControl?.filmProduction?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE • 24 CRAFTS
                   </span>
                 ) : (
@@ -825,6 +891,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 {/* Live Status Badge */}
                 {(serviceControl?.eventManagement?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : (
@@ -883,6 +950,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 {/* Live Status Badge */}
                 {(serviceControl?.brandPromotion?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : (
@@ -910,14 +978,14 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                     navigate("/proposals");
                   }
                 }}
-                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer font-bold ${
+                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
                   (serviceControl?.brandPromotion?.status ?? true)
-                    ? "bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white dark:border-white/10"
-                    : "bg-rose-500/80 hover:bg-rose-600 text-white border-none"
+                    ? "bg-gray-950 hover:bg-black text-white dark:bg-[#D4AF37] dark:hover:bg-[#E5C158] dark:text-black"
+                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
                 <span>{(serviceControl?.brandPromotion?.status ?? true) ? "Explore Publicity Division" : "Under Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-gray-700 dark:text-[#D4AF37]" />
+                <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -933,6 +1001,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 {/* Live Status Badge */}
                 {(serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true) ? (
                   <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : (

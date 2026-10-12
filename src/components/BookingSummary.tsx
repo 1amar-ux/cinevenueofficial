@@ -23,6 +23,24 @@ export default function BookingSummary() {
             <Typography color="text.secondary">Movie:</Typography>
             <Typography sx={{ fontWeight: "medium" }}>{movieTitle}</Typography>
           </Box>
+          {booking.movie?.director && (
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography color="text.secondary">Director:</Typography>
+              <Typography sx={{ fontWeight: "medium", color: "#D4AF37" }}>
+                {booking.movie.director}
+              </Typography>
+            </Box>
+          )}
+          {(booking.movie?.cast || booking.movie?.actors) && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <Typography color="text.secondary">Cast:</Typography>
+              <Typography sx={{ fontWeight: "medium", textAlign: "right", maxWidth: "60%" }}>
+                {Array.isArray(booking.movie.cast || booking.movie.actors)
+                  ? (booking.movie.cast || booking.movie.actors).join(", ")
+                  : (booking.movie.cast || booking.movie.actors)}
+              </Typography>
+            </Box>
+          )}
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography color="text.secondary">Theatre:</Typography>
             <Typography sx={{ fontWeight: "medium" }}>{theatreName}</Typography>

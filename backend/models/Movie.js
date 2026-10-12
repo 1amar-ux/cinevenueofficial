@@ -27,6 +27,17 @@ const movieSchema = new mongoose.Schema(
     certificate: String,
     poster: String,
     trailer: String,
+    cast: [
+      {
+        type: String,
+      },
+    ],
+    actors: [
+      {
+        type: String,
+      },
+    ],
+    director: String,
     rating: {
       type: Number,
       default: 0,
