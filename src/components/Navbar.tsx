@@ -145,9 +145,15 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#movies";
             }}
-            className="px-4.5 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-gray-950 text-white dark:bg-white dark:text-black shadow-md whitespace-nowrap"
+            className="px-4.5 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-gray-950 text-white dark:bg-white dark:text-black shadow-md whitespace-nowrap flex items-center gap-1.5"
           >
-            Movies
+            <span>Movies</span>
+            {isMovieBookingLive && (
+              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-emerald-400 bg-emerald-400/20 px-1.5 py-0.2 rounded-full border border-emerald-400/30 font-mono">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                LIVE
+              </span>
+            )}
           </button>
 
           <button
