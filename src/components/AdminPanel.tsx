@@ -4502,42 +4502,6 @@ export default function AdminPanel({
                       </div>
                     ))}
                   </div>
-
-                  {/* Movie Comprehensive Analytics & Performance Dashboard Modal (Direct in Catalog View) */}
-                  {activeDashboardMovie && (
-                    <MovieDashboardModal
-                      isOpen={true}
-                      movie={activeDashboardMovie}
-                      onClose={() => setActiveDashboardMovie(null)}
-                      bookings={bookings}
-                      theatres={theatres}
-                      schedules={schedules}
-                      onOpenCastCrewEditor={(m) => {
-                        setActiveCastCrewModalMovie(m);
-                      }}
-                      onEditMovieSpecs={(m) => {
-                        setActiveDashboardMovie(null);
-                        setEditingMovieTitle(m.title);
-                        setEditingMovieId(m.id ? String(m.id) : null);
-                        setMovieTitle(m.title);
-                        setMovieGenre(m.genre);
-                        setMovieLang(m.lang);
-                        setMovieLangKey(m.langKey);
-                        setMovieRating(formatRating(m.rating, "9.0/10"));
-                        setMovieVotes(m.votes ? String(m.votes) : "2.5K+ Votes");
-                        setMovieDescription(m.description || "");
-                        setMovieImg(m.poster || m.img);
-                        setMovieFormats(m.formats || ["2D"]);
-                        setMovieActors(m.actors ? (m.actors || []).join(", ") : "");
-                        setMovieCast(m.castMembers || (Array.isArray(m.cast) && typeof m.cast[0] === "object" ? m.cast as any : []));
-                        setMovieCrew(m.crewMembers || (Array.isArray(m.crew) && typeof m.crew[0] === "object" ? m.crew as any : []));
-                        setMovieTrailerUrl(m.trailerUrl || "");
-                        setMovieDuration(m.duration || "148 mins");
-                        setMovieCertificate(m.certificate || "UA");
-                        setMovieDistributor(m.distributor || "");
-                      }}
-                    />
-                  )}
                 </div>
               </div>
             </div>
