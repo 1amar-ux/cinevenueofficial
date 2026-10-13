@@ -4483,11 +4483,61 @@ export default function AdminPanel({
                                 </button>
                               </div>
                             </div>
+
+                            {/* Direct Primary Movie Dashboard Trigger Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDashboardMovie(m);
+                              }}
+                              className="w-full mt-2 py-1.5 px-2 rounded-lg bg-gold/15 hover:bg-gold text-gold hover:text-black text-[9px] font-bold border border-gold/30 cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm group/dashbtn"
+                              title={`Open Movie Dashboard for ${m.title} (Description, Rating, Casting, Sales, Saled Tickets)`}
+                            >
+                              <BarChart3 className="w-3 h-3 text-gold group-hover/dashbtn:text-black transition-colors" />
+                              <span>View Movie Dashboard & Sales</span>
+                            </button>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* Movie Comprehensive Analytics & Performance Dashboard Modal (Direct in Catalog View) */}
+                  {activeDashboardMovie && (
+                    <MovieDashboardModal
+                      isOpen={true}
+                      movie={activeDashboardMovie}
+                      onClose={() => setActiveDashboardMovie(null)}
+                      bookings={bookings}
+                      theatres={theatres}
+                      schedules={schedules}
+                      onOpenCastCrewEditor={(m) => {
+                        setActiveCastCrewModalMovie(m);
+                      }}
+                      onEditMovieSpecs={(m) => {
+                        setActiveDashboardMovie(null);
+                        setEditingMovieTitle(m.title);
+                        setEditingMovieId(m.id ? String(m.id) : null);
+                        setMovieTitle(m.title);
+                        setMovieGenre(m.genre);
+                        setMovieLang(m.lang);
+                        setMovieLangKey(m.langKey);
+                        setMovieRating(formatRating(m.rating, "9.0/10"));
+                        setMovieVotes(m.votes ? String(m.votes) : "2.5K+ Votes");
+                        setMovieDescription(m.description || "");
+                        setMovieImg(m.poster || m.img);
+                        setMovieFormats(m.formats || ["2D"]);
+                        setMovieActors(m.actors ? (m.actors || []).join(", ") : "");
+                        setMovieCast(m.castMembers || (Array.isArray(m.cast) && typeof m.cast[0] === "object" ? m.cast as any : []));
+                        setMovieCrew(m.crewMembers || (Array.isArray(m.crew) && typeof m.crew[0] === "object" ? m.crew as any : []));
+                        setMovieTrailerUrl(m.trailerUrl || "");
+                        setMovieDuration(m.duration || "148 mins");
+                        setMovieCertificate(m.certificate || "UA");
+                        setMovieDistributor(m.distributor || "");
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </div>

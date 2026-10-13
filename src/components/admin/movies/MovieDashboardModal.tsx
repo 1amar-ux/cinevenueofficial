@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { createPortal } from "react-dom";
 import {
   X,
   Star,
@@ -236,13 +235,13 @@ export default function MovieDashboardModal({
     movie.description ||
     `Experience the cinematic spectacle of ${movie.title}. Featuring grand visual design, compelling character arcs, and world-class theatrical sound dynamics. Now playing across premier partner screens.`;
 
-  const modalContent = (
+  return (
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-[#0D0D11] border border-gold/40 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl shadow-black/90 overflow-hidden text-white relative"
+        className="bg-[#0D0D11] border border-gold/40 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl shadow-black/90 overflow-hidden text-white relative my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* TOP GLOW ACCENT BAR */}
@@ -982,9 +981,4 @@ export default function MovieDashboardModal({
       </div>
     </div>
   );
-
-  if (typeof document !== "undefined") {
-    return createPortal(modalContent, document.body);
-  }
-  return modalContent;
 }

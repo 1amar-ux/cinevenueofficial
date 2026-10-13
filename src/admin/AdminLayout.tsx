@@ -2511,6 +2511,19 @@ export default function AdminLayout() {
                           );
                         })}
                     </div>
+
+                    {/* Movie Analytics & Performance Dashboard Modal (Direct in Catalog View) */}
+                    {selectedDashboardMovie && (
+                      <MovieDashboardModal
+                        isOpen={true}
+                        movie={selectedDashboardMovie}
+                        onClose={() => setSelectedDashboardMovie(null)}
+                        bookings={bookings}
+                        theatres={theatres}
+                        schedules={schedules}
+                        onOpenCastCrewEditor={(m) => setEditingMovieForCastCrew(m)}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
