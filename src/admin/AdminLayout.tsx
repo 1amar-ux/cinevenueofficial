@@ -52,7 +52,7 @@ import {
   Clapperboard,
   Sparkles,
   UserCheck,
-  Users
+  BarChart3
 } from "lucide-react";
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin, CastMember, CrewMember } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
@@ -61,6 +61,7 @@ import IntegrationTestingModule from "../components/admin/integration-testing/In
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
 import MovieCastCrewEditorModal from "../components/admin/movies/MovieCastCrewEditorModal";
+import MovieDashboardModal from "../components/admin/movies/MovieDashboardModal";
 import CloudinaryPhotoUploader from "../components/admin/common/CloudinaryPhotoUploader";
 import { getCloudinaryConfig, saveCloudinaryConfig, testCloudinaryConnection } from "../services/cloudinaryService";
 import EmployeeManagementModule from "../components/admin/employees/EmployeeManagementModule";
@@ -414,6 +415,7 @@ export default function AdminLayout() {
   // Video Manager & Movie Release Window states
   const [selectedMovieForVideos, setSelectedMovieForVideos] = useState<Movie | null>(null);
   const [editingMovieForCastCrew, setEditingMovieForCastCrew] = useState<Movie | null>(null);
+  const [selectedDashboardMovie, setSelectedDashboardMovie] = useState<Movie | null>(null);
 
   // New interactive states for superadmin features
   const [editingAdminEmail, setEditingAdminEmail] = useState<string | null>(null);
@@ -2351,12 +2353,17 @@ export default function AdminLayout() {
                           const isEditingRating = quickEditingRatingMovie === m.title;
 
                           return (
-                            <div key={m.title} className="bg-white/[0.01] border border-white/5 rounded-2xl p-3.5 flex flex-col justify-between space-y-3">
+                            <div 
+                              key={m.title} 
+                              onClick={() => setSelectedDashboardMovie(m)}
+                              className="bg-white/[0.01] hover:bg-white/[0.03] border border-white/5 hover:border-gold/30 rounded-2xl p-3.5 flex flex-col justify-between space-y-3 cursor-pointer transition-all group/card shadow-sm hover:shadow-md"
+                              title={`Click to open Movie Dashboard for ${m.title} (Description, Rating, Casting, Sales, Tickets)`}
+                            >
                               <div className="flex gap-3">
-                                <img src={m.img || m.poster} className="w-20 h-28 object-cover rounded-xl shrink-0 border border-white/10" alt={m.title} />
+                                <img src={m.img || m.poster} className="w-20 h-28 object-cover rounded-xl shrink-0 border border-white/10 group-hover/card:scale-105 group-hover/card:border-gold/40 transition-all" alt={m.title} />
                                 <div className="space-y-1.5 flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <h4 className="font-bold text-white text-xs truncate">{m.title}</h4>
+                                  <div className="flex items-center gap-1.5 justify-between">
+                                    <h4 className="font-bold text-white text-xs truncate group-hover/card:text-gold transition-colors">{m.title}</h4>
                                     <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 shrink-0">
                                       {m.id || `MOV-${String(idx + 1).padStart(3, "0")}`}
                                     </span>
@@ -2370,7 +2377,10 @@ export default function AdminLayout() {
 
                                   {/* Direct Audience Rating Score & Edit Access */}
                                   {isEditingRating ? (
-                                    <div className="pt-1 flex items-center gap-1 bg-black/80 p-1.5 rounded-lg border border-gold/40">
+                                    <div 
+                                      className="pt-1 flex items-center gap-1 bg-black/80 p-1.5 rounded-lg border border-gold/40"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
                                       <input
                                         type="text"
@@ -2388,7 +2398,10 @@ export default function AdminLayout() {
                                       />
                                       <button
                                         type="button"
-                                        onClick={() => handleSaveQuickRating(m.title)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSaveQuickRating(m.title);
+                                        }}
                                         className="p-1 rounded bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer"
                                         title="Save rating"
                                       >
@@ -2396,7 +2409,10 @@ export default function AdminLayout() {
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => setQuickEditingRatingMovie(null)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setQuickEditingRatingMovie(null);
+                                        }}
                                         className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white cursor-pointer"
                                         title="Cancel"
                                       >
@@ -2407,7 +2423,8 @@ export default function AdminLayout() {
                                     <div className="pt-1 flex items-center gap-2">
                                       <button
                                         type="button"
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           setQuickEditingRatingMovie(m.title);
                                           setQuickRatingValue(formatRating(m.rating, "9.0/10"));
                                           setQuickVotesValue(m.votes ? String(m.votes) : "2.5K+ Votes");
@@ -2427,6 +2444,7 @@ export default function AdminLayout() {
                                   <div className="pt-1">
                                     <select
                                       value={currentStatus}
+                                      onClick={(e) => e.stopPropagation()}
                                       onChange={(e) => handleUpdateMovieReleaseStatus(m.title, e.target.value as any)}
                                       className="bg-black/60 border border-white/10 text-gold text-[10px] font-bold rounded-lg px-2 py-1 focus:outline-none"
                                     >
@@ -2438,11 +2456,27 @@ export default function AdminLayout() {
                                 </div>
                               </div>
 
-                              {/* Movie Actions (Cast & Story, Trailers, Delete) */}
+                              {/* Movie Actions (Dashboard, Cast & Story, Trailers, Delete) */}
                               <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() => setEditingMovieForCastCrew(m)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedDashboardMovie(m);
+                                  }}
+                                  className="py-1.5 px-2 bg-gold/15 hover:bg-gold text-gold hover:text-black border border-gold/30 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                  title="Open Movie Analytics Dashboard"
+                                >
+                                  <BarChart3 className="w-3.5 h-3.5" />
+                                  <span>Dashboard</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingMovieForCastCrew(m);
+                                  }}
                                   className="flex-1 py-1.5 px-2 bg-white/5 hover:bg-[#eb4e62] hover:text-white border border-white/10 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                   <Users className="w-3.5 h-3.5 text-[#eb4e62]" />
@@ -2451,7 +2485,10 @@ export default function AdminLayout() {
 
                                 <button
                                   type="button"
-                                  onClick={() => setSelectedMovieForVideos(m)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedMovieForVideos(m);
+                                  }}
                                   className="py-1.5 px-2 bg-gold/10 hover:bg-gold hover:text-black border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                   <Video className="w-3.5 h-3.5" />
@@ -2460,7 +2497,10 @@ export default function AdminLayout() {
 
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteMovie(m.title)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteMovie(m.title);
+                                  }}
                                   title="Delete Movie"
                                   className="p-1.5 bg-red-500/10 hover:bg-red-500 hover:text-black border border-red-500/10 text-red-400 rounded-xl transition-colors cursor-pointer"
                                 >
@@ -3627,6 +3667,19 @@ export default function AdminLayout() {
           movie={editingMovieForCastCrew}
           onClose={() => setEditingMovieForCastCrew(null)}
           onSave={handleSaveMovieCastCrew}
+        />
+      )}
+
+      {/* Movie Analytics & Performance Dashboard Modal */}
+      {selectedDashboardMovie && (
+        <MovieDashboardModal
+          isOpen={true}
+          movie={selectedDashboardMovie}
+          onClose={() => setSelectedDashboardMovie(null)}
+          bookings={bookings}
+          theatres={theatres}
+          schedules={schedules}
+          onOpenCastCrewEditor={(m) => setEditingMovieForCastCrew(m)}
         />
       )}
     </div>

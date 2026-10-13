@@ -14,7 +14,9 @@
     "test": "tsx tests/runner.ts",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
-    "build:apk": "npm run build && cap sync android"
+    "build:apk": "npm run build && cap sync android",
+    "build:aab": "npm run build && cap sync android",
+    "bundle:release": "npm run build && cap sync android && cd android && gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

@@ -1,5 +1,23 @@
 apply plugin: 'com.android.application'
 
+// Resolve release signing properties from local untracked keystore.properties or environment variables
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (!keystorePropertiesFile.exists()) {
+    keystorePropertiesFile = file('keystore.properties')
+}
+
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def releaseStoreFile = keystoreProperties['storeFile'] ?: System.getenv("KEYSTORE_FILE")
+def releaseStorePassword = keystoreProperties['storePassword'] ?: System.getenv("KEYSTORE_PASSWORD")
+def releaseKeyAlias = keystoreProperties['keyAlias'] ?: System.getenv("KEY_ALIAS")
+def releaseKeyPassword = keystoreProperties['keyPassword'] ?: System.getenv("KEY_PASSWORD")
+
+def isReleaseSigningConfigured = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace = "com.cinevenue.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +34,45 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (isReleaseSigningConfigured) {
+                def kFile = file(releaseStoreFile)
+                if (!kFile.exists() && rootProject.file(releaseStoreFile).exists()) {
+                    kFile = rootProject.file(releaseStoreFile)
+                }
+                storeFile kFile
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (isReleaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+// Safety check: ensure missing signing credentials do not silently produce an unsigned release bundle
+tasks.configureEach { task ->
+    if (task.name == 'bundleRelease' || task.name == 'assembleRelease') {
+        task.doFirst {
+            if (!isReleaseSigningConfigured) {
+                throw new GradleException(
+                    "\n========================================================================\n" +
+                    "RELEASE BUILD ERROR: Release signing credentials are not configured!\n" +
+                    "To generate a signed release bundle (.aab), please either:\n" +
+                    " 1. Create 'android/keystore.properties' (see 'android/keystore.properties.example')\n" +
+                    " 2. Set environment variables: KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD\n" +
+                    "========================================================================\n"
+                )
+            }
         }
     }
 }

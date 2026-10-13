@@ -9,11 +9,12 @@ import {
   Sparkles, Clock, DollarSign, CalendarRange, Wallet, CheckCircle, Ticket, 
   Layers, Users, LayoutDashboard, Bell, LogOut, Search, Menu, Monitor, QrCode, 
   Play, Pause, RotateCcw, Thermometer, Volume2, ArrowLeft, Edit, Shield, Lock, 
-  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck, Star, Edit2
+  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck, Star, Edit2, BarChart3
 } from "lucide-react";
 import EmployeeManagementModule from "./admin/employees/EmployeeManagementModule";
 import CloudinaryPhotoUploader from "./admin/common/CloudinaryPhotoUploader";
 import MovieCastCrewEditorModal from "./admin/movies/MovieCastCrewEditorModal";
+import MovieDashboardModal from "./admin/movies/MovieDashboardModal";
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
 import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CastMember, CrewMember } from "../types";
 import { DEFAULT_CINECOINS_SETTINGS } from "../data";
@@ -860,6 +861,7 @@ export default function AdminPanel({
 
   // Detailed Modal editing
   const [activeCastCrewModalMovie, setActiveCastCrewModalMovie] = useState<Movie | null>(null);
+  const [activeDashboardMovie, setActiveDashboardMovie] = useState<Movie | null>(null);
 
   // State: Event Management & Client Requests
   const [adminEventRequests, setAdminEventRequests] = useState<EventManagementRequest[]>(() => { try { const raw = localStorage.getItem("cine_event_requests") || localStorage.getItem("cinevenue_event_requests"); if (raw) return JSON.parse(raw); } catch (e) {} return INITIAL_EVENT_MANAGEMENT_REQUESTS; });
@@ -4255,16 +4257,29 @@ export default function AdminPanel({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {movies.map((m) => (
-                      <div key={m.title} className="bg-[#121215] border border-white/5 p-3 rounded-lg flex gap-3 relative hover:border-white/10 transition-colors">
+                      <div 
+                        key={m.title} 
+                        onClick={() => setActiveDashboardMovie(m)}
+                        className="bg-[#121215] border border-white/5 hover:border-gold/40 hover:bg-[#15151a] p-3 rounded-lg flex gap-3 relative transition-all cursor-pointer group/card shadow-sm hover:shadow-md"
+                        title={`Click to open Movie Dashboard for ${m.title} (Description, Rating, Casting, Sales, Tickets)`}
+                      >
                         <img 
                           src={m.img} 
                           alt={m.title} 
-                          className="w-16 h-22 object-cover rounded bg-white/5 shrink-0" 
+                          className="w-16 h-22 object-cover rounded bg-white/5 shrink-0 group-hover/card:scale-[1.03] group-hover/card:border-gold/40 border border-transparent transition-all" 
                           referrerPolicy="no-referrer"
                         />
                         <div className="flex flex-col justify-between text-xs min-w-0 flex-1">
                           <div className="space-y-1">
-                            <p className="font-bold text-text-primary truncate block" title={m.title}>{m.title}</p>
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="font-bold text-text-primary group-hover/card:text-gold truncate block transition-colors" title={m.title}>
+                                {m.title}
+                              </p>
+                              <span className="text-[7.5px] font-bold uppercase tracking-wider text-gold bg-gold/10 px-1 py-0.2 rounded border border-gold/20 shrink-0 font-mono flex items-center gap-0.5">
+                                <BarChart3 className="w-2 h-2" />
+                                <span>Stats</span>
+                              </span>
+                            </div>
                             <p className="text-[10px] text-text-secondary">{m.genre} · {m.lang}</p>
                             
                             {/* Display Formats & Trailer & Actors */}
@@ -4301,6 +4316,7 @@ export default function AdminPanel({
                                   href={m.trailerUrl} 
                                   target="_blank" 
                                   rel="noopener noreferrer" 
+                                  onClick={(e) => e.stopPropagation()}
                                   className="text-[8px] text-blue-400 hover:underline block truncate"
                                 >
                                   🎥 Watch Trailer
@@ -4310,7 +4326,10 @@ export default function AdminPanel({
                           </div>
                           <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-white/5">
                             {quickEditingMovieTitle === m.title ? (
-                              <div className="flex items-center gap-1 bg-black/90 p-1 rounded-md border border-gold/40">
+                              <div 
+                                className="flex items-center gap-1 bg-black/90 p-1 rounded-md border border-gold/40"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
                                 <input 
                                   type="text"
@@ -4328,7 +4347,8 @@ export default function AdminPanel({
                                 />
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     const formatted = formatRating(quickRatingValue, "9.0/10");
                                     if (onUpdateMovie) {
                                       onUpdateMovie(m.title, {
@@ -4346,7 +4366,10 @@ export default function AdminPanel({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setQuickEditingMovieTitle(null)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setQuickEditingMovieTitle(null);
+                                  }}
                                   className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white cursor-pointer border-0"
                                   title="Cancel"
                                 >
@@ -4354,10 +4377,11 @@ export default function AdminPanel({
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
+                              <div className="flex justify-between items-center gap-1 flex-wrap">
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setQuickEditingMovieTitle(m.title);
                                     setQuickRatingValue(formatRating(m.rating, "9.0/10"));
                                     setQuickVotesValue(m.votes ? String(m.votes) : "2.5K+ Votes");
@@ -4371,15 +4395,33 @@ export default function AdminPanel({
                                   <Edit2 className="w-2 h-2 opacity-60 group-hover/rate:opacity-100 ml-0.5" />
                                 </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveCastCrewModalMovie(m)}
-                                  className="px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-gold text-gold hover:text-black text-[8px] font-bold border border-gold/20 cursor-pointer flex items-center gap-0.5 transition-colors"
-                                  title="Edit Cast Members, Crew, Synopsis & Media"
-                                >
-                                  <Users className="w-2.5 h-2.5" />
-                                  <span>Cast & Crew</span>
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveDashboardMovie(m);
+                                    }}
+                                    className="px-1.5 py-0.5 rounded bg-gold/15 hover:bg-gold text-gold hover:text-black text-[8px] font-bold border border-gold/30 cursor-pointer flex items-center gap-0.5 transition-colors"
+                                    title="Open Movie Analytics Dashboard (Sales, Saled Tickets, Description, Cast)"
+                                  >
+                                    <BarChart3 className="w-2.5 h-2.5" />
+                                    <span>Dashboard</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveCastCrewModalMovie(m);
+                                    }}
+                                    className="px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-gold text-gold hover:text-black text-[8px] font-bold border border-gold/20 cursor-pointer flex items-center gap-0.5 transition-colors"
+                                    title="Edit Cast Members, Crew, Synopsis & Media"
+                                  >
+                                    <Users className="w-2.5 h-2.5" />
+                                    <span>Cast & Crew</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
 
@@ -4387,7 +4429,10 @@ export default function AdminPanel({
                               <span className="text-[8.5px] text-text-secondary font-mono">Status Control</span>
                               <div className="flex gap-1 items-center">
                                 <button
-                                  onClick={() => onToggleMovieActive && onToggleMovieActive(m.title)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleMovieActive && onToggleMovieActive(m.title);
+                                  }}
                                   className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border cursor-pointer transition-colors ${
                                     m.isActive !== false
                                       ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
@@ -4398,7 +4443,8 @@ export default function AdminPanel({
                                   {m.isActive !== false ? "ON" : "OFF"}
                                 </button>
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setEditingMovieTitle(m.title);
                                     setEditingMovieId(m.id ? String(m.id) : null);
                                     setMovieTitle(m.title);
@@ -4424,7 +4470,8 @@ export default function AdminPanel({
                                   <Edit className="w-3 h-3" />
                                 </button>
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     if (confirm(`Remove "${m.title}" from now showing?`)) {
                                       onDeleteMovie(m.title);
                                     }
@@ -9793,6 +9840,42 @@ export default function AdminPanel({
                   onUpdateMovie(activeCastCrewModalMovie.title, updatedMovie);
                 }
                 setActiveCastCrewModalMovie(null);
+              }}
+            />
+          )}
+
+          {/* Movie Comprehensive Analytics & Performance Dashboard Modal */}
+          {activeDashboardMovie && (
+            <MovieDashboardModal
+              isOpen={true}
+              movie={activeDashboardMovie}
+              onClose={() => setActiveDashboardMovie(null)}
+              bookings={bookings}
+              theatres={theatres}
+              schedules={schedules}
+              onOpenCastCrewEditor={(m) => {
+                setActiveCastCrewModalMovie(m);
+              }}
+              onEditMovieSpecs={(m) => {
+                setActiveDashboardMovie(null);
+                setEditingMovieTitle(m.title);
+                setEditingMovieId(m.id ? String(m.id) : null);
+                setMovieTitle(m.title);
+                setMovieGenre(m.genre);
+                setMovieLang(m.lang);
+                setMovieLangKey(m.langKey);
+                setMovieRating(formatRating(m.rating, "9.0/10"));
+                setMovieVotes(m.votes ? String(m.votes) : "2.5K+ Votes");
+                setMovieDescription(m.description || "");
+                setMovieImg(m.poster || m.img);
+                setMovieFormats(m.formats || ["2D"]);
+                setMovieActors(m.actors ? (m.actors || []).join(", ") : "");
+                setMovieCast(m.castMembers || (Array.isArray(m.cast) && typeof m.cast[0] === "object" ? m.cast as any : []));
+                setMovieCrew(m.crewMembers || (Array.isArray(m.crew) && typeof m.crew[0] === "object" ? m.crew as any : []));
+                setMovieTrailerUrl(m.trailerUrl || "");
+                setMovieDuration(m.duration || "148 mins");
+                setMovieCertificate(m.certificate || "UA");
+                setMovieDistributor(m.distributor || "");
               }}
             />
           )}
