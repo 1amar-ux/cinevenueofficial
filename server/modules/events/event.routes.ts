@@ -134,6 +134,114 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// 1.5 Get Confirmed Event Pass Details by Pass Code / Verification ID
+router.get("/pass/:passCode", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { passCode } = req.params;
+    const cleanCode = passCode.trim();
+
+    let reg = await prisma.eventRegistration.findFirst({
+      where: {
+        OR: [
+          { passCode: cleanCode },
+          { id: cleanCode }
+        ]
+      },
+      include: {
+        event: {
+          include: { ticketTypes: true }
+        },
+        user: true
+      }
+    });
+
+    if (!reg) {
+      try {
+        const { supabaseAdmin } = await import("../../config/supabaseAdmin");
+        const { data: dbReg } = await supabaseAdmin
+          .from("EventRegistration")
+          .select("*, Event(*)")
+          .or(`passCode.eq.${cleanCode},id.eq.${cleanCode}`)
+          .maybeSingle();
+
+        if (dbReg) {
+          reg = dbReg as any;
+        }
+      } catch (sbErr) {}
+    }
+
+    if (!reg) {
+      return res.status(404).json({
+        success: false,
+        message: "No active event pass found matching this verification code."
+      });
+    }
+
+    const event = (reg as any).event || {};
+    const attendee = (reg as any).user || {};
+    const passObj = {
+      id: reg.passCode || reg.id,
+      passCode: reg.passCode || reg.id,
+      orderId: (reg as any).orderId || `CV-ORDER-2026-${(reg.passCode || reg.id).slice(-6)}`,
+      eventId: reg.eventId,
+      eventTitle: event.title || "Live Event",
+      eventDate: event.date || "2026-10-18",
+      eventTime: event.time || "06:30 PM",
+      venueName: event.venue || "Convention Arena",
+      city: event.city || "Hyderabad",
+      bannerUrl: event.bannerUrl || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
+      ticketTypeName: (reg as any).ticketTypeName || "VIP PASS",
+      ticketCount: reg.ticketCount || 1,
+      primaryAttendee: {
+        name: attendee.name || "Attendee",
+        email: attendee.email || "guest@cinevenue.in",
+        phone: attendee.mobile || ""
+      },
+      pricing: {
+        finalAmount: Number(reg.totalAmount) || 0
+      },
+      totalPrice: Number(reg.totalAmount) || 0,
+      price: Number(reg.totalAmount) || 0,
+      status: reg.status || "CONFIRMED",
+      qrCodePayload: reg.passCode || reg.id
+    };
+
+    return res.json({
+      success: true,
+      data: passObj
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 1.6 Reset / Clear Registrations for Event (useful for test events like example1)
+router.post("/:id/reset-bookings", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.eventRegistration.deleteMany({
+      where: {
+        OR: [
+          { eventId: id },
+          { event: { title: id } }
+        ]
+      }
+    }).catch(() => {});
+
+    try {
+      const { supabaseAdmin } = await import("../../config/supabaseAdmin");
+      await supabaseAdmin.from("EventRegistration").delete().eq("eventId", id);
+    } catch (e) {}
+
+    return res.json({
+      success: true,
+      message: `All test registrations for event ${id} have been cleared.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // 2. Get Event Details
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {

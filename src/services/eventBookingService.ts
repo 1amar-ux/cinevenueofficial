@@ -1377,10 +1377,51 @@ export function getBookings(userEmail?: string): EventBookingRecord[] {
     saveStorage(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
     allBookings = INITIAL_BOOKINGS;
   }
+
+  // Ensure example1 test bookings are reset to 0 as requested
+  const hasExample1Test = allBookings.some(
+    (b) => b.eventId === 'CV-EVT-2026-2299' || b.eventTitle?.toLowerCase() === 'example1'
+  );
+  if (hasExample1Test) {
+    allBookings = allBookings.filter(
+      (b) => b.eventId !== 'CV-EVT-2026-2299' && b.eventTitle?.toLowerCase() !== 'example1'
+    );
+    saveStorage(STORAGE_KEYS.BOOKINGS, allBookings);
+  }
+
   if (!userEmail) return allBookings;
   return allBookings.filter(
     (b) => b.primaryAttendee.email.toLowerCase() === userEmail.toLowerCase()
   );
+}
+
+export function deleteEventBooking(bookingId: string): boolean {
+  let allBookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
+  const clean = bookingId.trim().toUpperCase();
+  allBookings = allBookings.filter(
+    (b) => b.id.toUpperCase() !== clean && b.passCode.toUpperCase() !== clean && getBookingPassId(b).toUpperCase() !== clean
+  );
+  saveStorage(STORAGE_KEYS.BOOKINGS, allBookings);
+  return true;
+}
+
+export function clearEventBookings(eventIdOrTitle: string): boolean {
+  let allBookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
+  const clean = eventIdOrTitle.trim().toLowerCase();
+  allBookings = allBookings.filter(
+    (b) => b.eventId?.toLowerCase() !== clean && b.eventTitle?.toLowerCase() !== clean
+  );
+  saveStorage(STORAGE_KEYS.BOOKINGS, allBookings);
+  return true;
+}
+
+export function saveConfirmedEventBooking(booking: EventBookingRecord): void {
+  let allBookings = loadStorage<EventBookingRecord[]>(STORAGE_KEYS.BOOKINGS, []);
+  const exists = allBookings.some((b) => b.id === booking.id || b.passCode === booking.passCode);
+  if (!exists) {
+    allBookings = [booking, ...allBookings];
+    saveStorage(STORAGE_KEYS.BOOKINGS, allBookings);
+  }
 }
 
 export function getBookingById(bookingId: string): EventBookingRecord | undefined {
@@ -1574,7 +1615,21 @@ export function findBookingByIdentifier(identifier: string): EventBookingRecord 
   );
   if (target) return target;
 
-  // 3. Sub-pass match
+  // 3. URL match (e.g., https://cinevenue.com/events/pass/CV-EVT-2026-000184 or ?pass=...)
+  const urlMatch = identifier.match(/(?:pass|ticket|booking)(?:=|\/)([A-Za-z0-9_-]+)/i);
+  if (urlMatch && urlMatch[1]) {
+    const extracted = urlMatch[1].trim().toUpperCase();
+    target = bookings.find(
+      (b) =>
+        b.passCode.toUpperCase() === extracted ||
+        getBookingPassId(b).toUpperCase() === extracted ||
+        b.id.toUpperCase() === extracted ||
+        (b.orderId && b.orderId.toUpperCase() === extracted)
+    );
+    if (target) return target;
+  }
+
+  // 4. Sub-pass match
   target = bookings.find((b) =>
     b.passes?.some(
       (p) =>
@@ -1585,7 +1640,7 @@ export function findBookingByIdentifier(identifier: string): EventBookingRecord 
   );
   if (target) return target;
 
-  // 4. JSON / URL encoded QR match
+  // 5. JSON / URL encoded QR match
   try {
     const parsed = JSON.parse(identifier);
     if (parsed.code) {

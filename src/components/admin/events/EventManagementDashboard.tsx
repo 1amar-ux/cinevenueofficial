@@ -44,7 +44,10 @@ import {
   validateAndCheckInTicket,
   reverseCheckInTicket,
   saveEvent,
+  deleteEventBooking,
+  clearEventBookings,
 } from '../../../services/eventBookingService';
+import apiClient from '../../../services/apiClient';
 import EventShareModal from '../../events/EventShareModal';
 import {
   generateAndDownloadEventPassPdf,
@@ -280,7 +283,33 @@ export default function EventManagementDashboard({
     if (window.confirm(`Are you sure you want to cancel pass ${getBookingPassId(pass)}?`)) {
       pass.bookingStatus = 'Cancelled';
       pass.paymentStatus = 'CANCELLED';
+      const all = getBookings().map(b => b.id === pass.id ? { ...b, bookingStatus: 'Cancelled' as const, paymentStatus: 'CANCELLED' as const } : b);
+      try {
+        localStorage.setItem('cv_event_bookings', JSON.stringify(all));
+      } catch (e) {}
       showToast(`Pass ${getBookingPassId(pass)} marked as Cancelled.`);
+      refreshData();
+    }
+  };
+
+  const handleResetEventBookings = async () => {
+    if (window.confirm(`Are you sure you want to reset all registrations and passes for "${currentEvent.title}" to 0?`)) {
+      clearEventBookings(currentEvent.id);
+      clearEventBookings(currentEvent.title);
+      try {
+        await apiClient.post(`/events/${currentEvent.id}/reset-bookings`);
+      } catch (e) {}
+      showToast(`All registrations for "${currentEvent.title}" have been reset to 0.`);
+      refreshData();
+    }
+  };
+
+  const handleDeletePass = (pass: EventBookingRecord) => {
+    const pId = getBookingPassId(pass);
+    if (window.confirm(`Are you sure you want to permanently delete pass ${pId}? This cannot be undone.`)) {
+      deleteEventBooking(pId);
+      deleteEventBooking(pass.id);
+      showToast(`Pass ${pId} deleted.`);
       refreshData();
     }
   };
@@ -574,6 +603,14 @@ export default function EventManagementDashboard({
               className="px-3.5 py-2 bg-gold hover:bg-gold-light text-black rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-lg"
             >
               <Ticket className="w-4 h-4" /> Passes ({metrics.passesIssued})
+            </button>
+            <button
+              type="button"
+              onClick={handleResetEventBookings}
+              className="px-3 py-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Reset test registrations to 0"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Reset (0)
             </button>
           </div>
         </div>
@@ -1206,12 +1243,19 @@ export default function EventManagementDashboard({
                               {pass.bookingStatus !== 'Cancelled' && (
                                 <button
                                   onClick={() => handleCancelPass(pass)}
-                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400"
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/40 hover:text-amber-400"
                                   title="Cancel Pass"
                                 >
                                   <Ban className="w-3.5 h-3.5" />
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleDeletePass(pass)}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400"
+                                title="Delete Pass"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>

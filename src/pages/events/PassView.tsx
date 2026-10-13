@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getBookingById } from "../../services/eventBookingService";
 import type { EventBookingRecord } from "../../types/eventBooking";
 import LiveEventPassCard from "../../components/events/LiveEventPassCard";
+import apiClient from "../../services/apiClient";
 
 export default function PassView() {
   const { passId } = useParams();
@@ -10,15 +11,31 @@ export default function PassView() {
   const [booking, setBooking] = useState<EventBookingRecord | null>(null);
 
   useEffect(() => {
-    if (passId) {
-      const found = getBookingById(passId);
-      if (found) {
-        setBooking(found);
+    let isMounted = true;
+    const fetchPass = async () => {
+      if (!passId) {
+        setLoading(false);
+        return;
       }
-    }
-    setTimeout(() => {
-      setLoading(false);
-    }, 400);
+      const local = getBookingById(passId);
+      if (local && isMounted) {
+        setBooking(local);
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await apiClient.get<any>(`/events/pass/${encodeURIComponent(passId)}`);
+        if (isMounted && res.data?.success && res.data?.data) {
+          setBooking(res.data.data);
+        }
+      } catch (err) {
+        // Fall back gracefully
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchPass();
+    return () => { isMounted = false; };
   }, [passId]);
 
   if (loading) {
