@@ -3680,6 +3680,27 @@ export default function AdminLayout() {
           theatres={theatres}
           schedules={schedules}
           onOpenCastCrewEditor={(m) => setEditingMovieForCastCrew(m)}
+          onUpdateMovie={(updated) => {
+            const updatedMovies = movies.map((m) => (m.title === updated.title ? updated : m));
+            setMovies(updatedMovies);
+            saveState("cine_movies", updatedMovies);
+            setSelectedDashboardMovie(updated);
+          }}
+          onAddAuditLog={(action) => {
+            setAuditLogs([
+              {
+                timestamp: "Just Now",
+                actor: "superadmin@cinevenue.com",
+                ip: "103.22.41.8",
+                action,
+              },
+              ...auditLogs,
+            ]);
+          }}
+          onEditMovieSpecs={(m) => {
+            setSelectedDashboardMovie(null);
+            setEditingMovieForCastCrew(m);
+          }}
         />
       )}
     </div>

@@ -9870,6 +9870,12 @@ export default function AdminPanel({
               onOpenCastCrewEditor={(m) => {
                 setActiveCastCrewModalMovie(m);
               }}
+              onUpdateMovie={(updated) => {
+                if (onUpdateMovie) {
+                  onUpdateMovie(activeDashboardMovie.title, updated);
+                }
+                setActiveDashboardMovie(updated);
+              }}
               onEditMovieSpecs={(m) => {
                 setActiveDashboardMovie(null);
                 setEditingMovieTitle(m.title);
