@@ -1,5 +1,11 @@
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
@@ -47,6 +53,11 @@ var init_env = __esm({
       SUPABASE_ANON_KEY: z.string().optional(),
       SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
       SUPABASE_SECRET_KEY: z.string().optional(),
+      // Cloudinary Cloud Media Gateway
+      CLOUDINARY_CLOUD_NAME: z.string().optional(),
+      CLOUDINARY_API_KEY: z.string().optional(),
+      CLOUDINARY_API_SECRET: z.string().optional(),
+      CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
       // Email & SMTP Notification Gateway
       SMTP_HOST: z.string().optional(),
       SMTP_PORT: z.union([z.string(), z.number()]).optional().transform((val) => val ? Number(val) : 587),
@@ -2576,9 +2587,31 @@ router2.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req,
     }
     if (updateData.poster && !updateData.posterUrl) updateData.posterUrl = updateData.poster;
     if (updateData.banner && !updateData.backdropUrl) updateData.backdropUrl = updateData.banner;
+    const allowedFields = [
+      "title",
+      "description",
+      "posterUrl",
+      "backdropUrl",
+      "trailerUrl",
+      "duration",
+      "rating",
+      "votes",
+      "genres",
+      "languages",
+      "formats",
+      "status",
+      "releaseDate",
+      "isActive"
+    ];
+    const sanitizedData = {};
+    for (const key of allowedFields) {
+      if (updateData[key] !== void 0) {
+        sanitizedData[key] = updateData[key];
+      }
+    }
     const movie = await prisma.movie.update({
       where: { id: targetId },
-      data: updateData
+      data: sanitizedData
     });
     return res.json({
       success: true,
@@ -5970,7 +6003,10 @@ var cinecoins_routes_default = router7;
 // server/modules/events/event.routes.ts
 init_database();
 import { Router as Router8 } from "express";
+import { randomBytes as randomBytes2 } from "crypto";
+import bcrypt2 from "bcryptjs";
 init_emailService();
+init_logger();
 var router8 = Router8();
 router8.post("/send-pass-email", async (req, res, next) => {
   try {
@@ -6134,10 +6170,166 @@ router8.get("/:id", async (req, res, next) => {
     next(error);
   }
 });
-router8.post("/:id/register", authenticate, async (req, res, next) => {
+router8.post("/:id/create-order", optionalAuthenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { ticketCount = 1, ticketTypeId } = req.body;
+    const { ticketCount = 1, ticketTypeId, customerName, customerEmail, customerPhone } = req.body;
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: { ticketTypes: true }
+    });
+    if (!event) throw new NotFoundError("Event", id);
+    const count = Math.max(1, Number(ticketCount) || 1);
+    const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId) || event.ticketTypes[0];
+    const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price);
+    const totalAmount = unitPrice * count;
+    if (totalAmount <= 0) {
+      return res.json({
+        success: true,
+        isFree: true,
+        amount: 0,
+        amountInINR: 0,
+        message: "Free event registration. No payment required."
+      });
+    }
+    const amountInPaise = Math.round(totalAmount * 100);
+    const orderId = `rzp_evt_${event.id.replace(/[^a-zA-Z0-9]/g, "").slice(-8)}_${Date.now()}`;
+    const rzpOrder = await razorpayService.createOrder({
+      orderId,
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: `rcpt_evt_${Date.now()}`,
+      customerDetails: {
+        customerId: req.user?.userId || `guest_${Date.now()}`,
+        customerName: customerName || "Guest",
+        customerEmail: customerEmail || "guest@cinevenue.in",
+        customerPhone: customerPhone || "9876543210"
+      },
+      notes: {
+        eventId: event.id,
+        eventTitle: event.title,
+        ticketCount: count,
+        ticketTypeId: ticketType?.id || ""
+      }
+    });
+    return res.json({
+      success: true,
+      isFree: false,
+      orderId: rzpOrder.orderId,
+      order_id: rzpOrder.orderId,
+      amount: rzpOrder.amount,
+      amountInINR: rzpOrder.amountInINR,
+      currency: rzpOrder.currency,
+      keyId: rzpOrder.keyId,
+      key_id: rzpOrder.keyId,
+      isTestMode: rzpOrder.isTestMode
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      ticketCount = 1,
+      ticketTypeId,
+      attendeeName,
+      attendeeEmail,
+      attendeeMobile,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    } = req.body;
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: { ticketTypes: true }
+    });
+    if (!event) throw new NotFoundError("Event", id);
+    const count = Math.max(1, Number(ticketCount) || 1);
+    const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId) || event.ticketTypes[0];
+    const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price);
+    const totalAmount = unitPrice * count;
+    if (totalAmount > 0) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        throw new ValidationError("Payment verification requires razorpay_order_id, razorpay_payment_id, and razorpay_signature.");
+      }
+      const verification = razorpayService.verifyPayment({
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      });
+      if (!verification.verified) {
+        logger.error(`[Event Booking Security Alert] Fake or corrupted signature for event ${id}: ${razorpay_order_id}`);
+        throw new PaymentError("Razorpay payment signature verification failed. Booking rejected.", "RAZORPAY_SIGNATURE_INVALID");
+      }
+    }
+    let targetUserId = req.user?.userId;
+    if (!targetUserId) {
+      const email = (attendeeEmail || req.user?.email || "").trim().toLowerCase();
+      if (!email) {
+        throw new ValidationError("Attendee email address is required for event registration.");
+      }
+      let dbUser = await prisma.user.findUnique({ where: { email } });
+      if (!dbUser) {
+        dbUser = await prisma.user.create({
+          data: {
+            email,
+            passwordHash: await bcrypt2.hash(randomBytes2(16).toString("hex"), 10),
+            name: attendeeName?.trim() || "Event Attendee",
+            mobile: attendeeMobile?.trim() || null,
+            role: "CUSTOMER",
+            isVerified: true
+          }
+        });
+      }
+      targetUserId = dbUser.id;
+    }
+    const passCode = `CV-EVT-${Math.floor(1e5 + Math.random() * 9e5)}`;
+    const registration = await prisma.eventRegistration.create({
+      data: {
+        eventId: event.id,
+        userId: targetUserId,
+        ticketCount: count,
+        totalAmount,
+        status: "CONFIRMED",
+        passCode
+      }
+    });
+    sendEventPassEmail({
+      to: attendeeEmail || req.user?.email || "guest@cinevenue.in",
+      passId: passCode,
+      orderId: razorpay_order_id || `CV-FREE-${passCode.slice(-6)}`,
+      eventTitle: event.title,
+      attendeeName: attendeeName || "Valued Guest",
+      venueName: event.venue || "Convention Arena",
+      date: event.date ? new Date(event.date).toLocaleDateString("en-IN") : "Upcoming",
+      time: event.time || "06:30 PM",
+      tier: ticketType?.name || "VIP PASS",
+      totalPrice: totalAmount,
+      isFree: totalAmount === 0
+    }).catch((eErr) => {
+      logger.warn(`[Event Pass Email] Non-fatal notification note: ${eErr.message}`);
+    });
+    return res.status(201).json({
+      success: true,
+      message: "Event pass booked and verified successfully",
+      data: {
+        registration,
+        passCode,
+        orderId: razorpay_order_id || `CV-FREE-${passCode.slice(-6)}`,
+        qrCodePayload: passCode,
+        verified: true
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router8.post("/:id/register", optionalAuthenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { ticketCount = 1, ticketTypeId, razorpay_signature, razorpay_payment_id, razorpay_order_id } = req.body;
     const event = await prisma.event.findUnique({
       where: { id },
       include: { ticketTypes: true }
@@ -6146,11 +6338,53 @@ router8.post("/:id/register", authenticate, async (req, res, next) => {
     const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId) || event.ticketTypes[0];
     const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price);
     const totalAmount = unitPrice * Number(ticketCount);
-    const passCode = `PASS-${Math.floor(1e5 + Math.random() * 9e5)}`;
+    if (totalAmount > 0) {
+      if (!razorpay_signature || !razorpay_payment_id || !razorpay_order_id) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "PAYMENT_REQUIRED",
+            message: "Cannot register for a paid event without a verified Razorpay payment signature."
+          }
+        });
+      }
+      const verification = razorpayService.verifyPayment({
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      });
+      if (!verification.verified) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: "RAZORPAY_SIGNATURE_INVALID",
+            message: "Razorpay signature verification failed. Registration denied."
+          }
+        });
+      }
+    }
+    let targetUserId = req.user?.userId;
+    if (!targetUserId) {
+      const email = (req.body.attendeeEmail || req.user?.email || "guest@cinevenue.in").trim().toLowerCase();
+      let dbUser = await prisma.user.findUnique({ where: { email } });
+      if (!dbUser) {
+        dbUser = await prisma.user.create({
+          data: {
+            email,
+            passwordHash: await bcrypt2.hash(randomBytes2(16).toString("hex"), 10),
+            name: req.body.attendeeName?.trim() || "Guest Attendee",
+            role: "CUSTOMER",
+            isVerified: true
+          }
+        });
+      }
+      targetUserId = dbUser.id;
+    }
+    const passCode = `CV-EVT-${Math.floor(1e5 + Math.random() * 9e5)}`;
     const registration = await prisma.eventRegistration.create({
       data: {
         eventId: event.id,
-        userId: req.user.userId,
+        userId: targetUserId,
         ticketCount: Number(ticketCount),
         totalAmount,
         status: "CONFIRMED",
@@ -6160,7 +6394,7 @@ router8.post("/:id/register", authenticate, async (req, res, next) => {
     return res.status(201).json({
       success: true,
       message: "Event pass booked successfully",
-      data: { registration }
+      data: { registration, passCode, qrCodePayload: passCode }
     });
   } catch (error) {
     next(error);
@@ -8339,11 +8573,57 @@ router11.delete("/events/:eventId", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/uploads/event-poster", (req, res) => {
+var cloudinaryV2 = null;
+try {
+  cloudinaryV2 = __require("cloudinary").v2;
+} catch (e) {
+}
+async function uploadToCloudinaryIfConfigured(dataUrlOrUrl, folder = "cinevenue/general", customConfig) {
+  const cloudName = customConfig?.cloudName || process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = customConfig?.apiKey || process.env.CLOUDINARY_API_KEY;
+  const apiSecret = customConfig?.apiSecret || process.env.CLOUDINARY_API_SECRET;
+  if (cloudinaryV2 && cloudName && apiKey && apiSecret && dataUrlOrUrl && dataUrlOrUrl.startsWith("data:")) {
+    try {
+      cloudinaryV2.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret
+      });
+      const res = await cloudinaryV2.uploader.upload(dataUrlOrUrl, {
+        folder,
+        resource_type: "image"
+      });
+      return {
+        url: res.secure_url,
+        publicId: res.public_id,
+        format: res.format
+      };
+    } catch (err) {
+      console.warn("Cloudinary upload failed on server, falling back:", err?.message || err);
+    }
+  }
+  return null;
+}
+router11.post("/uploads/event-poster", async (req, res) => {
   const body = req.body || {};
-  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
-  const publicId = `poster_${Date.now()}`;
+  const rawImage = body.image || body.url || body.dataUrl || "";
   const alt = body.alt || "Event Poster";
+  if (rawImage) {
+    const cloudRes = await uploadToCloudinaryIfConfigured(rawImage, "cinevenue/events/posters", body.cloudinaryConfig);
+    if (cloudRes) {
+      return res.status(200).json({
+        success: true,
+        message: "Event poster uploaded to Cloudinary successfully",
+        url: cloudRes.url,
+        publicId: cloudRes.publicId,
+        format: cloudRes.format,
+        alt,
+        file: { url: cloudRes.url, publicId: cloudRes.publicId, alt }
+      });
+    }
+  }
+  const url = rawImage || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+  const publicId = `poster_${Date.now()}`;
   return res.status(200).json({
     success: true,
     message: "Event poster processed successfully",
@@ -8353,11 +8633,26 @@ router11.post("/uploads/event-poster", (req, res) => {
     file: { url, publicId, alt }
   });
 });
-router11.post("/uploads/event-banner", (req, res) => {
+router11.post("/uploads/event-banner", async (req, res) => {
   const body = req.body || {};
-  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200";
-  const publicId = `banner_${Date.now()}`;
+  const rawImage = body.image || body.url || body.dataUrl || "";
   const alt = body.alt || "Event Banner";
+  if (rawImage) {
+    const cloudRes = await uploadToCloudinaryIfConfigured(rawImage, "cinevenue/events/banners", body.cloudinaryConfig);
+    if (cloudRes) {
+      return res.status(200).json({
+        success: true,
+        message: "Event banner uploaded to Cloudinary successfully",
+        url: cloudRes.url,
+        publicId: cloudRes.publicId,
+        format: cloudRes.format,
+        alt,
+        file: { url: cloudRes.url, publicId: cloudRes.publicId, alt }
+      });
+    }
+  }
+  const url = rawImage || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200";
+  const publicId = `banner_${Date.now()}`;
   return res.status(200).json({
     success: true,
     message: "Event banner processed successfully",
@@ -8367,11 +8662,27 @@ router11.post("/uploads/event-banner", (req, res) => {
     file: { url, publicId, alt }
   });
 });
-router11.post("/uploads/image", (req, res) => {
+router11.post("/uploads/image", async (req, res) => {
   const body = req.body || {};
-  const url = body.image || body.url || body.dataUrl || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
+  const rawImage = body.image || body.url || body.dataUrl || "";
+  const folder = body.folder || "cinevenue/movies";
+  const alt = body.alt || body.fileName || "Uploaded Image";
+  if (rawImage) {
+    const cloudRes = await uploadToCloudinaryIfConfigured(rawImage, folder, body.cloudinaryConfig);
+    if (cloudRes) {
+      return res.status(200).json({
+        success: true,
+        message: "Image uploaded to Cloudinary successfully",
+        url: cloudRes.url,
+        publicId: cloudRes.publicId,
+        format: cloudRes.format,
+        alt,
+        file: { url: cloudRes.url, publicId: cloudRes.publicId, alt }
+      });
+    }
+  }
+  const url = rawImage || "https://images.unsplash.com/photo-1540039155732-6762b51333fc?auto=format&fit=crop&q=80&w=800";
   const publicId = `img_${Date.now()}`;
-  const alt = body.alt || "Uploaded Image";
   return res.status(200).json({
     success: true,
     message: "Image processed successfully",
@@ -9956,7 +10267,7 @@ adminAdvertisingRouter.get("/reports", (req, res) => {
 // server/modules/admin/employee.routes.ts
 init_database();
 import { Router as Router16 } from "express";
-import bcrypt2 from "bcryptjs";
+import bcrypt3 from "bcryptjs";
 import jwt3 from "jsonwebtoken";
 import fs3 from "fs";
 import path3 from "path";
@@ -10148,10 +10459,10 @@ function loadFallbackStore() {
   } catch (err) {
     console.error("[EMPLOYEE_STORE_READ_ERROR]", err);
   }
-  const initialHash = bcrypt2.hashSync("Amarnath123", 10);
-  const eventMgrHash = bcrypt2.hashSync("EventMgr@2026", 10);
-  const movieMgrHash = bcrypt2.hashSync("MovieMgr@2026", 10);
-  const finHash = bcrypt2.hashSync("Finance@2026", 10);
+  const initialHash = bcrypt3.hashSync("Amarnath123", 10);
+  const eventMgrHash = bcrypt3.hashSync("EventMgr@2026", 10);
+  const movieMgrHash = bcrypt3.hashSync("MovieMgr@2026", 10);
+  const finHash = bcrypt3.hashSync("Finance@2026", 10);
   const initialStore = {
     employees: [
       {
@@ -10358,7 +10669,7 @@ employeeRouter.post("/auth/employee-login", async (req, res) => {
         }
       });
     }
-    const passwordMatch = await bcrypt2.compare(password, employee.passwordHash);
+    const passwordMatch = await bcrypt3.compare(password, employee.passwordHash);
     if (!passwordMatch) {
       store.activityLogs.unshift({
         id: "log_" + Date.now(),
@@ -10576,7 +10887,7 @@ employeeRouter.post("/admin/employees", requireSuperAdmin, async (req, res) => {
         error: { code: "DUPLICATE_EMAIL", message: `Official email '${email}' is already registered.` }
       });
     }
-    const passwordHash = await bcrypt2.hash(password, 10);
+    const passwordHash = await bcrypt3.hash(password, 10);
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     const newEmp = {
       id: "emp_" + Date.now(),
@@ -10770,7 +11081,7 @@ employeeRouter.post("/admin/employees/:id/reset-password", requireSuperAdmin, as
       });
     }
     const emp = store.employees[empIdx];
-    const passwordHash = await bcrypt2.hash(newPassword, 10);
+    const passwordHash = await bcrypt3.hash(newPassword, 10);
     emp.passwordHash = passwordHash;
     emp.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     store.activityLogs.unshift({

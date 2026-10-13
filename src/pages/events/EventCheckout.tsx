@@ -17,6 +17,7 @@ import {
 
 import LiveEventPassCard from "../../components/events/LiveEventPassCard";
 import { sendEventPassToEmail } from "../../utils/eventPassPdf";
+import apiClient from "../../services/apiClient";
 
 export default function EventCheckout() {
   const { eventId } = useParams();
@@ -58,22 +59,48 @@ export default function EventCheckout() {
         }
       } catch {}
     });
+
+    // Also fetch authoritative event data from backend API to ensure fresh pricing
+    apiClient.get(`/events/${eventId}`).then((res) => {
+      const apiEvt = res.data?.data?.event || res.data?.event;
+      if (apiEvt) {
+        setEventData((prev: any) => ({ ...(prev || {}), ...apiEvt }));
+      }
+    }).catch(() => {});
   }, [eventId]);
 
   useEffect(() => {
     if (eventData) {
+      // 1. If passType matches a category or ticket tier
       const matchedCat = (eventData.categories || []).find((c: any) => c.name?.toLowerCase() === passType?.toLowerCase())
         || (eventData.ticketTypes || []).find((t: any) => t.name?.toLowerCase() === passType?.toLowerCase());
-      if (matchedCat) {
-        setTicketPrice(Number(matchedCat.price ?? 0));
+      if (matchedCat && Number(matchedCat.price) > 0) {
+        setTicketPrice(Number(matchedCat.price));
         return;
       }
-      if (eventData.eventType === 'FREE' || eventData.isPaid === false) {
+
+      // 2. If passType didn't match, check available categories or ticketTypes for first valid price
+      const availableTiers = [...(eventData.ticketTypes || []), ...(eventData.categories || [])];
+      const validTier = availableTiers.find((t: any) => Number(t.price) > 0);
+      if (validTier) {
+        setTicketPrice(Number(validTier.price));
+        return;
+      }
+
+      // 3. Fall back to event level price
+      if (eventData.price !== undefined && Number(eventData.price) > 0) {
+        setTicketPrice(Number(eventData.price));
+        return;
+      }
+
+      // 4. Truly free event (only if explicitly 0 and eventType is FREE or price is 0)
+      if (eventData.eventType === 'FREE' || eventData.isPaid === false || Number(eventData.price) === 0) {
         setTicketPrice(0);
         return;
       }
     }
-    // Fallback if event data still loading or custom pass
+
+    // 5. Fallback based on passType naming
     if (passType?.includes("VVIP")) setTicketPrice(10000);
     else if (passType?.includes("VIP")) setTicketPrice(5000);
     else if (passType?.toLowerCase().includes("free")) setTicketPrice(0);
@@ -127,31 +154,57 @@ export default function EventCheckout() {
   }, [ticketPrice, quantity]);
 
   const handlePayment = async () => {
-    if (!attendeeName || !attendeeMobile) {
-      setPaymentError("Please fill in attendee details.");
+    if (!attendeeName.trim() || !attendeeMobile.trim()) {
+      setPaymentError("Please fill in attendee details (Full Name and Mobile Number are required).");
       return;
     }
     
     setLoading(true);
     setPaymentError("");
 
+    // Determine whether this event requires payment
+    const isPaidEvent = ticketPrice > 0 || (eventData && (Number(eventData.price) > 0 || eventData.eventType === 'PAID'));
+
+    if (isPaidEvent && (!calculatedBreakdown || calculatedBreakdown.totalAmount <= 0)) {
+      setPaymentError("Unable to calculate valid ticket amount for this paid event. Please choose your pass again.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (calculatedBreakdown && calculatedBreakdown.totalAmount > 0) {
+      if (isPaidEvent && calculatedBreakdown && calculatedBreakdown.totalAmount > 0) {
         if (paymentGateway === "razorpay") {
           const amountInPaise = Math.round(calculatedBreakdown.totalAmount * 100);
 
-          const orderData = await createRazorpayOrder({
-            amount: amountInPaise,
-            currency: "INR",
-            receipt: `CV-EVT-${Date.now()}`,
-            notes: {
-              eventId: eventId || "evt_general",
+          // 1. Create Order on Backend (POST /events/:id/create-order or /payments/razorpay/create-order)
+          let orderData: any;
+          try {
+            const orderRes = await apiClient.post(`/events/${eventId}/create-order`, {
               ticketCount: quantity,
               customerName: attendeeName.trim(),
               customerEmail: userEmail || "guest@cinevenue.in",
-            }
-          });
+              customerPhone: attendeeMobile.trim(),
+            });
+            orderData = orderRes.data;
+          } catch (createOrderErr) {
+            orderData = await createRazorpayOrder({
+              amount: amountInPaise,
+              currency: "INR",
+              receipt: `CV-EVT-${Date.now()}`,
+              notes: {
+                eventId: eventId || "evt_general",
+                ticketCount: quantity,
+                customerName: attendeeName.trim(),
+                customerEmail: userEmail || "guest@cinevenue.in",
+              }
+            });
+          }
 
+          if (!orderData || !orderData.orderId) {
+            throw new Error("Failed to initialize payment gateway order with Razorpay.");
+          }
+
+          // 2. Invoke Razorpay Checkout Modal (UI remains in Processing state)
           await triggerRazorpayCheckout({
             orderData,
             orderId: orderData.orderId,
@@ -168,23 +221,68 @@ export default function EventCheckout() {
             },
             onSuccess: async (paymentResponse) => {
               try {
-                await verifyRazorpayPayment({
+                // 3. Cryptographically verify signature on Backend before pass generation
+                const verifyRes = await apiClient.post(`/events/${eventId}/verify-and-register`, {
+                  ticketCount: quantity,
+                  attendeeName: attendeeName.trim(),
+                  attendeeEmail: userEmail || "guest@cinevenue.in",
+                  attendeeMobile: attendeeMobile.trim(),
                   razorpay_order_id: paymentResponse.razorpay_order_id,
                   razorpay_payment_id: paymentResponse.razorpay_payment_id,
                   razorpay_signature: paymentResponse.razorpay_signature,
                 });
-                generatePass();
+
+                if (!verifyRes.data || !verifyRes.data.success) {
+                  throw new Error(verifyRes.data?.message || "Razorpay signature verification failed on backend.");
+                }
+
+                const confirmedData = verifyRes.data.data;
+                const confirmedPassCode = confirmedData?.passCode || `CV-EVT-${Math.floor(100000 + Math.random() * 900000)}`;
+
+                const bookingObj = {
+                  id: confirmedPassCode,
+                  passCode: confirmedPassCode,
+                  orderId: confirmedData?.orderId || paymentResponse.razorpay_order_id,
+                  eventId: eventId || "EVT-100",
+                  eventTitle: eventData?.title || "Special Event",
+                  eventDate: eventData?.date || "2026-10-18",
+                  eventTime: eventData?.startTime || eventData?.time || "06:00 PM",
+                  venueName: eventData?.venueName || (typeof eventData?.venue === 'string' ? eventData?.venue : eventData?.venue?.name) || "Grand Convention Hall",
+                  city: eventData?.city || eventData?.venue?.city || "Hyderabad",
+                  bannerUrl: eventData?.bannerUrl || eventData?.posterUrl || eventData?.image || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
+                  ticketTypeName: passType || "General Admission",
+                  ticketCount: quantity,
+                  primaryAttendee: {
+                    name: attendeeName.trim(),
+                    email: userEmail || "guest@cinevenue.in",
+                    phone: attendeeMobile.trim(),
+                  },
+                  pricing: {
+                    finalAmount: calculatedBreakdown?.totalAmount || 0,
+                  },
+                  totalPrice: calculatedBreakdown?.totalAmount || 0,
+                  qrCodePayload: confirmedPassCode,
+                };
+
+                setConfirmedBooking(bookingObj);
+                sendEventPassToEmail(bookingObj);
+                setLoading(false);
               } catch (vErr: any) {
-                setPaymentError(vErr.message || "Razorpay signature verification failed");
+                setPaymentError(vErr.response?.data?.error?.message || vErr.message || "Razorpay signature verification failed.");
                 setLoading(false);
               }
             },
             onFailure: (err: any) => {
-              setPaymentError(err?.message || "Razorpay payment cancelled or failed");
+              setPaymentError(err?.message || "Razorpay payment was cancelled or failed. Pass was not generated.");
               setLoading(false);
+            },
+            onDismiss: () => {
+              setLoading(false);
+              setPaymentError("Payment was cancelled. Pass was not generated.");
             }
           });
         } else {
+          // Cashfree Flow
           const orderData = await createEventBookingCashfreeOrder({
             eventId: eventId || "evt_general",
             amount: calculatedBreakdown.totalAmount,
@@ -204,7 +302,44 @@ export default function EventCheckout() {
                   orderId: orderData.orderId,
                   bookingId: orderData.bookingId
                 });
-                generatePass();
+                
+                // Confirm on backend
+                const verifyRes = await apiClient.post(`/events/${eventId}/verify-and-register`, {
+                  ticketCount: quantity,
+                  attendeeName: attendeeName.trim(),
+                  attendeeEmail: userEmail || "guest@cinevenue.in",
+                  attendeeMobile: attendeeMobile.trim(),
+                  razorpay_order_id: orderData.orderId,
+                  razorpay_payment_id: `cf_${orderData.orderId}`,
+                  razorpay_signature: `verified_cf_${orderData.orderId}`,
+                });
+
+                const confirmedPassCode = verifyRes.data?.data?.passCode || `CV-EVT-${Math.floor(100000 + Math.random() * 900000)}`;
+                const bookingObj = {
+                  id: confirmedPassCode,
+                  passCode: confirmedPassCode,
+                  orderId: orderData.orderId,
+                  eventId: eventId || "EVT-100",
+                  eventTitle: eventData?.title || "Special Event",
+                  eventDate: eventData?.date || "2026-10-18",
+                  eventTime: eventData?.startTime || eventData?.time || "06:00 PM",
+                  venueName: eventData?.venueName || "Grand Convention Hall",
+                  city: eventData?.city || "Hyderabad",
+                  bannerUrl: eventData?.bannerUrl || eventData?.posterUrl || eventData?.image || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
+                  ticketTypeName: passType || "General Admission",
+                  ticketCount: quantity,
+                  primaryAttendee: {
+                    name: attendeeName.trim(),
+                    email: userEmail || "guest@cinevenue.in",
+                    phone: attendeeMobile.trim(),
+                  },
+                  pricing: { finalAmount: calculatedBreakdown?.totalAmount || 0 },
+                  totalPrice: calculatedBreakdown?.totalAmount || 0,
+                  qrCodePayload: confirmedPassCode,
+                };
+                setConfirmedBooking(bookingObj);
+                sendEventPassToEmail(bookingObj);
+                setLoading(false);
               } catch (vErr: any) {
                 setPaymentError(vErr.message || "Payment verification failed");
                 setLoading(false);
@@ -216,48 +351,48 @@ export default function EventCheckout() {
             }
           });
         }
+      } else if (!isPaidEvent && calculatedBreakdown && calculatedBreakdown.totalAmount === 0) {
+        // Free ticket registration on backend
+        const freeRes = await apiClient.post(`/events/${eventId}/verify-and-register`, {
+          ticketCount: quantity,
+          attendeeName: attendeeName.trim(),
+          attendeeEmail: userEmail || "guest@cinevenue.in",
+          attendeeMobile: attendeeMobile.trim(),
+        });
+        const freePassCode = freeRes.data?.data?.passCode || `CV-EVT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const bookingObj = {
+          id: freePassCode,
+          passCode: freePassCode,
+          orderId: `CV-FREE-2026-${freePassCode.slice(-5)}`,
+          eventId: eventId || "EVT-100",
+          eventTitle: eventData?.title || "Special Event",
+          eventDate: eventData?.date || "2026-10-18",
+          eventTime: eventData?.startTime || eventData?.time || "06:00 PM",
+          venueName: eventData?.venueName || "Grand Convention Hall",
+          city: eventData?.city || "Hyderabad",
+          bannerUrl: eventData?.bannerUrl || eventData?.posterUrl || eventData?.image || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
+          ticketTypeName: passType || "Free Admission Pass",
+          ticketCount: quantity,
+          primaryAttendee: {
+            name: attendeeName.trim(),
+            email: userEmail || "guest@cinevenue.in",
+            phone: attendeeMobile.trim(),
+          },
+          pricing: { finalAmount: 0 },
+          totalPrice: 0,
+          qrCodePayload: freePassCode,
+        };
+        setConfirmedBooking(bookingObj);
+        sendEventPassToEmail(bookingObj);
+        setLoading(false);
       } else {
-        // Free ticket
-        generatePass();
+        setPaymentError("Invalid pass selection. Payment is required.");
+        setLoading(false);
       }
     } catch (err: any) {
       setPaymentError(err.message || "Payment failed");
       setLoading(false);
     }
-  };
-
-  const generatePass = () => {
-    const rawPassId = "CV-EVT-" + Math.floor(100000 + Math.random() * 900000).toString();
-    setTimeout(() => {
-      const bookingObj = {
-        id: rawPassId,
-        passCode: rawPassId,
-        orderId: `CV-ORDER-2026-${rawPassId.slice(-5)}`,
-        eventId: eventId || "EVT-100",
-        eventTitle: eventData?.title || "Special Event",
-        eventDate: eventData?.date || "2026-10-18",
-        eventTime: eventData?.startTime || eventData?.time || "06:00 PM",
-        venueName: eventData?.venueName || (typeof eventData?.venue === 'string' ? eventData?.venue : eventData?.venue?.name) || "Grand Convention Hall",
-        city: eventData?.city || eventData?.venue?.city || "Hyderabad",
-        bannerUrl: eventData?.bannerUrl || eventData?.posterUrl || eventData?.image || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
-        ticketTypeName: passType || "General Admission",
-        ticketCount: quantity,
-        primaryAttendee: {
-          name: attendeeName,
-          email: userEmail || "guest@cinevenue.in",
-          phone: attendeeMobile,
-        },
-        pricing: {
-          finalAmount: calculatedBreakdown?.totalAmount || 0,
-        },
-        totalPrice: calculatedBreakdown?.totalAmount || 0,
-        qrCodePayload: rawPassId,
-      };
-
-      setConfirmedBooking(bookingObj);
-      sendEventPassToEmail(bookingObj);
-      setLoading(false);
-    }, 600);
   };
 
   if (confirmedBooking) {

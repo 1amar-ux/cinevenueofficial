@@ -31,6 +31,7 @@ import {
 } from '../../services/razorpayService';
 import DigitalTicketPassModal from './DigitalTicketPassModal';
 import { sendEventPassToEmail } from '../../utils/eventPassPdf';
+import apiClient from '../../services/apiClient';
 
 interface EventBookingModalProps {
   event: EventItem;
@@ -104,8 +105,11 @@ export default function EventBookingModal({
       });
     }
 
-    const isFree = (event as any).eventType === 'FREE' || (event as any).isPaid === false || Number((event as any).price ?? 0) === 0;
-    const basePrice = isFree ? 0 : (Number((event as any).price) || 499);
+    const isExplicitlyFree = (event as any).eventType === 'FREE' || (event as any).isPaid === false;
+    const isExplicitlyPaid = (event as any).eventType === 'PAID' || (event as any).isPaid === true || Number((event as any).price ?? 0) > 0;
+    const isFree = isExplicitlyFree && !isExplicitlyPaid;
+    const rawPrice = Number((event as any).price);
+    const basePrice = isFree ? 0 : (!isNaN(rawPrice) && rawPrice > 0 ? rawPrice : 499);
 
     return [
       {
@@ -351,10 +355,27 @@ export default function EventBookingModal({
       return;
     }
 
-    // Direct Instant Pass for Free Events or 100% discount / ₹0 amount
-    if (fees.finalAmount === 0) {
+    // Direct Instant Pass ONLY for genuinely Free Events where price is 0
+    const isPaid = (event as any).eventType === 'PAID' || Number((event as any).price ?? 0) > 0 || (Array.isArray(event.ticketTypes) && event.ticketTypes.some((t: any) => Number(t.price) > 0));
+    if (!isPaid && fees.finalAmount === 0) {
       setIsProcessingPayment(true);
+      try {
+        await apiClient.post(`/events/${event.id}/verify-and-register`, {
+          ticketCount: totalTicketCount,
+          ticketTypeId: selectedTicketType?.id,
+          attendeeName: primaryName.trim(),
+          attendeeEmail: primaryEmail.trim(),
+          attendeeMobile: primaryPhone.trim(),
+        });
+      } catch (e) {
+        console.warn('Free registration backend sync note:', e);
+      }
       finalizeBooking('FREE_REGISTRATION');
+      return;
+    }
+
+    if (isPaid && fees.finalAmount <= 0) {
+      alert('Invalid price calculation for this paid event. Please choose your pass again.');
       return;
     }
 
@@ -364,22 +385,39 @@ export default function EventBookingModal({
       // 1. Calculate amount in paise (e.g. ₹99 = 9900 paise, ₹500 = 50000 paise)
       const amountInPaise = Math.round(fees.finalAmount * 100);
 
-      const orderData = await createRazorpayOrder({
-        amount: amountInPaise,
-        currency: 'INR',
-        receipt: `EVT-${Date.now().toString().slice(-8)}`,
-        customerName: primaryName.trim(),
-        customerEmail: primaryEmail.trim(),
-        customerPhone: primaryPhone.trim(),
-        eventId: event.id,
-        eventTitle: event.title,
-        notes: {
-          eventId: event.id,
+      // Create Order on Backend
+      let orderData: any;
+      try {
+        const orderRes = await apiClient.post(`/events/${event.id}/create-order`, {
           ticketCount: totalTicketCount,
-          ticketTypeName: selectedTicketType?.name || 'Pass',
-          paymentChannel: paymentMethod,
-        }
-      });
+          ticketTypeId: selectedTicketType?.id,
+          customerName: primaryName.trim(),
+          customerEmail: primaryEmail.trim(),
+          customerPhone: primaryPhone.trim(),
+        });
+        orderData = orderRes.data;
+      } catch (cErr) {
+        orderData = await createRazorpayOrder({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: `EVT-${Date.now().toString().slice(-8)}`,
+          customerName: primaryName.trim(),
+          customerEmail: primaryEmail.trim(),
+          customerPhone: primaryPhone.trim(),
+          eventId: event.id,
+          eventTitle: event.title,
+          notes: {
+            eventId: event.id,
+            ticketCount: totalTicketCount,
+            ticketTypeName: selectedTicketType?.name || 'Pass',
+            paymentChannel: paymentMethod,
+          }
+        });
+      }
+
+      if (!orderData || !orderData.orderId) {
+        throw new Error('Failed to initialize Razorpay payment order.');
+      }
 
       await triggerRazorpayCheckout({
         orderData,
@@ -393,16 +431,26 @@ export default function EventBookingModal({
         },
         onSuccess: async (paymentResult) => {
           try {
-            await verifyRazorpayPayment({
+            // Cryptographically verify signature on Backend before finalizing pass
+            const verifyRes = await apiClient.post(`/events/${event.id}/verify-and-register`, {
+              ticketCount: totalTicketCount,
+              ticketTypeId: selectedTicketType?.id,
+              attendeeName: primaryName.trim(),
+              attendeeEmail: primaryEmail.trim(),
+              attendeeMobile: primaryPhone.trim(),
               razorpay_order_id: paymentResult.razorpay_order_id,
               razorpay_payment_id: paymentResult.razorpay_payment_id,
               razorpay_signature: paymentResult.razorpay_signature,
-              bookingId: orderData.bookingId,
             });
+
+            if (!verifyRes.data?.success) {
+              throw new Error(verifyRes.data?.message || 'Payment signature verification failed.');
+            }
+
             finalizeBooking(`RZP-${paymentResult.razorpay_payment_id}`);
           } catch (vErr: any) {
             console.error('Razorpay event verification error:', vErr);
-            alert(vErr.message || 'Payment verification could not be confirmed.');
+            alert(vErr.response?.data?.error?.message || vErr.message || 'Payment verification could not be confirmed.');
             setIsProcessingPayment(false);
           }
         },
@@ -433,11 +481,28 @@ export default function EventBookingModal({
           orderId: cfOrder.orderId,
           environment: cfOrder.environment || 'TEST',
           onSuccess: async () => {
-            await verifyEventBookingCashfreePayment({
-              orderId: cfOrder.orderId,
-              bookingId: cfOrder.bookingId,
-            });
-            finalizeBooking(`CF-${cfOrder.orderId}`);
+            try {
+              await verifyEventBookingCashfreePayment({
+                orderId: cfOrder.orderId,
+                bookingId: cfOrder.bookingId,
+              });
+
+              await apiClient.post(`/events/${event.id}/verify-and-register`, {
+                ticketCount: totalTicketCount,
+                ticketTypeId: selectedTicketType?.id,
+                attendeeName: primaryName.trim(),
+                attendeeEmail: primaryEmail.trim(),
+                attendeeMobile: primaryPhone.trim(),
+                razorpay_order_id: cfOrder.orderId,
+                razorpay_payment_id: `cf_${cfOrder.orderId}`,
+                razorpay_signature: `verified_cf_${cfOrder.orderId}`,
+              });
+
+              finalizeBooking(`CF-${cfOrder.orderId}`);
+            } catch (cfvErr: any) {
+              alert(cfvErr.message || 'Payment verification failed.');
+              setIsProcessingPayment(false);
+            }
           },
           onFailure: (cErr: any) => {
             alert(cErr?.message || 'Payment failed or cancelled.');
