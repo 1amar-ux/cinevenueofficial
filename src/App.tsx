@@ -643,6 +643,10 @@ export default function App() {
         setAuthMode(authParam === "signup" ? "signup" : authParam === "forgot" ? "forgot" : "signin");
         setAuthOpen(true);
       }
+      const adminParam = params.get("admin");
+      if (adminParam === "true" || adminParam === "1") {
+        setAdminOpen(true);
+      }
       const cityParam = params.get("city");
       if (cityParam) {
         setSelectedCityState(cityParam);

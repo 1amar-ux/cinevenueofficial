@@ -14,6 +14,7 @@ export interface Employee {
   employeeId: string;
   fullName: string;
   username: string;
+  password?: string;
   email: string;
   mobile?: string | null;
   department: string;
@@ -241,6 +242,7 @@ function getInitialSeedEmployees(): Employee[] {
       employeeId: "EMP-001",
       fullName: "Amarnath Gattem",
       username: "amarnath_admin",
+      password: "Amarnath123",
       email: "superadmin@cinevenue.com",
       mobile: "+91 9876543210",
       department: "Executive Leadership",
@@ -262,6 +264,7 @@ function getInitialSeedEmployees(): Employee[] {
       employeeId: "EMP-1002",
       fullName: "Priya Sharma",
       username: "priya_events",
+      password: "EventMgr@2026",
       email: "priya.events@cinevenue.com",
       mobile: "+91 9811223344",
       department: "Live Events & Experiences",
@@ -283,6 +286,7 @@ function getInitialSeedEmployees(): Employee[] {
       employeeId: "EMP-1003",
       fullName: "Vikram Reddy",
       username: "vikram_movies",
+      password: "MovieMgr@2026",
       email: "vikram.movies@cinevenue.com",
       mobile: "+91 9822334455",
       department: "Cinema Operations",
@@ -304,6 +308,7 @@ function getInitialSeedEmployees(): Employee[] {
       employeeId: "EMP-1004",
       fullName: "Rajesh Kulkarni",
       username: "rajesh_theatre",
+      password: "Theatre@2026",
       email: "rajesh.theatres@cinevenue.com",
       mobile: "+91 9833441122",
       department: "Franchise & Operations",
@@ -325,6 +330,7 @@ function getInitialSeedEmployees(): Employee[] {
       employeeId: "EMP-1005",
       fullName: "Kiran Deshmukh",
       username: "kiran_finance",
+      password: "Finance@2026",
       email: "kiran.finance@cinevenue.com",
       mobile: "+91 9833445566",
       department: "Finance & Accounts",
@@ -429,7 +435,24 @@ export const employeeService = {
     // LocalStorage fallback
     const saved = localStorage.getItem(LS_EMPLOYEES_KEY);
     let list: Employee[] = saved ? JSON.parse(saved) : getInitialSeedEmployees();
-    if (!saved) localStorage.setItem(LS_EMPLOYEES_KEY, JSON.stringify(list));
+    
+    // Ensure all employees have a password assigned
+    let hadMissingPassword = false;
+    list = list.map(emp => {
+      if (!emp.password) {
+        hadMissingPassword = true;
+        if (emp.username === "amarnath_admin") emp.password = "Amarnath123";
+        else if (emp.username === "priya_events") emp.password = "EventMgr@2026";
+        else if (emp.username === "vikram_movies") emp.password = "MovieMgr@2026";
+        else if (emp.username === "rajesh_theatre") emp.password = "Theatre@2026";
+        else if (emp.username === "kiran_finance") emp.password = "Finance@2026";
+        else emp.password = "CineVenue@2026";
+      }
+      return emp;
+    });
+    if (hadMissingPassword || !saved) {
+      localStorage.setItem(LS_EMPLOYEES_KEY, JSON.stringify(list));
+    }
 
     if (filters) {
       const { search, role, department, status } = filters;
@@ -509,6 +532,7 @@ export const employeeService = {
       employeeId: data.employeeId.trim().toUpperCase(),
       fullName: data.fullName.trim(),
       username: data.username.trim().toLowerCase(),
+      password: data.password.trim(),
       email: data.email.trim().toLowerCase(),
       mobile: data.mobile?.trim() || null,
       department: data.department.trim(),
@@ -543,7 +567,7 @@ export const employeeService = {
   },
 
   /**
-   * Update Employee
+   * Update Employee (Full Profile support including username, employeeId, password, etc.)
    */
   async updateEmployee(id: string, data: Partial<Employee>): Promise<{ success: boolean; message: string }> {
     try {
@@ -569,11 +593,34 @@ export const employeeService = {
       return { success: false, message: "Primary Super Admin role cannot be modified." };
     }
 
+    // Unique checks if employeeId, username, or email is changed
+    if (data.employeeId && data.employeeId.trim()) {
+      const cleanEmpId = data.employeeId.trim().toUpperCase();
+      if (list.some(e => e.id !== id && e.employeeId.toUpperCase() === cleanEmpId)) {
+        return { success: false, message: `Employee ID '${data.employeeId}' is already assigned to another employee.` };
+      }
+    }
+    if (data.username && data.username.trim()) {
+      const cleanUser = data.username.trim().toLowerCase();
+      if (list.some(e => e.id !== id && e.username.toLowerCase() === cleanUser)) {
+        return { success: false, message: `Username '${data.username}' is already in use by another employee.` };
+      }
+    }
+    if (data.email && data.email.trim()) {
+      const cleanEmail = data.email.trim().toLowerCase();
+      if (list.some(e => e.id !== id && e.email.toLowerCase() === cleanEmail)) {
+        return { success: false, message: `Email '${data.email}' is already in use by another employee.` };
+      }
+    }
+
     const roleDef = data.roleId ? (SYSTEM_ROLES.find(r => r.id === data.roleId || r.name === data.roleId) || list[idx].role) : list[idx].role;
 
     list[idx] = {
       ...list[idx],
       ...data,
+      employeeId: data.employeeId ? data.employeeId.trim().toUpperCase() : list[idx].employeeId,
+      username: data.username ? data.username.trim().toLowerCase() : list[idx].username,
+      password: (data.password && data.password.trim()) ? data.password.trim() : list[idx].password,
       role: {
         id: roleDef.id,
         name: roleDef.name,
@@ -588,12 +635,12 @@ export const employeeService = {
       employeeName: list[idx].fullName,
       username: list[idx].username,
       employeeCode: list[idx].employeeId,
-      action: `Employee profile updated: ${list[idx].fullName}`,
+      action: `Employee full profile updated: ${list[idx].fullName}`,
       module: "EMPLOYEES",
       result: "SUCCESS"
     });
 
-    return { success: true, message: "Employee updated successfully." };
+    return { success: true, message: "Employee profile updated successfully." };
   },
 
   /**
@@ -669,6 +716,10 @@ export const employeeService = {
     const list: Employee[] = saved ? JSON.parse(saved) : getInitialSeedEmployees();
     const emp = list.find(e => e.id === id);
     if (!emp) return { success: false, message: "Employee not found." };
+
+    emp.password = newPassword.trim();
+    emp.updatedAt = new Date().toISOString();
+    localStorage.setItem(LS_EMPLOYEES_KEY, JSON.stringify(list));
 
     this.recordActivityLog({
       employeeId: emp.id,
@@ -870,9 +921,12 @@ export const employeeService = {
       return { success: false, message: "Your employee account has been deactivated. Please contact Super Admin." };
     }
 
-    // Check common passwords in fallback
-    const validPasswords = ["Amarnath123", "EventMgr@2026", "MovieMgr@2026", "Finance@2026", "Password@123", "CineVenue@2026"];
-    if (!validPasswords.includes(password.trim()) && password.trim() !== "Amarnath123") {
+    // Check passwords in fallback
+    const validPasswords = ["Amarnath123", "EventMgr@2026", "MovieMgr@2026", "Theatre@2026", "Finance@2026", "Password@123", "CineVenue@2026"];
+    const matchesEmpPassword = emp.password && emp.password.trim() === password.trim();
+    const matchesGeneral = validPasswords.includes(password.trim()) || password.trim() === "Amarnath123";
+
+    if (!matchesEmpPassword && !matchesGeneral) {
       return { success: false, message: "Invalid username or password. Please verify credentials." };
     }
 
