@@ -17,6 +17,8 @@ import {
   Download,
   QrCode,
   ArrowLeft,
+  Percent,
+  IndianRupee,
 } from 'lucide-react';
 import ImageUploader, { UploadedMedia } from './ImageUploader';
 import apiClient from '../../../services/apiClient';
@@ -164,6 +166,23 @@ export default function EventCreator({
   const [terms, setTerms] = useState<string>(
     editingEvent?.termsAndConditions?.join('\n') ||
       'Please present official digital pass with valid photo ID at venue gates.\nTickets once booked are non-refundable unless the event is cancelled.\nEntry will be granted only after physical QR code verification at the gate.'
+  );
+
+  // 11b. Convenience Fee Settings
+  const [convenienceFeeEnabled, setConvenienceFeeEnabled] = useState<boolean>(
+    editingEvent?.convenienceFeeEnabled ?? false
+  );
+  const [convenienceFeeType, setConvenienceFeeType] = useState<'FIXED' | 'PERCENTAGE'>(
+    editingEvent?.convenienceFeeType || 'FIXED'
+  );
+  const [convenienceFeeAmount, setConvenienceFeeAmount] = useState<number>(
+    editingEvent?.convenienceFeeAmount ?? 30
+  );
+  const [convenienceFeeApplication, setConvenienceFeeApplication] = useState<'PER_TICKET' | 'PER_BOOKING'>(
+    editingEvent?.convenienceFeeApplication || 'PER_TICKET'
+  );
+  const [convenienceFeeStatus, setConvenienceFeeStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>(
+    editingEvent?.convenienceFeeStatus || 'PENDING'
   );
 
   // 12. EVENT PASS SETTINGS
@@ -414,6 +433,13 @@ export default function EventCreator({
         ticketTypes: formattedTicketTypes,
         freePassCategories: formattedFreePassCategories,
         termsAndConditions: terms.split('\n').filter((t) => t.trim().length > 0),
+        convenienceFeeEnabled,
+        convenienceFeeType,
+        convenienceFeeAmount: Number(convenienceFeeAmount) || 0,
+        convenienceFeeApplication,
+        convenienceFeeStatus,
+        convenienceFeeApprovedBy: convenienceFeeStatus === 'APPROVED' ? (editingEvent?.convenienceFeeApprovedBy || 'Admin') : null,
+        convenienceFeeApprovedAt: convenienceFeeStatus === 'APPROVED' ? (editingEvent?.convenienceFeeApprovedAt || new Date().toISOString()) : null,
         passSettings: {
           enabled: enableEventPass,
           passTypes: passTypesList,
@@ -430,6 +456,13 @@ export default function EventCreator({
         category: category as any,
         bannerUrl: effectiveBannerUrl,
         posterUrl: effectivePosterUrl,
+        convenienceFeeEnabled,
+        convenienceFeeType,
+        convenienceFeeAmount: Number(convenienceFeeAmount) || 0,
+        convenienceFeeApplication,
+        convenienceFeeStatus,
+        convenienceFeeApprovedBy: convenienceFeeStatus === 'APPROVED' ? (editingEvent?.convenienceFeeApprovedBy || 'Admin') : null,
+        convenienceFeeApprovedAt: convenienceFeeStatus === 'APPROVED' ? (editingEvent?.convenienceFeeApprovedAt || new Date().toISOString()) : null,
         organizer: {
           id: 'ORG-ADMIN',
           name: organizerName.trim(),
@@ -1100,6 +1133,186 @@ export default function EventCreator({
             </div>
           </div>
         )}
+
+        {/* SECTION: CONVENIENCE FEE SETTINGS */}
+        <div className="bg-black/30 border border-white/10 rounded-xl p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-3">
+            <div>
+              <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider text-gold flex items-center gap-2">
+                <IndianRupee className="w-4 h-4" /> Convenience Fee Settings
+              </h4>
+              <p className="text-[11px] text-white/50 mt-0.5">
+                Configure convenience fee rules and approval status. Fee is only charged on customer checkout when Approved.
+              </p>
+            </div>
+            {/* 1. Enable Convenience Fee: Yes / No */}
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+              <span className="text-xs text-white/70">1. Enable Convenience Fee:</span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setConvenienceFeeEnabled(true)}
+                  className={`px-3 py-1 text-xs font-bold rounded cursor-pointer transition-all ${
+                    convenienceFeeEnabled
+                      ? 'bg-emerald-500 text-black shadow'
+                      : 'bg-white/10 text-white/60 hover:text-white'
+                  }`}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConvenienceFeeEnabled(false)}
+                  className={`px-3 py-1 text-xs font-bold rounded cursor-pointer transition-all ${
+                    !convenienceFeeEnabled
+                      ? 'bg-rose-500/80 text-white shadow'
+                      : 'bg-white/10 text-white/60 hover:text-white'
+                  }`}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {convenienceFeeEnabled ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 2. Fee Type */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-white/60 uppercase font-mono">2. Fee Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConvenienceFeeType('FIXED')}
+                      className={`py-2 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer text-center ${
+                        convenienceFeeType === 'FIXED'
+                          ? 'bg-gold/20 border-gold text-gold shadow'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Fixed Fee (₹)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConvenienceFeeType('PERCENTAGE')}
+                      className={`py-2 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer text-center ${
+                        convenienceFeeType === 'PERCENTAGE'
+                          ? 'bg-gold/20 border-gold text-gold shadow'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Percentage (%)
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Convenience Fee Amount */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-white/60 uppercase font-mono">
+                    3. Fee Amount {convenienceFeeType === 'FIXED' ? '(₹)' : '(%)'}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={convenienceFeeType === 'PERCENTAGE' ? '0.1' : '1'}
+                    value={convenienceFeeAmount}
+                    onChange={(e) => setConvenienceFeeAmount(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                    placeholder={convenienceFeeType === 'FIXED' ? 'e.g. 30' : 'e.g. 5'}
+                    required={convenienceFeeEnabled}
+                  />
+                </div>
+
+                {/* 4. Fee Application */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-white/60 uppercase font-mono">4. Fee Application</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConvenienceFeeApplication('PER_TICKET')}
+                      className={`py-2 px-2 rounded-lg border text-[11px] font-bold transition-all cursor-pointer text-center ${
+                        convenienceFeeApplication === 'PER_TICKET'
+                          ? 'bg-gold/20 border-gold text-gold shadow'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Per Ticket
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConvenienceFeeApplication('PER_BOOKING')}
+                      className={`py-2 px-2 rounded-lg border text-[11px] font-bold transition-all cursor-pointer text-center ${
+                        convenienceFeeApplication === 'PER_BOOKING'
+                          ? 'bg-gold/20 border-gold text-gold shadow'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Per Booking
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5. Fee Status */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-white/60 uppercase font-mono">5. Fee Status</label>
+                  <select
+                    value={convenienceFeeStatus}
+                    onChange={(e) => setConvenienceFeeStatus(e.target.value as any)}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                  >
+                    <option value="PENDING">Pending Approval</option>
+                    <option value="APPROVED">Approved (Active)</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Simulation Banner & Rule Summary */}
+              <div className="p-3 rounded-lg bg-white/[0.02] border border-white/10 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex items-center gap-2 text-white/70">
+                  <Info className="w-4 h-4 text-gold shrink-0" />
+                  <span>
+                    <strong>Rule:</strong>{' '}
+                    {convenienceFeeType === 'FIXED'
+                      ? `₹${convenienceFeeAmount} ${convenienceFeeApplication === 'PER_TICKET' ? 'per ticket' : 'per booking'}`
+                      : `${convenienceFeeAmount}% of ticket subtotal ${convenienceFeeApplication === 'PER_TICKET' ? 'per ticket' : 'per booking'}`}
+                    {' • '}
+                    Status:{' '}
+                    <span
+                      className={`font-bold ${
+                        convenienceFeeStatus === 'APPROVED'
+                          ? 'text-emerald-400'
+                          : convenienceFeeStatus === 'PENDING'
+                          ? 'text-amber-400'
+                          : 'text-rose-400'
+                      }`}
+                    >
+                      {convenienceFeeStatus === 'APPROVED'
+                        ? 'Approved (Applicable to Customer)'
+                        : convenienceFeeStatus === 'PENDING'
+                        ? 'Pending Approval (Customers will NOT be charged)'
+                        : 'Rejected (Customers will NOT be charged)'}
+                    </span>
+                  </span>
+                </div>
+                <div className="text-[11px] font-mono text-gold bg-gold/10 px-2.5 py-1 rounded border border-gold/20">
+                  Example ₹500 ticket x 2: ₹
+                  {convenienceFeeStatus === 'APPROVED'
+                    ? (1000 + (convenienceFeeType === 'FIXED'
+                        ? (convenienceFeeApplication === 'PER_TICKET' ? convenienceFeeAmount * 2 : convenienceFeeAmount)
+                        : Math.round((1000 * convenienceFeeAmount) / 100))
+                      ).toLocaleString('en-IN')
+                    : '1,000 (Fee ₹0)'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-white/40 italic">
+              Convenience fee is disabled. Customers will only pay the standard ticket price without any additional fee.
+            </p>
+          )}
+        </div>
 
         {/* SECTION 6: CAPACITY CHECK & TERMS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { env } from "../../config/env";
 import { prisma } from "../../config/database";
 import { bookingService } from "../bookings/booking.service";
+import { movieFeeService } from "../bookings/movieFee.service";
 import { ForbiddenError, NotFoundError, PaymentError, ValidationError } from "../../shared/errors";
 import { logger } from "../../shared/logger";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
@@ -68,10 +69,20 @@ router.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMai
     }
 
     if (!amountInINR) {
-      if (amount && Number(amount) > 0) {
+      if (Array.isArray(tickets) && tickets.length > 0) {
+        const breakdown = await movieFeeService.calculateMovieBookingFees(
+          tickets.map((t: any) => ({
+            price: Number(typeof t === "number" ? t : t.price || 0),
+            category: (typeof t === "object" ? t.category : undefined) || "STANDARD"
+          })),
+          {
+            couponCode: req.body.couponCode,
+            musicianDonation: req.body.musicianDonation
+          }
+        );
+        amountInINR = breakdown.finalPayableAmount;
+      } else if (amount && Number(amount) > 0) {
         amountInINR = Number(amount) > 1000 ? Number(amount) / 100 : Number(amount);
-      } else if (Array.isArray(tickets) && tickets.length > 0) {
-        amountInINR = tickets.reduce((s: number, t: any) => s + (Number(t.price) || 0), 0);
       } else {
         amountInINR = 250;
       }
@@ -319,10 +330,20 @@ router.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMai
     }
 
     if (!amountInINR) {
-      if (amount && Number(amount) > 0) {
+      if (Array.isArray(tickets) && tickets.length > 0) {
+        const breakdown = await movieFeeService.calculateMovieBookingFees(
+          tickets.map((t: any) => ({
+            price: Number(typeof t === "number" ? t : t.price || 0),
+            category: (typeof t === "object" ? t.category : undefined) || "STANDARD"
+          })),
+          {
+            couponCode: req.body.couponCode,
+            musicianDonation: req.body.musicianDonation
+          }
+        );
+        amountInINR = breakdown.finalPayableAmount;
+      } else if (amount && Number(amount) > 0) {
         amountInINR = Number(amount);
-      } else if (Array.isArray(tickets) && tickets.length > 0) {
-        amountInINR = tickets.reduce((s: number, t: any) => s + (Number(t.price) || 0), 0);
       } else {
         amountInINR = 250;
       }

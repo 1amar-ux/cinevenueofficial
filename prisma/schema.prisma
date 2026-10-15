@@ -375,15 +375,18 @@ model Booking {
   showId          String
   userId          String?
 
-  ticketAmount    Decimal       @db.Decimal(12, 2)
-  platformFee     Decimal       @db.Decimal(12, 2)
-  convenienceFee  Decimal       @db.Decimal(12, 2)
-  taxAmount       Decimal       @db.Decimal(12, 2)
-  discountAmount  Decimal       @db.Decimal(12, 2)
-  gatewayFee      Decimal       @db.Decimal(12, 2)
-  totalAmount     Decimal       @db.Decimal(12, 2)
+  ticketAmount       Decimal       @db.Decimal(12, 2)
+  ticketSubtotal     Decimal?      @db.Decimal(12, 2) @map("ticket_subtotal")
+  platformFee        Decimal       @db.Decimal(12, 2)
+  convenienceFee     Decimal       @db.Decimal(12, 2)
+  convenienceFeeTax  Decimal?      @db.Decimal(12, 2) @map("convenience_fee_tax")
+  taxAmount          Decimal       @db.Decimal(12, 2)
+  discountAmount     Decimal       @db.Decimal(12, 2)
+  gatewayFee         Decimal       @db.Decimal(12, 2)
+  totalAmount        Decimal       @db.Decimal(12, 2)
+  feeSnapshot        Json?         @map("fee_snapshot")
 
-  status          BookingStatus @default(PENDING)
+  status             BookingStatus @default(PENDING)
 
   // POS Integration Tracking
   posBookingId       String?
@@ -554,8 +557,18 @@ model Event {
   organizerId String
   status      EventStatus         @default(PUBLISHED)
 
+  // Convenience Fee Management
+  convenienceFeeEnabled     Boolean   @default(false) @map("convenience_fee_enabled")
+  convenienceFeeType        String    @default("FIXED") @map("convenience_fee_type") // FIXED or PERCENTAGE
+  convenienceFeeAmount      Decimal   @default(0) @db.Decimal(10, 2) @map("convenience_fee_amount")
+  convenienceFeeApplication String    @default("PER_TICKET") @map("convenience_fee_application") // PER_TICKET or PER_BOOKING
+  convenienceFeeStatus     String    @default("PENDING") @map("convenience_fee_status") // PENDING, APPROVED, REJECTED
+  convenienceFeeApprovedBy String?   @map("convenience_fee_approved_by")
+  convenienceFeeApprovedAt DateTime? @map("convenience_fee_approved_at")
+
   ticketTypes   EventTicketType[]
   registrations EventRegistration[]
+  feeAuditLogs  EventFeeAuditLog[]
 
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
@@ -586,6 +599,13 @@ model EventRegistration {
   status      RegistrationStatus @default(CONFIRMED)
   passCode    String             @unique
 
+  // Convenience Fee Tracking & Breakdown Snapshot
+  ticketSubtotal           Decimal?  @db.Decimal(10, 2) @map("ticket_subtotal")
+  convenienceFee           Decimal?  @db.Decimal(10, 2) @map("convenience_fee")
+  discountAmount           Decimal?  @default(0) @db.Decimal(10, 2) @map("discount_amount")
+  finalPayableAmount       Decimal?  @db.Decimal(10, 2) @map("final_payable_amount")
+  feeConfigurationSnapshot Json?     @map("fee_configuration_snapshot")
+
   event       Event              @relation(fields: [eventId], references: [id])
   user        User               @relation(fields: [userId], references: [id])
 
@@ -593,6 +613,30 @@ model EventRegistration {
 
   @@index([eventId])
   @@index([userId])
+}
+
+model EventFeeAuditLog {
+  id              String   @id @default(cuid())
+  eventId         String
+  action          String   // CREATED, UPDATED, APPROVED, REJECTED, EDITED
+  previousStatus  String?
+  newStatus       String
+  feeType         String
+  feeAmount       Decimal  @db.Decimal(10, 2)
+  feeApplication  String
+  enabled         Boolean
+  actorId         String?
+  actorEmail      String?
+  reason          String?
+  metadata        Json?
+
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+  @@index([eventId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 // ==========================================
@@ -943,5 +987,44 @@ model EmployeeActivityLog {
   @@index([action])
   @@index([createdAt])
 }
+
+// ==========================================
+// 15. MOVIE CONVENIENCE FEE & AUDIT
+// ==========================================
+
+model MovieConvenienceFee {
+  id              String   @id @default(cuid())
+  ticketPrice     Decimal  @db.Decimal(10, 2) @map("ticket_price")
+  baseCharge      Decimal  @db.Decimal(10, 2) @map("base_charge")
+  category        String   @default("STANDARD")
+  gstRate         Decimal  @default(18.0) @db.Decimal(5, 2) @map("gst_rate")
+  feeApplication  String   @default("PER_TICKET") @map("fee_application") // "PER_TICKET" | "PER_BOOKING"
+  enabled         Boolean  @default(true)
+  description     String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([ticketPrice])
+  @@index([category])
+  @@index([enabled])
+}
+
+model MovieFeeAuditLog {
+  id            String   @id @default(cuid())
+  feeConfigId   String?  @map("fee_config_id")
+  action        String   // "CREATED", "UPDATED", "DELETED", "GLOBAL_TOGGLE", "GST_RATE_UPDATED"
+  ticketPrice   Decimal? @db.Decimal(10, 2) @map("ticket_price")
+  baseCharge    Decimal? @db.Decimal(10, 2) @map("base_charge")
+  gstRate       Decimal? @db.Decimal(5, 2) @map("gst_rate")
+  actorId       String?  @map("actor_id")
+  actorEmail    String?  @map("actor_email")
+  reason        String?
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([createdAt])
+}
+
 
 

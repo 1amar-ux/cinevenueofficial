@@ -52,6 +52,13 @@ export default function EventDetails() {
             featured: localItem.featured ?? true,
             isPaid: localItem.eventType === "PAID" || lowestPrice > 0,
             isActive: localItem.isActive !== false && String(localItem.status || '').toUpperCase() !== 'CANCELLED' && String(localItem.status || '').toUpperCase() !== 'DRAFT',
+            convenienceFeeEnabled: Boolean(localItem.convenienceFeeEnabled),
+            convenienceFeeType: localItem.convenienceFeeType || 'FIXED',
+            convenienceFeeAmount: Number(localItem.convenienceFeeAmount ?? 0),
+            convenienceFeeApplication: localItem.convenienceFeeApplication || 'PER_TICKET',
+            convenienceFeeStatus: localItem.convenienceFeeStatus || 'PENDING',
+            convenienceFeeApprovedBy: localItem.convenienceFeeApprovedBy || null,
+            convenienceFeeApprovedAt: localItem.convenienceFeeApprovedAt || null,
           };
           if (isMounted) {
             setEvent(mapped);
@@ -99,6 +106,13 @@ export default function EventDetails() {
             featured: true,
             isPaid: Number(e.price) > 0 || (e.ticketTypes || []).some((t: any) => Number(t.price) > 0),
             isActive: e.status !== "CANCELLED" && e.status !== "DRAFT",
+            convenienceFeeEnabled: Boolean(e.convenienceFeeEnabled),
+            convenienceFeeType: e.convenienceFeeType || 'FIXED',
+            convenienceFeeAmount: Number(e.convenienceFeeAmount ?? 0),
+            convenienceFeeApplication: e.convenienceFeeApplication || 'PER_TICKET',
+            convenienceFeeStatus: e.convenienceFeeStatus || 'PENDING',
+            convenienceFeeApprovedBy: e.convenienceFeeApprovedBy || null,
+            convenienceFeeApprovedAt: e.convenienceFeeApprovedAt || null,
           };
           if (isMounted) {
             setEvent(mapped);
@@ -254,24 +268,99 @@ export default function EventDetails() {
           {/* Sidebar / Ticketing */}
           <div className="lg:col-span-1">
             <div className="bg-[#111113] p-6 rounded-2xl border border-white/5 sticky top-24">
-              <h3 className="text-xl font-bold text-white mb-6">Select Passes</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-white">Select Passes</h3>
+                {Boolean(event.convenienceFeeEnabled && event.convenienceFeeStatus === 'APPROVED') && (
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    Transparent Pricing
+                  </span>
+                )}
+              </div>
               
               <div className="space-y-4 mb-6">
-                {event.categories.map((cat, idx) => (
-                  <div key={idx} className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-gold/30 transition-colors cursor-pointer" onClick={() => navigate(`/events/${event.id}/checkout?type=${cat.name}`)}>
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="text-lg font-bold text-white">{cat.name}</h4>
-                      <span className="text-xl font-bold text-gold">{cat.price === 0 ? 'FREE' : `₹${cat.price}`}</span>
+                {event.categories.map((cat, idx) => {
+                  const isFree = cat.price === 0;
+                  const isFeeApproved = Boolean(
+                    event.convenienceFeeEnabled &&
+                    event.convenienceFeeStatus === 'APPROVED' &&
+                    (event.convenienceFeeAmount || 0) > 0
+                  );
+
+                  let feeAmountPerTicket = 0;
+                  let feeLabel = '';
+                  if (!isFree && isFeeApproved) {
+                    if (event.convenienceFeeType === 'PERCENTAGE') {
+                      feeAmountPerTicket = Math.round((cat.price * (event.convenienceFeeAmount || 0)) / 100);
+                      feeLabel = `₹${feeAmountPerTicket} (${event.convenienceFeeAmount}%)`;
+                    } else {
+                      if (event.convenienceFeeApplication === 'PER_BOOKING') {
+                        feeLabel = `+₹${event.convenienceFeeAmount} per booking`;
+                      } else {
+                        feeAmountPerTicket = event.convenienceFeeAmount || 0;
+                        feeLabel = `₹${feeAmountPerTicket} per ticket`;
+                      }
+                    }
+                  }
+                  const totalPricePerTicket = cat.price + feeAmountPerTicket;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-white/5 p-4 rounded-xl border border-white/10 hover:border-gold/30 transition-all cursor-pointer group"
+                      onClick={() => navigate(`/events/${event.id}/checkout?type=${cat.name}`)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="text-base font-bold text-white group-hover:text-gold transition-colors">
+                            {cat.name}
+                          </h4>
+                          <p className="text-xs text-text-secondary mt-0.5">
+                            Entry via {cat.name.split(' ')[0]} Gate. Access to {cat.name} zone.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Transparent Price Breakdown */}
+                      <div className="bg-black/40 p-3 rounded-lg border border-white/5 my-3 space-y-1 text-xs">
+                        {isFree ? (
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60">Pass Price:</span>
+                            <span className="text-base font-bold text-emerald-400 font-mono">FREE (₹0)</span>
+                          </div>
+                        ) : isFeeApproved ? (
+                          <>
+                            <div className="flex justify-between items-center text-white/70">
+                              <span>Ticket Price:</span>
+                              <span className="font-mono text-white font-semibold">₹{cat.price}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-white/70">
+                              <span>Convenience Fee:</span>
+                              <span className="font-mono text-emerald-400 font-medium">+{feeLabel}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-1.5 border-t border-white/10 text-white font-bold">
+                              <span>Total Price Per Ticket:</span>
+                              <span className="font-mono text-gold font-bold text-sm">₹{totalPricePerTicket}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60">Ticket Price:</span>
+                            <span className="text-base font-bold text-gold font-mono">₹{cat.price}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs pt-1">
+                        <span className={cat.availableSeats > 20 ? 'text-emerald-400 flex items-center gap-1 font-mono text-[11px]' : 'text-amber-400 flex items-center gap-1 font-mono text-[11px]'}>
+                          <CheckCircle2 className="w-3 h-3" /> {cat.availableSeats} Passes Left
+                        </span>
+                        <button className="text-white group-hover:text-black group-hover:bg-gold font-bold px-4 py-1.5 bg-white/10 rounded-full transition-all text-xs cursor-pointer">
+                          Select Pass
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm text-text-secondary mb-3">Entry via {cat.name.split(' ')[0]} Gate. Access to {cat.name} zone.</p>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className={cat.availableSeats > 20 ? 'text-emerald-400 flex items-center gap-1' : 'text-amber-400 flex items-center gap-1'}>
-                        <CheckCircle2 className="w-3 h-3" /> {cat.availableSeats} Passes Left
-                      </span>
-                      <button className="text-white font-semibold px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors">Select</button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="border-t border-white/10 pt-6">

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/database";
 import { authenticate } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
+import { movieFeeService } from "../bookings/movieFee.service";
 
 const router = Router();
 
@@ -1012,6 +1013,13 @@ router.get("/events", async (req: Request, res: Response, next: NextFunction) =>
         status: e.status,
         bookingStatus: e.status === "CANCELLED" ? "CLOSED" : "OPEN",
         eventType: Number(e.price) === 0 ? "FREE" : "PAID",
+        convenienceFeeEnabled: Boolean(e.convenienceFeeEnabled ?? (e as any).convenience_fee_enabled ?? false),
+        convenienceFeeType: (e as any).convenienceFeeType || (e as any).convenience_fee_type || "FIXED",
+        convenienceFeeAmount: Number((e as any).convenienceFeeAmount !== undefined ? (e as any).convenienceFeeAmount : ((e as any).convenience_fee_amount || 0)),
+        convenienceFeeApplication: (e as any).convenienceFeeApplication || (e as any).convenience_fee_application || "PER_TICKET",
+        convenienceFeeStatus: (e as any).convenienceFeeStatus || (e as any).convenience_fee_status || "PENDING",
+        convenienceFeeApprovedBy: (e as any).convenienceFeeApprovedBy || (e as any).convenience_fee_approved_by || null,
+        convenienceFeeApprovedAt: (e as any).convenienceFeeApprovedAt || (e as any).convenience_fee_approved_at || null,
         ticketTypes: e.ticketTypes
       }))
     });
@@ -1043,6 +1051,14 @@ router.post("/events", async (req: Request, res: Response, next: NextFunction) =
     const status = (body.status === "DRAFT" || body.status === "Draft") ? "DRAFT" : "PUBLISHED";
     const eventId = body.id || `EVT-${Date.now().toString().slice(-4)}`;
 
+    const convenienceFeeEnabled = Boolean(body.convenienceFeeEnabled ?? body.convenience_fee_enabled ?? false);
+    const convenienceFeeType = String(body.convenienceFeeType || body.convenience_fee_type || "FIXED").toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED";
+    const convenienceFeeAmount = Number(body.convenienceFeeAmount !== undefined ? body.convenienceFeeAmount : (body.convenience_fee_amount || 0));
+    const convenienceFeeApplication = String(body.convenienceFeeApplication || body.convenience_fee_application || "PER_TICKET").toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET";
+    const convenienceFeeStatus = body.convenienceFeeStatus || body.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Admin";
+    const isApproved = convenienceFeeStatus === "APPROVED";
+
     try {
       await prisma.event.upsert({
         where: { id: eventId },
@@ -1058,8 +1074,15 @@ router.post("/events", async (req: Request, res: Response, next: NextFunction) =
           price,
           capacity,
           status,
+          convenienceFeeEnabled,
+          convenienceFeeType,
+          convenienceFeeAmount,
+          convenienceFeeApplication,
+          convenienceFeeStatus,
+          convenienceFeeApprovedBy: isApproved ? actorEmail : undefined,
+          convenienceFeeApprovedAt: isApproved ? new Date() : undefined,
           updatedAt: new Date()
-        },
+        } as any,
         create: {
           id: eventId,
           title,
@@ -1073,9 +1096,34 @@ router.post("/events", async (req: Request, res: Response, next: NextFunction) =
           price,
           capacity,
           organizerId: "admin",
-          status
-        }
+          status,
+          convenienceFeeEnabled,
+          convenienceFeeType,
+          convenienceFeeAmount,
+          convenienceFeeApplication,
+          convenienceFeeStatus,
+          convenienceFeeApprovedBy: isApproved ? actorEmail : null,
+          convenienceFeeApprovedAt: isApproved ? new Date() : null
+        } as any
       });
+
+      // Write Audit Log
+      if (convenienceFeeEnabled) {
+        await prisma.eventFeeAuditLog.create({
+          data: {
+            eventId,
+            action: isApproved ? "APPROVED" : "CREATED",
+            newStatus: convenienceFeeStatus,
+            feeType: convenienceFeeType,
+            feeAmount: convenienceFeeAmount,
+            feeApplication: convenienceFeeApplication,
+            enabled: convenienceFeeEnabled,
+            actorId: req.user?.userId || "admin",
+            actorEmail,
+            reason: `Convenience fee saved via Admin Panel as ${convenienceFeeStatus}`
+          }
+        }).catch(() => {});
+      }
 
       if (Array.isArray(body.ticketTypes) && body.ticketTypes.length > 0) {
         try {
@@ -1117,6 +1165,13 @@ router.post("/events", async (req: Request, res: Response, next: NextFunction) =
         status,
         bookingStatus: status === "PUBLISHED" ? "OPEN" : "CLOSED",
         eventType: price === 0 ? "FREE" : "PAID",
+        convenienceFeeEnabled,
+        convenienceFeeType,
+        convenienceFeeAmount,
+        convenienceFeeApplication,
+        convenienceFeeStatus,
+        convenienceFeeApprovedBy: isApproved ? actorEmail : null,
+        convenienceFeeApprovedAt: isApproved ? new Date().toISOString() : null,
         ticketTypes: body.ticketTypes || []
       }
     });
@@ -1227,6 +1282,175 @@ router.delete("/events/:eventId", async (req: Request, res: Response, next: Next
     return res.json({
       success: true,
       message: `Event ${eventId} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 7. POST /api/v1/admin/events/:eventId/approve-fee
+router.post("/events/:eventId/approve-fee", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+
+    const prevStatus = (event as any).convenienceFeeStatus || (event as any).convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Authorized Admin";
+    const approvedAt = new Date();
+
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        convenienceFeeStatus: "APPROVED",
+        convenienceFeeApprovedBy: actorEmail,
+        convenienceFeeApprovedAt: approvedAt
+      } as any
+    });
+
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId,
+        action: "APPROVED",
+        previousStatus: prevStatus,
+        newStatus: "APPROVED",
+        feeType: (event as any).convenienceFeeType || "FIXED",
+        feeAmount: Number((event as any).convenienceFeeAmount || 0),
+        feeApplication: (event as any).convenienceFeeApplication || "PER_TICKET",
+        enabled: Boolean((event as any).convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Approved by admin",
+        metadata: { approvedAt }
+      }
+    }).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Convenience fee for "${event.title}" has been approved.`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 8. POST /api/v1/admin/events/:eventId/reject-fee
+router.post("/events/:eventId/reject-fee", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+
+    const prevStatus = (event as any).convenienceFeeStatus || (event as any).convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Authorized Admin";
+
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        convenienceFeeStatus: "REJECTED"
+      } as any
+    });
+
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId,
+        action: "REJECTED",
+        previousStatus: prevStatus,
+        newStatus: "REJECTED",
+        feeType: (event as any).convenienceFeeType || "FIXED",
+        feeAmount: Number((event as any).convenienceFeeAmount || 0),
+        feeApplication: (event as any).convenienceFeeApplication || "PER_TICKET",
+        enabled: Boolean((event as any).convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Fee rejected by admin",
+        metadata: { rejectedAt: new Date() }
+      }
+    }).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Convenience fee for "${event.title}" has been rejected.`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 9. PATCH /api/v1/admin/events/:eventId/fee-settings
+router.patch("/events/:eventId/fee-settings", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+
+    const {
+      convenienceFeeEnabled,
+      convenienceFeeType = "FIXED",
+      convenienceFeeAmount = 0,
+      convenienceFeeApplication = "PER_TICKET",
+      convenienceFeeStatus = "PENDING"
+    } = req.body;
+
+    const prevStatus = (event as any).convenienceFeeStatus || (event as any).convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Admin";
+    const isApproved = convenienceFeeStatus === "APPROVED";
+
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        convenienceFeeEnabled: Boolean(convenienceFeeEnabled),
+        convenienceFeeType: String(convenienceFeeType).toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED",
+        convenienceFeeAmount: Number(convenienceFeeAmount) || 0,
+        convenienceFeeApplication: String(convenienceFeeApplication).toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET",
+        convenienceFeeStatus,
+        convenienceFeeApprovedBy: isApproved ? actorEmail : ((event as any).convenienceFeeApprovedBy || null),
+        convenienceFeeApprovedAt: isApproved ? new Date() : ((event as any).convenienceFeeApprovedAt || null)
+      } as any
+    });
+
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId,
+        action: "EDITED",
+        previousStatus: prevStatus,
+        newStatus: convenienceFeeStatus,
+        feeType: convenienceFeeType,
+        feeAmount: Number(convenienceFeeAmount) || 0,
+        feeApplication: convenienceFeeApplication,
+        enabled: Boolean(convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Convenience fee configuration updated",
+        metadata: { updatedSettings: req.body }
+      }
+    }).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Convenience fee settings updated for "${event.title}".`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 10. GET /api/v1/admin/events/:eventId/fee-audit-logs
+router.get("/events/:eventId/fee-audit-logs", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { eventId } = req.params;
+    const logs = await prisma.eventFeeAuditLog.findMany({
+      where: { eventId },
+      orderBy: { createdAt: "desc" }
+    });
+
+    return res.json({
+      success: true,
+      logs,
+      data: { logs }
     });
   } catch (error) {
     next(error);
@@ -1373,6 +1597,95 @@ router.post("/uploads/image", async (req: Request, res: Response) => {
     alt,
     file: { url, publicId, alt }
   });
+});
+
+// ==========================================
+// MOVIE CONVENIENCE FEE ADMIN MANAGEMENT
+// ==========================================
+
+router.get("/movie-fees", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const configs = await movieFeeService.getAllConfigs();
+    const globalSettings = movieFeeService.getGlobalSettings();
+    const auditLogs = await movieFeeService.getAuditLogs();
+    return res.json({
+      success: true,
+      globalSettings,
+      configs,
+      auditLogs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/movie-fees", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actorEmail = req.user?.email || "Super Admin";
+    const created = await movieFeeService.createConfig(req.body, actorEmail);
+    return res.status(201).json({
+      success: true,
+      message: `Convenience fee tier for ₹${created.ticketPrice} created successfully.`,
+      config: created
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/movie-fees/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const actorEmail = req.user?.email || "Super Admin";
+    const updated = await movieFeeService.updateConfig(id, req.body, actorEmail);
+    return res.json({
+      success: true,
+      message: `Convenience fee tier ${id} updated successfully.`,
+      config: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/movie-fees/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const actorEmail = req.user?.email || "Super Admin";
+    await movieFeeService.deleteConfig(id, actorEmail);
+    return res.json({
+      success: true,
+      message: `Fee configuration ${id} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/movie-fees/settings", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actorEmail = req.user?.email || "Super Admin";
+    const updated = await movieFeeService.updateGlobalSettings(req.body, actorEmail);
+    return res.json({
+      success: true,
+      message: "Global movie convenience fee settings updated successfully.",
+      settings: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/movie-fees/audit-logs", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const logs = await movieFeeService.getAuditLogs();
+    return res.json({
+      success: true,
+      logs
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

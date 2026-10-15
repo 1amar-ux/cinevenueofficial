@@ -111,37 +111,70 @@ export default function EventCheckout() {
   const calculatePrice = async () => {
     if (ticketPrice === 0) {
       setCalculatedBreakdown({
+        ticketPrice: 0,
+        quantity,
+        ticketSubtotal: 0,
         baseAmount: 0,
         convenienceFee: 0,
         taxAmount: 0,
-        totalAmount: 0
+        discountAmount: 0,
+        totalAmount: 0,
+        finalPayableAmount: 0,
+        feeConfigurationSnapshot: null,
       });
       return;
     }
 
-    const base = ticketPrice * quantity;
-    const fee = Math.round(base * 0.05);
-    const tax = Math.round((base + fee) * 0.18);
+    const subtotal = ticketPrice * quantity;
+    const isFeeApproved = Boolean(
+      eventData?.convenienceFeeEnabled &&
+      eventData?.convenienceFeeStatus === 'APPROVED' &&
+      (eventData?.convenienceFeeAmount || 0) > 0
+    );
+
+    let localFee = 0;
+    if (isFeeApproved) {
+      if (eventData.convenienceFeeType === 'PERCENTAGE') {
+        localFee = Math.round((subtotal * eventData.convenienceFeeAmount) / 100);
+      } else {
+        localFee = eventData.convenienceFeeApplication === 'PER_BOOKING'
+          ? eventData.convenienceFeeAmount
+          : eventData.convenienceFeeAmount * quantity;
+      }
+    }
+
     const fallbackBreakdown = {
-      baseAmount: base,
-      convenienceFee: fee,
-      taxAmount: tax,
-      totalAmount: base + fee + tax
+      ticketPrice,
+      quantity,
+      ticketSubtotal: subtotal,
+      baseAmount: subtotal,
+      convenienceFee: localFee,
+      taxAmount: 0,
+      discountAmount: 0,
+      totalAmount: subtotal + localFee,
+      finalPayableAmount: subtotal + localFee,
+      feeConfigurationSnapshot: {
+        enabled: eventData?.convenienceFeeEnabled ?? false,
+        type: eventData?.convenienceFeeType || 'FIXED',
+        amount: eventData?.convenienceFeeAmount || 0,
+        application: eventData?.convenienceFeeApplication || 'PER_TICKET',
+        status: eventData?.convenienceFeeStatus || 'PENDING',
+      },
     };
 
     try {
-      const res = await fetch("/api/booking/calculate-price", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ticketPrice: ticketPrice,
-          quantity: quantity,
-          isEvent: true
-        })
+      const res = await apiClient.post(`/events/${eventId}/calculate-price`, {
+        ticketPrice,
+        ticketCount: quantity,
+        ticketTypeName: passType,
       });
-      const data = await res.json();
+      const data = res.data;
       if (data.success && data.breakdown) {
-        setCalculatedBreakdown(data.breakdown);
+        setCalculatedBreakdown({
+          ...data.breakdown,
+          baseAmount: data.breakdown.ticketSubtotal,
+          totalAmount: data.breakdown.finalPayableAmount,
+        });
       } else {
         setCalculatedBreakdown(fallbackBreakdown);
       }
@@ -152,7 +185,7 @@ export default function EventCheckout() {
 
   useEffect(() => {
     calculatePrice();
-  }, [ticketPrice, quantity]);
+  }, [ticketPrice, quantity, eventData]);
 
   const handlePayment = async () => {
     if (!attendeeName.trim() || !attendeeMobile.trim()) {
@@ -256,16 +289,24 @@ export default function EventCheckout() {
                   venueName: eventData?.venueName || (typeof eventData?.venue === 'string' ? eventData?.venue : eventData?.venue?.name) || "Grand Convention Hall",
                   city: eventData?.city || eventData?.venue?.city || "Hyderabad",
                   bannerUrl: eventData?.bannerUrl || eventData?.posterUrl || eventData?.image || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
-                  ticketTypeName: passType || "General Admission",
                   ticketCount: quantity,
                   primaryAttendee: {
                     name: attendeeName.trim(),
                     email: userEmail || "guest@cinevenue.in",
                     phone: attendeeMobile.trim(),
                   },
+                  ticketSubtotal: calculatedBreakdown?.ticketSubtotal || (ticketPrice * quantity),
+                  convenienceFee: calculatedBreakdown?.convenienceFee || 0,
+                  discountAmount: calculatedBreakdown?.discountAmount || 0,
+                  finalPayableAmount: confirmedRupees,
                   pricing: {
+                    ticketSubtotal: calculatedBreakdown?.ticketSubtotal || (ticketPrice * quantity),
+                    convenienceFee: calculatedBreakdown?.convenienceFee || 0,
+                    taxAmount: calculatedBreakdown?.taxAmount || 0,
+                    discountAmount: calculatedBreakdown?.discountAmount || 0,
                     finalAmount: confirmedRupees,
                   },
+                  feeConfigurationSnapshot: calculatedBreakdown?.feeConfigurationSnapshot || null,
                   totalPrice: confirmedRupees,
                   price: confirmedRupees,
                   qrCodePayload: confirmedPassCode,
@@ -341,7 +382,18 @@ export default function EventCheckout() {
                     email: userEmail || "guest@cinevenue.in",
                     phone: attendeeMobile.trim(),
                   },
-                  pricing: { finalAmount: calculatedBreakdown?.totalAmount || 0 },
+                  ticketSubtotal: calculatedBreakdown?.ticketSubtotal || (ticketPrice * quantity),
+                  convenienceFee: calculatedBreakdown?.convenienceFee || 0,
+                  discountAmount: calculatedBreakdown?.discountAmount || 0,
+                  finalPayableAmount: calculatedBreakdown?.totalAmount || 0,
+                  pricing: {
+                    ticketSubtotal: calculatedBreakdown?.ticketSubtotal || (ticketPrice * quantity),
+                    convenienceFee: calculatedBreakdown?.convenienceFee || 0,
+                    taxAmount: calculatedBreakdown?.taxAmount || 0,
+                    discountAmount: calculatedBreakdown?.discountAmount || 0,
+                    finalAmount: calculatedBreakdown?.totalAmount || 0,
+                  },
+                  feeConfigurationSnapshot: calculatedBreakdown?.feeConfigurationSnapshot || null,
                   totalPrice: calculatedBreakdown?.totalAmount || 0,
                   qrCodePayload: confirmedPassCode,
                 };
@@ -387,7 +439,18 @@ export default function EventCheckout() {
             email: userEmail || "guest@cinevenue.in",
             phone: attendeeMobile.trim(),
           },
-          pricing: { finalAmount: 0 },
+          ticketSubtotal: 0,
+          convenienceFee: 0,
+          discountAmount: 0,
+          finalPayableAmount: 0,
+          pricing: {
+            ticketSubtotal: 0,
+            convenienceFee: 0,
+            taxAmount: 0,
+            discountAmount: 0,
+            finalAmount: 0,
+          },
+          feeConfigurationSnapshot: null,
           totalPrice: 0,
           qrCodePayload: freePassCode,
         };
@@ -538,21 +601,55 @@ export default function EventCheckout() {
 
               {calculatedBreakdown ? (
                 <div className="space-y-3 pt-4 border-t border-white/10 mb-6">
-                  <div className="flex justify-between text-sm text-text-secondary">
-                    <span>Subtotal</span>
-                    <span>₹{calculatedBreakdown.baseAmount}</span>
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>Event Name</span>
+                    <span className="text-white font-medium truncate max-w-[170px]">
+                      {eventData?.title || "Special Event"}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-sm text-text-secondary">
-                    <span>Convenience Fee (Platform)</span>
-                    <span>₹{calculatedBreakdown.convenienceFee}</span>
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>Number of Tickets</span>
+                    <span className="text-white font-mono font-bold">{quantity}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-text-secondary">
-                    <span>GST (Taxes)</span>
-                    <span>₹{calculatedBreakdown.taxAmount}</span>
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>Ticket Price</span>
+                    <span className="text-white font-mono">₹{ticketPrice}</span>
                   </div>
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>Ticket Subtotal</span>
+                    <span className="text-white font-mono font-semibold">
+                      ₹{calculatedBreakdown.ticketSubtotal ?? calculatedBreakdown.baseAmount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>Convenience Fee</span>
+                    <span
+                      className={`font-mono font-semibold ${
+                        calculatedBreakdown.convenienceFee > 0 ? "text-emerald-400" : "text-white/60"
+                      }`}
+                    >
+                      {calculatedBreakdown.convenienceFee > 0
+                        ? `+₹${calculatedBreakdown.convenienceFee}`
+                        : "₹0"}
+                    </span>
+                  </div>
+                  {Number(calculatedBreakdown.taxAmount) > 0 && (
+                    <div className="flex justify-between text-xs text-text-secondary">
+                      <span>Other Charges (GST)</span>
+                      <span className="text-white font-mono">₹{calculatedBreakdown.taxAmount}</span>
+                    </div>
+                  )}
+                  {Number(calculatedBreakdown.discountAmount) > 0 && (
+                    <div className="flex justify-between text-xs text-emerald-400">
+                      <span>Discounts</span>
+                      <span className="font-mono">-₹{calculatedBreakdown.discountAmount}</span>
+                    </div>
+                  )}
                   <div className="pt-3 border-t border-white/10 flex justify-between items-center">
-                    <span className="font-bold text-white">Total Amount</span>
-                    <span className="font-bold text-gold text-xl">₹{calculatedBreakdown.totalAmount}</span>
+                    <span className="font-bold text-white text-base">Final Payable Amount</span>
+                    <span className="font-bold text-gold text-2xl font-mono">
+                      ₹{calculatedBreakdown.finalPayableAmount ?? calculatedBreakdown.totalAmount}
+                    </span>
                   </div>
                 </div>
               ) : (

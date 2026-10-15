@@ -133,6 +133,21 @@ export interface EventItem {
     passTypes?: string[];
     autoGenerateOnBooking?: boolean;
   };
+  // Convenience Fee Settings
+  convenienceFeeEnabled?: boolean;
+  convenienceFeeType?: 'FIXED' | 'PERCENTAGE';
+  convenienceFeeAmount?: number;
+  convenienceFeeApplication?: 'PER_TICKET' | 'PER_BOOKING';
+  convenienceFeeStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  convenienceFeeApprovedBy?: string | null;
+  convenienceFeeApprovedAt?: string | null;
+  convenience_fee_enabled?: boolean;
+  convenience_fee_type?: 'FIXED' | 'PERCENTAGE';
+  convenience_fee_amount?: number;
+  convenience_fee_application?: 'PER_TICKET' | 'PER_BOOKING';
+  convenience_fee_status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  convenience_fee_approved_by?: string | null;
+  convenience_fee_approved_at?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -152,12 +167,18 @@ export interface AdditionalAttendee {
 
 export interface EventFeeBreakdown {
   ticketSubtotal: number;
+  convenienceFee: number;
   platformBookingFee: number;
   taxAmount: number; // e.g., 18% GST on booking fee
   discountAmount: number;
   cineCoinsRedeemed: number;
   cineCoinsDiscount: number;
   finalAmount: number;
+  feeType?: 'FIXED' | 'PERCENTAGE';
+  feeApplication?: 'PER_TICKET' | 'PER_BOOKING';
+  feeStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  feeAmountConfigured?: number;
+  isFeeApproved?: boolean;
 }
 
 export type EventBookingMode = 'FREE' | 'PAID';
@@ -271,6 +292,39 @@ export interface EventBookingRecord {
   refundAmount?: number;
   totalPrice?: number;
   ticketPrice?: number;
+  ticketSubtotal?: number;
+  convenienceFee?: number;
+  discountAmount?: number;
+  finalPayableAmount?: number;
+  feeConfigurationSnapshot?: {
+    enabled: boolean;
+    type: 'FIXED' | 'PERCENTAGE';
+    amount: number;
+    application: 'PER_TICKET' | 'PER_BOOKING';
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvedBy?: string | null;
+    approvedAt?: string | null;
+    appliedFee: number;
+    unitPrice: number;
+    quantity: number;
+  };
+}
+
+export interface EventFeeAuditLogItem {
+  id: string;
+  eventId: string;
+  action: 'CREATED' | 'UPDATED' | 'APPROVED' | 'REJECTED' | 'EDITED';
+  previousStatus?: string | null;
+  newStatus: string;
+  feeType: 'FIXED' | 'PERCENTAGE';
+  feeAmount: number;
+  feeApplication: 'PER_TICKET' | 'PER_BOOKING';
+  enabled: boolean;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  reason?: string | null;
+  metadata?: any;
+  createdAt: string;
 }
 
 export interface EventCoupon {

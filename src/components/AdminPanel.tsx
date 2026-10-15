@@ -29,6 +29,7 @@ import { PillarKey } from "./cms/types";
 import CineCoinsAdminControl from "./admin/CineCoinsAdminControl";
 import { ProposalAdminModule } from "./proposals/ProposalAdminModule";
 import FeeManagementAdmin from "./admin/FeeManagementAdmin";
+import MovieConvenienceFeeAdmin from "./admin/MovieConvenienceFeeAdmin";
 import TheatreBankManagement from "./TheatreBankManagement";
 import EventManagementAdminPanel from "./productions/EventManagementAdminPanel";
 import CineVenueFilmAdminTab from "./film-production/CineVenueFilmAdminTab";
@@ -142,7 +143,7 @@ interface AdminPanelProps {
   onUpdateCineCoinsTransactions?: (txs: CineCoinsTransaction[]) => void;
 }
 
-type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management";
+type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management" | "movie_fees";
 
 export default function AdminPanel({
   isOpen,
@@ -2376,6 +2377,25 @@ export default function AdminPanel({
                   </div>
                   <span className="text-[9px] font-bold bg-gold/15 text-gold border border-gold/30 px-1.5 py-0.5 rounded">
                     ENGINE
+                  </span>
+                </button>
+
+                {/* Tab Item - Movie Convenience Fee Settings */}
+                <button
+                  onClick={() => { setActiveTab("movie_fees"); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === "movie_fees" 
+                      ? "bg-gold/10 text-gold border-l-2 border-gold" 
+                      : "text-text-secondary hover:bg-white/[0.02] hover:text-text-primary"
+                  }`}
+                  id="tab-btn-movie-convenience-fees"
+                >
+                  <div className="flex items-center gap-3">
+                    <Ticket className="w-4 h-4 text-gold shrink-0" />
+                    <span>Movie Convenience Fee Settings</span>
+                  </div>
+                  <span className="text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                    ADMIN
                   </span>
                 </button>
 
@@ -6600,6 +6620,12 @@ export default function AdminPanel({
           {activeTab === "fee_management" && (
             <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
               <FinanceModule />
+            </div>
+          )}
+
+          {activeTab === "movie_fees" && (
+            <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500" id="tab-movie-convenience-fees">
+              <MovieConvenienceFeeAdmin isSuperAdmin={isSuperAdmin} />
             </div>
           )}
 

@@ -18,7 +18,10 @@ uploads/images/*
 # Android Keystores & Signing Credentials
 *.jks
 *.keystore
+*.pem
+*.bak
 keystore.properties
 android/keystore.properties
 android/app/keystore.properties
+android/build-error.txt
 

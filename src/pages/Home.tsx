@@ -496,38 +496,6 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             </span>
           </button>
 
-          <button 
-            onClick={() => navigate("/productions")} 
-            className="hidden lg:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
-          >
-            <span>🎥 Film Production</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
-            </span>
-          </button>
-
-          <button 
-            onClick={() => navigate("/events")} 
-            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
-          >
-            <span>🎤 Event Management</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
-            </span>
-          </button>
-
-          <button 
-            onClick={() => navigate("/proposals")} 
-            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
-          >
-            <span>📢 Brand Publicity</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
-            </span>
-          </button>
 
           <button 
             onClick={() => navigate("/cinecoins")} 

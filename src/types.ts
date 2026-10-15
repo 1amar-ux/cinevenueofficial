@@ -253,8 +253,10 @@ export interface Booking {
   paymentVerificationStatus?: 'Pending Review' | 'Approved' | 'Rejected';
   qrCodeData?: string;
   ticketAmount?: number;
+  ticketSubtotal?: number;
   platformFee?: number;
   convenienceFee?: number;
+  convenienceFeeTax?: number;
   bookingFee?: number;
   otherFeeAmount?: number;
   taxAmount?: number;
@@ -263,6 +265,7 @@ export interface Booking {
   totalAmount?: number;
   feeLines?: FeeLine[];
   taxLines?: TaxLine[];
+  feeSnapshot?: any;
   paymentMethod?: string;
 }
 
@@ -352,6 +355,20 @@ export interface Event {
   isPaid?: boolean;
   comingSoon?: boolean;
   isActive?: boolean;
+  convenienceFeeEnabled?: boolean;
+  convenienceFeeType?: 'FIXED' | 'PERCENTAGE';
+  convenienceFeeAmount?: number;
+  convenienceFeeApplication?: 'PER_TICKET' | 'PER_BOOKING';
+  convenienceFeeStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  convenienceFeeApprovedBy?: string | null;
+  convenienceFeeApprovedAt?: string | null;
+  convenience_fee_enabled?: boolean;
+  convenience_fee_type?: 'FIXED' | 'PERCENTAGE';
+  convenience_fee_amount?: number;
+  convenience_fee_application?: 'PER_TICKET' | 'PER_BOOKING';
+  convenience_fee_status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  convenience_fee_approved_by?: string | null;
+  convenience_fee_approved_at?: string | null;
 }
 
 export interface NotifyMeRequest {

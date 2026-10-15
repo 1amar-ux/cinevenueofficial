@@ -73,6 +73,7 @@ import { calculateDistance, getCoordinates } from "./lib/location";
 import { INITIAL_MOVIES, INITIAL_THEATRES, INITIAL_EVENTS, DEFAULT_SPOTLIGHT, CITIES, DEFAULT_CINECOINS_SETTINGS, DEFAULT_CINECOINS_REWARDS, DEFAULT_CINECOINS_CHALLENGES, DEFAULT_CINECOINS_TRANSACTIONS, DEFAULT_CINECOINS_USER_WALLET } from "./data";
 import { Movie, Theatre, Booking, MovieSchedule, RentalRequest, ContactMessage, TheatreAdmin, Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest, EventOrganizer, SpotlightMovie, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CineCoinsUserWallet, CastingApplication } from "./types";
 import apiClient from "./services/apiClient";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
 import { getEvents as getTicketedEvents, fetchLiveEvents, isMockOrDuplicateEvent } from "./services/eventBookingService";
 
@@ -774,38 +775,79 @@ export default function App() {
         apiClient.get<any>('/events'),
       ]);
 
-      // 1. Authoritative Movies Sync from Database
-      const rawMovies = moviesRes.status === 'fulfilled' 
+      // 1. Authoritative Movies Sync from Database (API + Supabase Cloud Fallback)
+      let rawMovies = moviesRes.status === 'fulfilled' 
         ? (moviesRes.value.data?.data?.movies || (moviesRes.value.data as any)?.movies || moviesRes.value.data?.data || moviesRes.value.data) 
         : null;
+
+      if ((!Array.isArray(rawMovies) || rawMovies.length === 0) && isSupabaseConfigured) {
+        try {
+          const { data: sbMovies } = await supabase
+            .from('Movie')
+            .select('*')
+            .neq('isActive', false);
+          if (Array.isArray(sbMovies) && sbMovies.length > 0) {
+            rawMovies = sbMovies;
+          }
+        } catch (sbErr) {
+          console.warn('Supabase movies cloud fallback notice:', sbErr);
+        }
+      }
+
       if (Array.isArray(rawMovies) && rawMovies.length > 0) {
-        const apiMovies: Movie[] = rawMovies.map((m: any, idx: number) => ({
-          id: m.id || (idx + 1),
-          title: m.title || '',
-          description: m.description || '',
-          poster: m.posterUrl || m.poster || '',
-          banner: m.backdropUrl || m.banner || m.posterUrl || '',
-          img: m.posterUrl || m.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&q=80',
-          lang: m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi'),
-          langKey: (m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi')).toLowerCase(),
-          duration: `${m.duration || m.durationMins || 150} mins`,
-          genre: Array.isArray(m.genres) ? m.genres.join(', ') : (m.genre || 'Action, Drama'),
-          language: m.language || (Array.isArray(m.languages) ? m.languages[0] : 'Hindi'),
-          rating: String(m.rating || '4.5'),
-          releaseDate: m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : '2026-09-01',
-          status: m.isActive === false ? 'Upcoming' : (m.status === 'NOW_SHOWING' ? 'Now Showing' : (m.status || 'Now Showing')),
-          trailerUrl: m.trailerUrl || (INITIAL_MOVIES.find(im => im.title.toLowerCase() === (m.title || '').toLowerCase())?.trailerUrl || 'https://www.youtube.com/watch?v=bC36d8e3bb0'),
-          cast: Array.isArray(m.cast) ? m.cast : (typeof m.cast === 'string' ? m.cast.split(',') : []),
-          director: m.director || '',
-          isSpotlight: idx === 0,
-        }));
+        const apiMovies: Movie[] = rawMovies.map((m: any, idx: number) => {
+          const matchedInitial = INITIAL_MOVIES.find(
+            im => im.title.toLowerCase() === (m.title || '').toLowerCase()
+          );
+          return {
+            id: m.id || (idx + 1),
+            title: m.title || '',
+            description: m.description || matchedInitial?.description || '',
+            poster: m.posterUrl || m.poster || matchedInitial?.poster || '',
+            banner: m.backdropUrl || m.banner || m.posterUrl || matchedInitial?.banner || '',
+            img: m.posterUrl || m.poster || matchedInitial?.img || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&q=80',
+            lang: m.language || (Array.isArray(m.languages) ? m.languages[0] : (matchedInitial?.lang || 'Telugu')),
+            langKey: (m.language || (Array.isArray(m.languages) ? m.languages[0] : (matchedInitial?.langKey || 'telugu'))).toLowerCase(),
+            additionalLanguages: matchedInitial?.additionalLanguages,
+            duration: m.duration ? (typeof m.duration === 'number' ? `${m.duration} mins` : m.duration) : (matchedInitial?.duration || '150 mins'),
+            genre: Array.isArray(m.genres) ? m.genres.join(', ') : (m.genre || matchedInitial?.genre || 'Action, Drama'),
+            language: m.language || (Array.isArray(m.languages) ? m.languages[0] : (matchedInitial?.language || 'Telugu')),
+            rating: String(m.rating || matchedInitial?.rating || '9.0'),
+            votes: m.votes ? (typeof m.votes === 'number' ? `${m.votes}+ Votes` : m.votes) : (matchedInitial?.votes || '2.5K+ Votes'),
+            releaseDate: m.releaseDate ? new Date(m.releaseDate).toISOString().split('T')[0] : (matchedInitial?.releaseDate || '2026-10-09'),
+            releaseYear: matchedInitial?.releaseYear || 2026,
+            formats: Array.isArray(m.formats) ? m.formats : (matchedInitial?.formats || ['2D']),
+            status: m.isActive === false ? 'Upcoming' : (m.status === 'NOW_SHOWING' ? 'Now Showing' : (m.status || 'Now Showing')),
+            trailerUrl: m.trailerUrl || matchedInitial?.trailerUrl || 'https://www.youtube.com/watch?v=bC36d8e3bb0',
+            castMembers: matchedInitial?.castMembers,
+            crewMembers: matchedInitial?.crewMembers,
+            cast: Array.isArray(m.cast) ? m.cast : (typeof m.cast === 'string' ? m.cast.split(',') : (matchedInitial?.cast || [])),
+            actors: matchedInitial?.actors || (Array.isArray(m.cast) ? m.cast : []),
+            director: m.director || matchedInitial?.director || '',
+            isSpotlight: idx === 0,
+          };
+        });
         setMovies(apiMovies);
       }
 
-      // 2. Authoritative Theatres Sync from Database
-      const rawTheatres = theatresRes.status === 'fulfilled' 
+      // 2. Authoritative Theatres Sync from Database (API + Supabase Cloud Fallback)
+      let rawTheatres = theatresRes.status === 'fulfilled' 
         ? (theatresRes.value.data?.data?.theatres || (theatresRes.value.data as any)?.theatres || theatresRes.value.data?.data || theatresRes.value.data) 
         : null;
+
+      if ((!Array.isArray(rawTheatres) || rawTheatres.length === 0) && isSupabaseConfigured) {
+        try {
+          const { data: sbTheatres } = await supabase
+            .from('Theatre')
+            .select('*');
+          if (Array.isArray(sbTheatres) && sbTheatres.length > 0) {
+            rawTheatres = sbTheatres;
+          }
+        } catch (sbErr) {
+          console.warn('Supabase theatres cloud fallback notice:', sbErr);
+        }
+      }
+
       if (Array.isArray(rawTheatres) && rawTheatres.length > 0) {
         const apiTheatres: Theatre[] = rawTheatres.map((t: any, idx: number) => ({
           id: t.id || (idx + 1),
@@ -823,10 +865,24 @@ export default function App() {
         setTheatres(apiTheatres);
       }
 
-      // 3. Authoritative Show Schedules Sync from Database
-      const rawShows = showsRes.status === 'fulfilled' 
+      // 3. Authoritative Show Schedules Sync from Database (API + Supabase Cloud Fallback)
+      let rawShows = showsRes.status === 'fulfilled' 
         ? (showsRes.value.data?.data?.shows || (showsRes.value.data as any)?.shows || showsRes.value.data?.data || showsRes.value.data) 
         : null;
+
+      if ((!Array.isArray(rawShows) || rawShows.length === 0) && isSupabaseConfigured) {
+        try {
+          const { data: sbShows } = await supabase
+            .from('Show')
+            .select('*, theatre:theatreId(name), movie:movieId(title)');
+          if (Array.isArray(sbShows) && sbShows.length > 0) {
+            rawShows = sbShows;
+          }
+        } catch (sbErr) {
+          console.warn('Supabase shows cloud fallback notice:', sbErr);
+        }
+      }
+
       if (Array.isArray(rawShows) && rawShows.length > 0) {
         const apiShows: MovieSchedule[] = rawShows.map((s: any) => {
           let formattedTime = s.timeSlot || '7:30 PM';
@@ -945,11 +1001,38 @@ export default function App() {
     const handleCustomSync = () => loadMasterData();
     window.addEventListener("cinevenue_master_data_sync", handleCustomSync);
 
+    // Realtime Supabase Pub/Sub synchronization across all devices (Desktop, Mobile, Android, iOS)
+    let sbChannel: any = null;
+    if (isSupabaseConfigured) {
+      try {
+        sbChannel = supabase
+          .channel('cinevenue_cloud_realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'Movie' }, () => {
+            loadMasterData();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'Theatre' }, () => {
+            loadMasterData();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'Show' }, () => {
+            loadMasterData();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'Event' }, () => {
+            loadMasterData();
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime cloud subscription notice:', err);
+      }
+    }
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("cinevenue_master_data_sync", handleCustomSync);
       if (bc) bc.close();
+      if (sbChannel) {
+        supabase.removeChannel(sbChannel);
+      }
     };
   }, [loadMasterData]);
 
@@ -1290,8 +1373,10 @@ export default function App() {
       userName: name || "Premium Guest",
       mobileNumber: mobile || "",
       ticketAmount: feeDetails?.ticketAmount ?? price,
+      ticketSubtotal: (feeDetails as any)?.ticketSubtotal ?? feeDetails?.ticketAmount ?? price,
       platformFee: feeDetails?.platformFee ?? 0,
       convenienceFee: feeDetails?.convenienceFee ?? 0,
+      convenienceFeeTax: (feeDetails as any)?.convenienceFeeTax ?? feeDetails?.taxAmount ?? 0,
       bookingFee: feeDetails?.bookingFee ?? 0,
       otherFeeAmount: feeDetails?.otherFeeAmount ?? 0,
       taxAmount: feeDetails?.taxAmount ?? 0,
@@ -1299,6 +1384,7 @@ export default function App() {
       gatewayFee: feeDetails?.gatewayFee ?? 0,
       feeLines: feeDetails?.feeLines,
       taxLines: feeDetails?.taxLines,
+      feeSnapshot: (feeDetails as any)?.feeSnapshot || null,
       paymentMethod: feeDetails?.paymentMethod || "Cashfree"
     };
 
@@ -1388,6 +1474,31 @@ export default function App() {
     } catch (e) {
       console.warn('Backend movie create notice:', e);
     }
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('Movie')
+          .insert({
+            id: m.id ? String(m.id) : `mov_${Date.now()}`,
+            title: m.title,
+            description: m.description || `${m.title} now playing at CineVenue.`,
+            posterUrl: m.poster || m.img,
+            backdropUrl: m.banner || m.poster || m.img,
+            trailerUrl: m.trailerUrl,
+            duration: parseInt(m.duration || "150") || 150,
+            rating: Number(m.rating) || 8.5,
+            genres: Array.isArray(m.genre) ? m.genre : (m.genre ? m.genre.split(',').map((s: string) => s.trim()) : ['Action']),
+            languages: Array.isArray(m.lang) ? m.lang : (m.lang ? [m.lang] : ['Telugu']),
+            formats: m.formats || ['2D'],
+            status: m.status === 'Upcoming' ? 'COMING_SOON' : 'NOW_SHOWING',
+            isActive: true,
+            updatedAt: new Date().toISOString(),
+          });
+      } catch (sbErr) {
+        console.warn('Supabase direct insert notice:', sbErr);
+      }
+    }
   };
 
   const handleUpdateMovie = async (oldTitle: string, m: Movie) => {
@@ -1412,6 +1523,30 @@ export default function App() {
     } catch (e) {
       console.warn('Backend movie update notice:', e);
     }
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('Movie')
+          .update({
+            title: m.title,
+            description: m.description,
+            posterUrl: m.poster || m.img,
+            backdropUrl: m.banner || m.poster || m.img,
+            trailerUrl: m.trailerUrl,
+            duration: parseInt(m.duration || "150") || 150,
+            rating: Number(m.rating) || 8.5,
+            genres: Array.isArray(m.genre) ? m.genre : (m.genre ? m.genre.split(',').map((s: string) => s.trim()) : ['Action']),
+            languages: Array.isArray(m.lang) ? m.lang : (m.lang ? [m.lang] : ['Telugu']),
+            status: m.status === 'Upcoming' ? 'COMING_SOON' : 'NOW_SHOWING',
+            isActive: m.isActive !== false,
+            updatedAt: new Date().toISOString(),
+          })
+          .or(`title.eq."${m.title}",title.eq."${oldTitle}"`);
+      } catch (sbErr) {
+        console.warn('Supabase direct update notice:', sbErr);
+      }
+    }
   };
 
   const handleDeleteMovie = async (title: string) => {
@@ -1423,6 +1558,17 @@ export default function App() {
       triggerMasterDataSync();
     } catch (e) {
       console.warn('Backend movie delete notice:', e);
+    }
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('Movie')
+          .update({ isActive: false, updatedAt: new Date().toISOString() })
+          .eq('title', title);
+      } catch (sbErr) {
+        console.warn('Supabase direct delete notice:', sbErr);
+      }
     }
   };
 

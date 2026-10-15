@@ -1085,26 +1085,90 @@ export function releaseTemporaryLock(sessionId: string, eventId: string): void {
 export function calculateEventFees(params: {
   ticketPrice: number;
   quantity: number;
+  event?: any;
   couponCode?: string;
   cineCoinsToRedeem?: number; // 1 CineCoin = ₹1
-  platformFeePercent?: number; // Default 5%
+  platformFeePercent?: number;
+  convenienceFeeEnabled?: boolean;
+  convenienceFeeType?: 'FIXED' | 'PERCENTAGE';
+  convenienceFeeAmount?: number;
+  convenienceFeeApplication?: 'PER_TICKET' | 'PER_BOOKING';
+  convenienceFeeStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }): EventFeeBreakdown {
-  if (params.ticketPrice === 0) {
+  const subtotal = Math.round(params.ticketPrice * params.quantity * 100) / 100;
+  if (params.ticketPrice === 0 || subtotal === 0) {
     return {
       ticketSubtotal: 0,
+      convenienceFee: 0,
       platformBookingFee: 0,
       taxAmount: 0,
       discountAmount: 0,
       cineCoinsRedeemed: 0,
       cineCoinsDiscount: 0,
       finalAmount: 0,
+      isFeeApproved: false,
+      feeType: 'FIXED',
+      feeApplication: 'PER_TICKET',
+      feeStatus: 'PENDING',
+      feeAmountConfigured: 0
     };
   }
 
-  const subtotal = params.ticketPrice * params.quantity;
-  const platformFeeRate = (params.platformFeePercent ?? 5) / 100;
-  const platformBookingFee = Math.round(subtotal * platformFeeRate);
-  const taxAmount = Math.round(platformBookingFee * 0.18); // 18% GST on booking fee
+  const evt = params.event || {};
+  const isEnabled = Boolean(
+    params.convenienceFeeEnabled ??
+      evt.convenienceFeeEnabled ??
+      evt.convenience_fee_enabled ??
+      false
+  );
+  const feeStatus = String(
+    params.convenienceFeeStatus ||
+      evt.convenienceFeeStatus ||
+      evt.convenience_fee_status ||
+      'PENDING'
+  ).toUpperCase();
+  const feeType = (String(
+    params.convenienceFeeType ||
+      evt.convenienceFeeType ||
+      evt.convenience_fee_type ||
+      'FIXED'
+  ).toUpperCase() === 'PERCENTAGE'
+    ? 'PERCENTAGE'
+    : 'FIXED') as 'FIXED' | 'PERCENTAGE';
+  const feeAmount = Number(
+    params.convenienceFeeAmount !== undefined
+      ? params.convenienceFeeAmount
+      : evt.convenienceFeeAmount !== undefined
+      ? evt.convenienceFeeAmount
+      : evt.convenience_fee_amount || 0
+  );
+  const feeApplication = (String(
+    params.convenienceFeeApplication ||
+      evt.convenienceFeeApplication ||
+      evt.convenience_fee_application ||
+      'PER_TICKET'
+  ).toUpperCase() === 'PER_BOOKING'
+    ? 'PER_BOOKING'
+    : 'PER_TICKET') as 'PER_TICKET' | 'PER_BOOKING';
+
+  // Requirement 2: "If the fee is rejected or pending approval, do not charge customers that fee."
+  const isFeeApproved = isEnabled && feeStatus === 'APPROVED';
+
+  let convenienceFee = 0;
+  if (isFeeApproved && feeAmount > 0) {
+    if (feeType === 'PERCENTAGE') {
+      // Calculate fee using the ticket subtotal before discounts
+      convenienceFee = Math.round(((subtotal * feeAmount) / 100) * 100) / 100;
+    } else {
+      // FIXED fee
+      if (feeApplication === 'PER_BOOKING') {
+        convenienceFee = Math.round(feeAmount * 100) / 100;
+      } else {
+        // PER_TICKET
+        convenienceFee = Math.round(feeAmount * params.quantity * 100) / 100;
+      }
+    }
+  }
 
   // Coupon calculation
   let discountAmount = 0;
@@ -1127,17 +1191,25 @@ export function calculateEventFees(params: {
   const coinsRedeemed = Math.min(params.cineCoinsToRedeem || 0, maxCoinsAllowed);
   const cineCoinsDiscount = coinsRedeemed; // 1 Coin = ₹1
 
-  const rawFinal = subtotal + platformBookingFee + taxAmount - discountAmount - cineCoinsDiscount;
-  const finalAmount = Math.max(rawFinal, 0);
+  const finalAmount = Math.max(
+    0,
+    Math.round((subtotal + convenienceFee - discountAmount - cineCoinsDiscount) * 100) / 100
+  );
 
   return {
     ticketSubtotal: subtotal,
-    platformBookingFee,
-    taxAmount,
+    convenienceFee,
+    platformBookingFee: 0,
+    taxAmount: 0,
     discountAmount,
     cineCoinsRedeemed: coinsRedeemed,
     cineCoinsDiscount,
     finalAmount,
+    feeType,
+    feeApplication,
+    feeStatus: feeStatus as any,
+    feeAmountConfigured: feeAmount,
+    isFeeApproved
   };
 }
 

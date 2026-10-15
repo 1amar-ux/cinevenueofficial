@@ -187,6 +187,14 @@ export function buildPassMailtoUrl(pass: any): string {
   const venueName = pass.venueName || pass.venue || "Grand Convention Hall";
   const passUrl = typeof window !== "undefined" ? `${window.location.origin}/events/pass/${encodeURIComponent(passId)}` : `https://cinevenue.in/events/pass/${encodeURIComponent(passId)}`;
 
+  const fee = Number(pass.finalPayableAmount ?? pass.pricing?.finalAmount ?? pass.totalPrice ?? 0);
+  const convFee = Number(pass.convenienceFee ?? pass.pricing?.convenienceFee ?? 0);
+  const subtotal = Number(pass.ticketSubtotal ?? pass.pricing?.ticketSubtotal ?? (fee - convFee));
+
+  const pricingSummary = convFee > 0 
+    ? `Ticket Subtotal: ₹${subtotal}\nConvenience Fee: ₹${convFee}\nTotal Paid: ₹${fee}`
+    : `Total Paid: ₹${fee}`;
+
   const subject = encodeURIComponent(`CineVenue Digital Pass: ${eventTitle} [${passId}]`);
   const body = encodeURIComponent(
 `Here is your official CineVenue digital admission pass:
@@ -195,6 +203,8 @@ Event: ${eventTitle}
 Date & Time: ${eventDate} at ${eventTime}
 Venue: ${venueName}
 Pass ID: ${passId}
+
+${pricingSummary}
 
 View & download your live pass anytime here:
 ${passUrl}
@@ -227,6 +237,9 @@ export function generatePassHtml(pass: any): string {
   const posterUrl = pass.bannerUrl || pass.posterUrl || pass.imageUrl || "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80";
 
   const feeAmount = pass.pricing?.finalAmount ?? pass.totalPrice ?? pass.ticketPrice ?? 999;
+  const convenienceFee = Number(pass.convenienceFee ?? pass.pricing?.convenienceFee ?? 0);
+  const ticketSubtotal = Number(pass.ticketSubtotal ?? pass.pricing?.ticketSubtotal ?? (feeAmount - convenienceFee));
+  const totalPaid = Number(pass.finalPayableAmount ?? feeAmount);
 
   // Use the unique pass ID as the secure QR reference (no private attendee PII encoded)
   const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=4&data=${encodeURIComponent(passId)}`;
@@ -664,6 +677,23 @@ export function generatePassHtml(pass: any): string {
           <div class="info-val ${isFree ? 'free-badge' : 'gold'}">${isFree ? 'FREE' : 'PAID'}</div>
         </div>
       </div>
+
+      ${!isFree && convenienceFee > 0 ? `
+      <!-- Payment Breakdown (Transparent Convenience Fee) -->
+      <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 14px;">
+        <div class="info-box" style="background: rgba(212, 175, 55, 0.04); border-color: rgba(212, 175, 55, 0.2);">
+          <div class="info-label">TICKET SUBTOTAL</div>
+          <div class="info-val mono">₹${ticketSubtotal.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="info-box" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.25);">
+          <div class="info-label" style="color: #34D399;">CONVENIENCE FEE</div>
+          <div class="info-val mono" style="color: #34D399;">₹${convenienceFee.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="info-box" style="background: rgba(212, 175, 55, 0.08); border-color: rgba(212, 175, 55, 0.35);">
+          <div class="info-label" style="color: #D4AF37;">TOTAL PAID</div>
+          <div class="info-val gold mono">₹${totalPaid.toLocaleString('en-IN')}</div>
+        </div>
+      </div>` : ''}
 
       <!-- Pass Holder, Pass Type, Unique Pass ID -->
       <div class="info-grid">

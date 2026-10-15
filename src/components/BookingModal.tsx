@@ -11,6 +11,7 @@ import { INITIAL_MOVIES, INITIAL_THEATRES } from "../data";
 import { POPULAR_CITIES, ALL_INDIAN_CITIES } from "../lib/location";
 import { FeeCalculationService } from "../services/feeCalculationService";
 import { FeeCalculationResult, FeeRule, TaxRule, DiscountRule } from "../types/fees";
+import { movieFeeClient, calculateLocalMovieFeeFallback, MovieFeeBreakdown } from "../services/movieFeeService";
 import { generateAndDownloadTicketPdf, getTicketVerificationUrl } from "../utils/ticketDeliveryService";
 import { getEligibleTheatresAndShows, parseTimeToMinutes, getPrimaryMovieTrailer } from "../utils/movieAvailability";
 
@@ -109,6 +110,7 @@ export default function BookingModal({
   const [taxRules, setTaxRules] = useState<TaxRule[]>([]);
   const [discountRules, setDiscountRules] = useState<DiscountRule[]>([]);
   const [calculatedBreakdown, setCalculatedBreakdown] = useState<FeeCalculationResult | null>(null);
+  const [movieFeeBreakdown, setMovieFeeBreakdown] = useState<MovieFeeBreakdown | null>(null);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
   // Transaction States
@@ -149,56 +151,7 @@ export default function BookingModal({
 
   const movieObj = currentMovie;
 
-  // Add / Edit Description and Casting State in Ticket Booking
-  const [showEditInfoModal, setShowEditInfoModal] = useState<boolean>(false);
-  const [infoDescription, setInfoDescription] = useState<string>("");
-  const [infoCast, setInfoCast] = useState<string>("");
-  const [infoDirector, setInfoDirector] = useState<string>("");
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState<boolean>(false);
-  const [infoSavedSuccess, setInfoSavedSuccess] = useState<string | null>(null);
-
-  const handleOpenEditInfo = () => {
-    setInfoDescription(movieObj.description || "");
-    const castList = movieObj.cast || movieObj.actors || [];
-    setInfoCast(castList.join(", "));
-    setInfoDirector(movieObj.director || "");
-    setShowEditInfoModal(true);
-  };
-
-  const handleSaveMovieInfo = (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsedCast = infoCast.split(",").map((c) => c.trim()).filter(Boolean);
-    const updatedMovie: Movie = {
-      ...movieObj,
-      description: infoDescription.trim(),
-      cast: parsedCast,
-      actors: parsedCast,
-      director: infoDirector.trim() || undefined,
-    };
-    setCurrentMovie(updatedMovie);
-
-    // Save to localStorage
-    try {
-      const existing: Movie[] = JSON.parse(localStorage.getItem("cine_movies") || "[]");
-      const idx = existing.findIndex((m) => m.title.toLowerCase() === movieObj.title.toLowerCase());
-      if (idx >= 0) {
-        existing[idx] = { ...existing[idx], ...updatedMovie };
-      } else {
-        existing.push(updatedMovie);
-      }
-      localStorage.setItem("cine_movies", JSON.stringify(existing));
-    } catch (err) {
-      console.warn("Local storage sync error", err);
-    }
-
-    if (onUpdateMovie) {
-      onUpdateMovie(movieObj.title, updatedMovie);
-    }
-
-    setShowEditInfoModal(false);
-    setInfoSavedSuccess("Movie description & casting updated successfully!");
-    setTimeout(() => setInfoSavedSuccess(null), 3500);
-  };
 
   // Primary trailer resolution
   const primaryTrailer = getPrimaryMovieTrailer(movieObj);
@@ -433,13 +386,49 @@ export default function BookingModal({
       ? currentTheatre.rowCategories[firstSeatRow].toUpperCase()
       : "ELITE";
 
-  const baseConveniencePerTicket = 23.00;
-  const baseConvenienceAmount = calculatedBreakdown?.convenienceFee ?? (selectedSeats.length * baseConveniencePerTicket);
-  const igstTaxAmount = calculatedBreakdown?.totalTaxes ?? Number((baseConvenienceAmount * 0.18).toFixed(2));
-  const totalConvenienceFee = Number((baseConvenienceAmount + igstTaxAmount).toFixed(2));
+  // Dynamic Movie Convenience Fee Calculation from Configured Rules
+  useEffect(() => {
+    if (selectedSeats.length === 0) {
+      setMovieFeeBreakdown(null);
+      return;
+    }
+    const tickets = selectedSeats.map((sId) => ({
+      price: getSeatPrice(sId),
+      category: seatCategoryLabel,
+    }));
+    const discount = appliedCoupon ? (appliedCoupon === "WELCOME50" ? 50 : 20) : 0;
+    const donation = isMusicianDonationAdded ? selectedSeats.length * 1.0 : 0;
+
+    // Instant local calculation using canonical table fallback
+    const localCalc = calculateLocalMovieFeeFallback(tickets, undefined, undefined, {
+      couponCode: appliedCoupon || undefined,
+      musicianDonation: isMusicianDonationAdded,
+    });
+    setMovieFeeBreakdown(localCalc);
+
+    // Call authoritative server calculation
+    movieFeeClient
+      .calculatePrice({
+        tickets,
+        couponDiscount: discount,
+        otherCharges: donation,
+      })
+      .then((serverCalc) => {
+        if (serverCalc) {
+          setMovieFeeBreakdown(serverCalc);
+        }
+      })
+      .catch((err) => {
+        console.warn("Using fallback local movie fee calculation:", err);
+      });
+  }, [selectedSeats, seatCategoryLabel, appliedCoupon, isMusicianDonationAdded, currentTheatre]);
+
+  const baseConvenienceAmount = movieFeeBreakdown ? movieFeeBreakdown.baseChargeTotal : (calculatedBreakdown?.convenienceFee ?? (selectedSeats.length * 20.00));
+  const igstTaxAmount = movieFeeBreakdown ? movieFeeBreakdown.convenienceFeeGstTotal : (calculatedBreakdown?.totalTaxes ?? Number((baseConvenienceAmount * 0.18).toFixed(2)));
+  const totalConvenienceFee = movieFeeBreakdown ? movieFeeBreakdown.totalConvenienceFee : Number((baseConvenienceAmount + igstTaxAmount).toFixed(2));
   const musicianDonationAmount = isMusicianDonationAdded ? (selectedSeats.length * 1.00) : 0;
   const couponDiscountAmount = appliedCoupon ? (appliedCoupon === "WELCOME50" ? 50 : 20) : (calculatedBreakdown?.totalDiscount ?? 0);
-  const orderTotalAmount = Math.max(0, Number((rawBaseTicketPrice + totalConvenienceFee + musicianDonationAmount - couponDiscountAmount).toFixed(2)));
+  const orderTotalAmount = movieFeeBreakdown ? movieFeeBreakdown.finalPayableAmount : Math.max(0, Number((rawBaseTicketPrice + totalConvenienceFee + musicianDonationAmount - couponDiscountAmount).toFixed(2)));
   const finalPayableAmount = orderTotalAmount;
 
   // Handle proceed to seat booking
@@ -473,15 +462,19 @@ export default function BookingModal({
         bookingMobile || "",
         {
           ticketAmount: rawBaseTicketPrice,
+          ticketSubtotal: rawBaseTicketPrice,
           platformFee: calculatedBreakdown?.platformFee || 0,
           convenienceFee: totalConvenienceFee,
+          convenienceFeeTax: igstTaxAmount,
           bookingFee: calculatedBreakdown?.bookingFee || 0,
           otherFeeAmount: musicianDonationAmount,
           taxAmount: igstTaxAmount,
           discountAmount: couponDiscountAmount,
           gatewayFee: calculatedBreakdown?.gatewayCharges || 0,
           paymentMethod: paymentMethod,
-        }
+          feeLines: movieFeeBreakdown?.feeLines || [],
+          feeSnapshot: movieFeeBreakdown?.feeSnapshot || null,
+        } as any
       );
 
       setGeneratedBookingId(confirmedBooking.id || `BK-${Math.floor(100000 + Math.random() * 900000)}`);
@@ -548,16 +541,7 @@ export default function BookingModal({
                     {movieTitle} <span className="text-white/40 font-normal">({movieObj.releaseYear || 2026})</span>
                   </h1>
 
-                  {/* Direct Access: Add / Edit Description and Casting */}
-                  <button
-                    type="button"
-                    onClick={handleOpenEditInfo}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 hover:border-gold/50 text-xs font-bold transition-all shadow-md cursor-pointer hover:scale-105"
-                    title="Add or edit movie description and casting for ticket booking"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    <span>Add / Edit Info</span>
-                  </button>
+
                 </div>
                 
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70 font-medium">
@@ -610,18 +594,7 @@ export default function BookingModal({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenEditInfo}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 hover:text-white border border-white/10 text-[11px] font-semibold transition-all cursor-pointer self-start sm:self-auto hover:border-gold/40"
-                >
-                  <Pencil className="w-3 h-3 text-gold" />
-                  <span>
-                    {(movieObj.description || (movieObj.cast && movieObj.cast.length > 0)) 
-                      ? "Edit Description & Cast" 
-                      : "Add Description & Cast"}
-                  </span>
-                </button>
+
               </div>
 
               {/* Movie Description / Storyline */}
@@ -646,15 +619,8 @@ export default function BookingModal({
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl bg-white/[0.02] border border-dashed border-white/10">
-                    <p className="text-xs text-text-muted italic">No storyline description added yet for this movie.</p>
-                    <button
-                      type="button"
-                      onClick={handleOpenEditInfo}
-                      className="text-xs font-bold text-gold hover:underline bg-transparent border-0 cursor-pointer p-0"
-                    >
-                      + Add Movie Description
-                    </button>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-dashed border-white/10">
+                    <p className="text-xs text-text-muted italic">No storyline description available for this movie.</p>
                   </div>
                 )}
               </div>
@@ -704,15 +670,8 @@ export default function BookingModal({
                     })}
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl bg-white/[0.02] border border-dashed border-white/10">
-                    <p className="text-xs text-text-muted italic">No casting members listed yet for this movie.</p>
-                    <button
-                      type="button"
-                      onClick={handleOpenEditInfo}
-                      className="text-xs font-bold text-gold hover:underline bg-transparent border-0 cursor-pointer p-0"
-                    >
-                      + Add Movie Casting
-                    </button>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-dashed border-white/10">
+                    <p className="text-xs text-text-muted italic">No casting members listed for this movie.</p>
                   </div>
                 )}
               </div>
@@ -1194,9 +1153,14 @@ export default function BookingModal({
 
               {/* Card 2: Price Breakdown */}
               <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm space-y-3 text-left">
-                {/* Line 1: Ticket Price */}
+                {/* Line 1: Ticket Quantity and Subtotal */}
                 <div className="flex items-center justify-between text-sm text-gray-800">
-                  <span className="text-gray-600">Ticket(s) price</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-600">Ticket subtotal</span>
+                    <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {selectedSeats.length} {selectedSeats.length === 1 ? "ticket" : "tickets"}
+                    </span>
+                  </div>
                   <span className="font-semibold text-gray-900 font-mono">
                     ₹{rawBaseTicketPrice.toFixed(2)}
                   </span>
@@ -1221,17 +1185,27 @@ export default function BookingModal({
                     </span>
                   </div>
 
-                  {/* Sub-breakdown: Base Amount + IGST 18% */}
+                  {/* Sub-breakdown: Base Charge + GST on Fee */}
                   {isConvenienceFeesExpanded && (
-                    <div className="pl-2 space-y-1 text-xs text-gray-500 border-l-2 border-gray-150 ml-1">
+                    <div className="pl-2 space-y-1 text-xs text-gray-500 border-l-2 border-amber-300 ml-1">
                       <div className="flex items-center justify-between">
-                        <span>Base Amount</span>
+                        <span>Base Charge ({movieFeeBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : "Per Ticket"})</span>
                         <span className="font-mono">₹{baseConvenienceAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Integrated GST (IGST) @ 18%</span>
+                        <span>GST on Convenience Fee @ {movieFeeBreakdown?.gstRateApplied ?? 18}%</span>
                         <span className="font-mono">₹{igstTaxAmount.toFixed(2)}</span>
                       </div>
+                      {movieFeeBreakdown?.feeLines && movieFeeBreakdown.feeLines.length > 0 && (
+                        <div className="pt-1 mt-1 border-t border-gray-100 text-[11px] text-gray-400 space-y-0.5">
+                          {movieFeeBreakdown.feeLines.map((line, idx) => (
+                            <div key={idx} className="flex justify-between">
+                              <span>Seat {selectedSeats[idx] || `#${idx + 1}`} (₹{line.ticketPrice}):</span>
+                              <span>₹{line.baseCharge.toFixed(2)} + ₹{line.gstAmount.toFixed(2)} GST</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1266,13 +1240,24 @@ export default function BookingModal({
                   </div>
                 </div>
 
+                {/* Discounts */}
+                {couponDiscountAmount > 0 && (
+                  <div className="flex items-center justify-between text-sm text-emerald-600 font-semibold pt-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5" />
+                      <span>Discount ({appliedCoupon})</span>
+                    </div>
+                    <span className="font-mono">-₹{couponDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
                 {/* Dotted Separator */}
                 <div className="border-t border-dashed border-gray-300 my-2" />
 
-                {/* Line 4: Order Total */}
+                {/* Line 4: Final Payable Amount */}
                 <div className="flex items-center justify-between text-sm sm:text-base font-bold text-gray-900">
-                  <span>Order total</span>
-                  <span className="font-mono text-lg font-extrabold text-gray-900">
+                  <span className="text-gray-900 font-bold">Final payable amount</span>
+                  <span className="font-mono text-lg font-extrabold text-[#E11D48]">
                     ₹{orderTotalAmount.toFixed(2)}
                   </span>
                 </div>
@@ -1570,102 +1555,7 @@ export default function BookingModal({
           );
         })()}
 
-        {/* ADD / EDIT MOVIE DESCRIPTION & CASTING MODAL IN TICKET BOOKING */}
-        {showEditInfoModal && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in text-white">
-            <div className="bg-[#141418] border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-left space-y-5 animate-scale-in">
-              <button
-                type="button"
-                onClick={() => setShowEditInfoModal(false)}
-                className="absolute top-5 right-5 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border-0 cursor-pointer transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
 
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold block">
-                  Movie Ticket Booking Details
-                </span>
-                <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  <Film className="w-5 h-5 text-gold" />
-                  <span>Add / Edit Movie Description & Casting</span>
-                </h3>
-                <p className="text-xs text-text-muted">
-                  Update "{movieObj.title}" storyline synopsis and cast list. Changes will immediately update your booking experience and movie catalog.
-                </p>
-              </div>
-
-              <form onSubmit={handleSaveMovieInfo} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary flex justify-between">
-                    <span>Movie Description / Synopsis</span>
-                    <span className="text-[10px] text-gold/80 font-normal">Plot summary</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={infoDescription}
-                    onChange={(e) => setInfoDescription(e.target.value)}
-                    placeholder="Enter storyline overview, plot highlights, or theatrical synopsis..."
-                    className="w-full bg-white/[0.03] border border-white/15 focus:border-gold rounded-xl p-3 text-xs text-white focus:outline-none resize-none leading-relaxed"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary flex justify-between">
-                    <span>Starring Cast (comma-separated)</span>
-                    <span className="text-[10px] text-text-muted font-normal">Actors</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={infoCast}
-                    onChange={(e) => setInfoCast(e.target.value)}
-                    placeholder="e.g. Rajinikanth, Nagarjuna, Shruti Haasan, Upendra"
-                    className="w-full bg-white/[0.03] border border-white/15 focus:border-gold rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
-                  />
-                  <p className="text-[10px] text-text-muted">Separate multiple actors with commas.</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
-                    Director / Filmmaker
-                  </label>
-                  <input
-                    type="text"
-                    value={infoDirector}
-                    onChange={(e) => setInfoDirector(e.target.value)}
-                    placeholder="e.g. Lokesh Kanagaraj, S. S. Rajamouli"
-                    className="w-full bg-white/[0.03] border border-white/15 focus:border-gold rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-3 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setShowEditInfoModal(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-text-secondary hover:text-white transition-colors cursor-pointer border-0"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-black text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-gold/20 cursor-pointer border-0"
-                  >
-                    Save & Update Booking
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Success Alert Toast */}
-        {infoSavedSuccess && (
-          <div className="fixed top-6 right-6 z-50 bg-emerald-500 text-black px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
-            <CheckCircle className="w-4 h-4 text-black" />
-            <span>{infoSavedSuccess}</span>
-          </div>
-        )}
 
       </div>
     </div>

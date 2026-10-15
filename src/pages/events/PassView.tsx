@@ -68,6 +68,7 @@ export default function PassView() {
     },
     pricing: {
       ticketSubtotal: 999,
+      convenienceFee: 0,
       platformBookingFee: 0,
       taxAmount: 0,
       discountAmount: 0,

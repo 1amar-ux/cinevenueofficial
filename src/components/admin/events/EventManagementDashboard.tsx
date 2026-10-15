@@ -34,6 +34,8 @@ import {
   AlertTriangle,
   Share2,
   ExternalLink,
+  IndianRupee,
+  Percent,
 } from 'lucide-react';
 import {
   getBookings,
@@ -69,13 +71,147 @@ export default function EventManagementDashboard({
   onEventUpdated,
 }: EventManagementDashboardProps) {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'details' | 'passes' | 'registrations' | 'analytics' | 'checkins' | 'settings'
+    'overview' | 'details' | 'fee' | 'passes' | 'registrations' | 'analytics' | 'checkins' | 'settings'
   >('overview');
 
   const [currentEvent, setCurrentEvent] = useState<any>(event);
   const [bookings, setBookings] = useState<EventBookingRecord[]>(() => getBookings());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+
+  // Convenience Fee Management State
+  const [feeEnabled, setFeeEnabled] = useState<boolean>(currentEvent.convenienceFeeEnabled ?? false);
+  const [feeType, setFeeType] = useState<'FIXED' | 'PERCENTAGE'>(currentEvent.convenienceFeeType || 'FIXED');
+  const [feeAmount, setFeeAmount] = useState<number>(currentEvent.convenienceFeeAmount ?? 30);
+  const [feeApplication, setFeeApplication] = useState<'PER_TICKET' | 'PER_BOOKING'>(
+    currentEvent.convenienceFeeApplication || 'PER_TICKET'
+  );
+  const [feeStatus, setFeeStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>(
+    currentEvent.convenienceFeeStatus || 'PENDING'
+  );
+  const [feeApprovedBy, setFeeApprovedBy] = useState<string | null>(currentEvent.convenienceFeeApprovedBy || null);
+  const [feeApprovedAt, setFeeApprovedAt] = useState<string | null>(currentEvent.convenienceFeeApprovedAt || null);
+  const [feeAuditLogs, setFeeAuditLogs] = useState<any[]>([]);
+  const [loadingFeeAudit, setLoadingFeeAudit] = useState(false);
+  const [simTickets, setSimTickets] = useState(2);
+  const [simPrice, setSimPrice] = useState(currentEvent.ticketTypes?.[0]?.price || 500);
+
+  const fetchFeeAuditLogs = async () => {
+    try {
+      setLoadingFeeAudit(true);
+      const res = await apiClient.get(`/events/${currentEvent.id}/fee-audit-logs`);
+      const logs = res.data?.auditLogs || res.data?.data?.auditLogs;
+      if (Array.isArray(logs)) setFeeAuditLogs(logs);
+    } catch (e) {
+      try {
+        const res2 = await apiClient.get(`/admin/events/${currentEvent.id}/fee-audit-logs`);
+        const logs2 = res2.data?.auditLogs || res2.data?.data?.auditLogs;
+        if (Array.isArray(logs2)) setFeeAuditLogs(logs2);
+      } catch (e2) {}
+    } finally {
+      setLoadingFeeAudit(false);
+    }
+  };
+
+  const handleApproveFee = async () => {
+    const updated = {
+      ...currentEvent,
+      convenienceFeeStatus: 'APPROVED' as const,
+      convenienceFeeApprovedBy: 'Admin',
+      convenienceFeeApprovedAt: new Date().toISOString(),
+    };
+    setCurrentEvent(updated);
+    setFeeStatus('APPROVED');
+    setFeeApprovedBy('Admin');
+    setFeeApprovedAt(updated.convenienceFeeApprovedAt);
+    saveEvent(updated);
+    if (onEventUpdated) onEventUpdated(updated);
+
+    try {
+      await apiClient.post(`/admin/events/${currentEvent.id}/approve-fee`, {
+        adminName: 'Admin',
+        notes: 'Approved via Event Management Dashboard',
+      });
+    } catch (apiErr) {
+      try {
+        await apiClient.post(`/events/${currentEvent.id}/approve-fee`, {
+          adminName: 'Admin',
+          notes: 'Approved via Event Management Dashboard',
+        });
+      } catch (e) {}
+    }
+    showToast('Convenience Fee APPROVED! Applicable to customer bookings.');
+    fetchFeeAuditLogs();
+  };
+
+  const handleRejectFee = async () => {
+    const updated = {
+      ...currentEvent,
+      convenienceFeeStatus: 'REJECTED' as const,
+    };
+    setCurrentEvent(updated);
+    setFeeStatus('REJECTED');
+    saveEvent(updated);
+    if (onEventUpdated) onEventUpdated(updated);
+
+    try {
+      await apiClient.post(`/admin/events/${currentEvent.id}/reject-fee`, {
+        adminName: 'Admin',
+        notes: 'Rejected via Event Management Dashboard',
+      });
+    } catch (apiErr) {
+      try {
+        await apiClient.post(`/events/${currentEvent.id}/reject-fee`, {
+          adminName: 'Admin',
+          notes: 'Rejected via Event Management Dashboard',
+        });
+      } catch (e) {}
+    }
+    showToast('Convenience Fee REJECTED. Customers will NOT be charged.');
+    fetchFeeAuditLogs();
+  };
+
+  const handleSaveFeeSettings = async () => {
+    const updated = {
+      ...currentEvent,
+      convenienceFeeEnabled: feeEnabled,
+      convenienceFeeType: feeType,
+      convenienceFeeAmount: Number(feeAmount) || 0,
+      convenienceFeeApplication: feeApplication,
+      convenienceFeeStatus: feeStatus,
+      convenienceFeeApprovedBy: feeStatus === 'APPROVED' ? (feeApprovedBy || 'Admin') : null,
+      convenienceFeeApprovedAt: feeStatus === 'APPROVED' ? (feeApprovedAt || new Date().toISOString()) : null,
+    };
+    setCurrentEvent(updated);
+    saveEvent(updated);
+    if (onEventUpdated) onEventUpdated(updated);
+
+    try {
+      await apiClient.patch(`/admin/events/${currentEvent.id}/fee-settings`, {
+        convenienceFeeEnabled: feeEnabled,
+        convenienceFeeType: feeType,
+        convenienceFeeAmount: Number(feeAmount) || 0,
+        convenienceFeeApplication: feeApplication,
+        convenienceFeeStatus: feeStatus,
+        adminName: 'Admin',
+        notes: 'Settings modified via Event Management Dashboard',
+      });
+    } catch (apiErr) {
+      try {
+        await apiClient.patch(`/events/${currentEvent.id}/fee-settings`, {
+          convenienceFeeEnabled: feeEnabled,
+          convenienceFeeType: feeType,
+          convenienceFeeAmount: Number(feeAmount) || 0,
+          convenienceFeeApplication: feeApplication,
+          convenienceFeeStatus: feeStatus,
+          adminName: 'Admin',
+          notes: 'Settings modified via Event Management Dashboard',
+        });
+      } catch (e) {}
+    }
+    showToast('Convenience Fee Settings saved successfully.');
+    fetchFeeAuditLogs();
+  };
 
   // Selected Pass for Modal
   const [selectedPass, setSelectedPass] = useState<EventBookingRecord | null>(null);
@@ -620,6 +756,12 @@ export default function EventManagementDashboard({
           {[
             { id: 'overview', label: 'Overview', icon: Sparkles },
             { id: 'details', label: 'Event Details', icon: Edit },
+            {
+              id: 'fee',
+              label: 'Convenience Fee',
+              icon: IndianRupee,
+              badge: feeEnabled ? (feeStatus === 'APPROVED' ? 'Approved' : 'Pending') : 'Off',
+            },
             { id: 'passes', label: 'Passes', icon: Ticket, badge: metrics.passesIssued },
             { id: 'registrations', label: 'Registrations', icon: Users, badge: metrics.totalRegistrations },
             { id: 'analytics', label: 'Data Analysis', icon: BarChart3 },
@@ -631,7 +773,10 @@ export default function EventManagementDashboard({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  if (tab.id === 'fee') fetchFeeAuditLogs();
+                }}
                 className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'bg-gold/15 text-gold border-b-2 border-gold font-black'
@@ -1737,6 +1882,375 @@ export default function EventManagementDashboard({
               >
                 Save Settings
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: CONVENIENCE FEE MANAGEMENT */}
+      {activeTab === 'fee' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Header Card */}
+          <div className="bg-gradient-to-r from-black/90 via-gold/10 to-black/90 border border-gold/30 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+            <div>
+              <div className="flex items-center gap-2">
+                <IndianRupee className="w-5 h-5 text-gold" />
+                <h3 className="text-lg font-bold text-white">Event Booking Convenience Fee Management</h3>
+              </div>
+              <p className="text-xs text-white/50 mt-1">
+                Configure ticket convenience fees, manage admin approvals, inspect calculation rules, and view the audit log.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase ${
+                  !feeEnabled
+                    ? 'bg-white/10 text-white/50'
+                    : feeStatus === 'APPROVED'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : feeStatus === 'PENDING'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                }`}
+              >
+                {!feeEnabled ? 'FEE DISABLED' : `FEE STATUS: ${feeStatus}`}
+              </span>
+            </div>
+          </div>
+
+          {/* APPROVAL WORKFLOW ACTION BANNER */}
+          {feeEnabled && feeStatus === 'PENDING' && (
+            <div className="p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 font-bold text-sm text-amber-300">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <span>Pending Admin Approval</span>
+                </div>
+                <p className="text-xs text-amber-200/70">
+                  The convenience fee is currently <strong>Pending Approval</strong>. Customers will <strong>NOT</strong> be charged any fee until an authorized admin reviews and approves it.
+                </p>
+              </div>
+
+              <div className="flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRejectFee}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-rose-300 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 transition-colors cursor-pointer"
+                >
+                  Reject Fee
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApproveFee}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-black bg-emerald-400 hover:bg-emerald-300 shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Approve Fee
+                </button>
+              </div>
+            </div>
+          )}
+
+          {feeEnabled && feeStatus === 'APPROVED' && (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  <strong>Fee Active:</strong> Approved by <strong>{feeApprovedBy || 'Admin'}</strong>
+                  {feeApprovedAt && ` on ${new Date(feeApprovedAt).toLocaleString('en-IN')}`}. Applicable to all customer bookings.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRejectFee}
+                className="text-xs font-semibold text-rose-300 hover:underline cursor-pointer"
+              >
+                Revoke Approval / Reject
+              </button>
+            </div>
+          )}
+
+          {feeEnabled && feeStatus === 'REJECTED' && (
+            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>
+                  <strong>Fee Rejected:</strong> This convenience fee has been rejected. Customers are charged ₹0 convenience fee.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleApproveFee}
+                className="text-xs font-semibold text-emerald-300 hover:underline cursor-pointer"
+              >
+                Approve Fee
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* SETTINGS FORM (7 cols) */}
+            <div className="lg:col-span-7 bg-white/5 border border-white/10 rounded-2xl p-6 space-y-5">
+              <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider text-gold flex items-center gap-2">
+                <Settings className="w-4 h-4" /> Convenience Fee Settings
+              </h4>
+
+              {/* 1. Enable Convenience Fee */}
+              <div className="flex items-center justify-between p-3.5 bg-black/40 border border-white/10 rounded-xl">
+                <div>
+                  <p className="text-xs font-bold text-white">1. Enable Convenience Fee</p>
+                  <p className="text-[11px] text-white/50">Allow charging convenience fee on this event</p>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setFeeEnabled(true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      feeEnabled ? 'bg-emerald-500 text-black shadow' : 'bg-white/10 text-white/50'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFeeEnabled(false)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      !feeEnabled ? 'bg-rose-500/80 text-white shadow' : 'bg-white/10 text-white/50'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              {feeEnabled && (
+                <div className="space-y-4">
+                  {/* 2. Fee Type */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-white/70">2. Fee Type</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFeeType('FIXED')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          feeType === 'FIXED'
+                            ? 'bg-gold/15 border-gold text-white shadow'
+                            : 'bg-black/30 border-white/10 text-white/60'
+                        }`}
+                      >
+                        <p className="text-xs font-bold uppercase font-mono">Fixed Fee (₹)</p>
+                        <p className="text-[11px] text-white/50">Flat rupee amount</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFeeType('PERCENTAGE')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          feeType === 'PERCENTAGE'
+                            ? 'bg-gold/15 border-gold text-white shadow'
+                            : 'bg-black/30 border-white/10 text-white/60'
+                        }`}
+                      >
+                        <p className="text-xs font-bold uppercase font-mono">Percentage (%)</p>
+                        <p className="text-[11px] text-white/50">Percent of ticket subtotal</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. Convenience Fee Amount */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-white/70">
+                      3. Convenience Fee Amount {feeType === 'FIXED' ? '(₹)' : '(%)'}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={feeType === 'PERCENTAGE' ? '0.1' : '1'}
+                      value={feeAmount}
+                      onChange={(e) => setFeeAmount(Math.max(0, Number(e.target.value)))}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                      placeholder={feeType === 'FIXED' ? '30' : '5'}
+                    />
+                  </div>
+
+                  {/* 4. Fee Application */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-white/70">4. Fee Application</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFeeApplication('PER_TICKET')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          feeApplication === 'PER_TICKET'
+                            ? 'bg-gold/15 border-gold text-white shadow'
+                            : 'bg-black/30 border-white/10 text-white/60'
+                        }`}
+                      >
+                        <p className="text-xs font-bold uppercase font-mono">Per Ticket</p>
+                        <p className="text-[11px] text-white/50">Multiplied by number of tickets</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFeeApplication('PER_BOOKING')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          feeApplication === 'PER_BOOKING'
+                            ? 'bg-gold/15 border-gold text-white shadow'
+                            : 'bg-black/30 border-white/10 text-white/60'
+                        }`}
+                      >
+                        <p className="text-xs font-bold uppercase font-mono">Per Booking</p>
+                        <p className="text-[11px] text-white/50">Applied once per total order</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 5. Fee Status */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-white/70">5. Fee Approval Status</label>
+                    <select
+                      value={feeStatus}
+                      onChange={(e) => setFeeStatus(e.target.value as any)}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-gold"
+                    >
+                      <option value="PENDING">Pending Approval</option>
+                      <option value="APPROVED">Approved (Applicable to Customer)</option>
+                      <option value="REJECTED">Rejected (Customer Charged ₹0 Fee)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-white/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSaveFeeSettings}
+                  className="px-6 py-2.5 bg-gold hover:bg-gold-light text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-lg"
+                >
+                  Save Fee Settings
+                </button>
+              </div>
+            </div>
+
+            {/* LIVE SIMULATOR & AUDIT LOG (5 cols) */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Live Fee Calculation Simulator */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+                <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider text-gold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" /> Checkout Calculation Simulator
+                </h4>
+                <p className="text-[11px] text-white/50">
+                  Simulate what a customer sees during checkout with current fee configuration:
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-[10px] text-white/50 mb-1">Ticket Price (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={simPrice}
+                      onChange={(e) => setSimPrice(Number(e.target.value))}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-white/50 mb-1">Ticket Quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={simTickets}
+                      onChange={(e) => setSimTickets(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Calculation Output */}
+                {(() => {
+                  const subtotal = simPrice * simTickets;
+                  const isApproved = feeEnabled && feeStatus === 'APPROVED';
+                  let computedFee = 0;
+                  if (isApproved) {
+                    if (feeType === 'FIXED') {
+                      computedFee = feeApplication === 'PER_TICKET' ? feeAmount * simTickets : feeAmount;
+                    } else {
+                      computedFee = Math.round((subtotal * feeAmount) / 100);
+                    }
+                  }
+                  const total = subtotal + computedFee;
+
+                  return (
+                    <div className="bg-black/60 p-4 rounded-xl border border-white/10 space-y-2 text-xs">
+                      <div className="flex justify-between text-white/70">
+                        <span>Ticket Subtotal ({simTickets} × ₹{simPrice}):</span>
+                        <span className="font-mono text-white font-bold">₹{subtotal.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between text-white/70">
+                        <span>
+                          Convenience Fee{' '}
+                          {!isApproved && (
+                            <span className="text-[10px] text-amber-300 font-mono">
+                              ({feeStatus === 'PENDING' ? 'Pending' : feeStatus === 'REJECTED' ? 'Rejected' : 'Disabled'})
+                            </span>
+                          )}:
+                        </span>
+                        <span className={`font-mono font-bold ${isApproved ? 'text-gold' : 'text-white/40'}`}>
+                          {isApproved ? `+₹${computedFee.toLocaleString('en-IN')}` : '₹0 (Not Applied)'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-white font-bold pt-2 border-t border-white/10 text-sm">
+                        <span>Final Payable Amount:</span>
+                        <span className="font-mono text-gold">₹{total.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Fee Audit Log */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider text-gold flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" /> Fee Audit History
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={fetchFeeAuditLogs}
+                    className="text-[10px] text-gold hover:underline cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                <div className="max-h-56 overflow-y-auto divide-y divide-white/5 rounded-xl bg-black/40 border border-white/5 text-xs">
+                  {loadingFeeAudit ? (
+                    <p className="p-3 text-center text-white/40">Loading history...</p>
+                  ) : feeAuditLogs.length === 0 ? (
+                    <p className="p-3 text-center text-white/40 text-[11px]">
+                      No previous fee approval/modification records found.
+                    </p>
+                  ) : (
+                    feeAuditLogs.map((log: any, idx: number) => (
+                      <div key={idx} className="p-2.5 space-y-0.5">
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono font-bold text-gold uppercase text-[11px]">
+                            {log.action}
+                          </span>
+                          <span className="text-[10px] text-white/40 font-mono">
+                            {log.createdAt ? new Date(log.createdAt).toLocaleString('en-IN') : 'Recently'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/70">
+                          By <strong className="text-white">{log.changedBy || 'Admin'}</strong>
+                          {log.notes && ` — ${log.notes}`}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

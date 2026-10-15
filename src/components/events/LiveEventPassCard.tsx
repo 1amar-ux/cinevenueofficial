@@ -200,6 +200,22 @@ export default function LiveEventPassCard({
                 Holder: <strong className="text-white">{holderName}</strong>
               </span>
             </div>
+            {!isFree && (pass.convenienceFee > 0 || pass.pricing?.convenienceFee > 0) && (
+              <div className="pt-1 border-t border-white/5 text-[9px] font-mono text-white/60 space-y-0.5">
+                <div className="flex justify-between">
+                  <span>Ticket Subtotal:</span>
+                  <span className="text-white">
+                    ₹{Number(pass.ticketSubtotal ?? pass.pricing?.ticketSubtotal ?? (finalFee - (pass.convenienceFee ?? pass.pricing?.convenienceFee))).toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Convenience Fee:</span>
+                  <span className="text-emerald-400">
+                    +₹{Number(pass.convenienceFee ?? pass.pricing?.convenienceFee).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+            )}
             {seatCodes && seatCodes.length > 0 && (
               <div className="flex justify-between items-center text-[9px] pt-1 border-t border-white/5 font-mono">
                 <span className="text-white/40">Reserved Seats:</span>

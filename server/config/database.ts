@@ -35,7 +35,9 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   Booking: new Set([
     'id', 'bookingNumber', 'theatreId', 'showId', 'userId', 'ticketAmount',
     'platformFee', 'convenienceFee', 'taxAmount', 'discountAmount', 'gatewayFee',
-    'totalAmount', 'status', 'createdAt', 'updatedAt'
+    'totalAmount', 'status', 'createdAt', 'updatedAt',
+    'ticketSubtotal', 'ticket_subtotal', 'convenienceFeeTax', 'convenience_fee_tax',
+    'feeSnapshot', 'fee_snapshot'
   ]),
   BookingItem: new Set([
     'id', 'bookingId', 'showSeatId', 'price'
@@ -50,13 +52,33 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   ]),
   Event: new Set([
     'id', 'title', 'description', 'category', 'bannerUrl', 'date', 'time',
-    'city', 'venue', 'price', 'capacity', 'organizerId', 'status', 'createdAt', 'updatedAt'
+    'city', 'venue', 'price', 'capacity', 'organizerId', 'status', 'createdAt', 'updatedAt',
+    'convenienceFeeEnabled', 'convenienceFeeType', 'convenienceFeeAmount', 'convenienceFeeApplication',
+    'convenienceFeeStatus', 'convenienceFeeApprovedBy', 'convenienceFeeApprovedAt',
+    'convenience_fee_enabled', 'convenience_fee_type', 'convenience_fee_amount', 'convenience_fee_application',
+    'convenience_fee_status', 'convenience_fee_approved_by', 'convenience_fee_approved_at'
   ]),
   EventTicketType: new Set([
     'id', 'eventId', 'name', 'price', 'capacity', 'available'
   ]),
   EventRegistration: new Set([
-    'id', 'eventId', 'userId', 'ticketCount', 'totalAmount', 'status', 'passCode', 'createdAt'
+    'id', 'eventId', 'userId', 'ticketCount', 'totalAmount', 'status', 'passCode', 'createdAt',
+    'ticketSubtotal', 'convenienceFee', 'discountAmount', 'finalPayableAmount', 'feeConfigurationSnapshot',
+    'ticket_subtotal', 'convenience_fee', 'discount_amount', 'final_payable_amount', 'fee_configuration_snapshot'
+  ]),
+  EventFeeAuditLog: new Set([
+    'id', 'eventId', 'action', 'previousStatus', 'newStatus', 'feeType', 'feeAmount',
+    'feeApplication', 'enabled', 'actorId', 'actorEmail', 'reason', 'metadata', 'createdAt'
+  ]),
+  MovieConvenienceFee: new Set([
+    'id', 'ticketPrice', 'baseCharge', 'category', 'gstRate', 'feeApplication', 'enabled',
+    'description', 'createdAt', 'updatedAt',
+    'ticket_price', 'base_charge', 'gst_rate', 'fee_application', 'created_at', 'updated_at'
+  ]),
+  MovieFeeAuditLog: new Set([
+    'id', 'feeConfigId', 'action', 'ticketPrice', 'baseCharge', 'gstRate', 'actorId',
+    'actorEmail', 'reason', 'metadata', 'createdAt',
+    'fee_config_id', 'ticket_price', 'base_charge', 'gst_rate', 'actor_id', 'actor_email', 'created_at'
   ]),
   User: new Set([
     'id', 'email', 'passwordHash', 'name', 'mobile', 'role', 'isActive', 'isVerified',
@@ -116,6 +138,85 @@ function sanitizeRecord(tableName: string, data: any) {
   } else if (tableName === "Event") {
     if (normalized.venueName && !normalized.venue) normalized.venue = normalized.venueName;
     if (normalized.image && !normalized.bannerUrl) normalized.bannerUrl = normalized.image;
+    if (normalized.convenienceFeeEnabled !== undefined && normalized.convenience_fee_enabled === undefined) {
+      normalized.convenience_fee_enabled = normalized.convenienceFeeEnabled;
+    }
+    if (normalized.convenienceFeeType !== undefined && normalized.convenience_fee_type === undefined) {
+      normalized.convenience_fee_type = normalized.convenienceFeeType;
+    }
+    if (normalized.convenienceFeeAmount !== undefined && normalized.convenience_fee_amount === undefined) {
+      normalized.convenience_fee_amount = normalized.convenienceFeeAmount;
+    }
+    if (normalized.convenienceFeeApplication !== undefined && normalized.convenience_fee_application === undefined) {
+      normalized.convenience_fee_application = normalized.convenienceFeeApplication;
+    }
+    if (normalized.convenienceFeeStatus !== undefined && normalized.convenience_fee_status === undefined) {
+      normalized.convenience_fee_status = normalized.convenienceFeeStatus;
+    }
+    if (normalized.convenienceFeeApprovedBy !== undefined && normalized.convenience_fee_approved_by === undefined) {
+      normalized.convenience_fee_approved_by = normalized.convenienceFeeApprovedBy;
+    }
+    if (normalized.convenienceFeeApprovedAt !== undefined && normalized.convenience_fee_approved_at === undefined) {
+      normalized.convenience_fee_approved_at = normalized.convenienceFeeApprovedAt;
+    }
+  } else if (tableName === "EventRegistration") {
+    if (normalized.ticketSubtotal !== undefined && normalized.ticket_subtotal === undefined) {
+      normalized.ticket_subtotal = normalized.ticketSubtotal;
+    }
+    if (normalized.convenienceFee !== undefined && normalized.convenience_fee === undefined) {
+      normalized.convenience_fee = normalized.convenienceFee;
+    }
+    if (normalized.discountAmount !== undefined && normalized.discount_amount === undefined) {
+      normalized.discount_amount = normalized.discountAmount;
+    }
+    if (normalized.finalPayableAmount !== undefined && normalized.final_payable_amount === undefined) {
+      normalized.final_payable_amount = normalized.finalPayableAmount;
+    }
+    if (normalized.feeConfigurationSnapshot !== undefined && normalized.fee_configuration_snapshot === undefined) {
+      normalized.fee_configuration_snapshot = normalized.feeConfigurationSnapshot;
+    }
+  } else if (tableName === "Booking") {
+    if (normalized.ticketSubtotal !== undefined && normalized.ticket_subtotal === undefined) {
+      normalized.ticket_subtotal = normalized.ticketSubtotal;
+    }
+    if (normalized.convenienceFeeTax !== undefined && normalized.convenience_fee_tax === undefined) {
+      normalized.convenience_fee_tax = normalized.convenienceFeeTax;
+    }
+    if (normalized.feeSnapshot !== undefined && normalized.fee_snapshot === undefined) {
+      normalized.fee_snapshot = normalized.feeSnapshot;
+    }
+  } else if (tableName === "MovieConvenienceFee") {
+    if (normalized.ticketPrice !== undefined && normalized.ticket_price === undefined) {
+      normalized.ticket_price = normalized.ticketPrice;
+    }
+    if (normalized.baseCharge !== undefined && normalized.base_charge === undefined) {
+      normalized.base_charge = normalized.baseCharge;
+    }
+    if (normalized.gstRate !== undefined && normalized.gst_rate === undefined) {
+      normalized.gst_rate = normalized.gstRate;
+    }
+    if (normalized.feeApplication !== undefined && normalized.fee_application === undefined) {
+      normalized.fee_application = normalized.feeApplication;
+    }
+  } else if (tableName === "MovieFeeAuditLog") {
+    if (normalized.feeConfigId !== undefined && normalized.fee_config_id === undefined) {
+      normalized.fee_config_id = normalized.feeConfigId;
+    }
+    if (normalized.ticketPrice !== undefined && normalized.ticket_price === undefined) {
+      normalized.ticket_price = normalized.ticketPrice;
+    }
+    if (normalized.baseCharge !== undefined && normalized.base_charge === undefined) {
+      normalized.base_charge = normalized.baseCharge;
+    }
+    if (normalized.gstRate !== undefined && normalized.gst_rate === undefined) {
+      normalized.gst_rate = normalized.gstRate;
+    }
+    if (normalized.actorId !== undefined && normalized.actor_id === undefined) {
+      normalized.actor_id = normalized.actorId;
+    }
+    if (normalized.actorEmail !== undefined && normalized.actor_email === undefined) {
+      normalized.actor_email = normalized.actorEmail;
+    }
   } else if (tableName === "app_settings") {
     if (normalized.maintenanceMode !== undefined && normalized.maintenance_mode === undefined) {
       normalized.maintenance_mode = normalized.maintenanceMode;
@@ -219,7 +320,9 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   "EventRegistration",
   "BookingItem",
   "app_settings",
-  "FinancialAuditLog"
+  "FinancialAuditLog",
+  "EventFeeAuditLog",
+  "MovieFeeAuditLog"
 ]);
 
 function normalizeReturnedRecord(tableName: string, data: any): any {
@@ -238,6 +341,78 @@ function normalizeReturnedRecord(tableName: string, data: any): any {
       subwebsiteMaintenanceMessage: data.subwebsite_maintenance_message !== undefined ? data.subwebsite_maintenance_message : data.subwebsiteMaintenanceMessage,
       updatedAt: data.updated_at !== undefined ? data.updated_at : data.updatedAt,
       updatedBy: data.updated_by !== undefined ? data.updated_by : data.updatedBy
+    };
+  }
+  if (tableName === "Event") {
+    const isFeeEnabled = data.convenience_fee_enabled !== undefined ? Boolean(data.convenience_fee_enabled) : Boolean(data.convenienceFeeEnabled);
+    const feeType = data.convenience_fee_type || data.convenienceFeeType || "FIXED";
+    const feeAmt = Number(data.convenience_fee_amount !== undefined ? data.convenience_fee_amount : (data.convenienceFeeAmount || 0));
+    const feeApp = data.convenience_fee_application || data.convenienceFeeApplication || "PER_TICKET";
+    const feeStat = data.convenience_fee_status || data.convenienceFeeStatus || "PENDING";
+    const feeAppBy = data.convenience_fee_approved_by !== undefined ? data.convenience_fee_approved_by : data.convenienceFeeApprovedBy;
+    const feeAppAt = data.convenience_fee_approved_at !== undefined ? data.convenience_fee_approved_at : data.convenienceFeeApprovedAt;
+    return {
+      ...data,
+      convenienceFeeEnabled: isFeeEnabled,
+      convenienceFeeType: feeType,
+      convenienceFeeAmount: feeAmt,
+      convenienceFeeApplication: feeApp,
+      convenienceFeeStatus: feeStat,
+      convenienceFeeApprovedBy: feeAppBy,
+      convenienceFeeApprovedAt: feeAppAt,
+      convenience_fee_enabled: isFeeEnabled,
+      convenience_fee_type: feeType,
+      convenience_fee_amount: feeAmt,
+      convenience_fee_application: feeApp,
+      convenience_fee_status: feeStat,
+      convenience_fee_approved_by: feeAppBy,
+      convenience_fee_approved_at: feeAppAt,
+    };
+  }
+  if (tableName === "EventRegistration") {
+    const subtotal = Number(data.ticket_subtotal !== undefined ? data.ticket_subtotal : (data.ticketSubtotal || 0));
+    const fee = Number(data.convenience_fee !== undefined ? data.convenience_fee : (data.convenienceFee || 0));
+    const discount = Number(data.discount_amount !== undefined ? data.discount_amount : (data.discountAmount || 0));
+    const finalAmount = Number(data.final_payable_amount !== undefined ? data.final_payable_amount : (data.finalPayableAmount || data.totalAmount || 0));
+    const snapshot = data.fee_configuration_snapshot !== undefined ? data.fee_configuration_snapshot : data.feeConfigurationSnapshot;
+    return {
+      ...data,
+      ticketSubtotal: subtotal,
+      convenienceFee: fee,
+      discountAmount: discount,
+      finalPayableAmount: finalAmount,
+      feeConfigurationSnapshot: snapshot,
+      ticket_subtotal: subtotal,
+      convenience_fee: fee,
+      discount_amount: discount,
+      final_payable_amount: finalAmount,
+      fee_configuration_snapshot: snapshot,
+    };
+  }
+  if (tableName === "MovieConvenienceFee") {
+    return {
+      ...data,
+      ticketPrice: Number(data.ticket_price !== undefined ? data.ticket_price : (data.ticketPrice || 0)),
+      baseCharge: Number(data.base_charge !== undefined ? data.base_charge : (data.baseCharge || 0)),
+      gstRate: Number(data.gst_rate !== undefined ? data.gst_rate : (data.gstRate !== undefined ? data.gstRate : 18.0)),
+      feeApplication: data.fee_application || data.feeApplication || "PER_TICKET",
+      category: data.category || "STANDARD",
+      enabled: data.enabled !== undefined ? Boolean(data.enabled) : true,
+      description: data.description || null,
+      createdAt: data.created_at || data.createdAt,
+      updatedAt: data.updated_at || data.updatedAt
+    };
+  }
+  if (tableName === "MovieFeeAuditLog") {
+    return {
+      ...data,
+      feeConfigId: data.fee_config_id || data.feeConfigId,
+      ticketPrice: data.ticket_price !== undefined ? Number(data.ticket_price) : (data.ticketPrice !== undefined ? Number(data.ticketPrice) : undefined),
+      baseCharge: data.base_charge !== undefined ? Number(data.base_charge) : (data.baseCharge !== undefined ? Number(data.baseCharge) : undefined),
+      gstRate: data.gst_rate !== undefined ? Number(data.gst_rate) : (data.gstRate !== undefined ? Number(data.gstRate) : undefined),
+      actorId: data.actor_id || data.actorId,
+      actorEmail: data.actor_email || data.actorEmail,
+      createdAt: data.created_at || data.createdAt
     };
   }
   return data;
@@ -492,7 +667,15 @@ const TABLE_MAP: { [key: string]: string } = {
   passwordresettoken: "PasswordResetToken",
   authprovider: "AuthProvider",
   financialauditlog: "FinancialAuditLog",
-  financialAuditLog: "FinancialAuditLog"
+  financialAuditLog: "FinancialAuditLog",
+  eventfeeauditlog: "EventFeeAuditLog",
+  eventFeeAuditLog: "EventFeeAuditLog",
+  movieconveniencefee: "MovieConvenienceFee",
+  movieConvenienceFee: "MovieConvenienceFee",
+  moviefee: "MovieConvenienceFee",
+  movieFee: "MovieConvenienceFee",
+  moviefeeauditlog: "MovieFeeAuditLog",
+  movieFeeAuditLog: "MovieFeeAuditLog"
 };
 
 function initPrismaClient(): PrismaClient {

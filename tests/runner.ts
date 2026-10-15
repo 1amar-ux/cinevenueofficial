@@ -3,6 +3,9 @@ import { runMaintenanceTests } from "./unit/maintenance.test";
 import { runSubwebsiteGateTests } from "./unit/subwebsiteGate.test";
 import { runCashfreeTests } from "./unit/cashfree.test";
 
+import { runEventConvenienceFeeTests } from "./unit/eventConvenienceFee.test";
+import { runMovieConvenienceFeeTests } from "./unit/movieConvenienceFee.test";
+
 async function main() {
   console.log("==========================================");
   console.log("🎬 CineVenue Automated Test Runner");
@@ -50,6 +53,30 @@ async function main() {
   console.log("\n--- 4. Cashfree Payment Gateway & Security Tests ---");
   const cashfreeResults = await runCashfreeTests();
   for (const r of cashfreeResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 5. Event Booking Convenience Fee Management Tests ---");
+  const feeResults = await runEventConvenienceFeeTests();
+  for (const r of feeResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 6. Movie Booking Convenience Fee Management & Final Payment Tests ---");
+  const movieFeeResults = await runMovieConvenienceFeeTests();
+  for (const r of movieFeeResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;
