@@ -200,10 +200,10 @@ export default function MovieDetails() {
           },
           {
             id: "off-3",
-            title: "Redeem CineCoins for up to 20% instant off on tickets & popcorn",
-            subtitle: "Instant redemption at checkout",
+            title: "CineCoins Rewards & Loyalty — Launching December 2026",
+            subtitle: "Exclusive cashback and redemptions arriving soon",
             bankName: "CineVenue Vault",
-            discountBadge: "CINECOINS",
+            discountBadge: "COMING SOON",
           },
         ];
 

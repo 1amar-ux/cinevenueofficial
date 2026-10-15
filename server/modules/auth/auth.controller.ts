@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { authService } from "./auth.service";
+import { UnauthorizedError } from "../../shared/errors";
 
 export class AuthController {
   private setSessionCookies = (res: Response, tokens: { accessToken: string; refreshToken: string }) => {
@@ -16,7 +17,8 @@ export class AuthController {
       return res.status(201).json({
         success: true,
         message: "Your account has been created. Please verify your email address to continue.",
-        data: { user: result.user, verificationToken: result.verificationToken }
+        token: result.tokens.accessToken,
+        data: { user: result.user, tokens: result.tokens, verificationToken: result.verificationToken }
       });
     } catch (error) {
       next(error);
@@ -30,7 +32,8 @@ export class AuthController {
       return res.json({
         success: true,
         message: "Login successful",
-        data: { user: result.user }
+        token: result.tokens.accessToken,
+        data: { user: result.user, tokens: result.tokens }
       });
     } catch (error) {
       next(error);
@@ -71,13 +74,26 @@ export class AuthController {
 
   public googleLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { idToken, code, state, email, name, image, supabaseUserId } = req.body || {};
-      const result = await authService.googleLogin({ idToken, code, state, email, name, image, supabaseUserId });
+      const { idToken, accessToken, code, state, supabaseUserId, email, name, profileImageUrl, mobile } = req.body || {};
+      const result = await authService.googleLogin({
+        idToken: idToken || accessToken,
+        accessToken: accessToken || idToken,
+        code,
+        state,
+        supabaseUserId,
+        email,
+        name,
+        profileImageUrl,
+        mobile
+      });
       this.setSessionCookies(res, result.tokens);
       return res.json({
         success: true,
         message: "Google authentication successful",
-        data: { user: result.user }
+        data: {
+          user: result.user,
+          tokens: result.tokens
+        }
       });
     } catch (error) {
       next(error);
@@ -87,6 +103,9 @@ export class AuthController {
   public refresh = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refreshToken = req.body.refreshToken || req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_refresh_token="))?.split("=")[1];
+      if (!refreshToken) {
+        throw new UnauthorizedError("Refresh token is required");
+      }
       const tokens = await authService.refreshToken(refreshToken);
       this.setSessionCookies(res, tokens);
       return res.json({

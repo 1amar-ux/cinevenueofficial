@@ -12,16 +12,18 @@ export interface UserProfile {
 export const authApi = {
   login: async (credentials: { email: string; password?: string; otp?: string }) => {
     const res = await apiClient.post('/auth/login', credentials);
-    if (res.data?.token) {
-      await setAuthToken(res.data.token);
+    const token = res.data?.token || res.data?.data?.tokens?.accessToken;
+    if (token) {
+      await setAuthToken(token);
     }
     return res.data;
   },
 
   register: async (userData: { name: string; email: string; mobile?: string; password?: string }) => {
     const res = await apiClient.post('/auth/register', userData);
-    if (res.data?.token) {
-      await setAuthToken(res.data.token);
+    const token = res.data?.token || res.data?.data?.tokens?.accessToken;
+    if (token) {
+      await setAuthToken(token);
     }
     return res.data;
   },

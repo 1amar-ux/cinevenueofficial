@@ -9,21 +9,54 @@ export default function Register() {
   const { signInWithGoogle } = useContext(AuthContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const validatePassword = (pass: string) => {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pass);
+  };
 
   const handleRegister = async () => {
     try {
       setError("");
       setSuccess("");
-      const res = await api.post("/auth/register", {
-        name,
-        email,
-        password
+
+      if (!name.trim()) {
+        setError("Full name is required.");
+        return;
+      }
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError("Please provide a valid email address.");
+        return;
+      }
+      const cleanMobile = mobile.replace(/\s+/g, "");
+      if (!/^\+?[1-9]\d{7,14}$/.test(cleanMobile)) {
+        setError("Please provide a valid mobile number (e.g. +919876543210 or 9876543210).");
+        return;
+      }
+      if (!validatePassword(password)) {
+        setError("Password must be at least 8 characters long and include uppercase, lowercase, a number, and a symbol.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+
+      setLoading(true);
+      await api.post("/auth/register", {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        mobile: cleanMobile,
+        password,
+        confirmPassword
       });
-      console.log(res.data);
+
       setSuccess("Account created successfully! Redirecting to login...");
       setTimeout(() => {
         navigate("/login");
@@ -31,11 +64,13 @@ export default function Register() {
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.error?.message || err.response?.data?.message || "Registration failed or server error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Container sx={{ mt: 15, maxWidth: "450px !important" }}>
+    <Container sx={{ mt: 15, mb: 8, maxWidth: "480px !important" }}>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           startIcon={<ArrowBackIcon />}
@@ -67,16 +102,28 @@ export default function Register() {
         <TextField
           fullWidth
           margin="normal"
-          label="Name"
+          label="Full Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
         />
         <TextField
           fullWidth
           margin="normal"
-          label="Email"
+          label="Email Address"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <TextField
+          fullWidth
+          margin="normal"
+          label="Mobile Number"
+          placeholder="+91 9876543210"
+          value={mobile}
+          onChange={(e) => setMobile(e.target.value)}
+          required
         />
         <TextField
           fullWidth
@@ -85,16 +132,28 @@ export default function Register() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          helperText="Min 8 characters with uppercase, lowercase, number & symbol"
+          required
+        />
+        <TextField
+          fullWidth
+          margin="normal"
+          label="Confirm Password"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
         />
 
         <Button
           variant="contained"
           fullWidth
           size="large"
+          disabled={loading}
           onClick={handleRegister}
           sx={{ mt: 3, backgroundColor: "#F84464", "&:hover": { backgroundColor: "#df3553" } }}
         >
-          Register
+          {loading ? "Creating Account..." : "Register"}
         </Button>
 
         <Button
@@ -118,6 +177,19 @@ export default function Register() {
         >
           Continue with Google
         </Button>
+
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            Already have an account?{" "}
+            <Button
+              variant="text"
+              onClick={() => navigate("/login")}
+              sx={{ color: "#D4AF37", fontWeight: "bold", textTransform: "none", p: 0, minWidth: "auto" }}
+            >
+              Sign In
+            </Button>
+          </Typography>
+        </Box>
       </Paper>
     </Container>
   );

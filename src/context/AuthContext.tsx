@@ -46,6 +46,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+let isBackendSyncing = false;
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,21 +67,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Backend session not active; check if Supabase session is active
     }
 
+    // Do NOT fire parallel /auth/google sync if on /auth/callback route
+    // (AuthCallback has its own lifecycle, error handling, and sync management)
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/auth/callback")) {
+      return;
+    }
+
+    if (isBackendSyncing) {
+      return;
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) {
-        // Sync Supabase session with CineVenue backend
-        const syncRes = await apiClient.post("/auth/google", {
-          email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split("@")[0],
-          image: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
-          supabaseUserId: session.user.id
-        });
-        const syncedUser = syncRes.data?.data?.user ?? null;
-        if (syncedUser) {
-          setUser(syncedUser);
-          localStorage.setItem("cine_user_email", syncedUser.email);
-          return;
+      if (session?.user?.email && session.access_token) {
+        isBackendSyncing = true;
+        try {
+          const syncRes = await apiClient.post("/auth/google", {
+            idToken: session.access_token,
+            accessToken: session.access_token,
+            supabaseUserId: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split("@")[0],
+            profileImageUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
+          });
+          const syncedUser = syncRes.data?.data?.user ?? null;
+          if (syncedUser) {
+            setUser(syncedUser);
+            localStorage.setItem("cine_user_email", syncedUser.email);
+            return;
+          }
+        } finally {
+          isBackendSyncing = false;
         }
       }
     } catch (e) {
@@ -94,6 +112,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     refreshSession().finally(() => setLoading(false));
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Avoid parallel sync while on the dedicated callback page
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/auth/callback")) {
+        return;
+      }
       if (event === "SIGNED_IN" && session?.user?.email) {
         await refreshSession();
       } else if (event === "SIGNED_OUT") {
@@ -149,7 +171,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: callbackUrl
+        redirectTo: callbackUrl,
+        scopes: "openid email profile",
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent"
+        }
       }
     });
 

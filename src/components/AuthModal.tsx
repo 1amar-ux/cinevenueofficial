@@ -19,7 +19,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = "signin" }: AuthModalProps) {
-  const { signInWithGoogle } = useContext(AuthContext);
+  const { signInWithGoogle, login, refreshSession } = useContext(AuthContext);
   const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "reset">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -103,15 +103,16 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
 
       setIsLoading(true);
       try {
+        const cleanMobile = form.mobile.replace(/\s+/g, "");
         await apiClient.post("/auth/register", {
           name: form.fullName.trim(),
           email: form.email.trim().toLowerCase(),
-          mobile: form.mobile.trim(),
+          mobile: cleanMobile,
           password: form.password,
         });
         setSuccessMessage("Your account has been created. You can now sign in.");
         setMode("signin");
-        setForm(prev => ({ ...prev, password: "", confirmPassword: "" }));
+        setForm(prev => ({ ...prev, email: form.email.trim(), password: "", confirmPassword: "" }));
       } catch (err: any) {
         let message = err.response?.data?.error?.message || err.response?.data?.message || err.message;
         setErrorMessage(message || "Failed to create account. Please try again.");
@@ -135,7 +136,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       setIsLoading(true);
       try {
         const response = await apiClient.post("/auth/login", { identifier, password: form.password });
-        const emailAddress = response.data?.data?.user?.email || identifier;
+        const user = response.data?.data?.user;
+        const emailAddress = user?.email || identifier;
+        if (login && user) {
+          login(user);
+        } else if (refreshSession) {
+          await refreshSession();
+        }
         setSuccessMessage("Authentication successful.");
         onAuthSuccess(emailAddress);
         onClose();
@@ -244,7 +251,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         const callbackUrl = `${origin}/auth/callback`;
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: { redirectTo: callbackUrl }
+          options: {
+            redirectTo: callbackUrl,
+            scopes: "openid email profile",
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent"
+            }
+          }
         });
         if (error) throw error;
         if (data?.url) window.location.href = data.url;

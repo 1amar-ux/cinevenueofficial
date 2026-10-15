@@ -6,6 +6,13 @@
     <script>
       window.global = window;
       window.process = window.process || { env: {} };
+      try {
+        if (typeof window !== "undefined") {
+          window.__INITIAL_OAUTH_HASH__ = window.location.hash || "";
+          window.__INITIAL_OAUTH_SEARCH__ = window.location.search || "";
+          window.__INITIAL_OAUTH_HREF__ = window.location.href || "";
+        }
+      } catch (e) {}
       (function() {
         try {
           var mode = localStorage.getItem('cine_theme_preference') || 'dark';

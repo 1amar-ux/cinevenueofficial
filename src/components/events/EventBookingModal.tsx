@@ -159,6 +159,8 @@ export default function EventBookingModal({
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
   const [couponMessage, setCouponMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
+  // CineCoins Loyalty (Gated for December Launch)
+  const isCineCoinsActive = false;
   const [useCineCoins, setUseCineCoins] = useState<boolean>(false);
   const [coinsToRedeem, setCoinsToRedeem] = useState<number>(0);
 
@@ -927,52 +929,54 @@ export default function EventBookingModal({
                 )}
               </div>
 
-              {/* CineCoins Loyalty Redemption */}
-              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-amber-400" />
-                    <div>
-                      <span className="text-xs font-bold text-white block">Redeem CineCoins</span>
-                      <span className="text-[10px] text-white/40">
-                        Available Balance: {userWallet?.balanceCoins ?? (userWallet as any)?.balance ?? 0} Coins (1 Coin = ₹1)
-                      </span>
+              {/* CineCoins Loyalty Redemption (Temporarily Gated for December Launch) */}
+              {isCineCoinsActive && (
+                <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-amber-400" />
+                      <div>
+                        <span className="text-xs font-bold text-white block">Redeem CineCoins</span>
+                        <span className="text-[10px] text-white/40">
+                          Available Balance: {userWallet?.balanceCoins ?? (userWallet as any)?.balance ?? 0} Coins (1 Coin = ₹1)
+                        </span>
+                      </div>
                     </div>
+                    {maxAvailableCoins > 0 && (
+                      <button
+                        onClick={() => {
+                          if (!useCineCoins) {
+                            setCoinsToRedeem(maxAvailableCoins);
+                            setUseCineCoins(true);
+                          } else {
+                            setUseCineCoins(false);
+                            setCoinsToRedeem(0);
+                          }
+                        }}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                          useCineCoins
+                            ? 'bg-amber-400 text-black border-amber-400'
+                            : 'bg-white/5 text-white/70 hover:bg-white/10 border-white/10'
+                        }`}
+                      >
+                        {useCineCoins ? 'Redeeming' : 'Redeem Max'}
+                      </button>
+                    )}
                   </div>
-                  {maxAvailableCoins > 0 && (
-                    <button
-                      onClick={() => {
-                        if (!useCineCoins) {
-                          setCoinsToRedeem(maxAvailableCoins);
-                          setUseCineCoins(true);
-                        } else {
-                          setUseCineCoins(false);
-                          setCoinsToRedeem(0);
-                        }
-                      }}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                        useCineCoins
-                          ? 'bg-amber-400 text-black border-amber-400'
-                          : 'bg-white/5 text-white/70 hover:bg-white/10 border-white/10'
-                      }`}
-                    >
-                      {useCineCoins ? 'Redeeming' : 'Redeem Max'}
-                    </button>
+
+                  {useCineCoins && (
+                    <div className="pt-2 border-t border-white/5 space-y-2">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-white/60">Coins Redeemed:</span>
+                        <span className="text-amber-400 font-bold">{coinsToRedeem} Coins (-₹{coinsToRedeem})</span>
+                      </div>
+                      <p className="text-[10px] text-white/40">
+                        Maximum allowable CineCoins deduction is 20% of the ticket subtotal.
+                      </p>
+                    </div>
                   )}
                 </div>
-
-                {useCineCoins && (
-                  <div className="pt-2 border-t border-white/5 space-y-2">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-white/60">Coins Redeemed:</span>
-                      <span className="text-amber-400 font-bold">{coinsToRedeem} Coins (-₹{coinsToRedeem})</span>
-                    </div>
-                    <p className="text-[10px] text-white/40">
-                      Maximum allowable CineCoins deduction is 20% of the ticket subtotal.
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Transparent Price Breakdown */}
               <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 space-y-2.5 font-mono text-xs">

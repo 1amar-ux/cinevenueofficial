@@ -1,4 +1,5 @@
 {
-  "globalSubwebsiteEnabled": false,
-  "updatedAt": "2026-10-15T05:43:08.969Z"
+  "globalSubwebsiteEnabled": true,
+  "subwebsiteMaintenanceMessage": "CineVenue sub-websites are temporarily undergoing scheduled system upgrades.",
+  "updatedAt": "2026-10-15T11:19:23.527Z"
 }

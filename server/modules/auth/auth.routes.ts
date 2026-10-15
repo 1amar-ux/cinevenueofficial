@@ -7,7 +7,8 @@ import {
   loginSchema,
   refreshTokenSchema,
   forgotPasswordSchema,
-  resetPasswordSchema
+  resetPasswordSchema,
+  googleAuthSchema
 } from "./auth.validation";
 
 const router = Router();
@@ -16,7 +17,9 @@ router.post("/register", validate({ body: registerSchema }), authController.regi
 router.post("/login", validate({ body: loginSchema }), authController.login);
 router.get("/verify-email", authController.verifyEmail);
 router.post("/resend-verification", authController.resendVerification);
-router.post("/google", authController.googleLogin);
+router.post("/google", validate({ body: googleAuthSchema }), authController.googleLogin);
+router.post("/oauth", validate({ body: googleAuthSchema }), authController.googleLogin);
+router.post("/sync", validate({ body: googleAuthSchema }), authController.googleLogin);
 router.get("/google", authController.googleLoginRedirect);
 router.post("/refresh", validate({ body: refreshTokenSchema }), authController.refresh);
 router.post("/logout", authController.logout);

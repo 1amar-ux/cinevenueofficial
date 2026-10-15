@@ -70,11 +70,11 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </Text>
 
           <Input
-            label="Email Address"
-            placeholder="you@domain.com"
+            label="Email or Mobile Number"
+            placeholder="you@domain.com or 9876543210"
             value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
+            keyboardType="default"
             autoCapitalize="none"
             leftIcon={<Ionicons name="mail-outline" size={18} color={Colors.textMuted} />}
           />

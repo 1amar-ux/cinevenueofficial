@@ -1,4 +1,17 @@
 
+if (typeof window !== "undefined") {
+  const win = window as any;
+  if (!win.__INITIAL_OAUTH_HASH__ && window.location.hash) {
+    win.__INITIAL_OAUTH_HASH__ = window.location.hash;
+  }
+  if (!win.__INITIAL_OAUTH_SEARCH__ && window.location.search) {
+    win.__INITIAL_OAUTH_SEARCH__ = window.location.search;
+  }
+  if (!win.__INITIAL_OAUTH_HREF__ && window.location.href) {
+    win.__INITIAL_OAUTH_HREF__ = window.location.href;
+  }
+}
+
 window.addEventListener('error', (event) => {
   console.error('[Global Error]', event.message, event.error);
 });

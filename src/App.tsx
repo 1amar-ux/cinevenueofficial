@@ -55,6 +55,7 @@ import EventsAdminModule from "./components/admin/events/EventsAdminModule";
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
 
+import CineCoinsComingSoon from "./components/cinecoins/CineCoinsComingSoon";
 import CineCoinsModule from "./components/cinecoins/CineCoinsModule";
 import MyAccountModule from "./components/account/MyAccountModule";
 import FilmProductionSubWebsite from "./components/productions/FilmProductionSubWebsite";
@@ -2557,33 +2558,42 @@ export default function App() {
       </Route>
 
 
-      {/* CineCoins Standalone Loyalty Sub-website */}
+      {/* CineCoins Standalone Loyalty Sub-website (Gated for December Launch) */}
       <Route 
         path="/cinecoins" 
         element={
-          serviceControl?.cinecoins?.status === false ? (
-            <MaintenancePage
-              serviceName="CineCoins Rewards Vault"
-              title={serviceControl?.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance"}
-              message={serviceControl?.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly."}
-              expectedTime={serviceControl?.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"}
-              icon="🪙"
-              onBackToHome={() => window.location.href = "/"}
-            />
+          /* Set to true in December to reactivate CineCoinsModule */
+          false ? (
+            serviceControl?.cinecoins?.status === false ? (
+              <MaintenancePage
+                serviceName="CineCoins Rewards Vault"
+                title={serviceControl?.cinecoins?.title || "CineCoins Rewards Vault Under Maintenance"}
+                message={serviceControl?.cinecoins?.message || "CineCoins redemption, transfers, and wallet operations are undergoing scheduled updates.\n\nWe'll be back online shortly."}
+                expectedTime={serviceControl?.cinecoins?.expectedTime || "31 July 2026, 06:00 PM"}
+                icon="🪙"
+                onBackToHome={() => window.location.href = "/"}
+              />
+            ) : (
+              <CineCoinsModule 
+                settings={cineCoinsSettings}
+                rewards={cineCoinsRewards}
+                challenges={cineCoinsChallenges}
+                userWallet={cineCoinsUserWallet}
+                transactions={cineCoinsTransactions}
+                userEmail={userEmail}
+                onOpenAuth={() => setAuthOpen(true)}
+                onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
+                onAddTransaction={(tx) => setCineCoinsTransactions([tx, ...cineCoinsTransactions])}
+              />
+            )
           ) : (
-            <CineCoinsModule 
-              settings={cineCoinsSettings}
-              rewards={cineCoinsRewards}
-              challenges={cineCoinsChallenges}
-              userWallet={cineCoinsUserWallet}
-              transactions={cineCoinsTransactions}
-              userEmail={userEmail}
-              onOpenAuth={() => setAuthOpen(true)}
-              onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
-              onAddTransaction={(tx) => setCineCoinsTransactions([tx, ...cineCoinsTransactions])}
-            />
+            <CineCoinsComingSoon />
           )
         } 
+      />
+      <Route 
+        path="/cinecoins/*" 
+        element={<CineCoinsComingSoon />} 
       />
 
       {/* CineVenue Productions Sub-website */}
@@ -2878,9 +2888,6 @@ export default function App() {
           </div>
         }
       />
-
-      {/* Authentication redirect route */}
-      <Route path="/login" element={<Navigate to="/?auth=signin" replace />} />
 
       {/* Catch-all redirection to root */}
       <Route path="*" element={<Navigate to="/" replace />} />

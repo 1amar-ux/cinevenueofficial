@@ -353,17 +353,16 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins(); 
               else window.location.href = "/cinecoins"; 
             }} 
-            className={`text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 ${
-              isCineCoinsLive ? "text-gray-800 hover:text-black dark:text-amber-400 dark:hover:text-gold" : "text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300"
-            }`}
+            className="text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 text-gray-800 hover:text-black dark:text-amber-400 dark:hover:text-gold"
           >
             <div className="flex items-center gap-2">
-              <Coins className="w-4 h-4 text-gray-700 dark:text-amber-400" />
+              <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>CineCoins Loyalty & Rewards</span>
             </div>
-            {!isCineCoinsLive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40">OFFLINE</span>
-            )}
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+              SOON
+            </span>
           </button>
           <button 
             onClick={() => { 

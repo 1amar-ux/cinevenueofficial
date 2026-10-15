@@ -37,7 +37,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       await register({
         name: name.trim(),
         email: email.trim(),
-        mobile: mobile.trim(),
+        mobile: mobile.trim() ? mobile.replace(/\s+/g, '') : undefined,
         password,
       });
       Alert.alert('Welcome to CineVenue!', 'You received 100 CineCoins as a joining bonus.');
@@ -102,7 +102,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <Input
             label="Password"
-            placeholder="At least 6 characters"
+            placeholder="Min 8 chars (upper, lower, num, symbol)"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

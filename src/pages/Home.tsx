@@ -185,10 +185,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         },
         {
           type: 'cinecoins',
-          title: 'CineCoins Rewards',
+          title: 'CineCoins Rewards (Launching Soon)',
           targetUrl: '/cinecoins',
-          buttonText: 'Open CineCoins Vault',
-          subtitle: 'Cashback & Rewards Store',
+          buttonText: 'Preview CineCoins Vault',
+          subtitle: 'Cashback & Rewards Store — December 2026',
         }
       );
     }
@@ -276,10 +276,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
     if ((combined.includes("cinecoin") || combined.includes("reward") || combined.includes("cashback") || combined.includes("coins")) && !actions.some(a => a.type === 'cinecoins')) {
       actions.push({
         type: 'cinecoins',
-        title: 'CineCoins Rewards Vault',
+        title: 'CineCoins Rewards Vault (Launching Soon)',
         targetUrl: '/cinecoins',
-        buttonText: 'Open CineCoins Portal',
-        subtitle: 'Claim cashback & spin reward wheels',
+        buttonText: 'Preview CineCoins Vault',
+        subtitle: 'Loyalty rewards launching December 2026',
       });
     }
 
@@ -502,9 +502,9 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
           >
             <span>🪙 CineCoins</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
+            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 font-mono">
+              <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+              SOON
             </span>
           </button>
         </div>
@@ -618,10 +618,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               >
                 <span>{label}</span>
                 {path !== "/" && !path.startsWith("#") && (
-                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                    LIVE
-                  </span>
+                  path === "/cinecoins" ? (
+                    <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 font-mono">
+                      <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                      SOON
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                      LIVE
+                    </span>
+                  )
                 )}
               </button>
             ))}
@@ -966,17 +973,11 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                   <Coins className="w-5 h-5" />
                 </div>
                 
-                {/* Live Status Badge */}
-                {(serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true) ? (
-                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 uppercase tracking-widest font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    LIVE
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[8px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-400/10 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-400/20 uppercase tracking-widest font-mono">
-                    OFFLINE
-                  </span>
-                )}
+                {/* Status Badge */}
+                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 uppercase tracking-widest font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  DECEMBER LAUNCH
+                </span>
               </div>
               <div className="space-y-1.5 text-left">
                 <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
@@ -990,14 +991,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6">
               <button
                 onClick={() => navigate("/cinecoins")}
-                className={`w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
-                  (serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true)
-                    ? "bg-gray-950 hover:bg-black text-white dark:bg-gradient-to-r dark:from-amber-500 dark:to-amber-400 dark:hover:from-amber-400 dark:hover:to-amber-300 dark:text-black"
-                    : "bg-rose-500/80 hover:bg-rose-600 text-white"
-                }`}
+                className="w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md font-bold border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
               >
-                <span>{(serviceControl?.cinecoins?.status ?? serviceControl?.cineCoinsLoyalty?.status ?? true) ? "🪙 Launch CineCoins Portal" : "Under Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-white dark:text-black" />
+                <span>🪙 CineCoins — Launching Soon</span>
+                <ChevronRight className="w-3 h-3 text-amber-500" />
               </button>
             </div>
           </div>

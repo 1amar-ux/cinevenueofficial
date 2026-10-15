@@ -1,5 +1,19 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+// Preserve initial OAuth URL fragment before Supabase client init clears or mutates history
+if (typeof window !== "undefined") {
+  const win = window as any;
+  if (!win.__INITIAL_OAUTH_HASH__ && window.location.hash) {
+    win.__INITIAL_OAUTH_HASH__ = window.location.hash;
+  }
+  if (!win.__INITIAL_OAUTH_SEARCH__ && window.location.search) {
+    win.__INITIAL_OAUTH_SEARCH__ = window.location.search;
+  }
+  if (!win.__INITIAL_OAUTH_HREF__ && window.location.href) {
+    win.__INITIAL_OAUTH_HREF__ = window.location.href;
+  }
+}
+
 const envMeta = (import.meta as any).env || {};
 
 const supabaseUrl =
@@ -27,7 +41,7 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: "pkce"
+    flowType: "implicit"
   },
   realtime: {
     params: {

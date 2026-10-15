@@ -14,7 +14,6 @@ uploads/tickets/*.png
 uploads/images/*
 !uploads/images/.gitkeep
 !uploads/.gitkeep
-
 # Android Keystores & Signing Credentials
 *.jks
 *.keystore
@@ -24,4 +23,6 @@ keystore.properties
 android/keystore.properties
 android/app/keystore.properties
 android/build-error.txt
+
+scratch/
 

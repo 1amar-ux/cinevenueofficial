@@ -9,32 +9,44 @@ import {
   Alert
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import api from "../services/api";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    if (!identifier.trim()) {
+      setError("Please enter your email or mobile number.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
     try {
       setError("");
-      await signIn(email, password);
+      setLoading(true);
+      await signIn(identifier.trim(), password);
       setSuccess("Login successful!");
-      setTimeout(() => navigate("/"), 500);
+      setTimeout(() => navigate("/"), 600);
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.message || "Invalid credentials or server error");
+      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || "Invalid credentials or server error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Container sx={{ mt: 15, maxWidth: "450px !important" }}>
+    <Container sx={{ mt: 15, mb: 8, maxWidth: "450px !important" }}>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           startIcon={<ArrowBackIcon />}
@@ -42,7 +54,6 @@ export default function Login() {
           sx={{
             color: "#F84464",
             borderColor: "#F84464",
-            "&:hover: border-color": "#df3553",
             "&:hover": {
               borderColor: "#df3553",
               backgroundColor: "rgba(248, 68, 100, 0.08)",
@@ -66,10 +77,12 @@ export default function Login() {
 
         <TextField
           fullWidth
-          label="Email"
+          label="Email or Mobile Number"
+          placeholder="e.g. user@cinevenue.com or 9876543210"
           margin="normal"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          required
         />
         <TextField
           fullWidth
@@ -78,15 +91,28 @@ export default function Login() {
           margin="normal"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+          <Button
+            variant="text"
+            onClick={() => navigate("/?auth=forgot")}
+            sx={{ color: "#D4AF37", textTransform: "none", fontSize: "0.85rem", p: 0 }}
+          >
+            Forgot Password?
+          </Button>
+        </Box>
+
         <Button
           variant="contained"
           fullWidth
           size="large"
+          disabled={loading}
           onClick={handleLogin}
-          sx={{ mt: 3, backgroundColor: "#F84464", "&:hover": { backgroundColor: "#df3553" } }}
+          sx={{ mt: 2.5, backgroundColor: "#F84464", "&:hover": { backgroundColor: "#df3553" } }}
         >
-          Login
+          {loading ? "Signing in..." : "Login"}
         </Button>
 
         <Button
@@ -110,6 +136,19 @@ export default function Login() {
         >
           Continue with Google
         </Button>
+
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            Don't have an account?{" "}
+            <Button
+              variant="text"
+              onClick={() => navigate("/register")}
+              sx={{ color: "#D4AF37", fontWeight: "bold", textTransform: "none", p: 0, minWidth: "auto" }}
+            >
+              Sign Up
+            </Button>
+          </Typography>
+        </Box>
       </Paper>
     </Container>
   );

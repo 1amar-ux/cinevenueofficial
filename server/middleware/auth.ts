@@ -20,6 +20,17 @@ declare global {
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_access_token="))?.split("=")[1];
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+    const token = bearerToken || cookieToken;
+
+    if (token) {
+      const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthenticatedUserPayload;
+      req.user = decoded;
+      return next();
+    }
+
     const passcode = req.headers["x-admin-passcode"] as string | undefined;
     if (
       passcode &&
@@ -36,17 +47,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
       return next();
     }
 
-    const authHeader = req.headers.authorization;
-    const cookieToken = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_access_token="))?.split("=")[1];
-    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
-    const token = bearerToken || cookieToken;
-    if (!token) {
-      throw new UnauthorizedError("Authentication token is missing. Format: Bearer <token>");
-    }
-
-    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthenticatedUserPayload;
-    req.user = decoded;
-    next();
+    throw new UnauthorizedError("Authentication token is missing. Format: Bearer <token>");
   } catch (error: any) {
     if (error.name === "TokenExpiredError") {
       return next(new UnauthorizedError("Authentication token has expired. Please refresh your session."));
@@ -61,12 +62,12 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 export function optionalAuthenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      if (token) {
-        const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthenticatedUserPayload;
-        req.user = decoded;
-      }
+    const cookieToken = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_access_token="))?.split("=")[1];
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+    const token = bearerToken || cookieToken;
+    if (token) {
+      const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthenticatedUserPayload;
+      req.user = decoded;
     }
     next();
   } catch {
