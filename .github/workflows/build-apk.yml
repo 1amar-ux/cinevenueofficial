@@ -38,53 +38,33 @@ jobs:
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
 
-      - name: Accept Android SDK Licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      - name: Accept Android SDK Licenses and Setup local.properties
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Sync Capacitor Android Project
-        run: |
-          echo "=== RUNNING CAPACITOR SYNC ==="
-          if ! npx cap sync android 2>&1 | tee sync_output.log; then
-            echo "### ❌ Capacitor Sync Failed" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            cat sync_output.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          echo "### ✅ Capacitor Sync Succeeded" >> $GITHUB_STEP_SUMMARY
+        run: npx cap sync android
 
       - name: Build Debug APK and AAB Bundle
         working-directory: android
         run: |
-          if ! ./gradlew assembleDebug bundleDebug --stacktrace 2>&1 | tee build_output.log; then
-            echo "### ❌ Gradle Build Failed" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 120 build_output.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          echo "### ✅ Gradle Build Succeeded" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Build Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            sync_output.log
-            android/build_output.log
-          retention-days: 7
+          ./gradlew :app:assembleDebug :app:bundleDebug --stacktrace
+          echo "=== APK OUTPUTS ==="
+          ls -la app/build/outputs/apk/debug/
+          echo "=== BUNDLE OUTPUTS ==="
+          ls -la app/build/outputs/bundle/debug/
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: cinevenue-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: Upload Debug AAB Bundle Artifact
         uses: actions/upload-artifact@v4
         with:
           name: cinevenue-debug-aab
-          path: android/app/build/outputs/bundle/debug/app-debug.aab
+          path: android/app/build/outputs/bundle/debug/*.aab
           retention-days: 30
