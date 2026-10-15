@@ -244,42 +244,54 @@ function sanitizeRecord(tableName, data) {
   } else if (tableName === "Event") {
     if (normalized.venueName && !normalized.venue) normalized.venue = normalized.venueName;
     if (normalized.image && !normalized.bannerUrl) normalized.bannerUrl = normalized.image;
-    if (normalized.convenienceFeeEnabled !== void 0 && normalized.convenience_fee_enabled === void 0) {
-      normalized.convenience_fee_enabled = normalized.convenienceFeeEnabled;
+    if (normalized.convenienceFeeEnabled !== void 0) {
+      if (normalized.convenience_fee_enabled === void 0) normalized.convenience_fee_enabled = normalized.convenienceFeeEnabled;
+      delete normalized.convenienceFeeEnabled;
     }
-    if (normalized.convenienceFeeType !== void 0 && normalized.convenience_fee_type === void 0) {
-      normalized.convenience_fee_type = normalized.convenienceFeeType;
+    if (normalized.convenienceFeeType !== void 0) {
+      if (normalized.convenience_fee_type === void 0) normalized.convenience_fee_type = normalized.convenienceFeeType;
+      delete normalized.convenienceFeeType;
     }
-    if (normalized.convenienceFeeAmount !== void 0 && normalized.convenience_fee_amount === void 0) {
-      normalized.convenience_fee_amount = normalized.convenienceFeeAmount;
+    if (normalized.convenienceFeeAmount !== void 0) {
+      if (normalized.convenience_fee_amount === void 0) normalized.convenience_fee_amount = normalized.convenienceFeeAmount;
+      delete normalized.convenienceFeeAmount;
     }
-    if (normalized.convenienceFeeApplication !== void 0 && normalized.convenience_fee_application === void 0) {
-      normalized.convenience_fee_application = normalized.convenienceFeeApplication;
+    if (normalized.convenienceFeeApplication !== void 0) {
+      if (normalized.convenience_fee_application === void 0) normalized.convenience_fee_application = normalized.convenienceFeeApplication;
+      delete normalized.convenienceFeeApplication;
     }
-    if (normalized.convenienceFeeStatus !== void 0 && normalized.convenience_fee_status === void 0) {
-      normalized.convenience_fee_status = normalized.convenienceFeeStatus;
+    if (normalized.convenienceFeeStatus !== void 0) {
+      if (normalized.convenience_fee_status === void 0) normalized.convenience_fee_status = normalized.convenienceFeeStatus;
+      delete normalized.convenienceFeeStatus;
     }
-    if (normalized.convenienceFeeApprovedBy !== void 0 && normalized.convenience_fee_approved_by === void 0) {
-      normalized.convenience_fee_approved_by = normalized.convenienceFeeApprovedBy;
+    if (normalized.convenienceFeeApprovedBy !== void 0) {
+      if (normalized.convenience_fee_approved_by === void 0) normalized.convenience_fee_approved_by = normalized.convenienceFeeApprovedBy;
+      delete normalized.convenienceFeeApprovedBy;
     }
-    if (normalized.convenienceFeeApprovedAt !== void 0 && normalized.convenience_fee_approved_at === void 0) {
-      normalized.convenience_fee_approved_at = normalized.convenienceFeeApprovedAt;
+    if (normalized.convenienceFeeApprovedAt !== void 0) {
+      if (normalized.convenience_fee_approved_at === void 0) normalized.convenience_fee_approved_at = normalized.convenienceFeeApprovedAt;
+      delete normalized.convenienceFeeApprovedAt;
     }
   } else if (tableName === "EventRegistration") {
-    if (normalized.ticketSubtotal !== void 0 && normalized.ticket_subtotal === void 0) {
-      normalized.ticket_subtotal = normalized.ticketSubtotal;
+    if (normalized.ticketSubtotal !== void 0) {
+      if (normalized.ticket_subtotal === void 0) normalized.ticket_subtotal = normalized.ticketSubtotal;
+      delete normalized.ticketSubtotal;
     }
-    if (normalized.convenienceFee !== void 0 && normalized.convenience_fee === void 0) {
-      normalized.convenience_fee = normalized.convenienceFee;
+    if (normalized.convenienceFee !== void 0) {
+      if (normalized.convenience_fee === void 0) normalized.convenience_fee = normalized.convenienceFee;
+      delete normalized.convenienceFee;
     }
-    if (normalized.discountAmount !== void 0 && normalized.discount_amount === void 0) {
-      normalized.discount_amount = normalized.discountAmount;
+    if (normalized.discountAmount !== void 0) {
+      if (normalized.discount_amount === void 0) normalized.discount_amount = normalized.discountAmount;
+      delete normalized.discountAmount;
     }
-    if (normalized.finalPayableAmount !== void 0 && normalized.final_payable_amount === void 0) {
-      normalized.final_payable_amount = normalized.finalPayableAmount;
+    if (normalized.finalPayableAmount !== void 0) {
+      if (normalized.final_payable_amount === void 0) normalized.final_payable_amount = normalized.finalPayableAmount;
+      delete normalized.finalPayableAmount;
     }
-    if (normalized.feeConfigurationSnapshot !== void 0 && normalized.fee_configuration_snapshot === void 0) {
-      normalized.fee_configuration_snapshot = normalized.feeConfigurationSnapshot;
+    if (normalized.feeConfigurationSnapshot !== void 0) {
+      if (normalized.fee_configuration_snapshot === void 0) normalized.fee_configuration_snapshot = normalized.feeConfigurationSnapshot;
+      delete normalized.feeConfigurationSnapshot;
     }
   } else if (tableName === "Booking") {
     if (normalized.ticketSubtotal !== void 0 && normalized.ticket_subtotal === void 0) {
@@ -953,21 +965,7 @@ var init_database = __esm({
         "organizerId",
         "status",
         "createdAt",
-        "updatedAt",
-        "convenienceFeeEnabled",
-        "convenienceFeeType",
-        "convenienceFeeAmount",
-        "convenienceFeeApplication",
-        "convenienceFeeStatus",
-        "convenienceFeeApprovedBy",
-        "convenienceFeeApprovedAt",
-        "convenience_fee_enabled",
-        "convenience_fee_type",
-        "convenience_fee_amount",
-        "convenience_fee_application",
-        "convenience_fee_status",
-        "convenience_fee_approved_by",
-        "convenience_fee_approved_at"
+        "updatedAt"
       ]),
       EventTicketType: /* @__PURE__ */ new Set([
         "id",
@@ -985,17 +983,7 @@ var init_database = __esm({
         "totalAmount",
         "status",
         "passCode",
-        "createdAt",
-        "ticketSubtotal",
-        "convenienceFee",
-        "discountAmount",
-        "finalPayableAmount",
-        "feeConfigurationSnapshot",
-        "ticket_subtotal",
-        "convenience_fee",
-        "discount_amount",
-        "final_payable_amount",
-        "fee_configuration_snapshot"
+        "createdAt"
       ]),
       EventFeeAuditLog: /* @__PURE__ */ new Set([
         "id",
@@ -8362,6 +8350,25 @@ router9.post("/registrations/:registrationId/cancel", async (req, res, next) => 
           reason: reason || (isOrganizerCancellation ? "Event Cancelled" : "Customer Voluntary Cancellation")
         }
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.delete("/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    try {
+      await prisma.event.delete({ where: { id } });
+    } catch (dbErr) {
+      try {
+        await prisma.event.update({ where: { id }, data: { status: "CANCELLED" } });
+      } catch (e) {
+      }
+    }
+    return res.json({
+      success: true,
+      message: `Event ${id} deleted successfully.`
     });
   } catch (error) {
     next(error);

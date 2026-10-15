@@ -52,19 +52,13 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   ]),
   Event: new Set([
     'id', 'title', 'description', 'category', 'bannerUrl', 'date', 'time',
-    'city', 'venue', 'price', 'capacity', 'organizerId', 'status', 'createdAt', 'updatedAt',
-    'convenienceFeeEnabled', 'convenienceFeeType', 'convenienceFeeAmount', 'convenienceFeeApplication',
-    'convenienceFeeStatus', 'convenienceFeeApprovedBy', 'convenienceFeeApprovedAt',
-    'convenience_fee_enabled', 'convenience_fee_type', 'convenience_fee_amount', 'convenience_fee_application',
-    'convenience_fee_status', 'convenience_fee_approved_by', 'convenience_fee_approved_at'
+    'city', 'venue', 'price', 'capacity', 'organizerId', 'status', 'createdAt', 'updatedAt'
   ]),
   EventTicketType: new Set([
     'id', 'eventId', 'name', 'price', 'capacity', 'available'
   ]),
   EventRegistration: new Set([
-    'id', 'eventId', 'userId', 'ticketCount', 'totalAmount', 'status', 'passCode', 'createdAt',
-    'ticketSubtotal', 'convenienceFee', 'discountAmount', 'finalPayableAmount', 'feeConfigurationSnapshot',
-    'ticket_subtotal', 'convenience_fee', 'discount_amount', 'final_payable_amount', 'fee_configuration_snapshot'
+    'id', 'eventId', 'userId', 'ticketCount', 'totalAmount', 'status', 'passCode', 'createdAt'
   ]),
   EventFeeAuditLog: new Set([
     'id', 'eventId', 'action', 'previousStatus', 'newStatus', 'feeType', 'feeAmount',
@@ -138,42 +132,54 @@ function sanitizeRecord(tableName: string, data: any) {
   } else if (tableName === "Event") {
     if (normalized.venueName && !normalized.venue) normalized.venue = normalized.venueName;
     if (normalized.image && !normalized.bannerUrl) normalized.bannerUrl = normalized.image;
-    if (normalized.convenienceFeeEnabled !== undefined && normalized.convenience_fee_enabled === undefined) {
-      normalized.convenience_fee_enabled = normalized.convenienceFeeEnabled;
+    if (normalized.convenienceFeeEnabled !== undefined) {
+      if (normalized.convenience_fee_enabled === undefined) normalized.convenience_fee_enabled = normalized.convenienceFeeEnabled;
+      delete normalized.convenienceFeeEnabled;
     }
-    if (normalized.convenienceFeeType !== undefined && normalized.convenience_fee_type === undefined) {
-      normalized.convenience_fee_type = normalized.convenienceFeeType;
+    if (normalized.convenienceFeeType !== undefined) {
+      if (normalized.convenience_fee_type === undefined) normalized.convenience_fee_type = normalized.convenienceFeeType;
+      delete normalized.convenienceFeeType;
     }
-    if (normalized.convenienceFeeAmount !== undefined && normalized.convenience_fee_amount === undefined) {
-      normalized.convenience_fee_amount = normalized.convenienceFeeAmount;
+    if (normalized.convenienceFeeAmount !== undefined) {
+      if (normalized.convenience_fee_amount === undefined) normalized.convenience_fee_amount = normalized.convenienceFeeAmount;
+      delete normalized.convenienceFeeAmount;
     }
-    if (normalized.convenienceFeeApplication !== undefined && normalized.convenience_fee_application === undefined) {
-      normalized.convenience_fee_application = normalized.convenienceFeeApplication;
+    if (normalized.convenienceFeeApplication !== undefined) {
+      if (normalized.convenience_fee_application === undefined) normalized.convenience_fee_application = normalized.convenienceFeeApplication;
+      delete normalized.convenienceFeeApplication;
     }
-    if (normalized.convenienceFeeStatus !== undefined && normalized.convenience_fee_status === undefined) {
-      normalized.convenience_fee_status = normalized.convenienceFeeStatus;
+    if (normalized.convenienceFeeStatus !== undefined) {
+      if (normalized.convenience_fee_status === undefined) normalized.convenience_fee_status = normalized.convenienceFeeStatus;
+      delete normalized.convenienceFeeStatus;
     }
-    if (normalized.convenienceFeeApprovedBy !== undefined && normalized.convenience_fee_approved_by === undefined) {
-      normalized.convenience_fee_approved_by = normalized.convenienceFeeApprovedBy;
+    if (normalized.convenienceFeeApprovedBy !== undefined) {
+      if (normalized.convenience_fee_approved_by === undefined) normalized.convenience_fee_approved_by = normalized.convenienceFeeApprovedBy;
+      delete normalized.convenienceFeeApprovedBy;
     }
-    if (normalized.convenienceFeeApprovedAt !== undefined && normalized.convenience_fee_approved_at === undefined) {
-      normalized.convenience_fee_approved_at = normalized.convenienceFeeApprovedAt;
+    if (normalized.convenienceFeeApprovedAt !== undefined) {
+      if (normalized.convenience_fee_approved_at === undefined) normalized.convenience_fee_approved_at = normalized.convenienceFeeApprovedAt;
+      delete normalized.convenienceFeeApprovedAt;
     }
   } else if (tableName === "EventRegistration") {
-    if (normalized.ticketSubtotal !== undefined && normalized.ticket_subtotal === undefined) {
-      normalized.ticket_subtotal = normalized.ticketSubtotal;
+    if (normalized.ticketSubtotal !== undefined) {
+      if (normalized.ticket_subtotal === undefined) normalized.ticket_subtotal = normalized.ticketSubtotal;
+      delete normalized.ticketSubtotal;
     }
-    if (normalized.convenienceFee !== undefined && normalized.convenience_fee === undefined) {
-      normalized.convenience_fee = normalized.convenienceFee;
+    if (normalized.convenienceFee !== undefined) {
+      if (normalized.convenience_fee === undefined) normalized.convenience_fee = normalized.convenienceFee;
+      delete normalized.convenienceFee;
     }
-    if (normalized.discountAmount !== undefined && normalized.discount_amount === undefined) {
-      normalized.discount_amount = normalized.discountAmount;
+    if (normalized.discountAmount !== undefined) {
+      if (normalized.discount_amount === undefined) normalized.discount_amount = normalized.discountAmount;
+      delete normalized.discountAmount;
     }
-    if (normalized.finalPayableAmount !== undefined && normalized.final_payable_amount === undefined) {
-      normalized.final_payable_amount = normalized.finalPayableAmount;
+    if (normalized.finalPayableAmount !== undefined) {
+      if (normalized.final_payable_amount === undefined) normalized.final_payable_amount = normalized.finalPayableAmount;
+      delete normalized.finalPayableAmount;
     }
-    if (normalized.feeConfigurationSnapshot !== undefined && normalized.fee_configuration_snapshot === undefined) {
-      normalized.fee_configuration_snapshot = normalized.feeConfigurationSnapshot;
+    if (normalized.feeConfigurationSnapshot !== undefined) {
+      if (normalized.fee_configuration_snapshot === undefined) normalized.fee_configuration_snapshot = normalized.feeConfigurationSnapshot;
+      delete normalized.feeConfigurationSnapshot;
     }
   } else if (tableName === "Booking") {
     if (normalized.ticketSubtotal !== undefined && normalized.ticket_subtotal === undefined) {

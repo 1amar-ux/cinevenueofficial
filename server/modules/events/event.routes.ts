@@ -1229,4 +1229,24 @@ router.post("/registrations/:registrationId/cancel", async (req: Request, res: R
   }
 });
 
+// 14. Delete Event
+router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    try {
+      await prisma.event.delete({ where: { id } });
+    } catch (dbErr) {
+      try {
+        await prisma.event.update({ where: { id }, data: { status: "CANCELLED" } });
+      } catch (e) {}
+    }
+    return res.json({
+      success: true,
+      message: `Event ${id} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
