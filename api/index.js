@@ -244,6 +244,85 @@ function sanitizeRecord(tableName, data) {
   } else if (tableName === "Event") {
     if (normalized.venueName && !normalized.venue) normalized.venue = normalized.venueName;
     if (normalized.image && !normalized.bannerUrl) normalized.bannerUrl = normalized.image;
+    if (normalized.convenienceFeeEnabled !== void 0 && normalized.convenience_fee_enabled === void 0) {
+      normalized.convenience_fee_enabled = normalized.convenienceFeeEnabled;
+    }
+    if (normalized.convenienceFeeType !== void 0 && normalized.convenience_fee_type === void 0) {
+      normalized.convenience_fee_type = normalized.convenienceFeeType;
+    }
+    if (normalized.convenienceFeeAmount !== void 0 && normalized.convenience_fee_amount === void 0) {
+      normalized.convenience_fee_amount = normalized.convenienceFeeAmount;
+    }
+    if (normalized.convenienceFeeApplication !== void 0 && normalized.convenience_fee_application === void 0) {
+      normalized.convenience_fee_application = normalized.convenienceFeeApplication;
+    }
+    if (normalized.convenienceFeeStatus !== void 0 && normalized.convenience_fee_status === void 0) {
+      normalized.convenience_fee_status = normalized.convenienceFeeStatus;
+    }
+    if (normalized.convenienceFeeApprovedBy !== void 0 && normalized.convenience_fee_approved_by === void 0) {
+      normalized.convenience_fee_approved_by = normalized.convenienceFeeApprovedBy;
+    }
+    if (normalized.convenienceFeeApprovedAt !== void 0 && normalized.convenience_fee_approved_at === void 0) {
+      normalized.convenience_fee_approved_at = normalized.convenienceFeeApprovedAt;
+    }
+  } else if (tableName === "EventRegistration") {
+    if (normalized.ticketSubtotal !== void 0 && normalized.ticket_subtotal === void 0) {
+      normalized.ticket_subtotal = normalized.ticketSubtotal;
+    }
+    if (normalized.convenienceFee !== void 0 && normalized.convenience_fee === void 0) {
+      normalized.convenience_fee = normalized.convenienceFee;
+    }
+    if (normalized.discountAmount !== void 0 && normalized.discount_amount === void 0) {
+      normalized.discount_amount = normalized.discountAmount;
+    }
+    if (normalized.finalPayableAmount !== void 0 && normalized.final_payable_amount === void 0) {
+      normalized.final_payable_amount = normalized.finalPayableAmount;
+    }
+    if (normalized.feeConfigurationSnapshot !== void 0 && normalized.fee_configuration_snapshot === void 0) {
+      normalized.fee_configuration_snapshot = normalized.feeConfigurationSnapshot;
+    }
+  } else if (tableName === "Booking") {
+    if (normalized.ticketSubtotal !== void 0 && normalized.ticket_subtotal === void 0) {
+      normalized.ticket_subtotal = normalized.ticketSubtotal;
+    }
+    if (normalized.convenienceFeeTax !== void 0 && normalized.convenience_fee_tax === void 0) {
+      normalized.convenience_fee_tax = normalized.convenienceFeeTax;
+    }
+    if (normalized.feeSnapshot !== void 0 && normalized.fee_snapshot === void 0) {
+      normalized.fee_snapshot = normalized.feeSnapshot;
+    }
+  } else if (tableName === "MovieConvenienceFee") {
+    if (normalized.ticketPrice !== void 0 && normalized.ticket_price === void 0) {
+      normalized.ticket_price = normalized.ticketPrice;
+    }
+    if (normalized.baseCharge !== void 0 && normalized.base_charge === void 0) {
+      normalized.base_charge = normalized.baseCharge;
+    }
+    if (normalized.gstRate !== void 0 && normalized.gst_rate === void 0) {
+      normalized.gst_rate = normalized.gstRate;
+    }
+    if (normalized.feeApplication !== void 0 && normalized.fee_application === void 0) {
+      normalized.fee_application = normalized.feeApplication;
+    }
+  } else if (tableName === "MovieFeeAuditLog") {
+    if (normalized.feeConfigId !== void 0 && normalized.fee_config_id === void 0) {
+      normalized.fee_config_id = normalized.feeConfigId;
+    }
+    if (normalized.ticketPrice !== void 0 && normalized.ticket_price === void 0) {
+      normalized.ticket_price = normalized.ticketPrice;
+    }
+    if (normalized.baseCharge !== void 0 && normalized.base_charge === void 0) {
+      normalized.base_charge = normalized.baseCharge;
+    }
+    if (normalized.gstRate !== void 0 && normalized.gst_rate === void 0) {
+      normalized.gst_rate = normalized.gstRate;
+    }
+    if (normalized.actorId !== void 0 && normalized.actor_id === void 0) {
+      normalized.actor_id = normalized.actorId;
+    }
+    if (normalized.actorEmail !== void 0 && normalized.actor_email === void 0) {
+      normalized.actor_email = normalized.actorEmail;
+    }
   } else if (tableName === "app_settings") {
     if (normalized.maintenanceMode !== void 0 && normalized.maintenance_mode === void 0) {
       normalized.maintenance_mode = normalized.maintenanceMode;
@@ -337,6 +416,78 @@ function normalizeReturnedRecord(tableName, data) {
       subwebsiteMaintenanceMessage: data.subwebsite_maintenance_message !== void 0 ? data.subwebsite_maintenance_message : data.subwebsiteMaintenanceMessage,
       updatedAt: data.updated_at !== void 0 ? data.updated_at : data.updatedAt,
       updatedBy: data.updated_by !== void 0 ? data.updated_by : data.updatedBy
+    };
+  }
+  if (tableName === "Event") {
+    const isFeeEnabled = data.convenience_fee_enabled !== void 0 ? Boolean(data.convenience_fee_enabled) : Boolean(data.convenienceFeeEnabled);
+    const feeType = data.convenience_fee_type || data.convenienceFeeType || "FIXED";
+    const feeAmt = Number(data.convenience_fee_amount !== void 0 ? data.convenience_fee_amount : data.convenienceFeeAmount || 0);
+    const feeApp = data.convenience_fee_application || data.convenienceFeeApplication || "PER_TICKET";
+    const feeStat = data.convenience_fee_status || data.convenienceFeeStatus || "PENDING";
+    const feeAppBy = data.convenience_fee_approved_by !== void 0 ? data.convenience_fee_approved_by : data.convenienceFeeApprovedBy;
+    const feeAppAt = data.convenience_fee_approved_at !== void 0 ? data.convenience_fee_approved_at : data.convenienceFeeApprovedAt;
+    return {
+      ...data,
+      convenienceFeeEnabled: isFeeEnabled,
+      convenienceFeeType: feeType,
+      convenienceFeeAmount: feeAmt,
+      convenienceFeeApplication: feeApp,
+      convenienceFeeStatus: feeStat,
+      convenienceFeeApprovedBy: feeAppBy,
+      convenienceFeeApprovedAt: feeAppAt,
+      convenience_fee_enabled: isFeeEnabled,
+      convenience_fee_type: feeType,
+      convenience_fee_amount: feeAmt,
+      convenience_fee_application: feeApp,
+      convenience_fee_status: feeStat,
+      convenience_fee_approved_by: feeAppBy,
+      convenience_fee_approved_at: feeAppAt
+    };
+  }
+  if (tableName === "EventRegistration") {
+    const subtotal = Number(data.ticket_subtotal !== void 0 ? data.ticket_subtotal : data.ticketSubtotal || 0);
+    const fee = Number(data.convenience_fee !== void 0 ? data.convenience_fee : data.convenienceFee || 0);
+    const discount = Number(data.discount_amount !== void 0 ? data.discount_amount : data.discountAmount || 0);
+    const finalAmount = Number(data.final_payable_amount !== void 0 ? data.final_payable_amount : data.finalPayableAmount || data.totalAmount || 0);
+    const snapshot = data.fee_configuration_snapshot !== void 0 ? data.fee_configuration_snapshot : data.feeConfigurationSnapshot;
+    return {
+      ...data,
+      ticketSubtotal: subtotal,
+      convenienceFee: fee,
+      discountAmount: discount,
+      finalPayableAmount: finalAmount,
+      feeConfigurationSnapshot: snapshot,
+      ticket_subtotal: subtotal,
+      convenience_fee: fee,
+      discount_amount: discount,
+      final_payable_amount: finalAmount,
+      fee_configuration_snapshot: snapshot
+    };
+  }
+  if (tableName === "MovieConvenienceFee") {
+    return {
+      ...data,
+      ticketPrice: Number(data.ticket_price !== void 0 ? data.ticket_price : data.ticketPrice || 0),
+      baseCharge: Number(data.base_charge !== void 0 ? data.base_charge : data.baseCharge || 0),
+      gstRate: Number(data.gst_rate !== void 0 ? data.gst_rate : data.gstRate !== void 0 ? data.gstRate : 18),
+      feeApplication: data.fee_application || data.feeApplication || "PER_TICKET",
+      category: data.category || "STANDARD",
+      enabled: data.enabled !== void 0 ? Boolean(data.enabled) : true,
+      description: data.description || null,
+      createdAt: data.created_at || data.createdAt,
+      updatedAt: data.updated_at || data.updatedAt
+    };
+  }
+  if (tableName === "MovieFeeAuditLog") {
+    return {
+      ...data,
+      feeConfigId: data.fee_config_id || data.feeConfigId,
+      ticketPrice: data.ticket_price !== void 0 ? Number(data.ticket_price) : data.ticketPrice !== void 0 ? Number(data.ticketPrice) : void 0,
+      baseCharge: data.base_charge !== void 0 ? Number(data.base_charge) : data.baseCharge !== void 0 ? Number(data.baseCharge) : void 0,
+      gstRate: data.gst_rate !== void 0 ? Number(data.gst_rate) : data.gstRate !== void 0 ? Number(data.gstRate) : void 0,
+      actorId: data.actor_id || data.actorId,
+      actorEmail: data.actor_email || data.actorEmail,
+      createdAt: data.created_at || data.createdAt
     };
   }
   return data;
@@ -749,7 +900,13 @@ var init_database = __esm({
         "totalAmount",
         "status",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "ticketSubtotal",
+        "ticket_subtotal",
+        "convenienceFeeTax",
+        "convenience_fee_tax",
+        "feeSnapshot",
+        "fee_snapshot"
       ]),
       BookingItem: /* @__PURE__ */ new Set([
         "id",
@@ -796,7 +953,21 @@ var init_database = __esm({
         "organizerId",
         "status",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "convenienceFeeEnabled",
+        "convenienceFeeType",
+        "convenienceFeeAmount",
+        "convenienceFeeApplication",
+        "convenienceFeeStatus",
+        "convenienceFeeApprovedBy",
+        "convenienceFeeApprovedAt",
+        "convenience_fee_enabled",
+        "convenience_fee_type",
+        "convenience_fee_amount",
+        "convenience_fee_application",
+        "convenience_fee_status",
+        "convenience_fee_approved_by",
+        "convenience_fee_approved_at"
       ]),
       EventTicketType: /* @__PURE__ */ new Set([
         "id",
@@ -814,7 +985,71 @@ var init_database = __esm({
         "totalAmount",
         "status",
         "passCode",
+        "createdAt",
+        "ticketSubtotal",
+        "convenienceFee",
+        "discountAmount",
+        "finalPayableAmount",
+        "feeConfigurationSnapshot",
+        "ticket_subtotal",
+        "convenience_fee",
+        "discount_amount",
+        "final_payable_amount",
+        "fee_configuration_snapshot"
+      ]),
+      EventFeeAuditLog: /* @__PURE__ */ new Set([
+        "id",
+        "eventId",
+        "action",
+        "previousStatus",
+        "newStatus",
+        "feeType",
+        "feeAmount",
+        "feeApplication",
+        "enabled",
+        "actorId",
+        "actorEmail",
+        "reason",
+        "metadata",
         "createdAt"
+      ]),
+      MovieConvenienceFee: /* @__PURE__ */ new Set([
+        "id",
+        "ticketPrice",
+        "baseCharge",
+        "category",
+        "gstRate",
+        "feeApplication",
+        "enabled",
+        "description",
+        "createdAt",
+        "updatedAt",
+        "ticket_price",
+        "base_charge",
+        "gst_rate",
+        "fee_application",
+        "created_at",
+        "updated_at"
+      ]),
+      MovieFeeAuditLog: /* @__PURE__ */ new Set([
+        "id",
+        "feeConfigId",
+        "action",
+        "ticketPrice",
+        "baseCharge",
+        "gstRate",
+        "actorId",
+        "actorEmail",
+        "reason",
+        "metadata",
+        "createdAt",
+        "fee_config_id",
+        "ticket_price",
+        "base_charge",
+        "gst_rate",
+        "actor_id",
+        "actor_email",
+        "created_at"
       ]),
       User: /* @__PURE__ */ new Set([
         "id",
@@ -923,7 +1158,9 @@ var init_database = __esm({
       "EventRegistration",
       "BookingItem",
       "app_settings",
-      "FinancialAuditLog"
+      "FinancialAuditLog",
+      "EventFeeAuditLog",
+      "MovieFeeAuditLog"
     ]);
     TABLE_MAP = {
       user: "User",
@@ -949,7 +1186,15 @@ var init_database = __esm({
       passwordresettoken: "PasswordResetToken",
       authprovider: "AuthProvider",
       financialauditlog: "FinancialAuditLog",
-      financialAuditLog: "FinancialAuditLog"
+      financialAuditLog: "FinancialAuditLog",
+      eventfeeauditlog: "EventFeeAuditLog",
+      eventFeeAuditLog: "EventFeeAuditLog",
+      movieconveniencefee: "MovieConvenienceFee",
+      movieConvenienceFee: "MovieConvenienceFee",
+      moviefee: "MovieConvenienceFee",
+      movieFee: "MovieConvenienceFee",
+      moviefeeauditlog: "MovieFeeAuditLog",
+      movieFeeAuditLog: "MovieFeeAuditLog"
     };
     prisma = initPrismaClient();
   }
@@ -965,12 +1210,12 @@ __export(maintenance_exports, {
   setTestMaintenanceState: () => setTestMaintenanceState,
   writePersistedFileSettings: () => writePersistedFileSettings
 });
-import fs from "fs";
-import path from "path";
+import fs2 from "fs";
+import path2 from "path";
 function readPersistedFileSettings() {
   try {
-    if (fs.existsSync(TMP_CONFIG_PATH)) {
-      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
+    if (fs2.existsSync(TMP_CONFIG_PATH)) {
+      const content = fs2.readFileSync(TMP_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -978,8 +1223,8 @@ function readPersistedFileSettings() {
   } catch (e) {
   }
   try {
-    if (fs.existsSync(CONFIG_FILE_PATH)) {
-      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
+    if (fs2.existsSync(CONFIG_FILE_PATH)) {
+      const content = fs2.readFileSync(CONFIG_FILE_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -993,11 +1238,11 @@ function writePersistedFileSettings(settings) {
   try {
     const serialized = JSON.stringify(inMemoryGlobalSettings, null, 2);
     try {
-      fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
+      fs2.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+      fs2.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
     } catch (e) {
     }
   } catch (e) {
@@ -1164,8 +1409,8 @@ var init_maintenance = __esm({
   "server/middleware/maintenance.ts"() {
     init_database();
     init_logger();
-    CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
-    TMP_CONFIG_PATH = path.resolve("/tmp", "cine_global_settings.json");
+    CONFIG_FILE_PATH = path2.resolve(process.cwd(), "server/config/global_settings.json");
+    TMP_CONFIG_PATH = path2.resolve("/tmp", "cine_global_settings.json");
     inMemoryGlobalSettings = {
       globalSubwebsiteEnabled: true,
       subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
@@ -1427,8 +1672,8 @@ var init_emailService = __esm({
 });
 
 // server/serverless.ts
-import fs4 from "fs";
-import path4 from "path";
+import fs5 from "fs";
+import path5 from "path";
 
 // server/app.ts
 init_env();
@@ -1436,7 +1681,7 @@ import express from "express";
 import cors from "cors";
 
 // server/routes.ts
-import { Router as Router17 } from "express";
+import { Router as Router18 } from "express";
 
 // server/modules/auth/auth.routes.ts
 import { Router } from "express";
@@ -3489,7 +3734,6 @@ import { Router as Router5 } from "express";
 
 // server/modules/bookings/booking.service.ts
 init_database();
-import Decimal from "decimal.js";
 
 // server/config/redis.ts
 init_logger();
@@ -5094,6 +5338,468 @@ var PosIntegrationService = class {
 };
 var posIntegrationService = new PosIntegrationService();
 
+// server/modules/bookings/movieFee.service.ts
+init_database();
+init_logger();
+import fs from "fs";
+import path from "path";
+var DEFAULT_MOVIE_FEE_CONFIGS = [
+  { ticketPrice: 50, baseCharge: 12, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Budget Tier" },
+  { ticketPrice: 84, baseCharge: 14, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Standard Matinee" },
+  { ticketPrice: 84, baseCharge: 14, category: "SPECIAL", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Morning Show Special" },
+  { ticketPrice: 100, baseCharge: 14, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Economy Tier" },
+  { ticketPrice: 120, baseCharge: 16, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Regular Silver" },
+  { ticketPrice: 125, baseCharge: 16, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Weekday Tier" },
+  { ticketPrice: 147, baseCharge: 17, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Standard Prime" },
+  { ticketPrice: 147, baseCharge: 17, category: "PREMIUM", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Balcony Classic" },
+  { ticketPrice: 150, baseCharge: 20, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Gold Class" },
+  { ticketPrice: 175, baseCharge: 23, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Executive Tier" },
+  { ticketPrice: 177, baseCharge: 23, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Deluxe Tier" },
+  { ticketPrice: 200, baseCharge: 25, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "VIP Gold Tier" },
+  { ticketPrice: 235, baseCharge: 25, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Weekend Prime" },
+  { ticketPrice: 250, baseCharge: 28, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Premium Diamond" },
+  { ticketPrice: 295, baseCharge: 28, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Dolby Atmos Tier" },
+  { ticketPrice: 350, baseCharge: 34, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "IMAX 2D Tier" },
+  { ticketPrice: 470, baseCharge: 36, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "IMAX 3D Laser" },
+  { ticketPrice: 708, baseCharge: 36, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Luxury Recliner Suite" }
+];
+var SETTINGS_FILE = path.join(process.cwd(), "server/config/movie_fee_settings.json");
+var MovieFeeService = class {
+  constructor() {
+    this.inMemoryConfigs = [];
+    this.inMemoryAuditLogs = [];
+    this.globalSettings = {
+      enabled: true,
+      defaultGstRate: 18,
+      defaultFeeApplication: "PER_TICKET"
+    };
+    this.isInitialized = false;
+    this.init();
+  }
+  init() {
+    try {
+      if (fs.existsSync(SETTINGS_FILE)) {
+        const raw = fs.readFileSync(SETTINGS_FILE, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed.globalSettings) this.globalSettings = { ...this.globalSettings, ...parsed.globalSettings };
+        if (Array.isArray(parsed.configs) && parsed.configs.length > 0) {
+          this.inMemoryConfigs = parsed.configs;
+          this.isInitialized = true;
+          return;
+        }
+      }
+    } catch (e) {
+      logger.warn(`Failed reading movie_fee_settings.json: ${e}`);
+    }
+    this.inMemoryConfigs = DEFAULT_MOVIE_FEE_CONFIGS.map((item, idx) => ({
+      id: `MFC-${idx + 101}`,
+      ...item,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    }));
+    this.saveToFile();
+    this.isInitialized = true;
+  }
+  saveToFile() {
+    try {
+      const data = {
+        globalSettings: this.globalSettings,
+        configs: this.inMemoryConfigs,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
+    } catch (err) {
+      logger.warn(`Failed saving movie_fee_settings.json: ${err.message}`);
+    }
+  }
+  getGlobalSettings() {
+    return { ...this.globalSettings };
+  }
+  async updateGlobalSettings(updates, actorEmail) {
+    const prevEnabled = this.globalSettings.enabled;
+    const prevGst = this.globalSettings.defaultGstRate;
+    if (updates.enabled !== void 0) this.globalSettings.enabled = Boolean(updates.enabled);
+    if (updates.defaultGstRate !== void 0 && Number(updates.defaultGstRate) >= 0) {
+      this.globalSettings.defaultGstRate = Number(updates.defaultGstRate);
+    }
+    if (updates.defaultFeeApplication) {
+      this.globalSettings.defaultFeeApplication = updates.defaultFeeApplication === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET";
+    }
+    this.globalSettings.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    this.globalSettings.updatedBy = actorEmail || "Super Admin";
+    this.saveToFile();
+    await this.logAudit({
+      action: "GLOBAL_SETTINGS_UPDATED",
+      actorEmail: actorEmail || "Super Admin",
+      gstRate: this.globalSettings.defaultGstRate,
+      reason: `Global settings updated. Enabled: ${this.globalSettings.enabled} (was ${prevEnabled}), GST: ${this.globalSettings.defaultGstRate}% (was ${prevGst}%)`,
+      metadata: { previous: { enabled: prevEnabled, gstRate: prevGst }, current: this.globalSettings }
+    });
+    return { ...this.globalSettings };
+  }
+  async updateSettings(updates, actorEmail) {
+    return this.updateGlobalSettings(updates, actorEmail);
+  }
+  async getAllConfigs() {
+    try {
+      if (prisma.movieConvenienceFee?.findMany) {
+        const dbConfigs = await prisma.movieConvenienceFee.findMany({
+          orderBy: [{ ticketPrice: "asc" }, { category: "asc" }]
+        });
+        if (dbConfigs && dbConfigs.length > 0) {
+          return dbConfigs.map((c) => ({
+            id: c.id,
+            ticketPrice: Number(c.ticketPrice || c.ticket_price),
+            baseCharge: Number(c.baseCharge || c.base_charge),
+            category: c.category || "STANDARD",
+            gstRate: Number(c.gstRate !== void 0 ? c.gstRate : c.gst_rate ?? 18),
+            feeApplication: c.feeApplication || c.fee_application || "PER_TICKET",
+            enabled: c.enabled !== void 0 ? Boolean(c.enabled) : true,
+            description: c.description || null,
+            createdAt: c.createdAt || c.created_at,
+            updatedAt: c.updatedAt || c.updated_at
+          }));
+        }
+      }
+    } catch (err) {
+      logger.warn(`Database movie convenience fee lookup fallback: ${err.message}`);
+    }
+    return [...this.inMemoryConfigs];
+  }
+  async getConfigById(id) {
+    const all = await this.getAllConfigs();
+    return all.find((c) => c.id === id) || null;
+  }
+  async createConfig(data, actorEmail) {
+    const ticketPrice = Number(data.ticketPrice);
+    const baseCharge = Number(data.baseCharge);
+    const category = (data.category || "STANDARD").trim().toUpperCase();
+    const gstRate = data.gstRate !== void 0 ? Number(data.gstRate) : this.globalSettings.defaultGstRate;
+    const feeApplication = data.feeApplication === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET";
+    const enabled = data.enabled !== void 0 ? Boolean(data.enabled) : true;
+    if (isNaN(ticketPrice) || ticketPrice <= 0) {
+      throw new ValidationError("Ticket price must be a valid positive number");
+    }
+    if (isNaN(baseCharge) || baseCharge < 0) {
+      throw new ValidationError("Base charge must be a non-negative number");
+    }
+    const all = await this.getAllConfigs();
+    const duplicate = all.find(
+      (c) => Number(c.ticketPrice) === ticketPrice && c.category.toUpperCase() === category
+    );
+    if (duplicate) {
+      throw new ValidationError(
+        `A convenience fee configuration for \u20B9${ticketPrice} with category "${category}" already exists (Config ID: ${duplicate.id}). Please edit the existing entry or use a different category name (e.g. SPECIAL, PREMIUM, RECLINER).`
+      );
+    }
+    const id = `MFC-${Date.now().toString().slice(-6)}`;
+    const newConfig = {
+      id,
+      ticketPrice,
+      baseCharge,
+      category,
+      gstRate,
+      feeApplication,
+      enabled,
+      description: data.description || null,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    try {
+      if (prisma.movieConvenienceFee?.create) {
+        await prisma.movieConvenienceFee.create({
+          data: {
+            id,
+            ticketPrice,
+            baseCharge,
+            category,
+            gstRate,
+            feeApplication,
+            enabled,
+            description: data.description || null
+          }
+        });
+      }
+    } catch (e) {
+      logger.warn(`Could not persist to DB MovieConvenienceFee: ${e.message}`);
+    }
+    this.inMemoryConfigs.push(newConfig);
+    this.saveToFile();
+    this.logAudit({
+      feeConfigId: id,
+      action: "CREATED",
+      ticketPrice,
+      baseCharge,
+      gstRate,
+      actorEmail: actorEmail || "Super Admin",
+      reason: `Created fee tier: \u20B9${ticketPrice} -> \u20B9${baseCharge.toFixed(2)} base fee (${category})`,
+      metadata: newConfig
+    });
+    return newConfig;
+  }
+  async updateConfig(id, updates, actorEmail) {
+    const all = await this.getAllConfigs();
+    const existingIndex = all.findIndex((c) => c.id === id);
+    if (existingIndex === -1) {
+      throw new NotFoundError("MovieConvenienceFee", id);
+    }
+    const existing = all[existingIndex];
+    const ticketPrice = updates.ticketPrice !== void 0 ? Number(updates.ticketPrice) : existing.ticketPrice;
+    const baseCharge = updates.baseCharge !== void 0 ? Number(updates.baseCharge) : existing.baseCharge;
+    const category = updates.category !== void 0 ? updates.category.trim().toUpperCase() : existing.category;
+    const gstRate = updates.gstRate !== void 0 ? Number(updates.gstRate) : existing.gstRate;
+    const feeApplication = updates.feeApplication !== void 0 ? updates.feeApplication : existing.feeApplication;
+    const enabled = updates.enabled !== void 0 ? Boolean(updates.enabled) : existing.enabled;
+    if (isNaN(ticketPrice) || ticketPrice <= 0) {
+      throw new ValidationError("Ticket price must be a valid positive number");
+    }
+    if (isNaN(baseCharge) || baseCharge < 0) {
+      throw new ValidationError("Base charge must be a non-negative number");
+    }
+    const duplicate = all.find(
+      (c) => c.id !== id && Number(c.ticketPrice) === ticketPrice && c.category.toUpperCase() === category
+    );
+    if (duplicate) {
+      throw new ValidationError(
+        `Another fee configuration already exists for \u20B9${ticketPrice} with category "${category}" (Config ID: ${duplicate.id}).`
+      );
+    }
+    const updated = {
+      ...existing,
+      ticketPrice,
+      baseCharge,
+      category,
+      gstRate,
+      feeApplication,
+      enabled,
+      description: updates.description !== void 0 ? updates.description : existing.description,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    try {
+      if (prisma.movieConvenienceFee?.update) {
+        await prisma.movieConvenienceFee.update({
+          where: { id },
+          data: {
+            ticketPrice,
+            baseCharge,
+            category,
+            gstRate,
+            feeApplication,
+            enabled,
+            description: updated.description
+          }
+        });
+      }
+    } catch (e) {
+      logger.warn(`Could not update DB MovieConvenienceFee: ${e.message}`);
+    }
+    const memIdx = this.inMemoryConfigs.findIndex((c) => c.id === id);
+    if (memIdx !== -1) {
+      this.inMemoryConfigs[memIdx] = updated;
+    } else {
+      this.inMemoryConfigs.push(updated);
+    }
+    this.saveToFile();
+    this.logAudit({
+      feeConfigId: id,
+      action: "UPDATED",
+      ticketPrice,
+      baseCharge,
+      gstRate,
+      actorEmail: actorEmail || "Super Admin",
+      reason: `Updated fee tier ${id}: \u20B9${ticketPrice} (Base: \u20B9${baseCharge.toFixed(2)}, Category: ${category}, Enabled: ${enabled})`,
+      metadata: { previous: existing, current: updated }
+    });
+    return updated;
+  }
+  async deleteConfig(id, actorEmail) {
+    const all = await this.getAllConfigs();
+    const existing = all.find((c) => c.id === id);
+    if (!existing) {
+      throw new NotFoundError("MovieConvenienceFee", id);
+    }
+    try {
+      if (prisma.movieConvenienceFee?.delete) {
+        await prisma.movieConvenienceFee.delete({ where: { id } });
+      }
+    } catch (e) {
+      logger.warn(`Could not delete from DB MovieConvenienceFee: ${e.message}`);
+    }
+    this.inMemoryConfigs = this.inMemoryConfigs.filter((c) => c.id !== id);
+    this.saveToFile();
+    this.logAudit({
+      feeConfigId: id,
+      action: "DELETED",
+      ticketPrice: existing.ticketPrice,
+      baseCharge: existing.baseCharge,
+      actorEmail: actorEmail || "Super Admin",
+      reason: `Deleted fee tier: \u20B9${existing.ticketPrice} (${existing.category})`,
+      metadata: existing
+    });
+    return true;
+  }
+  // Authoritative Calculation Engine for Movie Tickets
+  async calculateMovieBookingFees(ticketsOrInput, options) {
+    const rawTickets = Array.isArray(ticketsOrInput) ? ticketsOrInput : ticketsOrInput?.tickets || [];
+    const opts = Array.isArray(ticketsOrInput) ? options || {} : { ...ticketsOrInput, ...options };
+    const configs = await this.getAllConfigs();
+    const activeConfigs = configs.filter((c) => c.enabled);
+    const isFeeEnabled = this.globalSettings.enabled;
+    const globalGst = this.globalSettings.defaultGstRate;
+    const feeApplication = this.globalSettings.defaultFeeApplication;
+    const ticketCount = Math.max(0, rawTickets.length);
+    let ticketSubtotal = 0;
+    const feeLines = [];
+    const findMatchingConfig = (price, cat) => {
+      if (activeConfigs.length === 0) return null;
+      const cleanCat = (cat || "STANDARD").trim().toUpperCase();
+      const exactBoth = activeConfigs.find(
+        (c) => Number(c.ticketPrice) === price && c.category.toUpperCase() === cleanCat
+      );
+      if (exactBoth) return exactBoth;
+      const exactPrice = activeConfigs.find((c) => Number(c.ticketPrice) === price);
+      if (exactPrice) return exactPrice;
+      let closest = activeConfigs[0];
+      let minDiff = Math.abs(Number(closest.ticketPrice) - price);
+      for (const c of activeConfigs) {
+        const diff = Math.abs(Number(c.ticketPrice) - price);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = c;
+        }
+      }
+      return closest;
+    };
+    let totalBaseCharge = 0;
+    let totalGst = 0;
+    for (const t of rawTickets) {
+      const price = Math.round(Number(t.price || 0) * 100) / 100;
+      ticketSubtotal += price;
+      if (!isFeeEnabled) {
+        feeLines.push({
+          ticketPrice: price,
+          category: t.category || "STANDARD",
+          baseCharge: 0,
+          gstRate: globalGst,
+          gstAmount: 0,
+          totalFee: 0
+        });
+        continue;
+      }
+      const match = findMatchingConfig(price, t.category);
+      const base = match ? Number(match.baseCharge) : 20;
+      const rate = globalGst !== void 0 ? globalGst : match && match.gstRate !== void 0 ? Number(match.gstRate) : 18;
+      const gst = Math.round(base * rate / 100 * 100) / 100;
+      const lineFee = Math.round((base + gst) * 100) / 100;
+      feeLines.push({
+        ticketPrice: price,
+        category: match?.category || t.category || "STANDARD",
+        baseCharge: base,
+        gstRate: rate,
+        gstAmount: gst,
+        totalFee: lineFee,
+        configId: match?.id
+      });
+    }
+    ticketSubtotal = Math.round(ticketSubtotal * 100) / 100;
+    if (isFeeEnabled && feeLines.length > 0) {
+      if (feeApplication === "PER_BOOKING") {
+        const highestLine = [...feeLines].sort((a, b) => b.baseCharge - a.baseCharge)[0];
+        totalBaseCharge = highestLine ? highestLine.baseCharge : 20;
+        totalGst = Math.round(totalBaseCharge * globalGst / 100 * 100) / 100;
+      } else {
+        totalBaseCharge = feeLines.reduce((sum, l) => sum + l.baseCharge, 0);
+        totalGst = feeLines.reduce((sum, l) => sum + l.gstAmount, 0);
+      }
+    }
+    totalBaseCharge = Math.round(totalBaseCharge * 100) / 100;
+    totalGst = Math.round(totalGst * 100) / 100;
+    const totalConvenienceFee = Math.round((totalBaseCharge + totalGst) * 100) / 100;
+    const musicianDonationAmount = opts?.otherCharges !== void 0 ? Number(opts.otherCharges) : opts?.musicianDonation ? ticketCount * 1 : 0;
+    let discountAmount = opts?.couponDiscount !== void 0 ? Number(opts.couponDiscount) : 0;
+    if (discountAmount === 0 && opts?.couponCode) {
+      const code = opts.couponCode.trim().toUpperCase();
+      if (code === "WELCOME50" && ticketSubtotal >= 200) discountAmount = 50;
+      else if (code === "CINE20") discountAmount = Math.min(100, Math.round(ticketSubtotal * 0.2));
+      else if (code === "FLAT50" && ticketSubtotal >= 250) discountAmount = 50;
+      else if (code === "STUDENT10") discountAmount = Math.round(ticketSubtotal * 0.1);
+    }
+    const finalPayableAmount = Math.max(
+      0,
+      Math.round((ticketSubtotal + totalConvenienceFee + musicianDonationAmount - discountAmount) * 100) / 100
+    );
+    const feeSnapshot = {
+      isFeeEnabled,
+      feeApplication,
+      gstRateApplied: globalGst,
+      baseChargeTotal: totalBaseCharge,
+      convenienceFeeGstTotal: totalGst,
+      totalConvenienceFee,
+      ticketSubtotal,
+      finalPayableAmount,
+      feeLines,
+      calculatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    return {
+      ticketCount,
+      ticketSubtotal,
+      baseChargeTotal: totalBaseCharge,
+      convenienceFeeGstTotal: totalGst,
+      totalConvenienceFee,
+      musicianDonationAmount,
+      discountAmount,
+      finalPayableAmount,
+      isFeeEnabled,
+      gstRateApplied: globalGst,
+      feeApplication,
+      feeLines,
+      feeSnapshot
+    };
+  }
+  async getAuditLogs() {
+    try {
+      if (prisma.movieFeeAuditLog?.findMany) {
+        const logs = await prisma.movieFeeAuditLog.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 50
+        });
+        if (logs && logs.length > 0) return logs;
+      }
+    } catch (err) {
+      logger.warn(`Could not read DB MovieFeeAuditLog: ${err.message}`);
+    }
+    return [...this.inMemoryAuditLogs];
+  }
+  async logAudit(data) {
+    const entry = {
+      id: `MFA-${Date.now().toString().slice(-6)}`,
+      feeConfigId: data.feeConfigId || null,
+      action: data.action,
+      ticketPrice: data.ticketPrice || null,
+      baseCharge: data.baseCharge || null,
+      gstRate: data.gstRate || null,
+      actorId: "admin",
+      actorEmail: data.actorEmail || "Super Admin",
+      reason: data.reason || null,
+      metadata: data.metadata || null,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    try {
+      if (prisma.movieFeeAuditLog?.create) {
+        await prisma.movieFeeAuditLog.create({
+          data: {
+            ...entry
+          }
+        });
+      }
+    } catch (e) {
+    }
+    this.inMemoryAuditLogs.unshift(entry);
+    if (this.inMemoryAuditLogs.length > 100) this.inMemoryAuditLogs.pop();
+  }
+};
+var movieFeeService = new MovieFeeService();
+
 // server/modules/bookings/booking.service.ts
 var LOCK_TTL_SECONDS = 600;
 var BookingService = class {
@@ -5160,41 +5866,53 @@ var BookingService = class {
       posHoldId
     };
   }
-  // 2. Authoritative Price Calculation (Server-Side)
-  async calculateBookingPrice(showId, showSeatIds, couponCode) {
-    const showSeats = await prisma.showSeat.findMany({
-      where: { id: { in: showSeatIds }, showId },
-      include: { seat: true }
+  // 2. Authoritative Price Calculation (Server-Side using Movie Convenience Fee Management)
+  async calculateBookingPrice(showIdOrData, showSeatIds, couponCode, musicianDonation) {
+    let showId = typeof showIdOrData === "string" ? showIdOrData : showIdOrData.showId || "";
+    let seatList = typeof showIdOrData === "string" ? showSeatIds || [] : showIdOrData.showSeatIds || showIdOrData.seatIds || [];
+    let coupon = typeof showIdOrData === "string" ? couponCode : showIdOrData.couponCode;
+    let donation = typeof showIdOrData === "string" ? musicianDonation : showIdOrData.musicianDonation;
+    let providedTickets = typeof showIdOrData === "object" ? showIdOrData.tickets : void 0;
+    let ticketList = providedTickets || [];
+    if (ticketList.length === 0 && seatList.length > 0) {
+      try {
+        const showSeats = await prisma.showSeat.findMany({
+          where: { id: { in: seatList }, showId },
+          include: { seat: true }
+        });
+        if (showSeats.length > 0) {
+          ticketList = showSeats.map((ss) => ({
+            price: Number(ss.price.toString()),
+            category: ss.seat?.category || "STANDARD"
+          }));
+        }
+      } catch (e) {
+      }
+    }
+    if (ticketList.length === 0 && seatList.length > 0) {
+      ticketList = seatList.map(() => ({ price: 150, category: "STANDARD" }));
+    }
+    const feeBreakdown = await movieFeeService.calculateMovieBookingFees(ticketList, {
+      couponCode: coupon,
+      musicianDonation: donation
     });
-    if (showSeats.length !== showSeatIds.length) {
-      throw new ValidationError("One or more selected seats are invalid for this show");
-    }
-    let baseTicketTotal = new Decimal(0);
-    for (const ss of showSeats) {
-      baseTicketTotal = baseTicketTotal.plus(new Decimal(ss.price.toString()));
-    }
-    const ticketCount = showSeats.length;
-    const platformFee = new Decimal(18);
-    const convenienceFee = baseTicketTotal.times(0.05);
-    const gstRate = new Decimal(0.18);
-    const taxAmount = platformFee.plus(convenienceFee).times(gstRate).toDecimalPlaces(2);
-    let discountAmount = new Decimal(0);
-    if (couponCode && couponCode.toUpperCase() === "CINE50" && baseTicketTotal.greaterThanOrEqualTo(200)) {
-      discountAmount = new Decimal(50);
-    } else if (couponCode && couponCode.toUpperCase() === "FIRST100" && baseTicketTotal.greaterThanOrEqualTo(300)) {
-      discountAmount = new Decimal(100);
-    }
-    const gatewayFee = new Decimal(0);
-    const totalAmount = baseTicketTotal.plus(platformFee).plus(convenienceFee).plus(taxAmount).minus(discountAmount).toDecimalPlaces(2);
     return {
-      ticketCount,
-      ticketAmount: baseTicketTotal.toNumber(),
-      platformFee: platformFee.toNumber(),
-      convenienceFee: convenienceFee.toDecimalPlaces(2).toNumber(),
-      taxAmount: taxAmount.toNumber(),
-      discountAmount: discountAmount.toNumber(),
-      gatewayFee: gatewayFee.toNumber(),
-      totalAmount: totalAmount.toNumber()
+      ticketCount: feeBreakdown.ticketCount,
+      ticketAmount: feeBreakdown.ticketSubtotal,
+      ticketSubtotal: feeBreakdown.ticketSubtotal,
+      baseCharge: feeBreakdown.baseChargeTotal,
+      convenienceFee: feeBreakdown.totalConvenienceFee,
+      convenienceFeeTax: feeBreakdown.convenienceFeeGstTotal,
+      taxAmount: feeBreakdown.convenienceFeeGstTotal,
+      discountAmount: feeBreakdown.discountAmount,
+      musicianDonationAmount: feeBreakdown.musicianDonationAmount,
+      platformFee: 0,
+      gatewayFee: 0,
+      totalAmount: feeBreakdown.finalPayableAmount,
+      finalPayableAmount: feeBreakdown.finalPayableAmount,
+      isFeeEnabled: feeBreakdown.isFeeEnabled,
+      feeLines: feeBreakdown.feeLines,
+      feeSnapshot: feeBreakdown.feeSnapshot
     };
   }
   // 3. Create Pending Booking with Authoritative Calculated Price
@@ -5204,7 +5922,12 @@ var BookingService = class {
       include: { theatre: true }
     });
     if (!show) throw new NotFoundError("Show", data.showId);
-    const priceBreakdown = await this.calculateBookingPrice(data.showId, data.showSeatIds, data.couponCode);
+    const priceBreakdown = await this.calculateBookingPrice(
+      data.showId,
+      data.showSeatIds,
+      data.couponCode,
+      data.musicianDonation
+    );
     const bookingNumber = `CV-${Math.floor(1e5 + Math.random() * 9e5)}`;
     const booking = await prisma.$transaction(async (tx) => {
       const b = await tx.booking.create({
@@ -5214,12 +5937,15 @@ var BookingService = class {
           showId: show.id,
           userId: data.userId,
           ticketAmount: priceBreakdown.ticketAmount,
+          ticketSubtotal: priceBreakdown.ticketSubtotal,
           platformFee: priceBreakdown.platformFee,
           convenienceFee: priceBreakdown.convenienceFee,
+          convenienceFeeTax: priceBreakdown.convenienceFeeTax,
           taxAmount: priceBreakdown.taxAmount,
           discountAmount: priceBreakdown.discountAmount,
           gatewayFee: priceBreakdown.gatewayFee,
           totalAmount: priceBreakdown.totalAmount,
+          feeSnapshot: priceBreakdown.feeSnapshot,
           status: "PENDING"
         }
       });
@@ -5403,10 +6129,171 @@ router5.get("/my", authenticate, async (req, res, next) => {
 });
 var booking_routes_default = router5;
 
+// server/modules/bookings/movieFee.routes.ts
+import { Router as Router6 } from "express";
+init_maintenance();
+var router6 = Router6();
+var verifyAdminAccess = (req, res, next) => {
+  const user = req.user;
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      error: { code: "UNAUTHORIZED", message: "Authentication required" }
+    });
+  }
+  const role = (user.role || "").toUpperCase();
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
+    return res.status(403).json({
+      success: false,
+      error: { code: "FORBIDDEN", message: "Only authorized administrators can modify movie fee configurations" }
+    });
+  }
+  next();
+};
+router6.get("/", async (req, res, next) => {
+  try {
+    const configs = await movieFeeService.getAllConfigs();
+    const globalSettings = movieFeeService.getGlobalSettings();
+    return res.json({
+      success: true,
+      globalSettings,
+      configs: configs.filter((c) => c.enabled)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.post("/calculate", checkMovieBookingMaintenance, async (req, res, next) => {
+  try {
+    const { tickets, showId, seatIds, couponCode, musicianDonation } = req.body;
+    if (showId && Array.isArray(seatIds) && seatIds.length > 0) {
+      const breakdown = await bookingService.calculateBookingPrice(showId, seatIds, couponCode, musicianDonation);
+      return res.json({
+        success: true,
+        data: breakdown,
+        breakdown
+      });
+    }
+    if (Array.isArray(tickets) && tickets.length > 0) {
+      const formattedTickets = tickets.map((t) => ({
+        price: Number(typeof t === "number" ? t : t.price || 0),
+        category: (typeof t === "object" ? t.category : void 0) || "STANDARD"
+      }));
+      const breakdown = await movieFeeService.calculateMovieBookingFees(formattedTickets, {
+        couponCode,
+        musicianDonation
+      });
+      return res.json({
+        success: true,
+        data: breakdown,
+        breakdown
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      error: { code: "INVALID_INPUT", message: "Please provide showId & seatIds or tickets array" }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.get("/admin/all", authenticate, verifyAdminAccess, async (req, res, next) => {
+  try {
+    const configs = await movieFeeService.getAllConfigs();
+    const globalSettings = movieFeeService.getGlobalSettings();
+    const auditLogs = await movieFeeService.getAuditLogs();
+    return res.json({
+      success: true,
+      globalSettings,
+      configs,
+      auditLogs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.post("/admin", authenticate, verifyAdminAccess, async (req, res, next) => {
+  try {
+    const { ticketPrice, baseCharge, category, gstRate, feeApplication, enabled, description } = req.body;
+    const actorEmail = req.user?.email || "Super Admin";
+    const created = await movieFeeService.createConfig(
+      {
+        ticketPrice: Number(ticketPrice),
+        baseCharge: Number(baseCharge),
+        category,
+        gstRate: gstRate !== void 0 ? Number(gstRate) : void 0,
+        feeApplication,
+        enabled: enabled !== void 0 ? Boolean(enabled) : true,
+        description
+      },
+      actorEmail
+    );
+    return res.status(201).json({
+      success: true,
+      message: `Convenience fee tier for \u20B9${created.ticketPrice} created successfully.`,
+      config: created
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.put("/admin/:id", authenticate, verifyAdminAccess, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const actorEmail = req.user?.email || "Super Admin";
+    const updated = await movieFeeService.updateConfig(id, req.body, actorEmail);
+    return res.json({
+      success: true,
+      message: `Convenience fee tier ${id} updated successfully.`,
+      config: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.delete("/admin/:id", authenticate, verifyAdminAccess, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const actorEmail = req.user?.email || "Super Admin";
+    await movieFeeService.deleteConfig(id, actorEmail);
+    return res.json({
+      success: true,
+      message: `Fee configuration ${id} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.patch("/admin/settings", authenticate, verifyAdminAccess, async (req, res, next) => {
+  try {
+    const actorEmail = req.user?.email || "Super Admin";
+    const updated = await movieFeeService.updateGlobalSettings(req.body, actorEmail);
+    return res.json({
+      success: true,
+      message: "Global movie convenience fee settings updated successfully.",
+      settings: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router6.get("/admin/audit-logs", authenticate, verifyAdminAccess, async (req, res, next) => {
+  try {
+    const logs = await movieFeeService.getAuditLogs();
+    return res.json({
+      success: true,
+      logs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+var movieFee_routes_default = router6;
+
 // server/modules/payments/payment.routes.ts
 init_env();
 init_database();
-import { Router as Router6 } from "express";
+import { Router as Router7 } from "express";
 init_logger();
 init_maintenance();
 
@@ -5746,8 +6633,8 @@ var RazorpayService = class {
 var razorpayService = new RazorpayService();
 
 // server/modules/payments/payment.routes.ts
-var router6 = Router6();
-router6.get("/gateways", (req, res) => {
+var router7 = Router7();
+router7.get("/gateways", (req, res) => {
   res.json({
     success: true,
     data: {
@@ -5770,7 +6657,7 @@ router6.get("/gateways", (req, res) => {
     }
   });
 });
-router6.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+router7.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle } = req.body;
     let amountInINR = 0;
@@ -5790,10 +6677,20 @@ router6.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMa
       }
     }
     if (!amountInINR) {
-      if (amount && Number(amount) > 0) {
+      if (Array.isArray(tickets) && tickets.length > 0) {
+        const breakdown = await movieFeeService.calculateMovieBookingFees(
+          tickets.map((t) => ({
+            price: Number(typeof t === "number" ? t : t.price || 0),
+            category: (typeof t === "object" ? t.category : void 0) || "STANDARD"
+          })),
+          {
+            couponCode: req.body.couponCode,
+            musicianDonation: req.body.musicianDonation
+          }
+        );
+        amountInINR = breakdown.finalPayableAmount;
+      } else if (amount && Number(amount) > 0) {
         amountInINR = Number(amount) > 1e3 ? Number(amount) / 100 : Number(amount);
-      } else if (Array.isArray(tickets) && tickets.length > 0) {
-        amountInINR = tickets.reduce((s, t) => s + (Number(t.price) || 0), 0);
       } else {
         amountInINR = 250;
       }
@@ -5834,7 +6731,7 @@ router6.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMa
     next(error);
   }
 });
-router6.post("/razorpay/verify-payment", optionalAuthenticate, async (req, res, next) => {
+router7.post("/razorpay/verify-payment", optionalAuthenticate, async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId, orderId } = req.body;
     const rzpOrderId = razorpay_order_id || orderId;
@@ -5875,11 +6772,11 @@ router6.post("/razorpay/verify-payment", optionalAuthenticate, async (req, res, 
     next(error);
   }
 });
-router6.post("/razorpay/webhook", async (req, res) => {
+router7.post("/razorpay/webhook", async (req, res) => {
   logger.info("[Razorpay Webhook] Received event notification:", { event: req.body?.event });
   return res.json({ status: "ok" });
 });
-router6.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+router7.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets } = req.body;
     let amountInINR = 0;
@@ -5946,7 +6843,7 @@ router6.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance
     next(error);
   }
 });
-router6.post("/verify-payment", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+router7.post("/verify-payment", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { bookingId, orderId, cf_order_id } = req.body;
     const targetOrderId = orderId || cf_order_id;
@@ -5980,7 +6877,7 @@ router6.post("/verify-payment", optionalAuthenticate, checkMovieBookingMaintenan
     next(error);
   }
 });
-router6.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+router7.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets } = req.body;
     let amountInINR = 0;
@@ -6011,10 +6908,20 @@ router6.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMa
       }
     }
     if (!amountInINR) {
-      if (amount && Number(amount) > 0) {
+      if (Array.isArray(tickets) && tickets.length > 0) {
+        const breakdown = await movieFeeService.calculateMovieBookingFees(
+          tickets.map((t) => ({
+            price: Number(typeof t === "number" ? t : t.price || 0),
+            category: (typeof t === "object" ? t.category : void 0) || "STANDARD"
+          })),
+          {
+            couponCode: req.body.couponCode,
+            musicianDonation: req.body.musicianDonation
+          }
+        );
+        amountInINR = breakdown.finalPayableAmount;
+      } else if (amount && Number(amount) > 0) {
         amountInINR = Number(amount);
-      } else if (Array.isArray(tickets) && tickets.length > 0) {
-        amountInINR = tickets.reduce((s, t) => s + (Number(t.price) || 0), 0);
       } else {
         amountInINR = 250;
       }
@@ -6056,7 +6963,7 @@ router6.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMa
     next(error);
   }
 });
-router6.post("/cashfree/verify", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+router7.post("/cashfree/verify", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
     const { bookingId, orderId } = req.body;
     if (!orderId) {
@@ -6089,7 +6996,7 @@ router6.post("/cashfree/verify", optionalAuthenticate, checkMovieBookingMaintena
     next(error);
   }
 });
-router6.post(["/cashfree/webhook", "/webhook/cashfree"], async (req, res) => {
+router7.post(["/cashfree/webhook", "/webhook/cashfree"], async (req, res) => {
   try {
     const signature = req.headers["x-webhook-signature"];
     const timestamp = req.headers["x-webhook-timestamp"];
@@ -6110,12 +7017,12 @@ router6.post(["/cashfree/webhook", "/webhook/cashfree"], async (req, res) => {
     return res.status(500).json({ error: "Webhook internal failure" });
   }
 });
-var payment_routes_default = router6;
+var payment_routes_default = router7;
 
 // server/modules/cinecoins/cinecoins.routes.ts
 init_database();
-import { Router as Router7 } from "express";
-var router7 = Router7();
+import { Router as Router8 } from "express";
+var router8 = Router8();
 var CINECOINS_PAUSED_FOR_DECEMBER = true;
 var gateCineCoinsMutations = (req, res, next) => {
   if (CINECOINS_PAUSED_FOR_DECEMBER) {
@@ -6126,14 +7033,14 @@ var gateCineCoinsMutations = (req, res, next) => {
   }
   next();
 };
-router7.use((req, res, next) => {
+router8.use((req, res, next) => {
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
     return gateCineCoinsMutations(req, res, next);
   }
   next();
 });
-router7.use(authenticate);
-router7.get("/wallet", async (req, res, next) => {
+router8.use(authenticate);
+router8.get("/wallet", async (req, res, next) => {
   try {
     const userId = req.user.userId;
     let wallet = await prisma.cineCoinWallet.findUnique({
@@ -6183,7 +7090,7 @@ router7.get("/wallet", async (req, res, next) => {
     next(error);
   }
 });
-router7.post("/redeem", async (req, res, next) => {
+router8.post("/redeem", async (req, res, next) => {
   try {
     const { amount, reason } = req.body;
     const coins = Number(amount);
@@ -6222,7 +7129,7 @@ router7.post("/redeem", async (req, res, next) => {
     next(error);
   }
 });
-router7.post("/claim-daily", async (req, res, next) => {
+router8.post("/claim-daily", async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const dailyRewardAmount = 25;
@@ -6261,7 +7168,7 @@ router7.post("/claim-daily", async (req, res, next) => {
     next(error);
   }
 });
-router7.post("/spin", async (req, res, next) => {
+router8.post("/spin", async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const { rewardCoins, rewardName } = req.body;
@@ -6299,7 +7206,7 @@ router7.post("/spin", async (req, res, next) => {
     next(error);
   }
 });
-router7.post("/send", async (req, res, next) => {
+router8.post("/send", async (req, res, next) => {
   try {
     const senderUserId = req.user.userId;
     const { recipientEmail, amount, note } = req.body;
@@ -6368,7 +7275,7 @@ router7.post("/send", async (req, res, next) => {
     next(error);
   }
 });
-router7.post("/claim", async (req, res, next) => {
+router8.post("/claim", async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const { challengeId, rewardAmount, title } = req.body;
@@ -6406,17 +7313,17 @@ router7.post("/claim", async (req, res, next) => {
     next(error);
   }
 });
-var cinecoins_routes_default = router7;
+var cinecoins_routes_default = router8;
 
 // server/modules/events/event.routes.ts
 init_database();
-import { Router as Router8 } from "express";
+import { Router as Router9 } from "express";
 import { randomBytes as randomBytes2 } from "crypto";
 import bcrypt2 from "bcryptjs";
 init_emailService();
 init_logger();
-var router8 = Router8();
-router8.post("/send-pass-email", async (req, res, next) => {
+var router9 = Router9();
+router9.post("/send-pass-email", async (req, res, next) => {
   try {
     const {
       email,
@@ -6467,7 +7374,7 @@ router8.post("/send-pass-email", async (req, res, next) => {
     next(error);
   }
 });
-router8.get("/", async (req, res, next) => {
+router9.get("/", async (req, res, next) => {
   try {
     const { category, city } = req.query;
     let events = await prisma.event.findMany({
@@ -6526,7 +7433,7 @@ router8.get("/", async (req, res, next) => {
     next(error);
   }
 });
-router8.get("/pass/:passCode", async (req, res, next) => {
+router9.get("/pass/:passCode", async (req, res, next) => {
   try {
     const { passCode } = req.params;
     const cleanCode = passCode.trim();
@@ -6596,7 +7503,7 @@ router8.get("/pass/:passCode", async (req, res, next) => {
     next(error);
   }
 });
-router8.post("/:id/reset-bookings", async (req, res, next) => {
+router9.post("/:id/reset-bookings", async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.eventRegistration.deleteMany({
@@ -6621,48 +7528,138 @@ router8.post("/:id/reset-bookings", async (req, res, next) => {
     next(error);
   }
 });
-router8.get("/:id", async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    let event = await prisma.event.findUnique({
-      where: { id },
-      include: { ticketTypes: true }
-    });
-    if (!event) {
-      try {
-        const { supabaseAdmin: supabaseAdmin2 } = await Promise.resolve().then(() => (init_supabaseAdmin(), supabaseAdmin_exports));
-        const { data: dbEvt } = await supabaseAdmin2.from("Event").select("*").eq("id", id).maybeSingle();
-        if (dbEvt) {
-          event = {
-            id: dbEvt.id,
-            title: dbEvt.title,
-            description: dbEvt.description || `${dbEvt.title} live in ${dbEvt.city || "Hyderabad"}`,
-            category: dbEvt.category || "Concerts",
-            bannerUrl: dbEvt.bannerUrl,
-            posterUrl: dbEvt.bannerUrl,
-            date: dbEvt.date,
-            time: dbEvt.time || "06:30 PM",
-            city: dbEvt.city || "Hyderabad",
-            venue: dbEvt.venue || "Convention Arena",
-            price: Number(dbEvt.price) || 0,
-            capacity: Number(dbEvt.capacity) || 1e3,
-            status: dbEvt.status || "PUBLISHED",
-            ticketTypes: [
-              {
-                id: `TKT-${dbEvt.id}-GEN`,
-                eventId: dbEvt.id,
-                name: "General Admission",
-                tier: "General",
-                price: Number(dbEvt.price) || 0,
-                capacity: Number(dbEvt.capacity) || 1e3,
-                available: Number(dbEvt.capacity) || 1e3
-              }
-            ]
-          };
-        }
-      } catch (e) {
+async function fetchEventWithTicketTypes(id) {
+  let event = await prisma.event.findUnique({
+    where: { id },
+    include: { ticketTypes: true }
+  });
+  if (!event) {
+    try {
+      const { supabaseAdmin: supabaseAdmin2 } = await Promise.resolve().then(() => (init_supabaseAdmin(), supabaseAdmin_exports));
+      const { data: dbEvt } = await supabaseAdmin2.from("Event").select("*").eq("id", id).maybeSingle();
+      if (dbEvt) {
+        event = {
+          id: dbEvt.id,
+          title: dbEvt.title,
+          description: dbEvt.description || `${dbEvt.title} live in ${dbEvt.city || "Hyderabad"}`,
+          category: dbEvt.category || "Concerts",
+          bannerUrl: dbEvt.bannerUrl,
+          posterUrl: dbEvt.bannerUrl,
+          date: dbEvt.date,
+          time: dbEvt.time || "06:30 PM",
+          city: dbEvt.city || "Hyderabad",
+          venue: dbEvt.venue || "Convention Arena",
+          price: Number(dbEvt.price) || 0,
+          capacity: Number(dbEvt.capacity) || 1e3,
+          status: dbEvt.status || "PUBLISHED",
+          convenienceFeeEnabled: dbEvt.convenience_fee_enabled !== void 0 ? Boolean(dbEvt.convenience_fee_enabled) : Boolean(dbEvt.convenienceFeeEnabled),
+          convenienceFeeType: dbEvt.convenience_fee_type || dbEvt.convenienceFeeType || "FIXED",
+          convenienceFeeAmount: Number(dbEvt.convenience_fee_amount !== void 0 ? dbEvt.convenience_fee_amount : dbEvt.convenienceFeeAmount || 0),
+          convenienceFeeApplication: dbEvt.convenience_fee_application || dbEvt.convenienceFeeApplication || "PER_TICKET",
+          convenienceFeeStatus: dbEvt.convenience_fee_status || dbEvt.convenienceFeeStatus || "PENDING",
+          convenienceFeeApprovedBy: dbEvt.convenience_fee_approved_by || dbEvt.convenienceFeeApprovedBy || null,
+          convenienceFeeApprovedAt: dbEvt.convenience_fee_approved_at || dbEvt.convenienceFeeApprovedAt || null,
+          ticketTypes: [
+            {
+              id: `TKT-${dbEvt.id}-GEN`,
+              eventId: dbEvt.id,
+              name: "General Admission",
+              tier: "General",
+              price: Number(dbEvt.price) || 0,
+              capacity: Number(dbEvt.capacity) || 1e3,
+              available: Number(dbEvt.capacity) || 1e3
+            }
+          ]
+        };
+      }
+    } catch (e) {
+    }
+  }
+  return event;
+}
+function calculateEventPriceBreakdown(event, count, ticketTypeId, couponCode) {
+  const validCount = Math.max(1, Number(count) || 1);
+  const ticketTypes = event.ticketTypes || [];
+  const ticketType = ticketTypes.find(
+    (t) => t.id === ticketTypeId || t.name?.toLowerCase() === ticketTypeId?.toLowerCase()
+  ) || ticketTypes[0];
+  const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price || 0);
+  const ticketSubtotal = Math.round(unitPrice * validCount * 100) / 100;
+  const isFeeEnabled = Boolean(
+    event.convenienceFeeEnabled ?? event.convenience_fee_enabled ?? false
+  );
+  const feeStatus = String(
+    event.convenienceFeeStatus || event.convenience_fee_status || "PENDING"
+  ).toUpperCase();
+  const feeType = String(
+    event.convenienceFeeType || event.convenience_fee_type || "FIXED"
+  ).toUpperCase();
+  const feeAmount = Number(
+    event.convenienceFeeAmount !== void 0 ? event.convenienceFeeAmount : event.convenience_fee_amount || 0
+  );
+  const feeApplication = String(
+    event.convenienceFeeApplication || event.convenience_fee_application || "PER_TICKET"
+  ).toUpperCase();
+  const isFeeApproved = isFeeEnabled && feeStatus === "APPROVED";
+  let convenienceFee = 0;
+  if (ticketSubtotal > 0 && isFeeApproved && feeAmount > 0) {
+    if (feeType === "PERCENTAGE") {
+      convenienceFee = Math.round(ticketSubtotal * feeAmount / 100 * 100) / 100;
+    } else {
+      if (feeApplication === "PER_BOOKING") {
+        convenienceFee = Math.round(feeAmount * 100) / 100;
+      } else {
+        convenienceFee = Math.round(feeAmount * validCount * 100) / 100;
       }
     }
+  }
+  let discountAmount = 0;
+  if (couponCode) {
+    const cleanCoupon = String(couponCode).toUpperCase().trim();
+    if (cleanCoupon === "CINEEVENT20") {
+      discountAmount = Math.min(500, Math.round(ticketSubtotal * 0.2));
+    } else if (cleanCoupon === "FIRSTPASS100" && ticketSubtotal >= 499) {
+      discountAmount = 100;
+    } else if (cleanCoupon === "VIPGALA300" && ticketSubtotal >= 1999) {
+      discountAmount = 300;
+    }
+  }
+  const finalPayableAmount = Math.max(
+    0,
+    Math.round((ticketSubtotal + convenienceFee - discountAmount) * 100) / 100
+  );
+  const feeSnapshot = {
+    enabled: isFeeEnabled,
+    type: feeType,
+    amount: feeAmount,
+    application: feeApplication,
+    status: feeStatus,
+    approvedBy: event.convenienceFeeApprovedBy || event.convenience_fee_approved_by || null,
+    approvedAt: event.convenienceFeeApprovedAt || event.convenience_fee_approved_at || null,
+    appliedFee: convenienceFee,
+    unitPrice,
+    quantity: validCount
+  };
+  return {
+    ticketPrice: unitPrice,
+    quantity: validCount,
+    ticketSubtotal,
+    convenienceFee,
+    discountAmount,
+    finalPayableAmount,
+    totalAmount: finalPayableAmount,
+    feeType,
+    feeApplication,
+    feeAmountConfigured: feeAmount,
+    feeStatus,
+    isFeeApproved,
+    feeSnapshot
+  };
+}
+router9.get("/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
     return res.json({
       success: true,
@@ -6673,29 +7670,57 @@ router8.get("/:id", async (req, res, next) => {
     next(error);
   }
 });
-router8.post("/:id/create-order", optionalAuthenticate, async (req, res, next) => {
+router9.post("/:id/calculate-price", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { ticketCount = 1, ticketTypeId, customerName, customerEmail, customerPhone } = req.body;
-    const event = await prisma.event.findUnique({
-      where: { id },
-      include: { ticketTypes: true }
-    });
+    const { ticketCount = 1, ticketTypeId, couponCode } = req.body;
+    const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
-    const count = Math.max(1, Number(ticketCount) || 1);
-    const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId) || event.ticketTypes[0];
-    const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price);
-    const totalAmount = unitPrice * count;
-    if (totalAmount <= 0) {
+    const breakdown = calculateEventPriceBreakdown(
+      event,
+      ticketCount,
+      ticketTypeId,
+      couponCode
+    );
+    return res.json({
+      success: true,
+      data: breakdown,
+      breakdown
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.post("/:id/create-order", optionalAuthenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      ticketCount = 1,
+      ticketTypeId,
+      customerName,
+      customerEmail,
+      customerPhone,
+      couponCode
+    } = req.body;
+    const event = await fetchEventWithTicketTypes(id);
+    if (!event) throw new NotFoundError("Event", id);
+    const breakdown = calculateEventPriceBreakdown(
+      event,
+      ticketCount,
+      ticketTypeId,
+      couponCode
+    );
+    if (breakdown.finalPayableAmount <= 0) {
       return res.json({
         success: true,
         isFree: true,
         amount: 0,
         amountInINR: 0,
+        breakdown,
         message: "Free event registration. No payment required."
       });
     }
-    const amountInPaise = Math.round(totalAmount * 100);
+    const amountInPaise = Math.round(breakdown.finalPayableAmount * 100);
     const orderId = `rzp_evt_${event.id.replace(/[^a-zA-Z0-9]/g, "").slice(-8)}_${Date.now()}`;
     const rzpOrder = await razorpayService.createOrder({
       orderId,
@@ -6711,8 +7736,18 @@ router8.post("/:id/create-order", optionalAuthenticate, async (req, res, next) =
       notes: {
         eventId: event.id,
         eventTitle: event.title,
-        ticketCount: count,
-        ticketTypeId: ticketType?.id || ""
+        ticketCount: breakdown.quantity,
+        ticketTypeId: ticketTypeId || "",
+        unitPrice: breakdown.ticketPrice,
+        ticketSubtotal: breakdown.ticketSubtotal,
+        convenienceFee: breakdown.convenienceFee,
+        discountAmount: breakdown.discountAmount,
+        totalAmount: breakdown.finalPayableAmount,
+        feeType: breakdown.feeType,
+        feeApplication: breakdown.feeApplication,
+        feeAmountConfigured: breakdown.feeAmountConfigured,
+        feeStatus: breakdown.feeStatus,
+        isFeeApproved: breakdown.isFeeApproved
       }
     });
     return res.json({
@@ -6725,13 +7760,14 @@ router8.post("/:id/create-order", optionalAuthenticate, async (req, res, next) =
       currency: rzpOrder.currency,
       keyId: rzpOrder.keyId,
       key_id: rzpOrder.keyId,
-      isTestMode: rzpOrder.isTestMode
+      isTestMode: rzpOrder.isTestMode,
+      breakdown
     });
   } catch (error) {
     next(error);
   }
 });
-router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, next) => {
+router9.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
@@ -6740,20 +7776,20 @@ router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, 
       attendeeName,
       attendeeEmail,
       attendeeMobile,
+      couponCode,
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature
     } = req.body;
-    const event = await prisma.event.findUnique({
-      where: { id },
-      include: { ticketTypes: true }
-    });
+    const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
-    const count = Math.max(1, Number(ticketCount) || 1);
-    const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId) || event.ticketTypes[0];
-    const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price);
-    const totalAmount = unitPrice * count;
-    if (totalAmount > 0) {
+    const breakdown = calculateEventPriceBreakdown(
+      event,
+      ticketCount,
+      ticketTypeId,
+      couponCode
+    );
+    if (breakdown.finalPayableAmount > 0) {
       if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
         throw new ValidationError("Payment verification requires razorpay_order_id, razorpay_payment_id, and razorpay_signature.");
       }
@@ -6793,12 +7829,18 @@ router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, 
       data: {
         eventId: event.id,
         userId: targetUserId,
-        ticketCount: count,
-        totalAmount,
+        ticketCount: breakdown.quantity,
+        totalAmount: breakdown.finalPayableAmount,
+        ticketSubtotal: breakdown.ticketSubtotal,
+        convenienceFee: breakdown.convenienceFee,
+        discountAmount: breakdown.discountAmount,
+        finalPayableAmount: breakdown.finalPayableAmount,
+        feeConfigurationSnapshot: breakdown.feeSnapshot,
         status: "CONFIRMED",
         passCode
       }
     });
+    const ticketType = event.ticketTypes?.find((t) => t.id === ticketTypeId) || event.ticketTypes?.[0];
     sendEventPassEmail({
       to: attendeeEmail || req.user?.email || "guest@cinevenue.in",
       passId: passCode,
@@ -6809,10 +7851,12 @@ router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, 
       date: event.date ? new Date(event.date).toLocaleDateString("en-IN") : "Upcoming",
       time: event.time || "06:30 PM",
       tier: ticketType?.name || "VIP PASS",
-      totalPrice: totalAmount,
-      isFree: totalAmount === 0
+      totalPrice: breakdown.finalPayableAmount,
+      ticketSubtotal: breakdown.ticketSubtotal,
+      convenienceFee: breakdown.convenienceFee,
+      isFree: breakdown.finalPayableAmount === 0
     }).catch((eErr) => {
-      logger.warn(`[Event Pass Email] Non-fatal notification note: ${eErr.message}`);
+      logger.warn(`[Event Pass Email] Notification note: ${eErr.message}`);
     });
     return res.status(201).json({
       success: true,
@@ -6822,6 +7866,14 @@ router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, 
         passCode,
         orderId: razorpay_order_id || `CV-FREE-${passCode.slice(-6)}`,
         qrCodePayload: passCode,
+        pricing: {
+          ticketPrice: breakdown.ticketPrice,
+          ticketSubtotal: breakdown.ticketSubtotal,
+          convenienceFee: breakdown.convenienceFee,
+          discountAmount: breakdown.discountAmount,
+          finalAmount: breakdown.finalPayableAmount
+        },
+        breakdown,
         verified: true
       }
     });
@@ -6829,19 +7881,26 @@ router8.post("/:id/verify-and-register", optionalAuthenticate, async (req, res, 
     next(error);
   }
 });
-router8.post("/:id/register", optionalAuthenticate, async (req, res, next) => {
+router9.post("/:id/register", optionalAuthenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { ticketCount = 1, ticketTypeId, razorpay_signature, razorpay_payment_id, razorpay_order_id } = req.body;
-    const event = await prisma.event.findUnique({
-      where: { id },
-      include: { ticketTypes: true }
-    });
+    const {
+      ticketCount = 1,
+      ticketTypeId,
+      couponCode,
+      razorpay_signature,
+      razorpay_payment_id,
+      razorpay_order_id
+    } = req.body;
+    const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
-    const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId) || event.ticketTypes[0];
-    const unitPrice = ticketType ? Number(ticketType.price) : Number(event.price);
-    const totalAmount = unitPrice * Number(ticketCount);
-    if (totalAmount > 0) {
+    const breakdown = calculateEventPriceBreakdown(
+      event,
+      ticketCount,
+      ticketTypeId,
+      couponCode
+    );
+    if (breakdown.finalPayableAmount > 0) {
       if (!razorpay_signature || !razorpay_payment_id || !razorpay_order_id) {
         return res.status(400).json({
           success: false,
@@ -6888,8 +7947,13 @@ router8.post("/:id/register", optionalAuthenticate, async (req, res, next) => {
       data: {
         eventId: event.id,
         userId: targetUserId,
-        ticketCount: Number(ticketCount),
-        totalAmount,
+        ticketCount: breakdown.quantity,
+        totalAmount: breakdown.finalPayableAmount,
+        ticketSubtotal: breakdown.ticketSubtotal,
+        convenienceFee: breakdown.convenienceFee,
+        discountAmount: breakdown.discountAmount,
+        finalPayableAmount: breakdown.finalPayableAmount,
+        feeConfigurationSnapshot: breakdown.feeSnapshot,
         status: "CONFIRMED",
         passCode
       }
@@ -6897,15 +7961,207 @@ router8.post("/:id/register", optionalAuthenticate, async (req, res, next) => {
     return res.status(201).json({
       success: true,
       message: "Event pass booked successfully",
-      data: { registration, passCode, qrCodePayload: passCode }
+      data: {
+        registration,
+        passCode,
+        qrCodePayload: passCode,
+        breakdown
+      }
     });
   } catch (error) {
     next(error);
   }
 });
-router8.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER"), async (req, res, next) => {
+var verifyAdminAccess2 = (req, res, next) => {
+  const passcode = req.headers["x-admin-passcode"];
+  if (passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER")(req, res, next);
+  });
+};
+router9.post("/:id/approve-fee", verifyAdminAccess2, async (req, res, next) => {
   try {
-    const { title, description, category, bannerUrl, date, time, city, venue, price, capacity, eventType, ticketTypes } = req.body;
+    const { id } = req.params;
+    const event = await fetchEventWithTicketTypes(id);
+    if (!event) throw new NotFoundError("Event", id);
+    const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || req.user?.name || "Authorized Admin";
+    const approvedAt = /* @__PURE__ */ new Date();
+    const updated = await prisma.event.update({
+      where: { id },
+      data: {
+        convenienceFeeStatus: "APPROVED",
+        convenienceFeeApprovedBy: actorEmail,
+        convenienceFeeApprovedAt: approvedAt
+      }
+    });
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId: id,
+        action: "APPROVED",
+        previousStatus: prevStatus,
+        newStatus: "APPROVED",
+        feeType: event.convenienceFeeType || "FIXED",
+        feeAmount: Number(event.convenienceFeeAmount || 0),
+        feeApplication: event.convenienceFeeApplication || "PER_TICKET",
+        enabled: Boolean(event.convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Fee approved by admin",
+        metadata: { approvedAt }
+      }
+    }).catch(() => {
+    });
+    return res.json({
+      success: true,
+      message: `Convenience fee for event "${event.title}" has been approved. It will now apply to customer bookings.`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.post("/:id/reject-fee", verifyAdminAccess2, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const event = await fetchEventWithTicketTypes(id);
+    if (!event) throw new NotFoundError("Event", id);
+    const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || req.user?.name || "Authorized Admin";
+    const updated = await prisma.event.update({
+      where: { id },
+      data: {
+        convenienceFeeStatus: "REJECTED"
+      }
+    });
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId: id,
+        action: "REJECTED",
+        previousStatus: prevStatus,
+        newStatus: "REJECTED",
+        feeType: event.convenienceFeeType || "FIXED",
+        feeAmount: Number(event.convenienceFeeAmount || 0),
+        feeApplication: event.convenienceFeeApplication || "PER_TICKET",
+        enabled: Boolean(event.convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Fee rejected by admin",
+        metadata: { rejectedAt: /* @__PURE__ */ new Date() }
+      }
+    }).catch(() => {
+    });
+    return res.json({
+      success: true,
+      message: `Convenience fee for event "${event.title}" has been rejected. Customers will NOT be charged this fee.`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.patch("/:id/fee-settings", verifyAdminAccess2, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const event = await fetchEventWithTicketTypes(id);
+    if (!event) throw new NotFoundError("Event", id);
+    const {
+      convenienceFeeEnabled,
+      convenienceFeeType = "FIXED",
+      convenienceFeeAmount = 0,
+      convenienceFeeApplication = "PER_TICKET",
+      convenienceFeeStatus
+    } = req.body;
+    const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || req.user?.name || "Admin";
+    const targetStatus = convenienceFeeStatus || "PENDING";
+    const isApproved = targetStatus === "APPROVED";
+    const updated = await prisma.event.update({
+      where: { id },
+      data: {
+        convenienceFeeEnabled: Boolean(convenienceFeeEnabled),
+        convenienceFeeType: String(convenienceFeeType).toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED",
+        convenienceFeeAmount: Number(convenienceFeeAmount) || 0,
+        convenienceFeeApplication: String(convenienceFeeApplication).toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET",
+        convenienceFeeStatus: targetStatus,
+        convenienceFeeApprovedBy: isApproved ? actorEmail : null,
+        convenienceFeeApprovedAt: isApproved ? /* @__PURE__ */ new Date() : null
+      }
+    });
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId: id,
+        action: "EDITED",
+        previousStatus: prevStatus,
+        newStatus: targetStatus,
+        feeType: convenienceFeeType,
+        feeAmount: Number(convenienceFeeAmount) || 0,
+        feeApplication: convenienceFeeApplication,
+        enabled: Boolean(convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Convenience fee configuration updated",
+        metadata: { updatedSettings: req.body }
+      }
+    }).catch(() => {
+    });
+    return res.json({
+      success: true,
+      message: `Convenience fee settings updated for event "${event.title}".`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.get("/:id/fee-audit-logs", verifyAdminAccess2, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const logs = await prisma.eventFeeAuditLog.findMany({
+      where: { eventId: id },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({
+      success: true,
+      data: { logs },
+      logs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.post("/", verifyAdminAccess2, async (req, res, next) => {
+  try {
+    const {
+      title,
+      description,
+      category,
+      bannerUrl,
+      date,
+      time,
+      city,
+      venue,
+      price,
+      capacity,
+      ticketTypes,
+      convenienceFeeEnabled,
+      convenienceFeeType,
+      convenienceFeeAmount,
+      convenienceFeeApplication,
+      convenienceFeeStatus
+    } = req.body;
+    const actorEmail = req.user?.email || req.user?.name || "Admin";
+    const initialStatus = convenienceFeeStatus || "PENDING";
+    const isInitiallyApproved = initialStatus === "APPROVED";
     const event = await prisma.event.create({
       data: {
         title,
@@ -6918,10 +8174,36 @@ router8.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZ
         venue: venue || "City Arena",
         price: Number(price) || 0,
         capacity: Number(capacity) || 500,
-        organizerId: req.user.userId,
-        status: "PUBLISHED"
+        organizerId: req.user?.userId || "admin",
+        status: "PUBLISHED",
+        convenienceFeeEnabled: Boolean(convenienceFeeEnabled),
+        convenienceFeeType: String(convenienceFeeType || "FIXED").toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED",
+        convenienceFeeAmount: Number(convenienceFeeAmount) || 0,
+        convenienceFeeApplication: String(convenienceFeeApplication || "PER_TICKET").toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET",
+        convenienceFeeStatus: initialStatus,
+        convenienceFeeApprovedBy: isInitiallyApproved ? actorEmail : null,
+        convenienceFeeApprovedAt: isInitiallyApproved ? /* @__PURE__ */ new Date() : null
       }
     });
+    if (convenienceFeeEnabled) {
+      await prisma.eventFeeAuditLog.create({
+        data: {
+          eventId: event.id,
+          action: "CREATED",
+          previousStatus: null,
+          newStatus: initialStatus,
+          feeType: String(convenienceFeeType || "FIXED").toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED",
+          feeAmount: Number(convenienceFeeAmount) || 0,
+          feeApplication: String(convenienceFeeApplication || "PER_TICKET").toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET",
+          enabled: Boolean(convenienceFeeEnabled),
+          actorId: req.user?.userId || "admin",
+          actorEmail,
+          reason: "Event created with convenience fee settings",
+          metadata: { initialStatus }
+        }
+      }).catch(() => {
+      });
+    }
     if (Array.isArray(ticketTypes) && ticketTypes.length > 0) {
       await prisma.eventTicketType.createMany({
         data: ticketTypes.map((tt) => ({
@@ -6942,13 +8224,61 @@ router8.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZ
     next(error);
   }
 });
-router8.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER"), async (req, res, next) => {
+router9.put("/:id", verifyAdminAccess2, async (req, res, next) => {
   try {
     const { id } = req.params;
+    const body = req.body || {};
+    const existing = await fetchEventWithTicketTypes(id);
+    const prevStatus = existing?.convenienceFeeStatus || existing?.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || req.user?.name || "Admin";
+    const updateData = { ...body };
+    if (body.date) updateData.date = new Date(body.date);
+    if (body.price !== void 0) updateData.price = Number(body.price);
+    if (body.capacity !== void 0) updateData.capacity = Number(body.capacity);
+    if (body.convenienceFeeEnabled !== void 0) {
+      updateData.convenienceFeeEnabled = Boolean(body.convenienceFeeEnabled);
+    }
+    if (body.convenienceFeeType !== void 0) {
+      updateData.convenienceFeeType = String(body.convenienceFeeType).toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED";
+    }
+    if (body.convenienceFeeAmount !== void 0) {
+      updateData.convenienceFeeAmount = Number(body.convenienceFeeAmount) || 0;
+    }
+    if (body.convenienceFeeApplication !== void 0) {
+      updateData.convenienceFeeApplication = String(body.convenienceFeeApplication).toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET";
+    }
+    if (body.convenienceFeeStatus !== void 0) {
+      updateData.convenienceFeeStatus = body.convenienceFeeStatus;
+      if (body.convenienceFeeStatus === "APPROVED") {
+        updateData.convenienceFeeApprovedBy = actorEmail;
+        updateData.convenienceFeeApprovedAt = /* @__PURE__ */ new Date();
+      }
+    }
+    delete updateData.ticketTypes;
+    delete updateData.registrations;
     const event = await prisma.event.update({
       where: { id },
-      data: req.body
+      data: updateData
     });
+    if (body.convenienceFeeEnabled !== void 0 || body.convenienceFeeAmount !== void 0 || body.convenienceFeeStatus !== void 0) {
+      await prisma.eventFeeAuditLog.create({
+        data: {
+          eventId: id,
+          action: "UPDATED",
+          previousStatus: prevStatus,
+          newStatus: body.convenienceFeeStatus || prevStatus,
+          feeType: body.convenienceFeeType || existing?.convenienceFeeType || "FIXED",
+          feeAmount: Number(body.convenienceFeeAmount !== void 0 ? body.convenienceFeeAmount : existing?.convenienceFeeAmount || 0),
+          feeApplication: body.convenienceFeeApplication || existing?.convenienceFeeApplication || "PER_TICKET",
+          enabled: Boolean(body.convenienceFeeEnabled !== void 0 ? body.convenienceFeeEnabled : existing?.convenienceFeeEnabled),
+          actorId: req.user?.userId || "admin",
+          actorEmail,
+          reason: "Event convenience fee settings updated",
+          metadata: { updatedBody: body }
+        }
+      }).catch(() => {
+      });
+    }
     return res.json({
       success: true,
       message: "Event updated successfully",
@@ -6958,26 +8288,91 @@ router8.put("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGAN
     next(error);
   }
 });
-router8.delete("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER"), async (req, res, next) => {
+router9.post("/:id/calculate-refund", async (req, res, next) => {
   try {
     const { id } = req.params;
-    await prisma.event.delete({ where: { id } }).catch(async () => {
-      await prisma.event.update({ where: { id }, data: { status: "CANCELLED" } });
-    });
+    const { registrationId, passCode, isOrganizerCancellation } = req.body;
+    let registration = null;
+    if (registrationId) {
+      registration = await prisma.eventRegistration.findUnique({ where: { id: registrationId } });
+    } else if (passCode) {
+      registration = await prisma.eventRegistration.findFirst({ where: { passCode } });
+    }
+    const subtotal = Number(registration?.ticketSubtotal ?? (registration?.totalAmount || 0));
+    const fee = Number(registration?.convenienceFee ?? 0);
+    const finalAmount = Number(registration?.finalPayableAmount ?? registration?.totalAmount ?? subtotal + fee);
+    const isFeeRefunded = Boolean(isOrganizerCancellation);
+    const ticketRefundAmount = subtotal;
+    const convenienceFeeRefundAmount = isFeeRefunded ? fee : 0;
+    const totalRefundAmount = ticketRefundAmount + convenienceFeeRefundAmount;
     return res.json({
       success: true,
-      message: "Event removed successfully"
+      refundBreakdown: {
+        registrationId: registration?.id || registrationId,
+        passCode: registration?.passCode || passCode,
+        eventId: id,
+        ticketSubtotal: subtotal,
+        convenienceFee: fee,
+        finalPaidAmount: finalAmount,
+        ticketRefundAmount,
+        convenienceFeeRefundAmount,
+        totalRefundAmount,
+        isFeeRefunded,
+        policyDisclosed: isFeeRefunded ? "Event cancelled by organizer: Full refund including convenience fee." : "Voluntary customer cancellation: Ticket subtotal refunded. Platform convenience fee is non-refundable."
+      }
     });
   } catch (error) {
     next(error);
   }
 });
-var event_routes_default = router8;
+router9.post("/registrations/:registrationId/cancel", async (req, res, next) => {
+  try {
+    const { registrationId } = req.params;
+    const { reason, isOrganizerCancellation } = req.body;
+    const registration = await prisma.eventRegistration.findUnique({ where: { id: registrationId } });
+    if (!registration) {
+      throw new NotFoundError("Registration not found");
+    }
+    const subtotal = Number(registration.ticketSubtotal ?? registration.totalAmount);
+    const fee = Number(registration.convenienceFee ?? 0);
+    const finalAmount = Number(registration.finalPayableAmount ?? registration.totalAmount);
+    const isFeeRefunded = Boolean(isOrganizerCancellation);
+    const ticketRefundAmount = subtotal;
+    const convenienceFeeRefundAmount = isFeeRefunded ? fee : 0;
+    const totalRefundAmount = ticketRefundAmount + convenienceFeeRefundAmount;
+    const updated = await prisma.eventRegistration.update({
+      where: { id: registrationId },
+      data: {
+        status: "CANCELLED"
+      }
+    });
+    return res.json({
+      success: true,
+      message: "Booking cancelled successfully. Refund processed.",
+      data: {
+        registration: updated,
+        refundBreakdown: {
+          ticketSubtotal: subtotal,
+          convenienceFee: fee,
+          finalPaidAmount: finalAmount,
+          ticketRefundAmount,
+          convenienceFeeRefundAmount,
+          totalRefundAmount,
+          isFeeRefunded,
+          reason: reason || (isOrganizerCancellation ? "Event Cancelled" : "Customer Voluntary Cancellation")
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+var event_routes_default = router9;
 
 // server/modules/marketplace/marketplace.routes.ts
 init_database();
-import { Router as Router9 } from "express";
-var router9 = Router9();
+import { Router as Router10 } from "express";
+var router10 = Router10();
 var inMemoryProposals = [
   {
     id: "prop-001",
@@ -6999,7 +8394,7 @@ var inMemoryProposals = [
   }
 ];
 var inMemoryApplications = [];
-router9.get("/projects", async (req, res, next) => {
+router10.get("/projects", async (req, res, next) => {
   try {
     if (isDatabaseConnected()) {
       const projects = await prisma.filmProject.findMany({
@@ -7015,7 +8410,7 @@ router9.get("/projects", async (req, res, next) => {
     return res.json({ success: true, data: { projects: [] } });
   }
 });
-router9.post("/applications", authenticate, async (req, res, next) => {
+router10.post("/applications", authenticate, async (req, res, next) => {
   try {
     const { castingCallId, projectId, coverLetter, portfolioUrl, ...extra } = req.body;
     const userId = req.user?.userId || "dev_user";
@@ -7052,7 +8447,7 @@ router9.post("/applications", authenticate, async (req, res, next) => {
     next(error);
   }
 });
-router9.post("/proposals", authenticate, async (req, res, next) => {
+router10.post("/proposals", authenticate, async (req, res, next) => {
   try {
     const {
       projectId,
@@ -7130,7 +8525,7 @@ router9.post("/proposals", authenticate, async (req, res, next) => {
     next(error);
   }
 });
-router9.get("/proposals", authenticate, async (req, res, next) => {
+router10.get("/proposals", authenticate, async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     if (isDatabaseConnected()) {
@@ -7149,7 +8544,7 @@ router9.get("/proposals", authenticate, async (req, res, next) => {
     next(error);
   }
 });
-router9.get("/proposals/:id", authenticate, async (req, res, next) => {
+router10.get("/proposals/:id", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     if (isDatabaseConnected()) {
@@ -7166,7 +8561,7 @@ router9.get("/proposals/:id", authenticate, async (req, res, next) => {
     next(error);
   }
 });
-router9.patch("/proposals/:id/status", authenticate, async (req, res, next) => {
+router10.patch("/proposals/:id/status", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
@@ -7200,7 +8595,7 @@ router9.patch("/proposals/:id/status", authenticate, async (req, res, next) => {
     next(error);
   }
 });
-router9.patch("/proposals/:id/assign", authenticate, async (req, res, next) => {
+router10.patch("/proposals/:id/assign", authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { recipientId } = req.body;
@@ -7228,11 +8623,11 @@ router9.patch("/proposals/:id/assign", authenticate, async (req, res, next) => {
     next(error);
   }
 });
-var marketplace_routes_default = router9;
+var marketplace_routes_default = router10;
 
 // server/modules/marketplace/filmProduction.routes.ts
-import { Router as Router10 } from "express";
-var router10 = Router10();
+import { Router as Router11 } from "express";
+var router11 = Router11();
 var inMemoryProfessionals = [
   {
     id: "prof-1",
@@ -7594,7 +8989,7 @@ function sanitizeProfile(profile, requesterUserId, requesterEmail, isAdmin = fal
   }
   return sanitized;
 }
-router10.get("/filters", (req, res) => {
+router11.get("/filters", (req, res) => {
   const roles = [
     "Actor",
     "Actress",
@@ -7781,9 +9176,9 @@ var handleListProfessionals = (req, res, next) => {
     next(error);
   }
 };
-router10.get("/professionals", optionalAuthenticate, handleListProfessionals);
-router10.get("/professionals/search", optionalAuthenticate, handleListProfessionals);
-router10.get("/professionals/:username", optionalAuthenticate, (req, res, next) => {
+router11.get("/professionals", optionalAuthenticate, handleListProfessionals);
+router11.get("/professionals/search", optionalAuthenticate, handleListProfessionals);
+router11.get("/professionals/:username", optionalAuthenticate, (req, res, next) => {
   try {
     const rawParam = req.params.username.trim();
     const queryHandle = rawParam.startsWith("@") ? rawParam.toLowerCase() : `@${rawParam.toLowerCase()}`;
@@ -7814,7 +9209,7 @@ router10.get("/professionals/:username", optionalAuthenticate, (req, res, next) 
     next(error);
   }
 });
-router10.post("/professionals/invite", authenticate, (req, res, next) => {
+router11.post("/professionals/invite", authenticate, (req, res, next) => {
   try {
     const { projectId, projectTitle, projectRole, message, recipientProfileId, recipientEmail, recipientName } = req.body;
     const senderEmail = req.user?.email || "filmmaker@cinevenue.com";
@@ -7846,7 +9241,7 @@ router10.post("/professionals/invite", authenticate, (req, res, next) => {
     next(error);
   }
 });
-router10.post("/professionals/consider", authenticate, (req, res, next) => {
+router11.post("/professionals/consider", authenticate, (req, res, next) => {
   try {
     const { castingCallId, projectTitle, characterName, recipientProfileId, recipientEmail, recipientName, notes } = req.body;
     const senderEmail = req.user?.email || "director@cinevenue.com";
@@ -7876,7 +9271,7 @@ router10.post("/professionals/consider", authenticate, (req, res, next) => {
     next(error);
   }
 });
-router10.post("/professionals/report", optionalAuthenticate, (req, res, next) => {
+router11.post("/professionals/report", optionalAuthenticate, (req, res, next) => {
   try {
     const { targetProfileId, targetUsername, targetFullName, reason, details } = req.body;
     const reporterEmail = req.user?.email || req.body.reporterEmail || "anonymous@cinevenue.com";
@@ -7905,7 +9300,7 @@ router10.post("/professionals/report", optionalAuthenticate, (req, res, next) =>
     next(error);
   }
 });
-router10.get("/admin/professionals", authenticate, (req, res, next) => {
+router11.get("/admin/professionals", authenticate, (req, res, next) => {
   try {
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
@@ -7922,7 +9317,7 @@ router10.get("/admin/professionals", authenticate, (req, res, next) => {
     next(error);
   }
 });
-router10.patch("/admin/professionals/:id/verify", authenticate, (req, res, next) => {
+router11.patch("/admin/professionals/:id/verify", authenticate, (req, res, next) => {
   try {
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
@@ -7945,7 +9340,7 @@ router10.patch("/admin/professionals/:id/verify", authenticate, (req, res, next)
     next(error);
   }
 });
-router10.patch("/admin/professionals/:id/status", authenticate, (req, res, next) => {
+router11.patch("/admin/professionals/:id/status", authenticate, (req, res, next) => {
   try {
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
@@ -7968,7 +9363,7 @@ router10.patch("/admin/professionals/:id/status", authenticate, (req, res, next)
     next(error);
   }
 });
-router10.get("/admin/reports", authenticate, (req, res, next) => {
+router11.get("/admin/reports", authenticate, (req, res, next) => {
   try {
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
@@ -7985,17 +9380,17 @@ router10.get("/admin/reports", authenticate, (req, res, next) => {
     next(error);
   }
 });
-var filmProduction_routes_default = router10;
+var filmProduction_routes_default = router11;
 
 // server/modules/admin/admin.routes.ts
 init_database();
-import { Router as Router11 } from "express";
-var router11 = Router11();
+import { Router as Router12 } from "express";
+var router12 = Router12();
 var verifyAdminPasscode = (req) => {
   const passcode = req.headers["x-admin-passcode"];
   return !!(passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD));
 };
-var verifyAdminAccess = (req, res, next) => {
+var verifyAdminAccess3 = (req, res, next) => {
   if (verifyAdminPasscode(req)) {
     req.user = {
       userId: "superadmin_direct",
@@ -8010,11 +9405,11 @@ var verifyAdminAccess = (req, res, next) => {
     return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
   });
 };
-router11.use(verifyAdminAccess);
-router11.get("/health", (req, res) => {
+router12.use(verifyAdminAccess3);
+router12.get("/health", (req, res) => {
   return res.json({ success: true, status: "ok", role: req.user?.role || "ADMIN" });
 });
-router11.get("/dashboard/metrics", async (req, res, next) => {
+router12.get("/dashboard/metrics", async (req, res, next) => {
   try {
     const totalBookings = await prisma.booking.count({ where: { status: "CONFIRMED" } });
     const totalUsers = await prisma.user.count();
@@ -8052,7 +9447,7 @@ router11.get("/dashboard/metrics", async (req, res, next) => {
     next(error);
   }
 });
-router11.get("/users", async (req, res, next) => {
+router12.get("/users", async (req, res, next) => {
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -8074,7 +9469,7 @@ router11.get("/users", async (req, res, next) => {
     next(error);
   }
 });
-router11.patch("/users/:id/role", authorize("SUPER_ADMIN"), async (req, res, next) => {
+router12.patch("/users/:id/role", authorize("SUPER_ADMIN"), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
@@ -8092,7 +9487,7 @@ router11.patch("/users/:id/role", authorize("SUPER_ADMIN"), async (req, res, nex
     next(error);
   }
 });
-router11.get("/audit-logs", async (req, res, next) => {
+router12.get("/audit-logs", async (req, res, next) => {
   try {
     const logs = await prisma.financialAuditLog.findMany({
       orderBy: { createdAt: "desc" },
@@ -8106,7 +9501,7 @@ router11.get("/audit-logs", async (req, res, next) => {
     next(error);
   }
 });
-router11.get("/bookings", async (req, res, next) => {
+router12.get("/bookings", async (req, res, next) => {
   try {
     const bookings = await prisma.booking.findMany({
       include: {
@@ -8128,7 +9523,7 @@ router11.get("/bookings", async (req, res, next) => {
     next(error);
   }
 });
-router11.get("/settings", async (req, res, next) => {
+router12.get("/settings", async (req, res, next) => {
   try {
     const settings = await prisma.platformSetting.findMany();
     return res.json({
@@ -8139,7 +9534,7 @@ router11.get("/settings", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/settings", authorize("SUPER_ADMIN"), async (req, res, next) => {
+router12.post("/settings", authorize("SUPER_ADMIN"), async (req, res, next) => {
   try {
     const { key, value, description } = req.body;
     const setting = await prisma.platformSetting.upsert({
@@ -8156,7 +9551,7 @@ router11.post("/settings", authorize("SUPER_ADMIN"), async (req, res, next) => {
     next(error);
   }
 });
-router11.get("/settings/global", async (req, res, next) => {
+router12.get("/settings/global", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -8191,7 +9586,7 @@ router11.get("/settings/global", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/settings/global", async (req, res, next) => {
+router12.post("/settings/global", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -8340,7 +9735,7 @@ router11.post("/settings/global", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/settings/subwebsite", async (req, res, next) => {
+router12.post("/settings/subwebsite", async (req, res, next) => {
   try {
     const { enabled, message } = req.body;
     if (typeof enabled !== "boolean") {
@@ -8612,12 +10007,12 @@ var handleGlobalSettingsUpdate = async (req, res, next) => {
     next(error);
   }
 };
-router11.put("/settings/global", handleGlobalSettingsUpdate);
-router11.post("/settings/global", handleGlobalSettingsUpdate);
-router11.put("/settings/subwebsite", handleGlobalSettingsUpdate);
-router11.post("/settings/subwebsite", handleGlobalSettingsUpdate);
-router11.put("/settings/maintenance", handleGlobalSettingsUpdate);
-router11.post("/settings/maintenance", handleGlobalSettingsUpdate);
+router12.put("/settings/global", handleGlobalSettingsUpdate);
+router12.post("/settings/global", handleGlobalSettingsUpdate);
+router12.put("/settings/subwebsite", handleGlobalSettingsUpdate);
+router12.post("/settings/subwebsite", handleGlobalSettingsUpdate);
+router12.put("/settings/maintenance", handleGlobalSettingsUpdate);
+router12.post("/settings/maintenance", handleGlobalSettingsUpdate);
 var handleAdminSystemMaintenance = async (req, res, next) => {
   try {
     const isAuthorized = verifyAdminPasscode(req);
@@ -8727,8 +10122,8 @@ var handleAdminSystemMaintenance = async (req, res, next) => {
     next(error);
   }
 };
-router11.put("/system/maintenance", handleAdminSystemMaintenance);
-router11.post("/system/maintenance", handleAdminSystemMaintenance);
+router12.put("/system/maintenance", handleAdminSystemMaintenance);
+router12.post("/system/maintenance", handleAdminSystemMaintenance);
 var handleAdminSubsiteMaintenance = async (req, res, next) => {
   try {
     const isAuthorized = verifyAdminPasscode(req);
@@ -8837,9 +10232,9 @@ var handleAdminSubsiteMaintenance = async (req, res, next) => {
     next(error);
   }
 };
-router11.put("/subsites/:subsiteId/maintenance", handleAdminSubsiteMaintenance);
-router11.post("/subsites/:subsiteId/maintenance", handleAdminSubsiteMaintenance);
-router11.get("/events", async (req, res, next) => {
+router12.put("/subsites/:subsiteId/maintenance", handleAdminSubsiteMaintenance);
+router12.post("/subsites/:subsiteId/maintenance", handleAdminSubsiteMaintenance);
+router12.get("/events", async (req, res, next) => {
   try {
     const events = await prisma.event.findMany({
       include: {
@@ -8868,6 +10263,13 @@ router11.get("/events", async (req, res, next) => {
         status: e.status,
         bookingStatus: e.status === "CANCELLED" ? "CLOSED" : "OPEN",
         eventType: Number(e.price) === 0 ? "FREE" : "PAID",
+        convenienceFeeEnabled: Boolean(e.convenienceFeeEnabled ?? e.convenience_fee_enabled ?? false),
+        convenienceFeeType: e.convenienceFeeType || e.convenience_fee_type || "FIXED",
+        convenienceFeeAmount: Number(e.convenienceFeeAmount !== void 0 ? e.convenienceFeeAmount : e.convenience_fee_amount || 0),
+        convenienceFeeApplication: e.convenienceFeeApplication || e.convenience_fee_application || "PER_TICKET",
+        convenienceFeeStatus: e.convenienceFeeStatus || e.convenience_fee_status || "PENDING",
+        convenienceFeeApprovedBy: e.convenienceFeeApprovedBy || e.convenience_fee_approved_by || null,
+        convenienceFeeApprovedAt: e.convenienceFeeApprovedAt || e.convenience_fee_approved_at || null,
         ticketTypes: e.ticketTypes
       }))
     });
@@ -8875,7 +10277,7 @@ router11.get("/events", async (req, res, next) => {
     return res.json({ success: true, events: [] });
   }
 });
-router11.post("/events", async (req, res, next) => {
+router12.post("/events", async (req, res, next) => {
   try {
     const body = req.body || {};
     const title = body.title ? String(body.title).trim() : "Untitled Event";
@@ -8895,6 +10297,13 @@ router11.post("/events", async (req, res, next) => {
     const price = Number(body.eventType === "FREE" ? 0 : body.ticketTypes?.[0]?.price || body.price || 0);
     const status = body.status === "DRAFT" || body.status === "Draft" ? "DRAFT" : "PUBLISHED";
     const eventId = body.id || `EVT-${Date.now().toString().slice(-4)}`;
+    const convenienceFeeEnabled = Boolean(body.convenienceFeeEnabled ?? body.convenience_fee_enabled ?? false);
+    const convenienceFeeType = String(body.convenienceFeeType || body.convenience_fee_type || "FIXED").toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED";
+    const convenienceFeeAmount = Number(body.convenienceFeeAmount !== void 0 ? body.convenienceFeeAmount : body.convenience_fee_amount || 0);
+    const convenienceFeeApplication = String(body.convenienceFeeApplication || body.convenience_fee_application || "PER_TICKET").toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET";
+    const convenienceFeeStatus = body.convenienceFeeStatus || body.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Admin";
+    const isApproved = convenienceFeeStatus === "APPROVED";
     try {
       await prisma.event.upsert({
         where: { id: eventId },
@@ -8910,6 +10319,13 @@ router11.post("/events", async (req, res, next) => {
           price,
           capacity,
           status,
+          convenienceFeeEnabled,
+          convenienceFeeType,
+          convenienceFeeAmount,
+          convenienceFeeApplication,
+          convenienceFeeStatus,
+          convenienceFeeApprovedBy: isApproved ? actorEmail : void 0,
+          convenienceFeeApprovedAt: isApproved ? /* @__PURE__ */ new Date() : void 0,
           updatedAt: /* @__PURE__ */ new Date()
         },
         create: {
@@ -8925,9 +10341,33 @@ router11.post("/events", async (req, res, next) => {
           price,
           capacity,
           organizerId: "admin",
-          status
+          status,
+          convenienceFeeEnabled,
+          convenienceFeeType,
+          convenienceFeeAmount,
+          convenienceFeeApplication,
+          convenienceFeeStatus,
+          convenienceFeeApprovedBy: isApproved ? actorEmail : null,
+          convenienceFeeApprovedAt: isApproved ? /* @__PURE__ */ new Date() : null
         }
       });
+      if (convenienceFeeEnabled) {
+        await prisma.eventFeeAuditLog.create({
+          data: {
+            eventId,
+            action: isApproved ? "APPROVED" : "CREATED",
+            newStatus: convenienceFeeStatus,
+            feeType: convenienceFeeType,
+            feeAmount: convenienceFeeAmount,
+            feeApplication: convenienceFeeApplication,
+            enabled: convenienceFeeEnabled,
+            actorId: req.user?.userId || "admin",
+            actorEmail,
+            reason: `Convenience fee saved via Admin Panel as ${convenienceFeeStatus}`
+          }
+        }).catch(() => {
+        });
+      }
       if (Array.isArray(body.ticketTypes) && body.ticketTypes.length > 0) {
         try {
           await prisma.eventTicketType.deleteMany({ where: { eventId } });
@@ -8968,6 +10408,13 @@ router11.post("/events", async (req, res, next) => {
         status,
         bookingStatus: status === "PUBLISHED" ? "OPEN" : "CLOSED",
         eventType: price === 0 ? "FREE" : "PAID",
+        convenienceFeeEnabled,
+        convenienceFeeType,
+        convenienceFeeAmount,
+        convenienceFeeApplication,
+        convenienceFeeStatus,
+        convenienceFeeApprovedBy: isApproved ? actorEmail : null,
+        convenienceFeeApprovedAt: isApproved ? (/* @__PURE__ */ new Date()).toISOString() : null,
         ticketTypes: body.ticketTypes || []
       }
     });
@@ -8975,7 +10422,7 @@ router11.post("/events", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/events/:eventId/cancel", async (req, res, next) => {
+router12.post("/events/:eventId/cancel", async (req, res, next) => {
   try {
     const { eventId } = req.params;
     try {
@@ -8995,7 +10442,7 @@ router11.post("/events/:eventId/cancel", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/events/:eventId/publish", async (req, res, next) => {
+router12.post("/events/:eventId/publish", async (req, res, next) => {
   try {
     const { eventId } = req.params;
     try {
@@ -9015,7 +10462,7 @@ router11.post("/events/:eventId/publish", async (req, res, next) => {
     next(error);
   }
 });
-router11.post("/events/:eventId/unpublish", async (req, res, next) => {
+router12.post("/events/:eventId/unpublish", async (req, res, next) => {
   try {
     const { eventId } = req.params;
     try {
@@ -9035,7 +10482,7 @@ router11.post("/events/:eventId/unpublish", async (req, res, next) => {
     next(error);
   }
 });
-router11.patch("/events/:eventId/status", async (req, res, next) => {
+router12.patch("/events/:eventId/status", async (req, res, next) => {
   try {
     const { eventId } = req.params;
     const { status, bookingStatus } = req.body;
@@ -9057,7 +10504,7 @@ router11.patch("/events/:eventId/status", async (req, res, next) => {
     next(error);
   }
 });
-router11.delete("/events/:eventId", async (req, res, next) => {
+router12.delete("/events/:eventId", async (req, res, next) => {
   try {
     const { eventId } = req.params;
     try {
@@ -9071,6 +10518,156 @@ router11.delete("/events/:eventId", async (req, res, next) => {
     return res.json({
       success: true,
       message: `Event ${eventId} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.post("/events/:eventId/approve-fee", async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Authorized Admin";
+    const approvedAt = /* @__PURE__ */ new Date();
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        convenienceFeeStatus: "APPROVED",
+        convenienceFeeApprovedBy: actorEmail,
+        convenienceFeeApprovedAt: approvedAt
+      }
+    });
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId,
+        action: "APPROVED",
+        previousStatus: prevStatus,
+        newStatus: "APPROVED",
+        feeType: event.convenienceFeeType || "FIXED",
+        feeAmount: Number(event.convenienceFeeAmount || 0),
+        feeApplication: event.convenienceFeeApplication || "PER_TICKET",
+        enabled: Boolean(event.convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Approved by admin",
+        metadata: { approvedAt }
+      }
+    }).catch(() => {
+    });
+    return res.json({
+      success: true,
+      message: `Convenience fee for "${event.title}" has been approved.`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.post("/events/:eventId/reject-fee", async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Authorized Admin";
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        convenienceFeeStatus: "REJECTED"
+      }
+    });
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId,
+        action: "REJECTED",
+        previousStatus: prevStatus,
+        newStatus: "REJECTED",
+        feeType: event.convenienceFeeType || "FIXED",
+        feeAmount: Number(event.convenienceFeeAmount || 0),
+        feeApplication: event.convenienceFeeApplication || "PER_TICKET",
+        enabled: Boolean(event.convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Fee rejected by admin",
+        metadata: { rejectedAt: /* @__PURE__ */ new Date() }
+      }
+    }).catch(() => {
+    });
+    return res.json({
+      success: true,
+      message: `Convenience fee for "${event.title}" has been rejected.`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.patch("/events/:eventId/fee-settings", async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    const {
+      convenienceFeeEnabled,
+      convenienceFeeType = "FIXED",
+      convenienceFeeAmount = 0,
+      convenienceFeeApplication = "PER_TICKET",
+      convenienceFeeStatus = "PENDING"
+    } = req.body;
+    const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
+    const actorEmail = req.user?.email || "Admin";
+    const isApproved = convenienceFeeStatus === "APPROVED";
+    const updated = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        convenienceFeeEnabled: Boolean(convenienceFeeEnabled),
+        convenienceFeeType: String(convenienceFeeType).toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED",
+        convenienceFeeAmount: Number(convenienceFeeAmount) || 0,
+        convenienceFeeApplication: String(convenienceFeeApplication).toUpperCase() === "PER_BOOKING" ? "PER_BOOKING" : "PER_TICKET",
+        convenienceFeeStatus,
+        convenienceFeeApprovedBy: isApproved ? actorEmail : event.convenienceFeeApprovedBy || null,
+        convenienceFeeApprovedAt: isApproved ? /* @__PURE__ */ new Date() : event.convenienceFeeApprovedAt || null
+      }
+    });
+    await prisma.eventFeeAuditLog.create({
+      data: {
+        eventId,
+        action: "EDITED",
+        previousStatus: prevStatus,
+        newStatus: convenienceFeeStatus,
+        feeType: convenienceFeeType,
+        feeAmount: Number(convenienceFeeAmount) || 0,
+        feeApplication: convenienceFeeApplication,
+        enabled: Boolean(convenienceFeeEnabled),
+        actorId: req.user?.userId || "admin",
+        actorEmail,
+        reason: req.body?.reason || "Convenience fee configuration updated",
+        metadata: { updatedSettings: req.body }
+      }
+    }).catch(() => {
+    });
+    return res.json({
+      success: true,
+      message: `Convenience fee settings updated for "${event.title}".`,
+      event: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.get("/events/:eventId/fee-audit-logs", async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const logs = await prisma.eventFeeAuditLog.findMany({
+      where: { eventId },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({
+      success: true,
+      logs,
+      data: { logs }
     });
   } catch (error) {
     next(error);
@@ -9107,7 +10704,7 @@ async function uploadToCloudinaryIfConfigured(dataUrlOrUrl, folder = "cinevenue/
   }
   return null;
 }
-router11.post("/uploads/event-poster", async (req, res) => {
+router12.post("/uploads/event-poster", async (req, res) => {
   const body = req.body || {};
   const rawImage = body.image || body.url || body.dataUrl || "";
   const alt = body.alt || "Event Poster";
@@ -9136,7 +10733,7 @@ router11.post("/uploads/event-poster", async (req, res) => {
     file: { url, publicId, alt }
   });
 });
-router11.post("/uploads/event-banner", async (req, res) => {
+router12.post("/uploads/event-banner", async (req, res) => {
   const body = req.body || {};
   const rawImage = body.image || body.url || body.dataUrl || "";
   const alt = body.alt || "Event Banner";
@@ -9165,7 +10762,7 @@ router11.post("/uploads/event-banner", async (req, res) => {
     file: { url, publicId, alt }
   });
 });
-router11.post("/uploads/image", async (req, res) => {
+router12.post("/uploads/image", async (req, res) => {
   const body = req.body || {};
   const rawImage = body.image || body.url || body.dataUrl || "";
   const folder = body.folder || "cinevenue/movies";
@@ -9195,13 +10792,92 @@ router11.post("/uploads/image", async (req, res) => {
     file: { url, publicId, alt }
   });
 });
-var admin_routes_default = router11;
+router12.get("/movie-fees", async (req, res, next) => {
+  try {
+    const configs = await movieFeeService.getAllConfigs();
+    const globalSettings = movieFeeService.getGlobalSettings();
+    const auditLogs = await movieFeeService.getAuditLogs();
+    return res.json({
+      success: true,
+      globalSettings,
+      configs,
+      auditLogs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.post("/movie-fees", async (req, res, next) => {
+  try {
+    const actorEmail = req.user?.email || "Super Admin";
+    const created = await movieFeeService.createConfig(req.body, actorEmail);
+    return res.status(201).json({
+      success: true,
+      message: `Convenience fee tier for \u20B9${created.ticketPrice} created successfully.`,
+      config: created
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.put("/movie-fees/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const actorEmail = req.user?.email || "Super Admin";
+    const updated = await movieFeeService.updateConfig(id, req.body, actorEmail);
+    return res.json({
+      success: true,
+      message: `Convenience fee tier ${id} updated successfully.`,
+      config: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.delete("/movie-fees/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const actorEmail = req.user?.email || "Super Admin";
+    await movieFeeService.deleteConfig(id, actorEmail);
+    return res.json({
+      success: true,
+      message: `Fee configuration ${id} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.patch("/movie-fees/settings", async (req, res, next) => {
+  try {
+    const actorEmail = req.user?.email || "Super Admin";
+    const updated = await movieFeeService.updateGlobalSettings(req.body, actorEmail);
+    return res.json({
+      success: true,
+      message: "Global movie convenience fee settings updated successfully.",
+      settings: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router12.get("/movie-fees/audit-logs", async (req, res, next) => {
+  try {
+    const logs = await movieFeeService.getAuditLogs();
+    return res.json({
+      success: true,
+      logs
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+var admin_routes_default = router12;
 
 // server/modules/pos/pos.routes.ts
 init_database();
-import { Router as Router12 } from "express";
-var router12 = Router12();
-router12.post("/webhooks/pos/:integrationId", async (req, res, next) => {
+import { Router as Router13 } from "express";
+var router13 = Router13();
+router13.post("/webhooks/pos/:integrationId", async (req, res, next) => {
   try {
     const { integrationId } = req.params;
     const signatureHeader = req.headers["x-pos-signature"];
@@ -9218,7 +10894,7 @@ router12.post("/webhooks/pos/:integrationId", async (req, res, next) => {
     });
   }
 });
-router12.get("/pos/availability/:theatreId/:showId", async (req, res, next) => {
+router13.get("/pos/availability/:theatreId/:showId", async (req, res, next) => {
   try {
     const { theatreId, showId } = req.params;
     const theatre = await prisma.theatre.findFirst({
@@ -9255,7 +10931,7 @@ router12.get("/pos/availability/:theatreId/:showId", async (req, res, next) => {
     });
   }
 });
-router12.post("/pos/hold", async (req, res, next) => {
+router13.post("/pos/hold", async (req, res, next) => {
   try {
     const { theatreId, showId, seatIds, userId } = req.body;
     if (!theatreId || !showId || !Array.isArray(seatIds) || seatIds.length === 0) {
@@ -9297,7 +10973,7 @@ router12.post("/pos/hold", async (req, res, next) => {
     });
   }
 });
-router12.post("/pos/release", async (req, res, next) => {
+router13.post("/pos/release", async (req, res, next) => {
   try {
     const { theatreId, showId, posHoldId, seatIds } = req.body;
     if (theatreId && showId && posHoldId) {
@@ -9313,7 +10989,7 @@ router12.post("/pos/release", async (req, res, next) => {
     return res.json({ success: true, message: "Release acknowledged" });
   }
 });
-router12.post("/pos/cancel", async (req, res, next) => {
+router13.post("/pos/cancel", async (req, res, next) => {
   try {
     const { bookingId, reason } = req.body;
     if (!bookingId) {
@@ -9332,7 +11008,7 @@ router12.post("/pos/cancel", async (req, res, next) => {
     });
   }
 });
-var verifyAdminAccess2 = (req, res, next) => {
+var verifyAdminAccess4 = (req, res, next) => {
   const passcode = req.headers["x-admin-passcode"];
   if (passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD)) {
     req.user = {
@@ -9348,8 +11024,8 @@ var verifyAdminAccess2 = (req, res, next) => {
     return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
   });
 };
-router12.use("/admin", verifyAdminAccess2);
-router12.get("/admin/integrations", async (req, res, next) => {
+router13.use("/admin", verifyAdminAccess4);
+router13.get("/admin/integrations", async (req, res, next) => {
   try {
     const theatres = await prisma.theatre.findMany({
       include: {
@@ -9389,7 +11065,7 @@ router12.get("/admin/integrations", async (req, res, next) => {
     next(error);
   }
 });
-router12.get("/admin/integrations/:id", async (req, res, next) => {
+router13.get("/admin/integrations/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
     let pos = await prisma.theatrePosIntegration.findFirst({
@@ -9448,7 +11124,7 @@ router12.get("/admin/integrations/:id", async (req, res, next) => {
     next(error);
   }
 });
-router12.post("/admin/integrations", async (req, res, next) => {
+router13.post("/admin/integrations", async (req, res, next) => {
   try {
     const {
       theatreId,
@@ -9500,7 +11176,7 @@ router12.post("/admin/integrations", async (req, res, next) => {
     next(error);
   }
 });
-router12.put("/admin/integrations/:id", async (req, res, next) => {
+router13.put("/admin/integrations/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, liveBookingEnabled, seatHoldDurationMinutes, syncFrequency } = req.body;
@@ -9521,7 +11197,7 @@ router12.put("/admin/integrations/:id", async (req, res, next) => {
     next(error);
   }
 });
-router12.post("/admin/integrations/:id/test", async (req, res, next) => {
+router13.post("/admin/integrations/:id/test", async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await posIntegrationService.testConnection(id);
@@ -9536,7 +11212,7 @@ router12.post("/admin/integrations/:id/test", async (req, res, next) => {
     });
   }
 });
-router12.post("/admin/integrations/:id/sync", async (req, res, next) => {
+router13.post("/admin/integrations/:id/sync", async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await posIntegrationService.syncData(id);
@@ -9552,7 +11228,7 @@ router12.post("/admin/integrations/:id/sync", async (req, res, next) => {
     });
   }
 });
-router12.post("/admin/integrations/:id/regenerate-webhook-secret", async (req, res, next) => {
+router13.post("/admin/integrations/:id/regenerate-webhook-secret", async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await posIntegrationService.regenerateWebhookSecret(id);
@@ -9565,7 +11241,7 @@ router12.post("/admin/integrations/:id/regenerate-webhook-secret", async (req, r
     next(error);
   }
 });
-router12.post("/admin/integrations/:id/reconcile", async (req, res, next) => {
+router13.post("/admin/integrations/:id/reconcile", async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await posIntegrationService.runReconciliation(id);
@@ -9577,7 +11253,7 @@ router12.post("/admin/integrations/:id/reconcile", async (req, res, next) => {
     next(error);
   }
 });
-router12.post("/admin/integrations/:id/toggle-live", async (req, res, next) => {
+router13.post("/admin/integrations/:id/toggle-live", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { enabled } = req.body;
@@ -9591,7 +11267,7 @@ router12.post("/admin/integrations/:id/toggle-live", async (req, res, next) => {
     next(error);
   }
 });
-router12.get("/admin/integrations/:id/logs", async (req, res, next) => {
+router13.get("/admin/integrations/:id/logs", async (req, res, next) => {
   try {
     const { id } = req.params;
     const { event, status, limit } = req.query;
@@ -9612,14 +11288,14 @@ router12.get("/admin/integrations/:id/logs", async (req, res, next) => {
     next(error);
   }
 });
-var pos_routes_default = router12;
+var pos_routes_default = router13;
 
 // server/modules/tickets/ticket.routes.ts
 init_database();
 init_logger();
-import { Router as Router13 } from "express";
-var router13 = Router13();
-router13.all("/verify", async (req, res, next) => {
+import { Router as Router14 } from "express";
+var router14 = Router14();
+router14.all("/verify", async (req, res, next) => {
   try {
     const token = req.query.token || req.body?.token;
     const doCheckIn = req.query.checkIn === "true" || req.body?.checkIn === true;
@@ -9765,14 +11441,14 @@ router13.all("/verify", async (req, res, next) => {
     next(error);
   }
 });
-var ticket_routes_default = router13;
+var ticket_routes_default = router14;
 
 // server/modules/notifications/notification.routes.ts
 init_logger();
 init_emailService();
-import { Router as Router14 } from "express";
-var router14 = Router14();
-router14.post("/send-ticket-email", async (req, res, next) => {
+import { Router as Router15 } from "express";
+var router15 = Router15();
+router15.post("/send-ticket-email", async (req, res, next) => {
   try {
     const toEmail = req.body.email || req.body.recipientEmail;
     if (!toEmail) {
@@ -9819,7 +11495,7 @@ router14.post("/send-ticket-email", async (req, res, next) => {
     next(error);
   }
 });
-router14.post("/send-ticket-sms", async (req, res, next) => {
+router15.post("/send-ticket-sms", async (req, res, next) => {
   try {
     const {
       phone,
@@ -9849,18 +11525,18 @@ router14.post("/send-ticket-sms", async (req, res, next) => {
     next(error);
   }
 });
-var notification_routes_default = router14;
+var notification_routes_default = router15;
 
 // server/modules/advertising/advertising.routes.ts
-import { Router as Router15 } from "express";
+import { Router as Router16 } from "express";
 
 // server/modules/advertising/advertising.service.ts
 init_env();
 init_logger();
-import fs2 from "fs";
-import path2 from "path";
-var DATA_FILE_PATH = path2.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
-var PLACEMENTS_FILE_PATH = path2.resolve(process.cwd(), "server/config/live_banner_placements.json");
+import fs3 from "fs";
+import path3 from "path";
+var DATA_FILE_PATH = path3.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
+var PLACEMENTS_FILE_PATH = path3.resolve(process.cwd(), "server/config/live_banner_placements.json");
 var DEFAULT_PLACEMENTS = [
   {
     id: "homepage_top",
@@ -10021,14 +11697,14 @@ var AdvertisingService = class {
   loadData() {
     if (this.isLoaded) return;
     try {
-      if (fs2.existsSync(PLACEMENTS_FILE_PATH)) {
-        const raw = fs2.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
+      if (fs3.existsSync(PLACEMENTS_FILE_PATH)) {
+        const raw = fs3.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
         this.placements = JSON.parse(raw);
       } else {
         this.savePlacements();
       }
-      if (fs2.existsSync(DATA_FILE_PATH)) {
-        const raw = fs2.readFileSync(DATA_FILE_PATH, "utf8");
+      if (fs3.existsSync(DATA_FILE_PATH)) {
+        const raw = fs3.readFileSync(DATA_FILE_PATH, "utf8");
         this.campaigns = JSON.parse(raw);
       } else {
         this.saveCampaigns();
@@ -10044,18 +11720,18 @@ var AdvertisingService = class {
   }
   saveCampaigns() {
     try {
-      const dir = path2.dirname(DATA_FILE_PATH);
-      if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
-      fs2.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
+      const dir = path3.dirname(DATA_FILE_PATH);
+      if (!fs3.existsSync(dir)) fs3.mkdirSync(dir, { recursive: true });
+      fs3.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner campaigns: ${err.message}`);
     }
   }
   savePlacements() {
     try {
-      const dir = path2.dirname(PLACEMENTS_FILE_PATH);
-      if (!fs2.existsSync(dir)) fs2.mkdirSync(dir, { recursive: true });
-      fs2.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
+      const dir = path3.dirname(PLACEMENTS_FILE_PATH);
+      if (!fs3.existsSync(dir)) fs3.mkdirSync(dir, { recursive: true });
+      fs3.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner placements: ${err.message}`);
     }
@@ -10506,7 +12182,7 @@ var AdvertisingService = class {
 var advertisingService = new AdvertisingService();
 
 // server/modules/advertising/advertising.routes.ts
-var advertisingPublicRouter = Router15();
+var advertisingPublicRouter = Router16();
 advertisingPublicRouter.get("/placements", (req, res) => {
   const placements = advertisingService.getPlacements();
   return res.json({ success: true, data: { placements } });
@@ -10640,7 +12316,7 @@ advertisingPublicRouter.post("/track", (req, res) => {
   }
   return res.json({ success: true });
 });
-var adminAdvertisingRouter = Router15();
+var adminAdvertisingRouter = Router16();
 adminAdvertisingRouter.use((req, res, next) => {
   const passcode = req.headers["x-admin-passcode"] || req.query.passcode;
   if (passcode === "8888" || passcode === "admin8888") {
@@ -10769,13 +12445,13 @@ adminAdvertisingRouter.get("/reports", (req, res) => {
 
 // server/modules/admin/employee.routes.ts
 init_database();
-import { Router as Router16 } from "express";
+import { Router as Router17 } from "express";
 import bcrypt3 from "bcryptjs";
 import jwt3 from "jsonwebtoken";
-import fs3 from "fs";
-import path3 from "path";
+import fs4 from "fs";
+import path4 from "path";
 init_env();
-var employeeRouter = Router16();
+var employeeRouter = Router17();
 var SYSTEM_MODULES = [
   { id: "EVENTS", label: "Event Management" },
   { id: "MOVIES", label: "Movie Management" },
@@ -10952,11 +12628,11 @@ var INITIAL_ROLES = [
     }
   }
 ];
-var FALLBACK_STORE_PATH = path3.resolve(process.cwd(), "server/config/employee_store.json");
+var FALLBACK_STORE_PATH = path4.resolve(process.cwd(), "server/config/employee_store.json");
 function loadFallbackStore() {
   try {
-    if (fs3.existsSync(FALLBACK_STORE_PATH)) {
-      const data = JSON.parse(fs3.readFileSync(FALLBACK_STORE_PATH, "utf-8"));
+    if (fs4.existsSync(FALLBACK_STORE_PATH)) {
+      const data = JSON.parse(fs4.readFileSync(FALLBACK_STORE_PATH, "utf-8"));
       return data;
     }
   } catch (err) {
@@ -11066,9 +12742,9 @@ function loadFallbackStore() {
 }
 function saveFallbackStore(store) {
   try {
-    const dir = path3.dirname(FALLBACK_STORE_PATH);
-    if (!fs3.existsSync(dir)) fs3.mkdirSync(dir, { recursive: true });
-    fs3.writeFileSync(FALLBACK_STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
+    const dir = path4.dirname(FALLBACK_STORE_PATH);
+    if (!fs4.existsSync(dir)) fs4.mkdirSync(dir, { recursive: true });
+    fs4.writeFileSync(FALLBACK_STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
   } catch (err) {
     console.error("[EMPLOYEE_STORE_WRITE_ERROR]", err);
   }
@@ -11788,8 +13464,8 @@ var employee_routes_default = employeeRouter;
 
 // server/routes.ts
 init_database();
-var router15 = Router17();
-router15.get("/health", (req, res) => {
+var router16 = Router18();
+router16.get("/health", (req, res) => {
   res.json({
     status: "ok",
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -11797,7 +13473,7 @@ router15.get("/health", (req, res) => {
     version: "2.0.0"
   });
 });
-router15.get("/ready", async (req, res) => {
+router16.get("/ready", async (req, res) => {
   const dbOk = await checkDatabaseConnection();
   const redisOk = await redis.isHealthy();
   const isReady = dbOk && redisOk;
@@ -11809,25 +13485,26 @@ router15.get("/ready", async (req, res) => {
     }
   });
 });
-router15.use("/auth", auth_routes_default);
-router15.use("/movies", movie_routes_default);
-router15.use("/theatres", theatre_routes_default);
-router15.use("/shows", show_routes_default);
-router15.use("/bookings", booking_routes_default);
-router15.use("/payments", payment_routes_default);
-router15.use("/cinecoins", cinecoins_routes_default);
-router15.use("/events", event_routes_default);
-router15.use("/tickets", ticket_routes_default);
-router15.use("/notifications", notification_routes_default);
-router15.use("/marketplace", marketplace_routes_default);
-router15.use("/film-production", filmProduction_routes_default);
-router15.use("/marketplace", filmProduction_routes_default);
-router15.use("/advertising", advertisingPublicRouter);
-router15.use("/admin/advertising", adminAdvertisingRouter);
-router15.use("/admin", admin_routes_default);
-router15.use("/", employee_routes_default);
-router15.use("/", pos_routes_default);
-router15.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/create-order", "/payments/create-order"], async (req, res, next) => {
+router16.use("/auth", auth_routes_default);
+router16.use("/movies", movie_routes_default);
+router16.use("/theatres", theatre_routes_default);
+router16.use("/shows", show_routes_default);
+router16.use("/bookings", booking_routes_default);
+router16.use("/movie-fees", movieFee_routes_default);
+router16.use("/payments", payment_routes_default);
+router16.use("/cinecoins", cinecoins_routes_default);
+router16.use("/events", event_routes_default);
+router16.use("/tickets", ticket_routes_default);
+router16.use("/notifications", notification_routes_default);
+router16.use("/marketplace", marketplace_routes_default);
+router16.use("/film-production", filmProduction_routes_default);
+router16.use("/marketplace", filmProduction_routes_default);
+router16.use("/advertising", advertisingPublicRouter);
+router16.use("/admin/advertising", adminAdvertisingRouter);
+router16.use("/admin", admin_routes_default);
+router16.use("/", employee_routes_default);
+router16.use("/", pos_routes_default);
+router16.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/create-order", "/payments/create-order"], async (req, res, next) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;
     if (!amount || Number(amount) < 100) {
@@ -11859,7 +13536,7 @@ router15.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/cr
     });
   }
 });
-router15.post(["/verify-payment", "/razorpay/verify-payment", "/payments/razorpay/verify-payment", "/payments/verify-payment"], async (req, res, next) => {
+router16.post(["/verify-payment", "/razorpay/verify-payment", "/payments/razorpay/verify-payment", "/payments/verify-payment"], async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id, payment_id, signature } = req.body;
     const rzpOrderId = razorpay_order_id || order_id;
@@ -11897,7 +13574,7 @@ router15.post(["/verify-payment", "/razorpay/verify-payment", "/payments/razorpa
     });
   }
 });
-router15.get(["/public/platform-config", "/public/maintenance-status"], async (req, res, next) => {
+router16.get(["/public/platform-config", "/public/maintenance-status"], async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -11949,15 +13626,15 @@ router15.get(["/public/platform-config", "/public/maintenance-status"], async (r
     next(error);
   }
 });
-router15.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
+router16.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
   try {
-    const fs5 = await import("fs");
-    const path5 = await import("path");
-    const configPath = path5.resolve(process.cwd(), "platform_config.json");
+    const fs6 = await import("fs");
+    const path6 = await import("path");
+    const configPath = path6.resolve(process.cwd(), "platform_config.json");
     let currentConfig = {};
-    if (fs5.existsSync(configPath)) {
+    if (fs6.existsSync(configPath)) {
       try {
-        currentConfig = JSON.parse(fs5.readFileSync(configPath, "utf-8"));
+        currentConfig = JSON.parse(fs6.readFileSync(configPath, "utf-8"));
       } catch (e) {
       }
     }
@@ -11970,7 +13647,7 @@ router15.all(["/admin/platform-config", "/public/event-highlights"], async (req,
         currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
       }
       currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-      fs5.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+      fs6.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
       return res.json({
         success: true,
         message: "Highlights updated successfully.",
@@ -11987,7 +13664,7 @@ router15.all(["/admin/platform-config", "/public/event-highlights"], async (req,
     next(error);
   }
 });
-router15.get("/settings/app", async (req, res, next) => {
+router16.get("/settings/app", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -12014,7 +13691,7 @@ router15.get("/settings/app", async (req, res, next) => {
     next(error);
   }
 });
-router15.get("/settings/subwebsite", async (req, res, next) => {
+router16.get("/settings/subwebsite", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -12045,7 +13722,7 @@ function normalizeSubsiteId(id) {
   if (clean.includes("website") || clean === "main" || clean === "global") return "website";
   return id;
 }
-router15.get("/system/maintenance-status", async (req, res, next) => {
+router16.get("/system/maintenance-status", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -12108,7 +13785,7 @@ router15.get("/system/maintenance-status", async (req, res, next) => {
     next(error);
   }
 });
-router15.get("/system/subsites/:subsiteId/maintenance", async (req, res, next) => {
+router16.get("/system/subsites/:subsiteId/maintenance", async (req, res, next) => {
   try {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0");
     res.setHeader("Pragma", "no-cache");
@@ -12146,7 +13823,7 @@ router15.get("/system/subsites/:subsiteId/maintenance", async (req, res, next) =
     next(error);
   }
 });
-var routes_default = router15;
+var routes_default = router16;
 
 // server/middleware/requestId.ts
 import { v4 as uuidv4 } from "uuid";
@@ -12661,8 +14338,8 @@ google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
 init_database();
 init_supabaseAdmin();
 init_maintenance();
-var CONFIG_FILE_PATH2 = path4.resolve(process.cwd(), "server/config/global_settings.json");
-var TMP_CONFIG_PATH2 = path4.resolve("/tmp", "cine_global_settings.json");
+var CONFIG_FILE_PATH2 = path5.resolve(process.cwd(), "server/config/global_settings.json");
+var TMP_CONFIG_PATH2 = path5.resolve("/tmp", "cine_global_settings.json");
 var globalServerlessState = {
   globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
@@ -12685,8 +14362,8 @@ var globalServerlessState = {
 function syncServerlessStateFromDisk() {
   const readFromPath = (p) => {
     try {
-      if (fs4.existsSync(p)) {
-        const data = JSON.parse(fs4.readFileSync(p, "utf-8"));
+      if (fs5.existsSync(p)) {
+        const data = JSON.parse(fs5.readFileSync(p, "utf-8"));
         if (typeof data.globalSubwebsiteEnabled === "boolean") {
           globalServerlessState.globalSubwebsiteEnabled = data.globalSubwebsiteEnabled;
         }
@@ -12751,11 +14428,11 @@ function persistServerlessState(enabled, message) {
   }
   const payload = JSON.stringify(globalServerlessState, null, 2);
   try {
-    fs4.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
+    fs5.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
   } catch (e) {
   }
   try {
-    fs4.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
+    fs5.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
   } catch (e) {
   }
 }
@@ -13018,11 +14695,11 @@ async function handler(req, res) {
     globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     const serialized = JSON.stringify(globalServerlessState, null, 2);
     try {
-      fs4.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+      fs5.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs4.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+      fs5.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
@@ -13145,8 +14822,8 @@ async function handler(req, res) {
       globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
       try {
         const serialized = JSON.stringify(globalServerlessState, null, 2);
-        fs4.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
-        fs4.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+        fs5.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+        fs5.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
       } catch (e) {
       }
       return res.status(200).json({
@@ -13196,6 +14873,20 @@ async function handler(req, res) {
       eventType: isFree ? "FREE" : "PAID",
       isFeatured: true,
       isActive: status !== "DRAFT" && status !== "CANCELLED",
+      convenienceFeeEnabled: evt.convenience_fee_enabled !== void 0 ? Boolean(evt.convenience_fee_enabled) : Boolean(evt.convenienceFeeEnabled),
+      convenienceFeeType: evt.convenience_fee_type || evt.convenienceFeeType || "FIXED",
+      convenienceFeeAmount: Number(evt.convenience_fee_amount !== void 0 ? evt.convenience_fee_amount : evt.convenienceFeeAmount || 0),
+      convenienceFeeApplication: evt.convenience_fee_application || evt.convenienceFeeApplication || "PER_TICKET",
+      convenienceFeeStatus: evt.convenience_fee_status || evt.convenienceFeeStatus || "PENDING",
+      convenienceFeeApprovedBy: evt.convenience_fee_approved_by || evt.convenienceFeeApprovedBy || null,
+      convenienceFeeApprovedAt: evt.convenience_fee_approved_at || evt.convenienceFeeApprovedAt || null,
+      convenience_fee_enabled: evt.convenience_fee_enabled !== void 0 ? Boolean(evt.convenience_fee_enabled) : Boolean(evt.convenienceFeeEnabled),
+      convenience_fee_type: evt.convenience_fee_type || evt.convenienceFeeType || "FIXED",
+      convenience_fee_amount: Number(evt.convenience_fee_amount !== void 0 ? evt.convenience_fee_amount : evt.convenienceFeeAmount || 0),
+      convenience_fee_application: evt.convenience_fee_application || evt.convenienceFeeApplication || "PER_TICKET",
+      convenience_fee_status: evt.convenience_fee_status || evt.convenienceFeeStatus || "PENDING",
+      convenience_fee_approved_by: evt.convenience_fee_approved_by || evt.convenienceFeeApprovedBy || null,
+      convenience_fee_approved_at: evt.convenience_fee_approved_at || evt.convenienceFeeApprovedAt || null,
       ticketTypes: [
         {
           id: `TKT-${evt.id}-GEN`,

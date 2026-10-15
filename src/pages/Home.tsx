@@ -12,7 +12,7 @@ import {
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
   TrendingUp, BarChart2, Briefcase, Camera, Video, Compass, HelpCircle,
   Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send, Menu,
-  Target, FileText, Tv, X, UserCheck, Coins, PlusCircle, ExternalLink, Clapperboard,
+  Target, FileText, Tv, X, UserCheck, Coins, ExternalLink, Clapperboard,
   User, LogOut
 } from "lucide-react";
 import {
@@ -884,28 +884,17 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 </p>
               </div>
             </div>
-            <div className="pt-6 grid grid-cols-2 gap-2">
+            <div className="pt-6">
               <button
                 onClick={() => navigate("/events")}
-                className={`py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md border-none font-bold ${
+                className={`w-full py-2.5 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-bold ${
                   (serviceControl?.eventManagement?.status ?? true)
                     ? "bg-gray-950 hover:bg-black text-white dark:bg-gradient-to-r dark:from-amber-500 dark:to-amber-600 dark:hover:from-amber-400 dark:hover:to-amber-500 dark:text-black"
                     : "bg-rose-500/80 hover:bg-rose-600 text-white"
                 }`}
               >
-                <span>{(serviceControl?.eventManagement?.status ?? true) ? "Events Hub" : "Maintenance"}</span>
-                <ChevronRight className="w-3 h-3 text-white dark:text-black" />
-              </button>
-              <button
-                onClick={() => navigate("/create-event")}
-                className={`py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer font-bold ${
-                  (serviceControl?.eventManagement?.status ?? true)
-                    ? "bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white dark:border-white/10 hover:border-gray-400"
-                    : "bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40"
-                }`}
-              >
-                <PlusCircle className="w-3 h-3 text-gray-700 dark:text-amber-400" />
-                <span>{(serviceControl?.eventManagement?.status ?? true) ? "Create Event" : "Offline"}</span>
+                <span>{(serviceControl?.eventManagement?.status ?? true) ? "Explore Event Management" : "Under Maintenance"}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-white dark:text-black" />
               </button>
             </div>
           </div>

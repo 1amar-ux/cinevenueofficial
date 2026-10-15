@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Search, Calendar, Clock, MapPin, Film, Sparkles } from "lucide-react";
-import { CITIES } from "../data";
-
+import { Sparkles } from "lucide-react";
 import { Advertisement } from "../types";
 
 interface HeroProps {
-  selectedCity: string;
-  setSelectedCity: (city: string) => void;
-  onSearch: (city: string, date: string, timeSlot: string) => void;
+  selectedCity?: string;
+  setSelectedCity?: (city: string) => void;
+  onSearch?: (city: string, date: string, timeSlot: string) => void;
   cities?: string[];
   advertisements?: Advertisement[];
   onRecordAdImpression?: (adId: string) => void;
@@ -15,23 +13,11 @@ interface HeroProps {
 }
 
 export default function Hero({ 
-  selectedCity, 
-  setSelectedCity, 
-  onSearch, 
-  cities = CITIES,
   advertisements = [],
   onRecordAdImpression,
   onRecordAdClick
 }: HeroProps) {
-  const [cityVal, setCityVal] = useState(selectedCity);
-  const [dateVal, setDateVal] = useState("2026-07-01");
-  const [timeSlotVal, setTimeSlotVal] = useState("evening");
   const [particles, setParticles] = useState<{ id: number; left: number; top: number; delay: number; duration: number }[]>([]);
-
-  useEffect(() => {
-    // Sync external city change to internal select input
-    setCityVal(selectedCity);
-  }, [selectedCity]);
 
   useEffect(() => {
     // Generate floating particle variables
@@ -44,18 +30,6 @@ export default function Hero({
     }));
     setParticles(temp);
   }, []);
-
-  const handleSearchClick = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSelectedCity(cityVal);
-    onSearch(cityVal, dateVal, timeSlotVal);
-    
-    // Smooth scroll to movies
-    const element = document.getElementById("movies");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   return (
     <section id="home" className="relative min-h-[720px] md:min-h-screen flex items-center overflow-hidden bg-dark-bg text-text-primary pt-24 pb-12">
@@ -104,79 +78,9 @@ export default function Hero({
           Book seats. Rent the screen. Own the night.
         </p>
 
-        <p className="text-sm md:text-base text-text-secondary max-w-lg leading-relaxed mb-12">
+        <p className="text-sm md:text-base text-text-secondary max-w-lg leading-relaxed mb-8">
           Experience world-class films the way they were meant to be seen. Immersive acoustic screens, custom chef catering, and premium fully-reclining private screens for customized entertainment.
         </p>
-
-        {/* Interactive Filter Booking Bar */}
-        <form
-          onSubmit={handleSearchClick}
-          className="w-full max-w-4xl bg-white dark:bg-dark-card/85 backdrop-blur-md border border-gray-200 dark:border-dark-border p-5 rounded-2xl flex flex-col md:flex-row gap-6 items-center shadow-lg dark:shadow-2xl shadow-black/5 dark:shadow-black/80"
-        >
-          {/* Location field */}
-          <div className="flex-1 w-full text-left">
-            <label className="block text-[10px] font-bold text-gray-600 dark:text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
-              Venue Location
-            </label>
-            <select
-              value={cityVal}
-              onChange={(e) => setCityVal(e.target.value)}
-              className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer"
-            >
-              {cities.map((city) => (
-                <option key={city} value={city} className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">
-                  {city === "All Cities" ? "All Cities (Default)" : city}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="hidden md:block w-[1px] h-10 bg-gray-200 dark:bg-dark-border" />
-
-          {/* Date Picker */}
-          <div className="flex-1 w-full text-left">
-            <label className="block text-[10px] font-bold text-gray-600 dark:text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
-              Select Date
-            </label>
-            <input
-              type="date"
-              value={dateVal}
-              onChange={(e) => setDateVal(e.target.value)}
-              className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer"
-              min="2026-07-01"
-            />
-          </div>
-
-          <div className="hidden md:block w-[1px] h-10 bg-gray-200 dark:bg-dark-border" />
-
-          {/* Time Slot field */}
-          <div className="flex-1 w-full text-left">
-            <label className="block text-[10px] font-bold text-gray-600 dark:text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-gray-700 dark:text-gold" />
-              Available Session
-            </label>
-            <select
-              value={timeSlotVal}
-              onChange={(e) => setTimeSlotVal(e.target.value)}
-              className="w-full bg-transparent border-none text-text-primary font-sans text-sm font-semibold focus:outline-none cursor-pointer"
-            >
-              <option value="morning" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Morning (10 AM - 1 PM)</option>
-              <option value="afternoon" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Afternoon (1 PM - 5 PM)</option>
-              <option value="evening" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Evening (5 PM - 9 PM)</option>
-              <option value="night" className="bg-white dark:bg-dark-card text-gray-900 dark:text-white">Night (9 PM Onwards)</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full md:w-auto bg-gray-950 hover:bg-black text-white dark:bg-gold dark:hover:bg-gold-light dark:text-dark-bg px-8 py-3.5 rounded-lg text-xs font-bold tracking-widest uppercase cursor-pointer transition-all duration-200 shadow-md dark:shadow-gold/20 flex items-center justify-center gap-2 whitespace-nowrap self-stretch md:self-auto"
-          >
-            <Search className="w-4 h-4 text-white dark:text-dark-bg stroke-[2.5]" />
-            Search Showtimes
-          </button>
-        </form>
 
         {/* Active Hero Banner Advertisements */}
         {(() => {
