@@ -33,12 +33,13 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+          cache: 'gradle'
 
       - name: Sync Capacitor Android Project
         run: npx cap sync android
+
+      - name: Accept Android SDK Licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Make Gradlew Executable
         working-directory: android
