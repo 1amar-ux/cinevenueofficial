@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: "CineVenue",
   webDir: "dist",
   server: {
+    url: "https://cinevenue.com",
     androidScheme: "https",
     cleartext: true
   },
