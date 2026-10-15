@@ -37,6 +37,7 @@ import AdvertisingAdminModule from "./admin/AdvertisingAdminModule";
 import { getEventRequests, submitEventRequest } from "../services/eventService";
 import { EventManagementRequest, PublicEvent, ArtistRequest, SponsorshipRequest, EventPortfolioItem } from "../types/productions";
 import { INITIAL_EVENT_PORTFOLIO, INITIAL_ARTIST_REQUESTS, INITIAL_SPONSORSHIP_REQUESTS, INITIAL_EVENT_MANAGEMENT_REQUESTS } from "../data/productionsData";
+import { deduplicateMovies, normalizeMovieTitle } from "../utils/movieDeduplication";
 
 interface AdminPanelProps {
   isOpen: boolean;
@@ -1539,29 +1540,58 @@ export default function AdminPanel({
       setEditingMovieTitle(null);
       setEditingMovieId(null);
     } else {
-      onAddMovie({
-        title: movieTitle,
-        genre: movieGenre,
-        lang: movieLang,
-        rating: finalRating,
-        votes: finalVotes,
-        description: movieDescription.trim() || undefined,
-        img: movieImg,
-        poster: movieImg,
-        langKey: movieLangKey,
-        formats: movieFormats,
-        actors: actorsArray,
-        castMembers: movieCast.length > 0 ? movieCast : undefined,
-        cast: movieCast.length > 0 ? movieCast : undefined,
-        crewMembers: movieCrew.length > 0 ? movieCrew : undefined,
-        crew: movieCrew.length > 0 ? movieCrew : undefined,
-        director: movieCrew.find(c => c.role?.toLowerCase() === "director")?.name || undefined,
-        trailerUrl: movieTrailerUrl,
-        duration: movieDuration,
-        certificate: movieCertificate,
-        distributor: movieDistributor,
-      });
-      alert(`Successfully added movie "${movieTitle}"!`);
+      const norm = normalizeMovieTitle(movieTitle);
+      const existingMatch = movies.find(m => normalizeMovieTitle(m.title) === norm);
+      if (existingMatch && onUpdateMovie) {
+        onUpdateMovie(existingMatch.title, {
+          ...existingMatch,
+          title: movieTitle,
+          genre: movieGenre,
+          lang: movieLang,
+          rating: finalRating,
+          votes: finalVotes,
+          description: movieDescription.trim() || existingMatch.description,
+          img: movieImg || existingMatch.img,
+          poster: movieImg || existingMatch.poster,
+          langKey: movieLangKey,
+          formats: movieFormats,
+          actors: actorsArray.length > 0 ? actorsArray : existingMatch.actors,
+          castMembers: movieCast.length > 0 ? movieCast : existingMatch.castMembers,
+          cast: movieCast.length > 0 ? movieCast : existingMatch.cast,
+          crewMembers: movieCrew.length > 0 ? movieCrew : existingMatch.crewMembers,
+          crew: movieCrew.length > 0 ? movieCrew : existingMatch.crew,
+          director: movieCrew.find(c => c.role?.toLowerCase() === "director")?.name || existingMatch.director,
+          trailerUrl: movieTrailerUrl || existingMatch.trailerUrl,
+          duration: movieDuration || existingMatch.duration,
+          certificate: movieCertificate || existingMatch.certificate,
+          distributor: movieDistributor || existingMatch.distributor,
+        });
+        alert(`Film "${movieTitle}" already exists in catalog and has been updated with your latest information!`);
+      } else {
+        onAddMovie({
+          title: movieTitle,
+          genre: movieGenre,
+          lang: movieLang,
+          rating: finalRating,
+          votes: finalVotes,
+          description: movieDescription.trim() || undefined,
+          img: movieImg,
+          poster: movieImg,
+          langKey: movieLangKey,
+          formats: movieFormats,
+          actors: actorsArray,
+          castMembers: movieCast.length > 0 ? movieCast : undefined,
+          cast: movieCast.length > 0 ? movieCast : undefined,
+          crewMembers: movieCrew.length > 0 ? movieCrew : undefined,
+          crew: movieCrew.length > 0 ? movieCrew : undefined,
+          director: movieCrew.find(c => c.role?.toLowerCase() === "director")?.name || undefined,
+          trailerUrl: movieTrailerUrl,
+          duration: movieDuration,
+          certificate: movieCertificate,
+          distributor: movieDistributor,
+        });
+        alert(`Successfully added movie "${movieTitle}"!`);
+      }
     }
 
     setMovieTitle("");
@@ -1931,7 +1961,7 @@ export default function AdminPanel({
   };
 
   const getMovieSalesData = () => {
-    return movies.map((m) => {
+    return deduplicateMovies(movies).map((m) => {
       const movieB = bookings.filter((b) => b.movieTitle === m.title && b.status !== 'Cancelled' );
       const totalRevenue = movieB.reduce((sum, b) => sum + b.totalPrice, 0);
       const totalTickets = movieB.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
@@ -4375,13 +4405,13 @@ export default function AdminPanel({
                 {/* Movies list */}
                 <div className="xl:col-span-2 bg-[#0F0F11] border border-white/5 p-5 rounded-xl">
                   <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gold block mb-4 border-b border-white/5 pb-2">
-                    Active Catalog Movies ({movies.length})
+                    Active Catalog Movies ({deduplicateMovies(movies).length})
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {movies.map((m) => (
+                    {deduplicateMovies(movies).map((m) => (
                       <div 
-                        key={m.title} 
+                        key={m.id || m.title} 
                         onClick={() => setActiveDashboardMovie(m)}
                         className="bg-[#121215] border border-white/5 hover:border-gold/40 hover:bg-[#15151a] p-3 rounded-lg flex gap-3 relative transition-all cursor-pointer group/card shadow-sm hover:shadow-md"
                         title={`Click to open Movie Dashboard for ${m.title} (Description, Rating, Casting, Sales, Tickets)`}
@@ -4660,8 +4690,8 @@ export default function AdminPanel({
                         onChange={(e) => setSchedulerMovieTitle(e.target.value)}
                         className="w-full bg-white/[0.02] border border-white/10 rounded-md p-2.5 text-xs text-text-primary focus:outline-none cursor-pointer"
                       >
-                        {movies.map((m) => (
-                          <option key={m.title} value={m.title} className="bg-[#0F0F11] text-text-primary">
+                        {deduplicateMovies(movies).map((m) => (
+                          <option key={m.id || m.title} value={m.title} className="bg-[#0F0F11] text-text-primary">
                             {m.title} ({m.genre})
                           </option>
                         ))}

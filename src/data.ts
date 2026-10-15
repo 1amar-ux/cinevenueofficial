@@ -148,6 +148,7 @@ export const INITIAL_MOVIES: Movie[] = [
     ]
   },
   {
+    id: "mov_coolie",
     title: "Coolie",
     genre: "Action / Thriller",
     lang: "Telugu",
@@ -181,6 +182,7 @@ export const INITIAL_MOVIES: Movie[] = [
     ]
   },
   {
+    id: "mov_dont_trouble",
     title: "Don't Trouble the Trouble",
     genre: "Comedy / Drama",
     lang: "Telugu",
@@ -194,6 +196,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_doraemon_nobita",
     title: "Doraemon the Movie: New Nobita and the...",
     genre: "Animation / Adventure",
     lang: "Telugu",
@@ -207,6 +210,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_doraemon_devil",
     title: "Doraemon: Castle of the Undersea Devil",
     genre: "Animation / Adventure",
     lang: "Telugu",
@@ -220,6 +224,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_sigma",
     title: "Sigma",
     genre: "Action / Thriller",
     lang: "Telugu",
@@ -233,6 +238,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_thellakaagitham",
     title: "Thellakaagitham",
     genre: "Romantic Drama",
     lang: "Telugu",
@@ -246,6 +252,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_baththa",
     title: "Baththa",
     genre: "Action / Crime",
     lang: "Tamil",
@@ -259,6 +266,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_verity",
     title: "Verity",
     genre: "Mystery / Thriller",
     lang: "English",
@@ -272,6 +280,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_the_paradise",
     title: "The Paradise",
     genre: "Action / Period Drama",
     lang: "Telugu",
@@ -285,6 +294,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_avengers_endgame",
     title: "Avengers Endgame: Encore",
     genre: "Sci-Fi / Action",
     lang: "Telugu",
@@ -299,6 +309,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_heart_of_the_beast",
     title: "Heart of the Beast",
     genre: "Drama / Thriller",
     lang: "English",
@@ -312,6 +323,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_resident_evil",
     title: "Resident Evil",
     genre: "Horror / Sci-Fi",
     lang: "Telugu",
@@ -326,6 +338,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_sub_inspector_yugandhar",
     title: "Sub-Inspector Yugandhar",
     genre: "Action / Crime",
     lang: "Telugu",
@@ -339,6 +352,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_sanchari",
     title: "Sanchari",
     genre: "Drama / Romance",
     lang: "Telugu",
@@ -352,6 +366,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_kalki_2898_ad",
     title: "Kalki 2898 AD",
     genre: "Sci-Fi / Epic",
     lang: "Telugu",
@@ -366,6 +381,7 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
+    id: "mov_devara",
     title: "Devara",
     genre: "Action / Drama",
     lang: "Telugu",

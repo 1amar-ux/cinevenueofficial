@@ -77,6 +77,7 @@ import apiClient from "./services/apiClient";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
 import { getEvents as getTicketedEvents, fetchLiveEvents, isMockOrDuplicateEvent } from "./services/eventBookingService";
+import { deduplicateMovies, scrubStoredMovies, normalizeMovieTitle } from "./utils/movieDeduplication";
 
 export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = [], initialEvents: Event[] = []): Event[] {
   let deletedIds = new Set<string>();
@@ -186,7 +187,8 @@ export default function App() {
   // 1. Core Data Lists (loaded from localStorage or INITIAL_X fallback)
   const [movies, setMovies] = useState<Movie[]>(() => {
     const saved = localStorage.getItem("cine_movies");
-    return saved ? JSON.parse(saved) : INITIAL_MOVIES;
+    const initialList = saved ? JSON.parse(saved) : INITIAL_MOVIES;
+    return deduplicateMovies(initialList);
   });
 
   const [theatres, setTheatres] = useState<Theatre[]>(() => {
@@ -666,7 +668,8 @@ export default function App() {
 
   // Sync states to localStorage
   useEffect(() => {
-    localStorage.setItem("cine_movies", JSON.stringify(movies));
+    const cleaned = deduplicateMovies(movies);
+    localStorage.setItem("cine_movies", JSON.stringify(cleaned));
   }, [movies]);
   useEffect(() => {
     localStorage.setItem("cine_theatres", JSON.stringify(theatres));
@@ -678,8 +681,11 @@ export default function App() {
     }
   }, [events]);
 
-  // Real-time synchronization for events created or modified anywhere in the app
+  // Real-time synchronization for events & movies created or modified anywhere in the app
   useEffect(() => {
+    // Scrub duplicate movies immediately on startup
+    scrubStoredMovies();
+
     // Purge legacy duplicate mock event IDs & mock titles from localStorage immediately on startup
     try {
       const cRaw = localStorage.getItem("cine_events");
@@ -832,7 +838,10 @@ export default function App() {
             isSpotlight: idx === 0,
           };
         });
-        setMovies(apiMovies);
+        const uniqueApiMovies = deduplicateMovies(apiMovies);
+        const fullMerged = deduplicateMovies([...uniqueApiMovies, ...INITIAL_MOVIES]);
+        setMovies(fullMerged);
+        localStorage.setItem("cine_movies", JSON.stringify(fullMerged));
       }
 
       // 2. Authoritative Theatres Sync from Database (API + Supabase Cloud Fallback)
@@ -1457,7 +1466,14 @@ export default function App() {
   };
 
   const handleAddMovie = async (m: Movie) => {
-    setMovies(prev => [...prev, m]);
+    setMovies(prev => {
+      const norm = normalizeMovieTitle(m.title);
+      const exists = prev.some(existing => normalizeMovieTitle(existing.title) === norm || (existing.id && existing.id === m.id));
+      if (exists) {
+        return deduplicateMovies(prev.map(existing => (normalizeMovieTitle(existing.title) === norm || (existing.id && existing.id === m.id)) ? { ...existing, ...m } : existing));
+      }
+      return deduplicateMovies([...prev, m]);
+    });
     try {
       await apiClient.post('/movies', {
         title: m.title,
@@ -1507,7 +1523,8 @@ export default function App() {
   };
 
   const handleUpdateMovie = async (oldTitle: string, m: Movie) => {
-    setMovies(prev => prev.map(item => (item.title === oldTitle || item.id === m.id) ? m : item));
+    const oldNorm = normalizeMovieTitle(oldTitle);
+    setMovies(prev => deduplicateMovies(prev.map(item => (item.title === oldTitle || normalizeMovieTitle(item.title) === oldNorm || item.id === m.id) ? { ...item, ...m } : item)));
     try {
       await apiClient.put(`/movies/${m.id || oldTitle}`, {
         title: m.title,

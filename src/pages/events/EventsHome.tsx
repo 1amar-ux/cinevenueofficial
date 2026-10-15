@@ -136,16 +136,32 @@ export default function EventsHome() {
           };
         });
 
-        // Merge local and API events
-        const apiIds = new Set(mapped.map((m) => m.id));
-        const allMerged = [...mapped];
-        for (const loc of localMapped) {
-          if (!apiIds.has(loc.id)) {
-            allMerged.unshift(loc);
-          }
+        // Merge local and API events with strict deduplication
+        let deletedIds = new Set<string>();
+        try {
+          const dRaw = localStorage.getItem('cv_deleted_event_ids');
+          if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+        } catch {}
+
+        const rawPool = [...mapped, ...localMapped];
+        const deduped: any[] = [];
+        const seenIds = new Set<string>();
+        const seenTitles = new Set<string>();
+
+        for (const item of rawPool) {
+          if (!item || isMockOrDuplicateEvent(item)) continue;
+          const id = String(item.id || item._id || '');
+          if (!id || deletedIds.has(id)) continue;
+          if (seenIds.has(id)) continue;
+          const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+          if (normTitle && seenTitles.has(normTitle)) continue;
+
+          seenIds.add(id);
+          if (normTitle) seenTitles.add(normTitle);
+          deduped.push(item);
         }
 
-        setEvents(allMerged);
+        setEvents(deduped);
         setLoading(false);
         return;
       }

@@ -63,6 +63,7 @@ import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManager
 import MovieCastCrewEditorModal from "../components/admin/movies/MovieCastCrewEditorModal";
 import MovieDashboardModal from "../components/admin/movies/MovieDashboardModal";
 import CloudinaryPhotoUploader from "../components/admin/common/CloudinaryPhotoUploader";
+import { deduplicateMovies } from "../utils/movieDeduplication";
 import { getCloudinaryConfig, saveCloudinaryConfig, testCloudinaryConnection } from "../services/cloudinaryService";
 import EmployeeManagementModule from "../components/admin/employees/EmployeeManagementModule";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
@@ -83,7 +84,7 @@ export default function AdminLayout() {
   // -------------------------------------------------------------
   const [movies, setMovies] = useState<Movie[]>(() => {
     const saved = localStorage.getItem("cine_movies");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? deduplicateMovies(JSON.parse(saved)) : [];
   });
 
   const [theatres, setTheatres] = useState<Theatre[]>(() => {

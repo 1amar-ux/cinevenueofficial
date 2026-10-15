@@ -28,6 +28,7 @@ import { Movie, MovieVideo, CastMember, CrewMember, MovieReview, MovieOffer } fr
 import { INITIAL_MOVIES } from "../data";
 import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAvailability";
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
+import { deduplicateMovies } from "../utils/movieDeduplication";
 import YouTubePlayerModal from "../components/video/YouTubePlayerModal";
 
 export default function MovieDetails() {
@@ -56,42 +57,11 @@ export default function MovieDetails() {
   const offersScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load movies from localStorage or initial fallback
+    // Load movies from localStorage or initial fallback with strict deduplication
     const saved = localStorage.getItem("cine_movies");
-    let movieList: Movie[] = saved ? JSON.parse(saved) : INITIAL_MOVIES;
-
-    // Ensure Comrade Kalyan and initial movies with rich fields are hydrated
-    if (saved) {
-      let changed = false;
-      INITIAL_MOVIES.forEach((initM) => {
-        const idx = movieList.findIndex(
-          (m) =>
-            String(m.id || "").toLowerCase() === String(initM.id || "").toLowerCase() ||
-            m.title.toLowerCase() === initM.title.toLowerCase()
-        );
-        if (idx === -1) {
-          movieList.unshift(initM);
-          changed = true;
-        } else {
-          // Merge missing cast, crew, reviews, offers
-          movieList[idx] = {
-            ...initM,
-            ...movieList[idx],
-            castMembers: movieList[idx].castMembers || initM.castMembers,
-            crewMembers: movieList[idx].crewMembers || initM.crewMembers,
-            offers: movieList[idx].offers || initM.offers,
-            reviews: movieList[idx].reviews || initM.reviews,
-            votes: movieList[idx].votes || initM.votes,
-            description: movieList[idx].description || initM.description,
-            rating: movieList[idx].rating || initM.rating,
-          };
-          changed = true;
-        }
-      });
-      if (changed) {
-        localStorage.setItem("cine_movies", JSON.stringify(movieList));
-      }
-    }
+    const initialList = saved ? JSON.parse(saved) : INITIAL_MOVIES;
+    const movieList: Movie[] = deduplicateMovies([...deduplicateMovies(initialList), ...INITIAL_MOVIES]);
+    localStorage.setItem("cine_movies", JSON.stringify(movieList));
 
     const found =
       movieList.find((m) => String(m.id || m._id || m.title) === String(id)) ||

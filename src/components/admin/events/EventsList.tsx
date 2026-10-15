@@ -27,6 +27,7 @@ import {
   getBookings,
   saveEvent,
   deleteEvent,
+  isMockOrDuplicateEvent,
 } from '../../../services/eventBookingService';
 import EventShareModal from '../../events/EventShareModal';
 
@@ -102,25 +103,48 @@ export default function EventsList({
   const fetchAdminEvents = async () => {
     setLoading(true);
     try {
-      const local = getLocalEvents();
-      const res = await apiClient.get('/admin/events');
-      const apiEvents = res.data?.events || res.data?.data?.events;
-      if (Array.isArray(apiEvents) && apiEvents.length > 0) {
-        const apiIds = new Set(apiEvents.map((e: any) => e.id || e._id));
-        const merged = [...apiEvents];
-        for (const loc of local) {
-          if (!apiIds.has(loc.id) && !apiIds.has((loc as any)._id)) {
-            merged.push(loc as any);
-          }
-        }
-        setEvents(merged);
-      } else {
-        setEvents(local as any);
+      let deletedIds = new Set<string>();
+      if (typeof window !== 'undefined') {
+        try {
+          const dRaw = localStorage.getItem('cv_deleted_event_ids');
+          if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+        } catch {}
       }
+
+      const local = getLocalEvents() || [];
+      let rawPool: any[] = [...local];
+
+      try {
+        const res = await apiClient.get('/admin/events');
+        const apiEvents = res.data?.events || res.data?.data?.events;
+        if (Array.isArray(apiEvents) && apiEvents.length > 0) {
+          rawPool = [...apiEvents, ...local];
+        }
+      } catch (err) {
+        console.warn('Backend admin events fetch notice:', err);
+      }
+
+      // Deduplicate pool by ID and normalized title
+      const deduped: AdminEventItem[] = [];
+      const seenIds = new Set<string>();
+      const seenTitles = new Set<string>();
+
+      for (const item of rawPool) {
+        if (!item || isMockOrDuplicateEvent(item)) continue;
+        const id = String(item.id || item._id || '');
+        if (!id || deletedIds.has(id)) continue;
+        if (seenIds.has(id)) continue;
+        const norm = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        if (norm && seenTitles.has(norm)) continue;
+
+        seenIds.add(id);
+        if (norm) seenTitles.add(norm);
+        deduped.push(item as any);
+      }
+
+      setEvents(deduped);
     } catch (err) {
-      console.warn('Failed to load admin events from backend, falling back to local cache:', err);
-      const local = getLocalEvents();
-      setEvents(local as any);
+      console.warn('Failed to load admin events:', err);
     } finally {
       setLoading(false);
     }

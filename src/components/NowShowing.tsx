@@ -4,6 +4,7 @@ import { Search, Star, Film, Eye, Play, Sparkles, Calendar, Clapperboard, Chevro
 import { Movie, MovieVideo, Advertisement } from "../types";
 import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAvailability";
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
+import { deduplicateMovies } from "../utils/movieDeduplication";
 import EmptyState from "./common/EmptyState";
 import YouTubePlayerModal from "./video/YouTubePlayerModal";
 
@@ -103,10 +104,13 @@ export default function NowShowing({
     setAudienceName("");
   };
 
+  // Strict deduplication of movies
+  const uniqueMovies = React.useMemo(() => deduplicateMovies(movies), [movies]);
+
   // Extract unique genres
   const availableGenres = Array.from(
     new Set(
-      movies
+      uniqueMovies
         .map((m) => m.genre)
         .filter(Boolean)
         .flatMap((g) => g.split(/[•,\/]/).map((s) => s.trim()))
@@ -114,7 +118,7 @@ export default function NowShowing({
   );
 
   // Filter movies logic
-  const filteredMovies = movies.filter((movie) => {
+  const filteredMovies = uniqueMovies.filter((movie) => {
     const isMovieActive = movie.isActive !== false && isMovieBookingSystemActive;
     if (!isMovieActive) {
       return false;

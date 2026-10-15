@@ -662,13 +662,25 @@ function saveStorage<T>(key: string, data: T): void {
 
 
 export function isMockOrDuplicateEvent(item: any): boolean {
-  if (!item) return false;
-  const id = String(item.id || item._id || '');
+  if (!item) return true;
+  const id = String(item.id || item._id || '').trim();
+  const rawTitle = String(item.title || '').trim();
+  if (!id && !rawTitle) return true;
+
   if (['EV-001', 'EV-002', 'EV-003', 'EV-004', 'EVT-103', 'EVT-104'].includes(id)) {
     return true;
   }
-  const title = String(item.title || '').toLowerCase();
+
+  const title = rawTitle.toLowerCase();
   if (
+    title === 'example' ||
+    title.startsWith('example') ||
+    title.startsWith('test') ||
+    title.includes('e2e gala') ||
+    title.includes('e2e test') ||
+    title.includes('sample event') ||
+    title.includes('dummy') ||
+    /e2e\s*gala.*?\d+/i.test(title) ||
     title.includes('celebrity q&a') ||
     title.includes('fan gala') ||
     title.includes('symphony of lights') ||
@@ -712,6 +724,7 @@ export function getEvents(): EventItem[] {
   for (const item of events) {
     if (isMockOrDuplicateEvent(item)) continue;
     const id = item.id || (item as any)._id;
+    if (!id || deletedIds.has(id)) continue;
     if (seenIds.has(id)) continue;
     const normTitle = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
     if (normTitle && seenTitles.has(normTitle)) continue;
@@ -721,21 +734,45 @@ export function getEvents(): EventItem[] {
     deduplicated.push(item);
   }
 
-  // Background fetch to ensure local cache stays fresh from authoritative MongoDB backend
+  // Background fetch to ensure local cache stays fresh from authoritative backend
   if (typeof window !== 'undefined') {
     apiClient.get('/events').then((res) => {
       const live = res.data?.events || res.data?.data?.events;
       if (Array.isArray(live) && live.length > 0) {
         const current = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
         const liveMap = new Map(live.map((e: any) => [e.id || e._id, e]));
+        const liveNormTitles = new Set(
+          live
+            .map((e: any) => (e.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, ''))
+            .filter(Boolean)
+        );
+
         const merged = [...live];
         for (const c of current) {
-          if (!liveMap.has(c.id) && !liveMap.has((c as any)._id)) {
+          const cNorm = (c.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+          if (!liveMap.has(c.id) && !liveMap.has((c as any)._id) && (!cNorm || !liveNormTitles.has(cNorm))) {
             merged.push(c);
           }
         }
-        const filteredMerged = merged.filter((e: any) => !isMockOrDuplicateEvent(e) && !deletedIds.has(e.id) && !deletedIds.has(e._id));
-        saveStorage(STORAGE_KEYS.EVENTS, filteredMerged);
+
+        const deduped: EventItem[] = [];
+        const sIds = new Set<string>();
+        const sTitles = new Set<string>();
+
+        for (const item of merged) {
+          if (isMockOrDuplicateEvent(item)) continue;
+          const id = String(item.id || item._id || '');
+          if (!id || deletedIds.has(id)) continue;
+          if (sIds.has(id)) continue;
+          const norm = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+          if (norm && sTitles.has(norm)) continue;
+
+          sIds.add(id);
+          if (norm) sTitles.add(norm);
+          deduped.push(item);
+        }
+
+        saveStorage(STORAGE_KEYS.EVENTS, deduped);
       }
     }).catch(() => {});
   }
@@ -804,16 +841,50 @@ export async function fetchLiveEvents(): Promise<EventItem[]> {
       }
     }
 
+    let deletedIds = new Set<string>();
+    if (typeof window !== 'undefined') {
+      try {
+        const dRaw = localStorage.getItem('cv_deleted_event_ids');
+        if (dRaw) deletedIds = new Set(JSON.parse(dRaw));
+      } catch {}
+    }
+
     if (Array.isArray(live) && live.length > 0) {
       const current = loadStorage<EventItem[]>(STORAGE_KEYS.EVENTS, []);
       const liveMap = new Map(live.map((e: any) => [e.id || e._id, e]));
+      const liveNormTitles = new Set(
+        live
+          .map((e: any) => (e.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, ''))
+          .filter(Boolean)
+      );
+
       const merged = [...live];
       for (const c of current) {
-        if (!liveMap.has(c.id) && !liveMap.has((c as any)._id)) {
+        const cNorm = (c.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        if (!liveMap.has(c.id) && !liveMap.has((c as any)._id) && (!cNorm || !liveNormTitles.has(cNorm))) {
           merged.push(c);
         }
       }
-      saveStorage(STORAGE_KEYS.EVENTS, merged);
+
+      // Strict Deduplication
+      const deduped: EventItem[] = [];
+      const seenIds = new Set<string>();
+      const seenTitles = new Set<string>();
+
+      for (const item of merged) {
+        if (isMockOrDuplicateEvent(item)) continue;
+        const id = String(item.id || item._id || '');
+        if (!id || deletedIds.has(id)) continue;
+        if (seenIds.has(id)) continue;
+        const norm = (item.title || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        if (norm && seenTitles.has(norm)) continue;
+
+        seenIds.add(id);
+        if (norm) seenTitles.add(norm);
+        deduped.push(item);
+      }
+
+      saveStorage(STORAGE_KEYS.EVENTS, deduped);
 
       // Also sync to cine_events and dispatch event so all views update
       if (typeof window !== 'undefined') {
