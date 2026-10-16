@@ -5911,6 +5911,11 @@ export default function AdminPanel({
               <EventsAdminModule initialTab="dashboard" />
             </div>
           )}
+          {activeTab === "events_proposals" && (
+            <div className="space-y-8 animate-fade-in" id="tab-events-proposals">
+              <EventsAdminModule initialTab="proposals" />
+            </div>
+          )}
           {activeTab === "events_create" && (
             <div className="space-y-8 animate-fade-in" id="tab-events-create">
               <EventsAdminModule initialTab="create" />

@@ -9,7 +9,9 @@ import EventAnalytics from './EventAnalytics';
 import QRScanner from './QRScanner';
 import FreePassManager from './FreePassManager';
 import EventHighlightsManager from './EventHighlightsManager';
+import EntertainmentEventManagementAdmin from './EntertainmentEventManagementAdmin';
 import {
+  FileText,
   Sparkles,
   Calendar,
   PlusCircle,
@@ -26,6 +28,7 @@ import {
 interface EventsAdminModuleProps {
   initialTab?:
     | 'dashboard'
+    | 'proposals'
     | 'create'
     | 'freepasses'
     | 'registrations'
@@ -42,7 +45,7 @@ export default function EventsAdminModule({
   initialEvent = null,
 }: EventsAdminModuleProps = {}) {
   const [activeSubTab, setActiveSubTab] = useState<
-    'dashboard' | 'create' | 'freepasses' | 'registrations' | 'passes' | 'settlements' | 'analytics' | 'scanner' | 'highlights'
+    'dashboard' | 'proposals' | 'create' | 'freepasses' | 'registrations' | 'passes' | 'settlements' | 'analytics' | 'scanner' | 'highlights'
   >(initialTab);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [selectedEventIdForPasses, setSelectedEventIdForPasses] = useState<string | null>(null);
@@ -130,6 +133,16 @@ export default function EventsAdminModule({
           <Calendar className="w-4 h-4" /> All Events
         </button>
         <button
+          onClick={() => handleTabChange('proposals')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-t-lg transition-colors whitespace-nowrap ${
+            activeSubTab === 'proposals'
+              ? 'text-gold border-b-2 border-gold bg-gold/15'
+              : 'text-gold/80 hover:text-gold hover:bg-gold/5'
+          }`}
+        >
+          <FileText className="w-4 h-4 text-gold" /> Proposals & Quotations
+        </button>
+        <button
           onClick={handleCreateNewClick}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors whitespace-nowrap ${
             activeSubTab === 'create'
@@ -215,6 +228,11 @@ export default function EventsAdminModule({
       </div>
 
       <div className="mt-6">
+        {activeSubTab === 'proposals' && (
+          <EntertainmentEventManagementAdmin
+            onOpenLiveEvents={() => handleTabChange('dashboard')}
+          />
+        )}
         {activeSubTab === 'dashboard' && (
           <EventsList
             onManageEvent={handleManageEvent}

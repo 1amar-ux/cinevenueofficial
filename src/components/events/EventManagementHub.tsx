@@ -12,6 +12,7 @@ import { EventMessage } from "../../types/productions";
 import { getEventRequests, postEventMessage, submitEventRequest } from "../../services/eventService";
 import EventServicePricingManager, { ICON_OPTIONS } from "./EventServicePricingManager";
 import { getEventServices, EventServiceItem } from "../../services/eventPricingService";
+import EventProposalModal from "./EventProposalModal";
 
 export type EventStatus = 
   | "SUBMITTED"
@@ -83,95 +84,57 @@ export interface QuoteRecord {
   createdDate: string;
 }
 
-// 11 Master Categories
+// 5 Master Entertainment Production Pillars
 export const EVENT_CATEGORIES = [
   {
-    name: "Movie Promotions",
+    name: "Movie Promotional Events",
+    key: "movie_promotions",
     icon: Clapperboard,
-    tagline: "Film teasers, press meets, mall visits & city tours",
-    description: "High-voltage publicity tours, press conferences, media interviews, and interactive mall tours designed to generate massive organic pre-release buzz.",
-    typicalAudience: "500 - 5,000+",
-    image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&q=80"
-  },
-  {
-    name: "Pre-Release Events",
-    icon: Sparkles,
-    tagline: "Stadium-scale mega pre-release celebrations",
-    description: "Grand stadium & arena spectacles with high-end LED sets, celebrity VIP zones, drone light shows, and nationwide satellite/YouTube live telecasting.",
-    typicalAudience: "10,000 - 50,000+",
+    tagline: "Pre-releases, trailer drops, teasers, audio launches & tours",
+    description: "Star-studded launches, mega stadium pre-release spectacles, press conferences, and promotional tours engineered to create massive organic pre-release buzz.",
+    subTypes: ["Pre-Release Events", "Trailer Launch Events", "Teaser Launch Events", "Audio Launch Events", "Movie Success Meets", "Press Meets", "Promotional Tours", "Movie Premieres"],
+    typicalAudience: "5,000 - 50,000+",
     image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80"
   },
   {
-    name: "Audio Launches",
+    name: "Music and Live Entertainment",
+    key: "music_live",
     icon: Music,
-    tagline: "Musical unveilings & soundtrack release galas",
-    description: "Star-studded musical nights with live composer performances, orchestral playback sets, lyrical video projections, and audio CD/digital streaming launch.",
-    typicalAudience: "3,000 - 15,000+",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
-  },
-  {
-    name: "Celebrity Shows",
-    icon: Star,
-    tagline: "Exclusive star nights, fan meets & galas",
-    description: "Intimate and grand fan interactions, actor felicitation nights, and celebrity talent showcases with dedicated VIP hospitality and tight security.",
-    typicalAudience: "1,000 - 10,000",
-    image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80"
-  },
-  {
-    name: "Live Concerts",
-    icon: Mic,
-    tagline: "Stadium EDM, rock, and fusion concerts",
-    description: "Massive outdoor line-array sound systems, moving beam lasers, pyrotechnics, mojo barricading, and multi-tier ticketing for top national/international touring artists.",
-    typicalAudience: "5,000 - 30,000+",
+    tagline: "Arena concerts, musical nights, DJ festivals & live bands",
+    description: "Concert-grade line-array sound systems, moving beam lasers, pyrotechnics, and headline musical performances by top playback singers and touring artists.",
+    subTypes: ["Live Music Concerts", "Musical Nights", "Celebrity Singer Performances", "Orchestra Shows", "DJ Nights & EDM", "Tribute Concerts", "Live Bands"],
+    typicalAudience: "3,000 - 35,000+",
     image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80"
   },
   {
-    name: "Corporate Events",
-    icon: Building,
-    tagline: "Annual galas, summits, award banquets & keynotes",
-    description: "Polished corporate stage design, keynote presentation switchers, live translation, VIP banquet catering, and flawless executive stage management.",
-    typicalAudience: "200 - 3,000",
-    image: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80"
+    name: "Celebrity and Fan Events",
+    key: "celebrity_fan",
+    icon: Star,
+    tagline: "Star nights, fan meets, felicitation ceremonies & galas",
+    description: "Intimate and stadium fan interactions, hero and heroine appearances, actor felicitation nights, and celebrity talent showcases with dedicated VIP hospitality and tight security.",
+    subTypes: ["Celebrity Meet-and-Greets", "Star Nights", "Fan Association Meets", "Cast & Director Interactions", "Celebrity Birthday Celebrations", "Felicitation Ceremonies"],
+    typicalAudience: "1,000 - 15,000",
+    image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80"
   },
   {
-    name: "Musical Nights",
-    icon: Disc,
-    tagline: "Sufi, Bollywood & unplugged acoustic concerts",
-    description: "Soulful acoustic evenings, regional folk nights, and multi-singer symphonies with warm studio lighting and pristine acoustic sound calibration.",
-    typicalAudience: "500 - 5,000",
-    image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=800&q=80"
-  },
-  {
-    name: "College Events",
-    icon: GraduationCap,
-    tagline: "Campus cultural fests, battle of bands & pro-shows",
-    description: "High-energy university cultural fests featuring top Bollywood/South playback singers, DJ pro-nights, youth branding activations, and safe student crowd control.",
-    typicalAudience: "2,000 - 15,000",
-    image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&q=80"
-  },
-  {
-    name: "Award Functions",
+    name: "Film Industry Events",
+    key: "film_industry",
     icon: Award,
-    tagline: "Prestigious red carpet cinema & industry awards",
-    description: "Glamorous red carpet step-and-repeat media walls, multi-camera live telecast broadcast trucks, custom trophy presentations, and celebrity dance medleys.",
-    typicalAudience: "1,500 - 8,000",
+    tagline: "Prestigious cinema awards, film festivals & industry galas",
+    description: "Glamorous red carpet step-and-repeat media walls, multi-camera live telecast OB trucks, custom trophy presentations, film festivals, and industry banquets.",
+    subTypes: ["Film Awards & Recognition", "Film Industry Celebrations", "Artist Appreciation Events", "Film Festivals & Screenings", "Film Anniversary Celebrations", "Cinema Networking Summits"],
+    typicalAudience: "1,500 - 10,000",
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"
   },
   {
-    name: "Brand Promotions",
-    icon: Megaphone,
-    tagline: "Product launches, brand activations & pop-ups",
-    description: "Immersive brand experiential zones, interactive 3D mapping, influencer meet-and-greets, product reveal hydraulics, and high-conversion customer engagement.",
-    typicalAudience: "300 - 10,000",
-    image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80"
-  },
-  {
-    name: "Private Events",
-    icon: PartyPopper,
-    tagline: "Luxury weddings, VIP birthdays & bespoke soirees",
-    description: "Ultra-exclusive private celebrations, destination wedding entertainment, customized themed stage decor, and private celebrity performances.",
-    typicalAudience: "100 - 1,500",
-    image: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&q=80"
+    name: "Special Entertainment Events",
+    key: "special_entertainment",
+    icon: Sparkles,
+    tagline: "Stand-up comedy, magic, illusion & dance spectacles",
+    description: "Multi-genre entertainment showcases, top stand-up comic tours, grand illusion & magic stages, reality audition launches, and theatrical dance medleys.",
+    subTypes: ["Stand-Up Comedy Shows", "Magic & Illusion Shows", "Theatrical & Drama Performances", "Dance Shows & Competitions", "Talent Hunt & Reality Auditions", "Pop-Culture Nights"],
+    typicalAudience: "500 - 8,000",
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
   }
 ];
 
@@ -313,6 +276,9 @@ export default function EventManagementHub({
   const [vendorSearch, setVendorSearch] = useState<string>("");
   const [isRegisterVendorOpen, setIsRegisterVendorOpen] = useState<boolean>(false);
   const [selectedVendorDetail, setSelectedVendorDetail] = useState<VendorRecord | null>(null);
+
+  // Proposal Modal State
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState<boolean>(false);
 
   // Toast / notification
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -906,6 +872,14 @@ export default function EventManagementHub({
             {/* Actions */}
             <div className="flex items-center gap-3">
               <button
+                onClick={() => setIsProposalModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-[#D4AF37] to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-black shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Submit Event Proposal</span>
+              </button>
+
+              <button
                 onClick={() => setIsRegisterVendorOpen(true)}
                 className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1B1B22] hover:bg-[#252530] text-[#D4AF37] border border-[#D4AF37]/30 transition-all cursor-pointer"
               >
@@ -1033,22 +1007,30 @@ export default function EventManagementHub({
                   CINEVENUE PRODUCTION HOUSE & LIVE EVENTS
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
-                  Organize Your Next Mega Event With CineVenue
+                  Organize Your Next Entertainment Spectacle
                 </h1>
                 <p className="text-sm md:text-base text-gray-300 mt-4 leading-relaxed">
-                  From colossal stadium pre-release audio launches and celebrity shows to corporate summits and college pro-nights — get seamless turnkey event infrastructure, line-array acoustics, 4K LED walls, grandMA lighting, and verified celebrity artist rosters.
+                  From colossal stadium pre-release audio launches and celebrity shows to live concerts and film industry award galas — get seamless turnkey event infrastructure, line-array acoustics, 4K LED walls, grandMA lighting, and verified artist rosters.
                 </p>
 
-                <div className="flex flex-wrap gap-4 mt-6">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                <div className="flex flex-wrap items-center gap-4 mt-6">
+                  <button
+                    onClick={() => setIsProposalModalOpen(true)}
+                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-amber-400 to-[#D4AF37] text-black text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-amber-500/25 hover:brightness-110 transition-all cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Submit Turnkey Event Proposal</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Instant Production Quotes</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>13+ Technical Services</span>
+                    <span>22+ Production Services</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-2 rounded-lg border border-white/10">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Dedicated Production Lead</span>
                   </div>
@@ -1461,20 +1443,20 @@ export default function EventManagementHub({
         )}
 
         {/* ========================================================= */}
-        {/* 2. EVENT CATEGORIES TAB (11 Master Categories)            */}
+        {/* 2. EVENT CATEGORIES TAB (5 Pure Entertainment Pillars)   */}
         {/* ========================================================= */}
         {activeTab === "categories" && (
           <div className="space-y-8 animate-fade-in">
             <div className="text-center max-w-3xl mx-auto space-y-3">
               <div className="inline-flex items-center gap-2 bg-[#D4AF37]/15 border border-[#D4AF37]/30 px-3.5 py-1 rounded-full text-[#D4AF37] text-xs font-black uppercase tracking-wider">
                 <Layers className="w-3.5 h-3.5" />
-                11 SPECIALIZED PRODUCTION CATEGORIES
+                5 MASTER ENTERTAINMENT PRODUCTION PILLARS
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-white">
-                Turnkey Event Solutions For Every Scale
+                Turnkey Solutions For Pure Entertainment
               </h2>
               <p className="text-xs md:text-sm text-gray-400">
-                Explore our purpose-built capabilities across cinema promotions, high-energy live concerts, executive galas, and youth college festivals.
+                Explore our purpose-built capabilities across cinema pre-releases, trailer launches, live music arena tours, celebrity fan meets, and prestigious film industry galas.
               </p>
             </div>
 
@@ -2485,6 +2467,16 @@ export default function EventManagementHub({
           </div>
         </div>
       )}
+
+      {/* 5-Step Branded Event Proposal Modal */}
+      <EventProposalModal
+        isOpen={isProposalModalOpen}
+        onClose={() => setIsProposalModalOpen(false)}
+        userEmail={userEmail || undefined}
+        onProposalCreated={(proposal) => {
+          showToast(`🎉 Event Proposal submitted successfully! Ref: ${proposal.referenceId}`);
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { randomBytes } from "crypto";
+import fs from "fs";
+import path from "path";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../config/database";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
@@ -1243,6 +1245,311 @@ router.delete("/:id", async (req: Request, res: Response, next: NextFunction) =>
     return res.json({
       success: true,
       message: `Event ${id} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// -------------------------------------------------------------
+// CineVenue Entertainment Event Proposals & Quotations Endpoints
+// Company: CINEVENUE ENTERTAINMENTS PVT LTD
+// -------------------------------------------------------------
+
+const PROPOSALS_FILE_PATH = path.join(process.cwd(), "server", "config", "event_proposals.json");
+
+function readProposalsStore(): any[] {
+  try {
+    if (fs.existsSync(PROPOSALS_FILE_PATH)) {
+      const raw = fs.readFileSync(PROPOSALS_FILE_PATH, "utf-8");
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    logger.warn({ error: e }, "Failed to read event proposals file");
+  }
+  return [];
+}
+
+function writeProposalsStore(proposals: any[]): void {
+  try {
+    fs.writeFileSync(PROPOSALS_FILE_PATH, JSON.stringify(proposals, null, 2), "utf-8");
+  } catch (e) {
+    logger.error({ error: e }, "Failed to write event proposals file");
+  }
+}
+
+// 15. List Proposals
+router.get("/proposals", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category, status, email } = req.query;
+    let list = readProposalsStore();
+
+    if (category) {
+      list = list.filter((p: any) => p.category === category);
+    }
+    if (status) {
+      list = list.filter((p: any) => p.status === status);
+    }
+    if (email) {
+      const emailLower = String(email).toLowerCase();
+      list = list.filter((p: any) => (p.email || "").toLowerCase() === emailLower);
+    }
+
+    return res.json({
+      success: true,
+      data: list
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 16. Submit / Create Proposal
+router.post("/proposals", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const proposalData = req.body;
+    if (!proposalData.eventName || !proposalData.email) {
+      return res.status(400).json({ success: false, message: "Event name and contact email are required." });
+    }
+
+    const list = readProposalsStore();
+    const existingIndex = list.findIndex((p: any) => p.id === proposalData.id || p.referenceId === proposalData.referenceId);
+
+    const now = new Date().toISOString();
+    let saved: any;
+
+    if (existingIndex >= 0) {
+      saved = {
+        ...list[existingIndex],
+        ...proposalData,
+        updatedAt: now
+      };
+      list[existingIndex] = saved;
+    } else {
+      const refYear = new Date().getFullYear();
+      const randNum = Math.floor(10000 + Math.random() * 90000);
+      const generatedRef = `CVE-PROP-${refYear}-${randNum}`;
+
+      saved = {
+        ...proposalData,
+        id: proposalData.id || generatedRef,
+        referenceId: proposalData.referenceId || generatedRef,
+        status: proposalData.status || "New",
+        createdAt: proposalData.createdAt || now,
+        updatedAt: now,
+        internalNotes: proposalData.internalNotes || [],
+        followUps: proposalData.followUps || [],
+        isConvertedToEvent: false
+      };
+      list.unshift(saved);
+    }
+
+    writeProposalsStore(list);
+
+    return res.status(201).json({
+      success: true,
+      message: "Proposal saved successfully.",
+      data: saved
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 17. Update Proposal Status
+router.put("/proposals/:id/status", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { status, note, authorName, nextFollowUpDate } = req.body;
+
+    const list = readProposalsStore();
+    const item = list.find((p: any) => p.id === id || p.referenceId === id);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+
+    item.status = status;
+    item.updatedAt = new Date().toISOString();
+    if (nextFollowUpDate) {
+      item.nextFollowUpDate = nextFollowUpDate;
+    }
+
+    if (note) {
+      const followUp = {
+        id: `FU-${Date.now()}`,
+        date: new Date().toISOString(),
+        type: "Status Change",
+        summary: `Status changed to: ${status}. ${note}`,
+        nextFollowUpDate: nextFollowUpDate || item.nextFollowUpDate,
+        authorName: authorName || "Executive Admin"
+      };
+      item.followUps = [followUp, ...(item.followUps || [])];
+    }
+
+    writeProposalsStore(list);
+
+    return res.json({
+      success: true,
+      message: `Status updated to ${status}.`,
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 18. Assign Event Manager
+router.put("/proposals/:id/manager", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { managerName, managerEmail } = req.body;
+
+    const list = readProposalsStore();
+    const item = list.find((p: any) => p.id === id || p.referenceId === id);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+
+    item.assignedEventManager = managerName;
+    item.assignedManagerEmail = managerEmail;
+    item.updatedAt = new Date().toISOString();
+
+    const followUp = {
+      id: `FU-${Date.now()}`,
+      date: new Date().toISOString(),
+      type: "Manager Assignment",
+      summary: `Assigned event production manager: ${managerName}`,
+      authorName: "Operations Directorate"
+    };
+    item.followUps = [followUp, ...(item.followUps || [])];
+
+    writeProposalsStore(list);
+
+    return res.json({
+      success: true,
+      message: `Manager ${managerName} assigned successfully.`,
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 19. Add Follow-Up Log
+router.post("/proposals/:id/follow-up", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { type, summary, nextFollowUpDate, authorName } = req.body;
+
+    const list = readProposalsStore();
+    const item = list.find((p: any) => p.id === id || p.referenceId === id);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+
+    const followUp = {
+      id: `FU-${Date.now()}`,
+      date: new Date().toISOString(),
+      type: type || "Internal Note",
+      summary: summary || "",
+      nextFollowUpDate,
+      authorName: authorName || "CineVenue Executive"
+    };
+
+    item.followUps = [followUp, ...(item.followUps || [])];
+    item.lastFollowUpDate = new Date().toISOString().split("T")[0];
+    if (nextFollowUpDate) {
+      item.nextFollowUpDate = nextFollowUpDate;
+    }
+    item.updatedAt = new Date().toISOString();
+
+    writeProposalsStore(list);
+
+    return res.json({
+      success: true,
+      message: "Follow-up recorded.",
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 20. Save Quotation
+router.put("/proposals/:id/quotation", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { quotation } = req.body;
+
+    const list = readProposalsStore();
+    const item = list.find((p: any) => p.id === id || p.referenceId === id);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+
+    item.quotation = quotation;
+    item.status = "Quotation Sent";
+    item.updatedAt = new Date().toISOString();
+
+    const followUp = {
+      id: `FU-${Date.now()}`,
+      date: new Date().toISOString(),
+      type: "Quotation Generated",
+      summary: `Quotation #${quotation?.quotationNumber || "N/A"} generated with total ₹${quotation?.grandTotal?.toLocaleString("en-IN") || 0}.`,
+      authorName: quotation?.preparedBy || "CineVenue Executive"
+    };
+    item.followUps = [followUp, ...(item.followUps || [])];
+
+    writeProposalsStore(list);
+
+    return res.json({
+      success: true,
+      message: "Quotation saved and linked to proposal.",
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 21. Convert Proposal to Event
+router.post("/proposals/:id/convert", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const list = readProposalsStore();
+    const item = list.find((p: any) => p.id === id || p.referenceId === id);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+
+    if (item.isConvertedToEvent && item.convertedEventId) {
+      return res.status(400).json({
+        success: false,
+        message: `Proposal has already been converted to Event #${item.convertedEventId}.`
+      });
+    }
+
+    const eventId = `EVT-${Date.now()}`;
+    item.isConvertedToEvent = true;
+    item.convertedEventId = eventId;
+    item.convertedAt = new Date().toISOString();
+    item.status = "Converted to Event";
+    item.updatedAt = new Date().toISOString();
+
+    writeProposalsStore(list);
+
+    return res.json({
+      success: true,
+      message: "Proposal converted to live Event.",
+      data: {
+        proposal: item,
+        eventId
+      }
     });
   } catch (error) {
     next(error);

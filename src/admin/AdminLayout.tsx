@@ -1308,6 +1308,13 @@ export default function AdminLayout() {
               </div>
             )}
 
+            {/* EVENT PROPOSALS & QUOTATIONS */}
+            {activeTab === "event_proposals" && (
+              <div className="space-y-6">
+                <EventsAdminModule initialTab="proposals" />
+              </div>
+            )}
+
             {/* CREATE NEW EVENT PORTAL */}
             {activeTab === "event_create" && (
               <div className="space-y-6">

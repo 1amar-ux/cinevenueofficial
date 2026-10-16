@@ -2578,6 +2578,7 @@ export default function App() {
         <Route path="theatres" element={<TheatresAdmin />} />
         <Route path="seat-layout-generator" element={<SeatLayoutGenerator />} />
         <Route path="events" element={<EventsAdminModule />} />
+        <Route path="events/proposals" element={<EventsAdminModule initialTab="proposals" />} />
       </Route>
 
 
