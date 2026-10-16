@@ -1001,9 +1001,14 @@ export default function App() {
     // Periodic sync every 25 seconds
     const interval = setInterval(loadMasterData, 25000);
 
-    // Sync on window focus
-    const handleFocus = () => loadMasterData();
-    window.addEventListener("focus", handleFocus);
+    // Sync on window focus & mobile app visibility resume
+    const handleFocusOrVisibility = () => {
+      if (typeof document === "undefined" || document.visibilityState === "visible") {
+        loadMasterData();
+      }
+    };
+    window.addEventListener("focus", handleFocusOrVisibility);
+    document.addEventListener("visibilitychange", handleFocusOrVisibility);
 
     // Sync across browser tabs via BroadcastChannel
     let bc: BroadcastChannel | null = null;
@@ -1041,7 +1046,8 @@ export default function App() {
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", handleFocusOrVisibility);
+      document.removeEventListener("visibilitychange", handleFocusOrVisibility);
       window.removeEventListener("cinevenue_master_data_sync", handleCustomSync);
       if (bc) bc.close();
       if (sbChannel) {
