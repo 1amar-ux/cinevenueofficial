@@ -7,11 +7,19 @@ const config: CapacitorConfig = {
   server: {
     url: "https://cinevenue.com",
     androidScheme: "https",
+    iosScheme: "capacitor",
     cleartext: true
   },
   android: {
     allowMixedContent: true,
     backgroundColor: "#0b0e14"
+  },
+  ios: {
+    contentInset: "always",
+    backgroundColor: "#0b0e14",
+    preferredContentMode: "mobile",
+    allowsLinkPreview: false,
+    scrollEnabled: true
   }
 };
 

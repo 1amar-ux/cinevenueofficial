@@ -35,6 +35,12 @@ html[data-theme="dark"],
   --cv-gold-dim: #967B27;
   --cv-gold-glow: rgba(212, 175, 55, 0.1);
   --cv-accent: #E5C05E;
+
+  /* iOS Safe Area Inset Tokens (Notch, Dynamic Island, Home Indicator) */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 html[data-theme="light"],
@@ -511,5 +517,35 @@ html[data-theme="light"] .text-white\/40:not(.keep-white),
 .light .text-white\/40:not(.keep-white) {
   color: #4B5563;
 }
+
+/* =========================================================
+   iOS SAFE AREA INSETS & NOTCH COMPLIANCE
+   ========================================================= */
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+.pl-safe {
+  padding-left: max(env(safe-area-inset-left), 0px);
+}
+.pr-safe {
+  padding-right: max(env(safe-area-inset-right), 0px);
+}
+.top-safe {
+  top: max(env(safe-area-inset-top), 0px);
+}
+.bottom-safe {
+  bottom: max(env(safe-area-inset-bottom), 0px);
+}
+
+@supports (-webkit-touch-callout: none) {
+  /* iOS WKWebView adjustments */
+  .ios-safe-header {
+    padding-top: max(env(safe-area-inset-top), 16px);
+  }
+}
+
 
 

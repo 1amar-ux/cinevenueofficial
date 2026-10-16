@@ -25,6 +25,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -267,6 +268,34 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       console.error("Google OAuth error:", err);
       setErrorMessage(err?.message || "Failed to initiate Google Sign-In. Please check your connection or use Email.");
       setIsGoogleLoading(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setIsAppleLoading(true);
+    setErrorMessage("");
+    try {
+      if (!isSupabaseConfigured) {
+        setErrorMessage("Apple Sign-In requires Supabase Auth configuration. Please sign in or register with Email.");
+        setIsAppleLoading(false);
+        return;
+      }
+
+      const origin = typeof window !== "undefined" ? window.location.origin.replace("://www.", "://") : "https://cinevenue.com";
+      const callbackUrl = `${origin}/auth/callback`;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: callbackUrl,
+          scopes: "email name"
+        }
+      });
+      if (error) throw error;
+      if (data?.url) window.location.href = data.url;
+    } catch (err: any) {
+      console.error("Apple OAuth error:", err);
+      setErrorMessage(err?.message || "Apple Sign-In is connecting. Please ensure Apple Sign In is enabled in Supabase.");
+      setIsAppleLoading(false);
     }
   };
 
@@ -556,15 +585,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                   <div className="h-px flex-1 bg-white/10" />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  disabled={isGoogleLoading || isLoading}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/50 hover:bg-white/10 disabled:opacity-60 cursor-pointer"
-                >
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-black text-[10px] font-black">G</span>
-                  {isGoogleLoading ? "Connecting to Google..." : "Continue with Google"}
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleGoogle}
+                    disabled={isGoogleLoading || isAppleLoading || isLoading}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs font-semibold text-white transition hover:border-gold/50 hover:bg-white/10 disabled:opacity-60 cursor-pointer"
+                  >
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-black text-[9px] font-black">G</span>
+                    <span>{isGoogleLoading ? "Connecting..." : "Google"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleApple}
+                    disabled={isAppleLoading || isGoogleLoading || isLoading}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-black/80 px-3 py-2.5 text-xs font-semibold text-white transition hover:border-white/50 hover:bg-white/10 disabled:opacity-60 cursor-pointer"
+                  >
+                    <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 170 170">
+                      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.08-7.71-7.97-12.04-14.67-6.03-9.35-10.74-19.67-14.13-30.98-3.39-11.31-5.09-22.13-5.09-32.48 0-14.66 3.66-26.68 10.98-36.08 7.32-9.4 16.48-14.19 27.48-14.36 5.8 0 12.08 1.48 18.84 4.43 6.76 2.95 10.88 4.49 12.38 4.62 1.83-.26 6.37-1.89 13.62-4.88 7.25-3 13.71-4.35 19.39-4.06 14.07.72 25.04 5.92 32.9 15.61-12.22 7.42-18.17 17.51-17.84 30.27.33 10.05 4.16 18.43 11.51 25.13 7.34 6.7 16.12 10.45 26.33 11.23-2.22 6.53-4.84 13.25-7.86 20.17zM119.22 33.64c0-7.44 2.68-14.48 8.04-21.13 5.37-6.64 12.03-10.98 19.98-13.01.26 1.18.39 2.29.39 3.34 0 7.4-2.73 14.51-8.19 21.32-5.46 6.81-12.18 11.02-20.17 12.63-.05-1.05-.05-2.1-.05-3.15z"/>
+                    </svg>
+                    <span>{isAppleLoading ? "Connecting..." : "Apple"}</span>
+                  </button>
+                </div>
               </>
             )}
           </form>

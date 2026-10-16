@@ -14,13 +14,16 @@
     "test": "tsx tests/runner.ts",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
+    "cap:ios": "cap open ios",
     "build:apk": "npm run build && cap sync android",
     "build:aab": "npm run build && cap sync android",
+    "build:ios": "npm run build && cap sync ios",
     "bundle:release": "npm run build && cap sync android && cd android && gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "8.5.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@google/genai": "^2.4.0",
