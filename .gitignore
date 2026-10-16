@@ -25,4 +25,4 @@ android/app/keystore.properties
 android/build-error.txt
 
 scratch/
-
+android/app/src/main/res_backup/
