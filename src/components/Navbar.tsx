@@ -79,7 +79,7 @@ export default function Navbar({
   const userInitials = userEmail ? userEmail.substring(0, 2).toUpperCase() : "";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#EFEFED]/95 dark:bg-[#0A0A0B]/95 backdrop-blur-md border-b border-gray-300 dark:border-white/10 w-full shadow-xs dark:shadow-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0A0A0B]/95 backdrop-blur-md border-b border-slate-200 dark:border-white/10 w-full shadow-xs dark:shadow-2xl">
       {/* Top Navbar Row */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-4">
         
@@ -95,11 +95,11 @@ export default function Navbar({
                   window.location.href = "/";
                 }
               }}
-              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gold/15 dark:hover:bg-gold/25 border border-gray-300 dark:border-gold/40 hover:border-gray-400 dark:hover:border-gold text-gray-800 dark:text-amber-200 hover:text-black dark:hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+              className="group flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 hover:bg-yellow-100/70 dark:bg-gold/15 dark:hover:bg-gold/25 border border-slate-200 dark:border-gold/40 hover:border-yellow-400 dark:hover:border-gold text-slate-800 dark:text-amber-200 hover:text-black dark:hover:text-gold text-xs font-semibold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
               title="Back to previous page"
               aria-label="Back to previous page"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-gray-800 dark:text-gold group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-800 dark:text-gold group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Back</span>
             </button>
           )}
@@ -112,18 +112,18 @@ export default function Navbar({
           {/* District Location Selector Pill */}
           <button
             onClick={onOpenLocation}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-gold/40 transition-all group cursor-pointer text-left shadow-xs dark:shadow-sm"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-100 hover:bg-yellow-100/60 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-slate-200 dark:border-white/10 hover:border-yellow-400 dark:hover:border-gold/40 transition-all group cursor-pointer text-left shadow-xs dark:shadow-sm"
             title="Choose your City / Location"
           >
-            <MapPin className="w-4 h-4 text-gray-700 dark:text-gold shrink-0 group-hover:scale-110 transition-transform" />
+            <MapPin className="w-4 h-4 text-amber-600 dark:text-gold shrink-0 group-hover:scale-110 transition-transform" />
             <div className="flex flex-col">
               <div className="flex items-center gap-1">
-                <span className="text-xs sm:text-[13px] font-bold text-gray-900 dark:text-white max-w-[110px] sm:max-w-[130px] truncate leading-tight">
+                <span className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white max-w-[110px] sm:max-w-[130px] truncate leading-tight">
                   {selectedCity === "All Cities" ? "Select City" : selectedCity}
                 </span>
-                <ChevronDown className="w-3 h-3 text-gray-400 dark:text-white/50 group-hover:text-gold transition-colors" />
+                <ChevronDown className="w-3 h-3 text-slate-400 dark:text-white/50 group-hover:text-amber-600 dark:group-hover:text-gold transition-colors" />
               </div>
-              <span className="text-[10px] text-gray-500 dark:text-white/50 leading-none truncate max-w-[110px]">
+              <span className="text-[10px] text-slate-500 dark:text-white/50 leading-none truncate max-w-[110px]">
                 {stateSubtitle}
               </span>
             </div>
@@ -131,12 +131,12 @@ export default function Navbar({
         </div>
 
         {/* Center: District Navigation Capsule Bar */}
-        <div className="hidden lg:flex items-center gap-1 bg-gray-200/90 dark:bg-[#151518] p-1 rounded-full border border-gray-300 dark:border-white/10 shadow-inner">
+        <div className="hidden lg:flex items-center gap-1 bg-slate-100/90 dark:bg-[#151518] p-1 rounded-full border border-slate-200 dark:border-white/10 shadow-inner">
           <button
             onClick={() => {
               window.location.href = "/#home";
             }}
-            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5 whitespace-nowrap"
+            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-white/5 whitespace-nowrap"
           >
             For you
           </button>
@@ -145,7 +145,7 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#movies";
             }}
-            className="px-4.5 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-gray-950 text-white dark:bg-white dark:text-black shadow-md whitespace-nowrap flex items-center gap-1.5"
+            className="px-4.5 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-slate-950 text-white dark:bg-white dark:text-black shadow-md whitespace-nowrap flex items-center gap-1.5"
           >
             <span>Movies</span>
             {isMovieBookingLive && (
@@ -160,7 +160,7 @@ export default function Navbar({
             onClick={() => {
               window.location.href = "/#theatres";
             }}
-            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5 whitespace-nowrap"
+            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-white/5 whitespace-nowrap"
           >
             Dining / Theatres
           </button>
@@ -170,7 +170,7 @@ export default function Navbar({
               window.location.href = "/events";
             }}
             className={`px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1.5 whitespace-nowrap ${
-              isEventsLive ? "text-gray-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-gray-300/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
+              isEventsLive ? "text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-yellow-100/80 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
             }`}
           >
             <span>Event Booking</span>
@@ -191,13 +191,13 @@ export default function Navbar({
           {/* Top Search Input */}
           {setSearchQuery && (
             <div className="hidden xl:flex items-center relative w-64">
-              <Search className="w-3.5 h-3.5 text-gray-400 dark:text-white/40 absolute left-3 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-slate-400 dark:text-white/40 absolute left-3 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search events, movies, venues..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-100 hover:bg-gray-200/70 focus:bg-white dark:bg-white/[0.06] dark:hover:bg-white/[0.08] dark:focus:bg-black/80 border border-gray-300 dark:border-white/10 focus:border-gold/60 dark:focus:border-gold/50 rounded-full pl-9 pr-3 py-1.5 text-xs text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none transition-all shadow-xs dark:shadow-none"
+                className="w-full bg-slate-100 hover:bg-slate-200/70 focus:bg-white dark:bg-white/[0.06] dark:hover:bg-white/[0.08] dark:focus:bg-black/80 border border-slate-200 dark:border-white/10 focus:border-yellow-400 dark:focus:border-gold/50 rounded-full pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none transition-all shadow-xs dark:shadow-none"
               />
             </div>
           )}
@@ -237,26 +237,26 @@ export default function Navbar({
 
               <button
                 onClick={onOpenOrders}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/40 bg-gold/10 text-gold text-[10px] font-bold uppercase tracking-wider hover:bg-gold hover:text-black transition-all cursor-pointer shadow-md"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-yellow-400/80 bg-[#FEF08A] hover:bg-[#FDE047] text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
                 title="My Bookings & Event Passes"
               >
-                <Ticket className="w-3 h-3" />
+                <Ticket className="w-3 h-3 text-slate-950" />
                 <span>My Passes</span>
               </button>
 
               {/* Profile Avatar Pill */}
               <div 
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-gray-200 dark:border-white/10 px-2.5 py-1 rounded-full cursor-pointer transition-all shadow-xs dark:shadow-none"
+                className="flex items-center gap-2 bg-slate-100 hover:bg-yellow-100/60 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-full cursor-pointer transition-all shadow-xs dark:shadow-none"
                 onClick={() => {
                   if (onOpenAccount) onOpenAccount();
                   else window.location.href = "/account";
                 }}
                 title={userEmail?.toLowerCase().includes("superadmin") ? "Account Profile" : `Account: ${userEmail}`}
               >
-                <div className="w-6 h-6 rounded-full bg-gold text-black flex items-center justify-center text-[11px] font-extrabold shadow-sm">
+                <div className="w-6 h-6 rounded-full bg-[#FDE047] text-black border border-[#FACC15] flex items-center justify-center text-[11px] font-extrabold shadow-xs">
                   {userEmail?.toLowerCase().includes("superadmin") ? <User className="w-3 h-3 text-black" /> : (userInitials || <User className="w-3 h-3 text-black" />)}
                 </div>
-                <span className="hidden md:inline text-[11px] font-semibold text-gray-800 dark:text-white/90 max-w-[90px] truncate">
+                <span className="hidden md:inline text-[11px] font-bold text-slate-900 dark:text-white/90 max-w-[90px] truncate">
                   {userEmail?.toLowerCase().includes("superadmin") ? "Admin" : userEmail.split("@")[0]}
                 </span>
                 <button
@@ -264,7 +264,7 @@ export default function Navbar({
                     e.stopPropagation();
                     onLogout();
                   }}
-                  className="text-gray-400 hover:text-red-500 dark:text-white/40 dark:hover:text-red-400 cursor-pointer transition-colors p-0.5 ml-0.5 bg-transparent border-none"
+                  className="text-slate-400 hover:text-red-500 dark:text-white/40 dark:hover:text-red-400 cursor-pointer transition-colors p-0.5 ml-0.5 bg-transparent border-none"
                   title="Secure Logout"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -276,14 +276,14 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => onOpenAuth?.("signin")}
-                className="inline-flex rounded-full border border-gray-300 dark:border-white/15 bg-transparent px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-white/80 hover:border-gold/60 hover:text-gold dark:hover:border-gold/40 dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
+                className="inline-flex rounded-full border border-slate-300 dark:border-white/15 bg-transparent px-3 sm:px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-white/80 hover:border-yellow-400 hover:text-black dark:hover:border-gold/40 dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuth?.("signup")}
-                className="hidden sm:inline-flex rounded-full bg-gold px-3 sm:px-3.5 py-1.5 text-xs text-black font-bold hover:bg-gold-light shadow-md shadow-gold/20 transition-all cursor-pointer border-none whitespace-nowrap shrink-0"
+                className="hidden sm:inline-flex rounded-full bg-[#FDE047] hover:bg-[#FEF08A] px-3 sm:px-3.5 py-1.5 text-xs text-black font-black border border-yellow-400/80 shadow-md shadow-yellow-400/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign Up
               </button>
@@ -293,7 +293,7 @@ export default function Navbar({
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1.5 text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
+            className="lg:hidden p-1.5 text-slate-700 hover:text-black dark:text-white/80 dark:hover:text-gold rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer border-none bg-transparent"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -353,14 +353,14 @@ export default function Navbar({
               if (onOpenCineCoins) onOpenCineCoins(); 
               else window.location.href = "/cinecoins"; 
             }} 
-            className="text-left px-3 py-2 text-xs uppercase font-bold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 text-gray-800 hover:text-black dark:text-amber-400 dark:hover:text-gold"
+            className="text-left px-3 py-2 text-xs uppercase font-bold hover:bg-yellow-50 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center justify-between gap-2 text-slate-900 hover:text-black dark:text-amber-400 dark:hover:text-gold"
           >
             <div className="flex items-center gap-2">
-              <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <Coins className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>CineCoins Loyalty & Rewards</span>
             </div>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-amber-950 dark:text-amber-300 bg-[#FEF08A] dark:bg-amber-400/15 px-1.5 py-0.5 rounded-full border border-[#FACC15] dark:border-amber-400/30 font-mono shadow-xs">
+              <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
               SOON
             </span>
           </button>

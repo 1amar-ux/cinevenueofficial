@@ -458,10 +458,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
   };
 
   return (
-    <div className="home-page bg-[#EFEFED] dark:bg-[#09090A] min-h-screen text-gray-950 dark:text-[#F3F4F6] font-sans selection:bg-[#D4AF37] selection:text-black antialiased">
+    <div className="home-page bg-white dark:bg-[#09090A] min-h-screen text-slate-950 dark:text-[#F3F4F6] font-sans selection:bg-[#FDE047] selection:text-black antialiased">
       
       {/* LUXURY FLOATING NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#EFEFED]/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-gray-300 dark:border-white/10 py-2.5 sm:py-3 px-3 sm:px-6 xl:px-10 2xl:px-12 flex items-center justify-between gap-2 shadow-xs dark:shadow-none">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 py-2.5 sm:py-3 px-3 sm:px-6 xl:px-10 2xl:px-12 flex items-center justify-between gap-2 shadow-xs dark:shadow-none">
         <div 
           onClick={() => {
             setActiveDivision("none");
@@ -499,11 +499,11 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
 
           <button 
             onClick={() => navigate("/cinecoins")} 
-            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
+            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-slate-950 dark:text-white font-extrabold hover:bg-yellow-100/70 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-yellow-300/60 dark:hover:border-gold/30 cursor-pointer"
           >
             <span>🪙 CineCoins</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-amber-950 dark:text-amber-300 bg-[#FEF08A] dark:bg-amber-400/15 px-1.5 py-0.5 rounded-full border border-[#FACC15] dark:border-amber-400/30 font-mono shadow-xs">
+              <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
               SOON
             </span>
           </button>
@@ -548,14 +548,14 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               <button
                 type="button"
                 onClick={() => onOpenAuth?.("signin")}
-                className="inline-flex rounded-full border border-gray-400 dark:border-white/20 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/95 hover:border-gray-900 hover:text-black dark:hover:border-gold dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
+                className="inline-flex rounded-full border border-slate-300 dark:border-white/20 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-slate-900 dark:text-white/95 hover:border-yellow-400 hover:text-black dark:hover:border-gold dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuth?.("signup")}
-                className="hidden sm:inline-flex rounded-full bg-gold px-3.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider text-black font-extrabold hover:bg-gold-light shadow-md shadow-gold/15 transition-all cursor-pointer border-none whitespace-nowrap shrink-0"
+                className="hidden sm:inline-flex rounded-full bg-[#FDE047] hover:bg-[#FEF08A] px-3.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider text-black font-black border border-yellow-400/80 shadow-md shadow-yellow-400/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign Up
               </button>
@@ -619,8 +619,8 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
                 <span>{label}</span>
                 {path !== "/" && !path.startsWith("#") && (
                   path === "/cinecoins" ? (
-                    <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 font-mono">
-                      <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-amber-950 dark:text-amber-300 bg-[#FEF08A] dark:bg-amber-400/15 px-2 py-0.5 rounded-full border border-[#FACC15] dark:border-amber-400/30 font-mono shadow-xs">
+                      <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
                       SOON
                     </span>
                   ) : (
@@ -660,33 +660,33 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-[#D4AF37]/5 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
         
         <div className="space-y-6 relative z-10 max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-gray-200/80 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-full text-[10px] font-bold tracking-widest text-gray-900 dark:text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
-            <Award className="w-3.5 h-3.5 animate-spin text-gray-900 dark:text-gold" style={{ animationDuration: "12s" }} />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-yellow-100/90 dark:bg-white/5 border border-yellow-300 dark:border-white/10 rounded-full text-[10px] font-black tracking-widest text-slate-950 dark:text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
+            <Award className="w-3.5 h-3.5 animate-spin text-amber-600 dark:text-gold" style={{ animationDuration: "12s" }} />
             The Standard of Indian Cinema & Entertainment
           </div>
 
-          <h1 className="font-display text-[clamp(2.2rem,9vw,4.5rem)] md:text-7xl font-light tracking-tight text-gray-950 dark:text-white italic leading-[1.08] break-words">
+          <h1 className="font-display text-[clamp(2.2rem,9vw,4.5rem)] md:text-7xl font-light tracking-tight text-slate-950 dark:text-white italic leading-[1.08] break-words">
             Redefining Luxury in <br className="hidden md:inline" />
-            <span className="text-gray-950 dark:text-[#D4AF37] not-italic font-normal">Cinema & Corporate Entertainment</span>
+            <span className="text-slate-950 dark:text-[#D4AF37] not-italic font-bold">Cinema & Corporate Entertainment</span>
           </h1>
 
-          <p className="text-sm md:text-base text-gray-700 dark:text-white/60 font-light max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm md:text-base text-slate-700 dark:text-white/60 font-normal max-w-2xl mx-auto leading-relaxed">
             From premier live movie ticket engines with verified offline-first seat mappings, to major pan-Indian physical film production, celebrity launches, viral media campaigns, and CineCoins rewards.
           </p>
 
           <div className="flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4">
             <button
               onClick={() => navigate("/booking")}
-              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-gray-950 hover:bg-black text-white dark:bg-white dark:hover:bg-white/95 dark:text-black font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-[#FDE047] hover:bg-[#FEF08A] text-black border border-yellow-400/80 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-yellow-400/25 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Ticket className="w-4 h-4 text-white dark:text-black" />
+              <Ticket className="w-4 h-4 text-black" />
               Book Movie Tickets
             </button>
             <a
               href="#services"
-              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-white dark:bg-transparent hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-300 dark:border-white/15 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-white/30 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs dark:shadow-none"
+              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-white dark:bg-transparent hover:bg-yellow-50 dark:hover:bg-white/5 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white hover:border-yellow-400 dark:hover:border-white/30 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs dark:shadow-none"
             >
-              <Compass className="w-4 h-4 text-gray-700 dark:text-[#D4AF37]" />
+              <Compass className="w-4 h-4 text-amber-600 dark:text-[#D4AF37]" />
               Explore Business Divisions
             </a>
           </div>
@@ -958,21 +958,21 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
           <div className="bg-white dark:bg-white/[0.01] border border-gray-200 dark:border-amber-500/30 hover:border-gray-400 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group shadow-sm hover:shadow-md dark:shadow-lg">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-amber-500/10 flex items-center justify-center text-gray-700 dark:text-amber-400 border border-gray-200 dark:border-amber-500/20">
-                  <Coins className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-700 dark:text-amber-400 border border-yellow-300 dark:border-amber-500/20">
+                  <Coins className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 
                 {/* Status Badge */}
-                <span className="inline-flex items-center gap-1 text-[8px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-400/20 uppercase tracking-widest font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-amber-950 dark:text-amber-300 bg-[#FEF08A] dark:bg-amber-400/15 px-2 py-0.5 rounded-full border border-[#FACC15] dark:border-amber-400/30 uppercase tracking-widest font-mono shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
                   DECEMBER LAUNCH
                 </span>
               </div>
               <div className="space-y-1.5 text-left">
-                <h3 className="font-display text-lg font-bold text-gray-950 dark:text-white group-hover:text-black dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                <h3 className="font-display text-lg font-bold text-slate-950 dark:text-white group-hover:text-black dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
                   <span>CineCoins Loyalty</span>
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-white/50 leading-relaxed font-light min-h-[60px]">
+                <p className="text-xs text-slate-600 dark:text-white/50 leading-relaxed font-normal min-h-[60px]">
                   Rewards store catalog, spin wheel, cashback wallet, gamified daily quests & instant coin redemptions.
                 </p>
               </div>
@@ -980,10 +980,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             <div className="pt-6">
               <button
                 onClick={() => navigate("/cinecoins")}
-                className="w-full py-2 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md font-bold border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                className="w-full py-2.5 text-[10px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md font-black border border-yellow-400/80 bg-[#FEF08A] hover:bg-[#FDE047] text-slate-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:text-amber-300"
               >
                 <span>🪙 CineCoins — Launching Soon</span>
-                <ChevronRight className="w-3 h-3 text-amber-500" />
+                <ChevronRight className="w-3.5 h-3.5 text-slate-950 dark:text-amber-300" />
               </button>
             </div>
           </div>

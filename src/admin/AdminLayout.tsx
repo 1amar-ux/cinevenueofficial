@@ -2662,7 +2662,7 @@ export default function AdminLayout() {
                               <td className="py-3">
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-amber-400 font-bold text-[11px]">500 CC</span>
-                                  <span className="px-1.5 py-0.5 text-[8px] rounded font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 tracking-wider">
+                                  <span className="px-1.5 py-0.5 text-[8px] rounded font-extrabold bg-[#FEF08A] text-amber-950 border border-[#FACC15] dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30 tracking-wider shadow-xs">
                                     PAUSED
                                   </span>
                                 </div>

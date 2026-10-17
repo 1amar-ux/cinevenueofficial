@@ -6,6 +6,7 @@ import {
   Star, ChevronRight, Zap
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
+import ThemeToggle from "../ThemeToggle";
 
 export default function CineCoinsComingSoon() {
   const navigate = useNavigate();
@@ -69,9 +70,10 @@ export default function CineCoinsComingSoon() {
             <CineVenueLogo size="md" onClick={() => navigate("/")} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase font-mono bg-amber-400/10 border border-amber-400/30 text-amber-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle variant="dropdown" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase font-mono bg-[#FEF08A] dark:bg-amber-400/15 border border-[#FACC15] dark:border-amber-400/30 text-amber-950 dark:text-amber-300 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
               DECEMBER 2026 LAUNCH
             </span>
           </div>

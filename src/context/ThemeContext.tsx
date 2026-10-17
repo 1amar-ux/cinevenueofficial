@@ -94,7 +94,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
       metaThemeColor.setAttribute("name", "theme-color");
       document.head.appendChild(metaThemeColor);
     }
-    metaThemeColor.setAttribute("content", effectiveTheme === "light" ? "#F8F9FA" : "#0A0A0B");
+    metaThemeColor.setAttribute("content", effectiveTheme === "light" ? "#FFFFFF" : "#0A0A0B");
   }, [effectiveTheme]);
 
   // Setter with storage persistence
