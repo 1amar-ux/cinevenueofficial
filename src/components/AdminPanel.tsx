@@ -2310,8 +2310,9 @@ export default function AdminPanel({
           icon: Coins,
           superAdminOnly: true,
           badge: (
-            <span className="text-[9px] font-bold bg-amber-500/20 border border-amber-500/30 text-amber-400 px-1.5 py-0.5 rounded">
-              STANDALONE
+            <span className="text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300 px-1.5 py-0.5 rounded tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+              PAUSED
             </span>
           ),
         },
@@ -2919,7 +2920,12 @@ export default function AdminPanel({
                         {/* Discounts/CineCoins */}
                         <div className="bg-[#121214] border border-white/5 p-5 rounded-xl text-left space-y-2 relative overflow-hidden">
                           <div className="absolute right-4 top-4 text-text-secondary opacity-15"><Coins className="w-8 h-8" /></div>
-                          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-text-secondary">Discounts / CineCoins Applied</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-text-secondary">Discounts / CineCoins Applied</span>
+                            <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded tracking-wide">
+                              Paused (Launching Dec)
+                            </span>
+                          </div>
                           <p className="text-2xl font-display font-semibold text-amber-400">
                             ₹{(metrics.discounts + metrics.cinecoinDiscount).toLocaleString("en-IN")}
                           </p>
@@ -3906,6 +3912,7 @@ export default function AdminPanel({
                                 <th className="p-3">Plaintext Password</th>
                                 <th className="p-3">Joined Date</th>
                                 <th className="p-3">Past Bookings</th>
+                                <th className="p-3">CineCoins Wallet</th>
                                 <th className="p-3 text-right">Actions</th>
                               </tr>
                             </thead>
@@ -3948,6 +3955,17 @@ export default function AdminPanel({
                                         </button>
                                       );
                                     })()}
+                                  </td>
+                                  <td className="p-3 border-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-amber-400 font-bold text-xs">
+                                        🪙 {(user.cineCoins ?? 500).toLocaleString()} CC
+                                      </span>
+                                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 tracking-wider">
+                                        PAUSED
+                                      </span>
+                                    </div>
+                                    <span className="text-[9px] text-text-muted block mt-0.5">Wallet actions paused</span>
                                   </td>
                                   <td className="p-3 text-right space-x-2 border-0">
                                     <button
@@ -6961,14 +6979,16 @@ export default function AdminPanel({
                       <div 
                         key={item.key} 
                         className={`px-3 py-2 rounded-xl border text-left font-mono transition-all ${
-                          isItemLive 
-                            ? "bg-black/50 border-emerald-500/30 text-emerald-400" 
-                            : "bg-rose-950/60 border-rose-500/60 text-rose-300 shadow-md shadow-rose-950/50"
+                          item.key === "cinecoins"
+                            ? "bg-amber-950/40 border-amber-500/40 text-amber-300"
+                            : isItemLive 
+                              ? "bg-black/50 border-emerald-500/30 text-emerald-400" 
+                              : "bg-rose-950/60 border-rose-500/60 text-rose-300 shadow-md shadow-rose-950/50"
                         }`}
                       >
                         <div className="flex items-center justify-between text-[10px]">
                           <span>{item.icon}</span>
-                          <span className="font-bold">{isItemLive ? "LIVE" : "KILLED"}</span>
+                          <span className="font-bold">{item.key === "cinecoins" ? "PAUSED" : isItemLive ? "LIVE" : "KILLED"}</span>
                         </div>
                         <p className="text-[10px] font-bold text-white truncate pt-0.5">{item.name}</p>
                       </div>
@@ -7107,9 +7127,13 @@ export default function AdminPanel({
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted">
                                   <span className={`font-mono font-bold px-2.5 py-0.5 rounded text-[10px] ${
-                                    isLive ? "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20" : "text-rose-400 bg-rose-400/10 border border-rose-400/20 animate-pulse"
+                                    pillar.key === "cinecoins"
+                                      ? "text-amber-300 bg-amber-500/15 border border-amber-500/30"
+                                      : isLive 
+                                        ? "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20" 
+                                        : "text-rose-400 bg-rose-400/10 border border-rose-400/20 animate-pulse"
                                   }`}>
-                                    Status : {isLive ? "🟢 LIVE & OPERATIONAL" : "🔴 EMERGENCY KILL SWITCH ACTIVE"}
+                                    Status : {pillar.key === "cinecoins" ? "⏸️ PAUSED (DECEMBER LAUNCH)" : isLive ? "🟢 LIVE & OPERATIONAL" : "🔴 EMERGENCY KILL SWITCH ACTIVE"}
                                   </span>
                                   <span className="font-mono text-white/70 bg-white/5 px-2 py-0.5 rounded text-[10px]">
                                     Active Visitors: {pillar.visitors}

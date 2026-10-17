@@ -348,8 +348,11 @@ export default function Dashboard() {
             {(metrics.discounts > 0 || metrics.cinecoinDiscount > 0) && (
               <>
                 <span className="text-gray-400 font-bold">-</span>
-                <span className="bg-rose-100 text-rose-800 px-2.5 py-1 rounded font-bold">
+                <span className="bg-rose-100 text-rose-800 px-2.5 py-1 rounded font-bold inline-flex items-center gap-1.5">
                   ₹{(metrics.discounts + metrics.cinecoinDiscount).toLocaleString("en-IN")} Discounts
+                  <span className="text-[10px] font-semibold bg-amber-200/90 text-amber-900 px-1.5 py-0.2 rounded border border-amber-300">
+                    CineCoins Paused (Launching Dec)
+                  </span>
                 </span>
               </>
             )}

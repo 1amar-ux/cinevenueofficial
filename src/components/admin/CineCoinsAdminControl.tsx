@@ -69,7 +69,7 @@ export default function CineCoinsAdminControl({
     | "reward_history"
     | "referrals"
     | "overview"
-  >("dashboard");
+  >("overview");
 
   // Filter States
   const [dateRangeFilter, setDateRangeFilter] = useState<"today" | "yesterday" | "last7" | "last30" | "this_month" | "custom">("last30");
@@ -347,7 +347,8 @@ export default function CineCoinsAdminControl({
 
     setIsValueModalOpen(false);
     setIsValueConfirmStep(false);
-    alert(`✅ CineCoin Conversion Rate successfully updated to: ${newRateText} (1 CC = ₹${newUnitRate.toFixed(3)}). Future transactions will apply this rate!`);
+    alert(`⚠️ Action Gated: CineCoins is currently paused for December launch. Conversion rate changes are locked in read-only pre-launch mode.`);
+    return;
   };
 
   // =========================================================================
@@ -484,58 +485,13 @@ export default function CineCoinsAdminControl({
     setIsRewardEditModalOpen(false);
     setIsRewardConfirmStep(false);
     setSelectedRewardToEdit(null);
-    alert(`✅ Reward for "${selectedRewardToEdit.activityName}" updated to ${newValueStr} (${editRewardStatus}). Old transactions remain untouched!`);
+    alert(`⚠️ Action Gated: CineCoins is currently paused for December launch. Rule changes for "${selectedRewardToEdit.activityName}" are locked in read-only pre-launch mode.`);
+    return;
   };
 
   const handleQuickToggleRewardStatus = (rule: CineCoinRewardItemConfig) => {
-    const newStatus: "Active" | "Disabled" = rule.status === "Active" ? "Disabled" : "Active";
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10);
-    const timeStr = now.toTimeString().slice(0, 8);
-    const timestampStr = `${dateStr} ${timeStr}`;
-
-    const newHistoryEntry: CineCoinRewardHistoryRecord = {
-      id: `REW-HIST-${Date.now().toString().slice(-6)}`,
-      activityKey: rule.activityKey,
-      rewardActivity: rule.activityName,
-      previousValue: rule.displayValue,
-      newValue: rule.displayValue,
-      previousStatus: rule.status,
-      newStatus: newStatus,
-      changedBy: "Super Admin",
-      reason: `Quick status toggle to ${newStatus}`,
-      date: dateStr,
-      time: timeStr,
-      ipAddress: "152.57.12.99",
-      timestamp: timestampStr
-    };
-
-    const updatedRules = currentRewardRules.map(r => {
-      if (r.id === rule.id) {
-        return {
-          ...r,
-          status: newStatus,
-          updatedBy: "Super Admin",
-          updatedAt: timestampStr
-        };
-      }
-      return r;
-    });
-
-    onUpdateSettings({
-      ...settings,
-      rewardRules: updatedRules,
-      rewardHistory: [newHistoryEntry, ...(settings.rewardHistory || [])]
-    });
-
-    logAuditEvent(
-      `Reward Status Toggled: ${rule.activityName}`,
-      "SYSTEM",
-      "N/A",
-      `Quick toggle to ${newStatus}`,
-      rule.status,
-      newStatus
-    );
+    alert(`⚠️ Action Gated: CineCoins is currently paused for December launch. Reward rule "${rule.activityName}" is locked in pre-launch mode and cannot be toggled.`);
+    return;
   };
 
   // Helper to log audit event
@@ -633,7 +589,7 @@ export default function CineCoinsAdminControl({
 
           <nav className="space-y-1 max-h-[calc(100vh-230px)] overflow-y-auto pr-1 custom-scrollbar text-xs">
             {[
-              { id: "overview", label: "Overview", icon: BarChart2, badge: "Live" },
+              { id: "overview", label: "Overview", icon: BarChart2, badge: "PAUSED" },
               { id: "wallets", label: "Wallets", icon: Users },
               { id: "transactions", label: "Transactions", icon: FileText, badge: `${transactions.length}` },
               { id: "users", label: "Users", icon: Search },
@@ -694,8 +650,8 @@ export default function CineCoinsAdminControl({
         <div className="bg-[#12131A] border border-amber-500/20 rounded-2xl p-3 space-y-2">
           <div className="flex items-center justify-between text-[10px]">
             <span className="text-white/60 uppercase tracking-widest font-mono">Conversion Rate</span>
-            <span className="font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-              🟢 ACTIVE
+            <span className="font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              ⏸️ PAUSED
             </span>
           </div>
           <div className="flex justify-between items-center text-xs pt-1 border-t border-white/5">
@@ -707,6 +663,41 @@ export default function CineCoinsAdminControl({
 
       {/* MAIN CONTENT WORKSPACE */}
       <main className="flex-1 p-6 space-y-6 overflow-y-auto max-h-screen custom-scrollbar">
+        {/* PROMINENT TOP STATUS BANNER (COMING SOON / PAUSED LAUNCH GUARD) */}
+        <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-950/60 via-[#181308] to-amber-950/40 p-5 shadow-2xl backdrop-blur-md">
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 flex-shrink-0 shadow-inner">
+                <ShieldAlert className="w-5 h-5 text-amber-400 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-mono font-black uppercase tracking-widest text-amber-400">
+                    CineCoins System Status: Paused for December Launch
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                    Pre-Launch Mode
+                  </span>
+                </div>
+                <p className="text-xs text-white/80 leading-relaxed max-w-4xl">
+                  Customer wallet, daily claims, and checkout redemptions are currently gated as <strong className="text-amber-300">‘Coming Soon’</strong>. Configurations below are in read-only/pre-launch mode.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+              <div className="px-3.5 py-1.5 rounded-xl bg-black/60 border border-amber-500/30 flex items-center gap-2 shadow-inner">
+                <span className="text-[10px] uppercase font-mono text-white/60">Feature Status:</span>
+                <span className="text-xs font-black text-amber-400 flex items-center gap-1.5 font-mono">
+                  <span>⏸️</span> Upcoming / Paused
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* TOP HEADER BAR */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0D0E13] border border-white/10 p-5 rounded-2xl">
           <div className="space-y-1">
@@ -721,13 +712,23 @@ export default function CineCoinsAdminControl({
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              disabled
+              title="Manual credit/debit adjustments are paused until the December launch."
+              className="px-3.5 py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-300/50 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-not-allowed"
+            >
+              <Coins className="w-3.5 h-3.5" />
+              <span>Credit/Debit (Paused)</span>
+            </button>
+
             {activeMenu === 'cinecoin_value' && (
               <button
                 onClick={handleOpenValueModal}
-                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                title="CineCoins module is paused for December launch. Live conversion rates are gated in read-only mode."
+                className="px-4 py-2.5 bg-gradient-to-r from-amber-500/80 to-yellow-500/80 text-black font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-amber-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
-                <DollarSign className="w-4 h-4 text-black" />
-                <span>EDIT CINECOIN VALUE</span>
+                <Eye className="w-4 h-4 text-black" />
+                <span>VIEW VALUE (PRE-LAUNCH)</span>
               </button>
             )}
 
@@ -756,8 +757,8 @@ export default function CineCoinsAdminControl({
                     <span className="px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full font-mono text-xs font-extrabold uppercase">
                       Central Conversion Rate
                     </span>
-                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full text-xs font-bold flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Active Status: 🟢 Active
+                    <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" /> Feature Status: ⏸️ Upcoming / Paused (Launching Dec)
                     </span>
                   </div>
                   <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
@@ -770,10 +771,11 @@ export default function CineCoinsAdminControl({
 
                 <button
                   onClick={handleOpenValueModal}
-                  className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-sm rounded-2xl flex items-center gap-2.5 shadow-xl shadow-amber-500/25 cursor-pointer transform hover:-translate-y-0.5 transition-all"
+                  title="CineCoins module is paused for December launch. Live rate modifications are gated."
+                  className="px-6 py-3.5 bg-gradient-to-r from-amber-500/90 to-yellow-500/90 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-sm rounded-2xl flex items-center gap-2.5 shadow-xl shadow-amber-500/20 cursor-pointer transform hover:-translate-y-0.5 transition-all"
                 >
-                  <Edit className="w-4 h-4 text-black" />
-                  <span>EDIT VALUE</span>
+                  <Eye className="w-4 h-4 text-black" />
+                  <span>VIEW RATE CONFIG (READ-ONLY)</span>
                 </button>
               </div>
 
@@ -979,23 +981,21 @@ export default function CineCoinsAdminControl({
                           <td className="p-3 text-center">
                             <button
                               onClick={() => handleQuickToggleRewardStatus(rule)}
-                              className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer ${
-                                isActive 
-                                  ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30" 
-                                  : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              }`}
+                              title="Reward rule activation is paused until the December launch."
+                              className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all cursor-not-allowed bg-white/5 border border-white/10 text-white/40"
                             >
-                              {isActive ? "Disable" : "Enable"}
+                              ⏸️ Paused
                             </button>
                           </td>
 
                           <td className="p-3 text-right">
                             <button
                               onClick={() => handleOpenRewardEdit(rule)}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl flex items-center gap-1.5 ml-auto cursor-pointer shadow-md shadow-amber-500/10 transition-transform active:scale-95"
+                              title="Rule configurations are in read-only pre-launch mode."
+                              className="px-3 py-1.5 bg-amber-500/80 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl flex items-center gap-1.5 ml-auto cursor-pointer shadow-md shadow-amber-500/10 transition-transform active:scale-95"
                             >
-                              <Edit className="w-3.5 h-3.5" />
-                              <span>Edit</span>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View Rule</span>
                             </button>
                           </td>
                         </tr>
@@ -1076,10 +1076,10 @@ export default function CineCoinsAdminControl({
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {[
-                { label: "Circulation Balance", val: `${(totalInCirculation / 1000).toFixed(1)}k CC`, icon: Coins, color: "text-amber-400" },
-                { label: "Total Purchased", val: `${(totalPurchased / 1000).toFixed(1)}k CC`, icon: DollarSign, color: "text-emerald-400" },
-                { label: "Total Credited", val: `${(totalCredited / 1000).toFixed(1)}k CC`, icon: ArrowUpRight, color: "text-cyan-400" },
-                { label: "Total Redeemed", val: `${(totalRedeemed / 1000).toFixed(1)}k CC`, icon: ArrowDownRight, color: "text-purple-400" },
+                { label: "Circulation Balance", val: `${(totalInCirculation / 1000).toFixed(1)}k CC`, icon: Coins, color: "text-amber-400", sub: "Paused (Launching Dec)" },
+                { label: "Total Purchased", val: `${(totalPurchased / 1000).toFixed(1)}k CC`, icon: DollarSign, color: "text-emerald-400", sub: "0 Velocity (Paused)" },
+                { label: "Total Credited", val: `${(totalCredited / 1000).toFixed(1)}k CC`, icon: ArrowUpRight, color: "text-cyan-400", sub: "Pre-launch Gated" },
+                { label: "Total Redeemed", val: `${(totalRedeemed / 1000).toFixed(1)}k CC`, icon: ArrowDownRight, color: "text-purple-400", sub: "0 Velocity (Paused)" },
                 { label: "Total Refunded", val: `${(totalRefunded / 1000).toFixed(1)}k CC`, icon: RotateCcw, color: "text-blue-400" },
                 { label: "Total Expired", val: `${(totalExpired / 1000).toFixed(1)}k CC`, icon: Clock, color: "text-rose-400" },
                 { label: "Conversion Rate", val: `${currentCoinsPerUnit} CC = ₹${currentCurrencyValue}`, icon: DollarSign, color: "text-amber-400" },
@@ -1095,6 +1095,9 @@ export default function CineCoinsAdminControl({
                       <Icon className={`w-4 h-4 ${m.color}`} />
                     </div>
                     <p className={`text-lg font-black ${m.color}`}>{m.val}</p>
+                    {m.sub && (
+                      <p className="text-[9px] text-amber-400/80 font-mono font-medium">{m.sub}</p>
+                    )}
                   </div>
                 );
               })}
@@ -1165,17 +1168,35 @@ export default function CineCoinsAdminControl({
         {/* WALLETS VIEW */}
         {activeMenu === "wallets" && (
           <div className="space-y-4">
-            <div className="bg-[#0D0E13] border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-[#0D0E13] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <input
                 type="text"
                 placeholder="Search wallets by email..."
                 value={walletSearch}
                 onChange={(e) => setWalletSearch(e.target.value)}
-                className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-64 outline-none focus:border-amber-400"
+                className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 outline-none focus:border-amber-400"
               />
-              <span className="text-xs text-amber-400 font-mono font-bold">
-                {userWallets.length} Wallets Loaded
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled
+                  title="Manual coin credit / debit actions are paused until December launch."
+                  className="px-3 py-1.5 bg-amber-500/10 text-amber-400/60 border border-amber-500/20 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <span>➕ Manual Adjust</span>
+                  <span className="text-[9px] px-1 bg-amber-500/20 rounded font-mono">PAUSED</span>
+                </button>
+                <button
+                  disabled
+                  title="Reward drop distribution is paused until December launch."
+                  className="px-3 py-1.5 bg-amber-500/10 text-amber-400/60 border border-amber-500/20 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <span>🎁 Drop Bonus</span>
+                  <span className="text-[9px] px-1 bg-amber-500/20 rounded font-mono">PAUSED</span>
+                </button>
+                <span className="text-xs text-amber-400 font-mono font-bold">
+                  {userWallets.length} Wallets
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1183,20 +1204,83 @@ export default function CineCoinsAdminControl({
                 <div key={w.userEmail} className="bg-[#0D0E13] border border-white/10 p-5 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white">{w.userEmail}</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                      ACTIVE
+                    <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold tracking-wider">
+                      PAUSED (DEC)
                     </span>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <span className="text-2xl font-black text-amber-400 font-mono">{w.balanceCoins.toLocaleString()} CC</span>
                     <span className="text-xs text-white/50 font-mono">≈ ₹{(w.balanceCoins * currentCoinValueRupees).toFixed(2)}</span>
                   </div>
-                  <div className="pt-2 border-t border-white/5 text-[11px] text-white/50 flex justify-between">
+                  <div className="pt-2 border-t border-white/5 text-[11px] text-white/50 flex justify-between items-center">
                     <span>Streak: {w.dailyStreak || 0} days</span>
-                    <span>Referrals: {w.successfulReferrals || 0}</span>
+                    <span className="text-amber-400/80 font-mono text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                      Wallet actions paused
+                    </span>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* USERS VIEW */}
+        {activeMenu === "users" && (
+          <div className="space-y-4">
+            <div className="bg-[#0D0E13] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <Search className="w-4 h-4 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Search user balances by email..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 outline-none focus:border-amber-400"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold rounded-xl">
+                  Wallet Actions: Paused for Dec Launch
+                </span>
+                <span className="text-xs font-mono text-amber-400 font-bold">
+                  {userWallets.length} Accounts
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-[#0D0E13] border border-white/10 rounded-2xl overflow-x-auto">
+              <table className="w-full text-left text-xs text-white/80 font-mono">
+                <thead className="bg-black/60 text-amber-400 uppercase text-[10px] border-b border-white/10">
+                  <tr>
+                    <th className="p-3">User Email</th>
+                    <th className="p-3">Wallet ID</th>
+                    <th className="p-3">CineCoins Balance</th>
+                    <th className="p-3">Approx. Value</th>
+                    <th className="p-3">Wallet Status</th>
+                    <th className="p-3">Operational State</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-[11px]">
+                  {userWallets
+                    .filter(w => (w.userEmail || "").toLowerCase().includes(userSearch.toLowerCase()))
+                    .map(w => (
+                      <tr key={w.userEmail} className="hover:bg-white/[0.02]">
+                        <td className="p-3 font-sans font-bold text-white">{w.userEmail}</td>
+                        <td className="p-3 text-amber-300">{w.walletId || `WAL-${w.userEmail.slice(0, 4).toUpperCase()}`}</td>
+                        <td className="p-3 font-bold text-amber-400">{w.balanceCoins.toLocaleString()} CC</td>
+                        <td className="p-3 text-white/60">₹{(w.balanceCoins * currentCoinValueRupees).toFixed(2)}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
+                            PAUSED (DEC)
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-white/40 text-[10px] italic">Wallet actions gated until launch</span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -1379,14 +1463,24 @@ export default function CineCoinsAdminControl({
               {!isValueConfirmStep ? (
                 // Step 1: Configuration Form
                 <div className="space-y-5">
+                  <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-3 text-left">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-amber-300">Pre-Launch Read-Only Mode</p>
+                      <p className="text-[11px] text-white/70 leading-relaxed">
+                        CineCoins feature is currently paused for December launch. Live rate adjustments cannot be committed to the production ledger while user wallets are gated.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-amber-400">
                       <DollarSign className="w-5 h-5" />
                       <span className="text-xs font-mono font-bold uppercase tracking-wider">Super Admin Security Authorization</span>
                     </div>
-                    <h3 className="text-xl font-black text-white">Edit CineCoin Conversion Value</h3>
+                    <h3 className="text-xl font-black text-white">CineCoin Conversion Value (Pre-Launch View)</h3>
                     <p className="text-xs text-white/60">
-                      Update the centralized monetary value of CineCoins across the entire CineVenue ecosystem.
+                      Preview or simulate the centralized monetary value of CineCoins scheduled for December activation.
                     </p>
                   </div>
 
@@ -1504,13 +1598,14 @@ export default function CineCoinsAdminControl({
                       onClick={() => setIsValueConfirmStep(false)}
                       className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl cursor-pointer"
                     >
-                      CANCEL
+                      BACK
                     </button>
                     <button
                       onClick={handleConfirmValueChange}
-                      className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-xl cursor-pointer shadow-lg shadow-emerald-500/20"
+                      title="Rate changes are locked while CineCoins is paused for December launch."
+                      className="flex-1 py-3 bg-amber-500/40 text-black/70 font-black text-xs rounded-xl cursor-not-allowed shadow-none"
                     >
-                      CONFIRM CHANGE
+                      COMMIT (LOCKED IN PRE-LAUNCH)
                     </button>
                   </div>
                 </div>
@@ -1535,10 +1630,20 @@ export default function CineCoinsAdminControl({
               {!isRewardConfirmStep ? (
                 // Step 1: Form
                 <div className="space-y-5">
+                  <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-3 text-left">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-amber-300">Pre-Launch Read-Only Mode</p>
+                      <p className="text-[11px] text-white/70 leading-relaxed">
+                        CineCoins module is paused for December launch. Rule configurations can be inspected safely in read-only mode, but cannot be modified in live state.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-amber-400">
                       <Gift className="w-5 h-5" />
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider">Reward Rule Configuration</span>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider">Reward Rule Configuration (Read-Only)</span>
                     </div>
                     <h3 className="text-xl font-black text-white">{selectedRewardToEdit.activityName}</h3>
                     <p className="text-xs text-white/60">{selectedRewardToEdit.description}</p>
@@ -1745,13 +1850,14 @@ export default function CineCoinsAdminControl({
                       onClick={() => setIsRewardConfirmStep(false)}
                       className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl cursor-pointer"
                     >
-                      CANCEL
+                      BACK
                     </button>
                     <button
                       onClick={handleConfirmRewardSave}
-                      className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-xl cursor-pointer shadow-lg shadow-emerald-500/20"
+                      title="Rule changes are locked while CineCoins is paused for December launch."
+                      className="flex-1 py-3 bg-amber-500/40 text-black/70 font-black text-xs rounded-xl cursor-not-allowed shadow-none"
                     >
-                      CONFIRM
+                      SAVE (LOCKED IN PRE-LAUNCH)
                     </button>
                   </div>
                 </div>

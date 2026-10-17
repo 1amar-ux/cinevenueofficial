@@ -2646,6 +2646,7 @@ export default function AdminLayout() {
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Client Account Email</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Joined Date</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Mobile Contact</th>
+                          <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">CineCoins Wallet</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Access Clearance</th>
                           <th className="pb-3 font-bold uppercase tracking-wider text-[10px] text-right">Operations</th>
                         </tr>
@@ -2658,6 +2659,15 @@ export default function AdminLayout() {
                               <td className="py-3 font-bold text-white">{u.email}</td>
                               <td className="py-3 text-[11px]">{u.joinedAt || "2026-07-01"}</td>
                               <td className="py-3 text-[11px]">{u.mobile || "+91 98765 43210"}</td>
+                              <td className="py-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-amber-400 font-bold text-[11px]">500 CC</span>
+                                  <span className="px-1.5 py-0.5 text-[8px] rounded font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 tracking-wider">
+                                    PAUSED
+                                  </span>
+                                </div>
+                                <span className="text-[9px] text-text-muted block">Wallet actions paused</span>
+                              </td>
                               <td className="py-3">
                                 <span className="px-2 py-0.5 text-[9px] rounded font-bold bg-emerald-500/10 text-emerald-400">
                                   Access Allowed
