@@ -121,6 +121,12 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
               My Account
             </button>
             <button
+              onClick={() => window.location.href = "/settings"}
+              className="hover:text-gold transition-colors cursor-pointer"
+            >
+              Settings
+            </button>
+            <button
               onClick={() => window.location.href = "/submit-proposal"}
               className="hover:text-gold transition-colors cursor-pointer text-text-primary font-semibold"
             >

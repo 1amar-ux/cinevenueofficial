@@ -210,6 +210,17 @@ export default function Navbar({
             <ThemeToggle variant="dropdown" />
           </div>
 
+          {/* Settings Shortcut */}
+          <button
+            type="button"
+            onClick={() => window.location.href = "/settings"}
+            className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold transition-all cursor-pointer shadow-xs dark:shadow-none"
+            title="Application Settings"
+            aria-label="Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </button>
+
           {/* User Member Actions */}
           {userEmail ? (
             <div className="flex items-center gap-2">
@@ -242,17 +253,6 @@ export default function Navbar({
               >
                 <Ticket className="w-3 h-3 text-slate-950" />
                 <span>My Passes</span>
-              </button>
-
-              {/* Settings Shortcut */}
-              <button
-                type="button"
-                onClick={() => window.location.href = "/settings"}
-                className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold transition-all cursor-pointer shadow-xs dark:shadow-none"
-                title="Application Settings"
-                aria-label="Settings"
-              >
-                <Settings className="w-3.5 h-3.5" />
               </button>
 
               {/* Profile Avatar Pill */}
