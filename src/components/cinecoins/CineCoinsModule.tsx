@@ -75,9 +75,9 @@ export default function CineCoinsModule({
   const [sendSuccessMsg, setSendSuccessMsg] = useState<string | null>(null);
 
   // Profile Completion local state
-  const [profileName, setProfileName] = useState<string>("CineVenue Member");
-  const [profileDob, setProfileDob] = useState<string>(userWallet?.dob || "1998-08-15");
-  const [profileMobile, setProfileMobile] = useState<string>("+91 98765 43210");
+  const [profileName, setProfileName] = useState<string>("");
+  const [profileDob, setProfileDob] = useState<string>(userWallet?.dob || "");
+  const [profileMobile, setProfileMobile] = useState<string>("");
 
   // Security Settings
   const [txPin, setTxPin] = useState<string>(userWallet?.transactionPin || "1234");

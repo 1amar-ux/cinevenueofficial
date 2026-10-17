@@ -607,7 +607,7 @@ export default function SettingsPage({
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="e.g. Amarnath Reddy"
+                      placeholder="Enter your full name"
                       className="w-full bg-[#18181C] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold transition-colors"
                     />
                   </div>
@@ -620,7 +620,7 @@ export default function SettingsPage({
                       type="tel"
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      placeholder="+91 98765 43210"
+                      placeholder="Enter mobile number"
                       className="w-full bg-[#18181C] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold transition-colors"
                     />
                     <p className="text-[10px] text-text-muted mt-1">Used for instant SMS ticket delivery at the cinema box office.</p>

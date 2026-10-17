@@ -54,9 +54,9 @@ export default function MyAccountModule({
   const [photoUrl, setPhotoUrl] = useState("");
 
   // Settings Form State
-  const [profileName, setProfileName] = useState(userEmail ? userEmail.split("@")[0] : "CineVenue Member");
-  const [profilePhone, setProfilePhone] = useState("+91 98765 43210");
-  const [profileDob, setProfileDob] = useState("1998-05-15");
+  const [profileName, setProfileName] = useState(userEmail ? userEmail.split("@")[0] : "");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileDob, setProfileDob] = useState("");
   const [isSavedSettings, setIsSavedSettings] = useState(false);
 
   // User-specific filtering
@@ -539,7 +539,7 @@ export default function MyAccountModule({
                 <input
                   type="tel"
                   required
-                  placeholder="+91 98765 43210"
+                  placeholder="Enter mobile number"
                   value={applicantPhone}
                   onChange={(e) => setApplicantPhone(e.target.value)}
                   className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-gold"
