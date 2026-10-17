@@ -8,7 +8,13 @@ export default function GlobalBackButton() {
 
   // Hide on the root / landing page and subwebsite dashboards with dedicated sidebars
   const pathname = location.pathname.trim();
-  if (pathname === "/" || pathname === "" || pathname.startsWith("/productions") || pathname.startsWith("/film-production")) {
+  if (
+    pathname === "/" ||
+    pathname === "" ||
+    pathname.startsWith("/productions") ||
+    pathname.startsWith("/film-production") ||
+    pathname.startsWith("/settings")
+  ) {
     return null;
   }
 

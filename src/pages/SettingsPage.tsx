@@ -226,14 +226,28 @@ export default function SettingsPage({
     setTimeout(() => setCopyFeedback(null), 2000);
   };
 
+  const getSectionTitle = (id: SettingsSectionId | null) => {
+    switch (id) {
+      case "account": return "Profile & Account";
+      case "notifications": return "Notifications";
+      case "location": return "Location & City";
+      case "appearance": return "Appearance";
+      case "privacy": return "Privacy & Security";
+      case "support": return "Help & Support";
+      case "terms": return "Terms & Policies";
+      case "about": return "About CineVenue";
+      default: return "";
+    }
+  };
+
   const sections = [
-    { id: "account", label: "Account & Profile", icon: User, desc: "Personal info, credentials, login" },
+    { id: "account", label: "Profile & Account", icon: User, desc: "Personal info, credentials, login" },
     { id: "notifications", label: "Notifications", icon: Bell, desc: "Ticket alerts, reminders, promos" },
     { id: "location", label: "Location & City", icon: MapPin, desc: "Preferred cinema city, GPS" },
     { id: "appearance", label: "Appearance", icon: Moon, desc: "Theme modes, display preferences" },
-    { id: "language", label: "Language", icon: Globe, desc: "Regional UI & audio preferences" },
     { id: "privacy", label: "Privacy & Security", icon: Shield, desc: "Permissions, policies, data rights" },
     { id: "support", label: "Help & Support", icon: HelpCircle, desc: "Concierge contact, FAQs, policies" },
+    { id: "terms", label: "Terms & Policies", icon: FileText, desc: "Terms of service, refund policy" },
     { id: "about", label: "About CineVenue", icon: Info, desc: `App v${APP_CONFIG.version}, build, legal` },
   ];
 
@@ -262,11 +276,13 @@ export default function SettingsPage({
             </button>
             <div className="flex items-center gap-2">
               <span className="font-cinevenue text-lg sm:text-xl font-bold tracking-wider text-white">
-                Settings
+                {activeSection ? getSectionTitle(activeSection) : "CineVenue"}
               </span>
-              <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/30">
-                {activeSection ? activeSection.toUpperCase() : "HUB"}
-              </span>
+              {activeSection && (
+                <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/30">
+                  {activeSection.toUpperCase()}
+                </span>
+              )}
             </div>
           </div>
 
@@ -369,7 +385,7 @@ export default function SettingsPage({
                         Location & City
                       </h3>
                       <p className="text-xs text-text-secondary truncate">
-                        Choose your preferred city {currentCity !== "All Cities" ? `• ${currentCity}` : ""}
+                        Choose your preferred city
                       </p>
                     </div>
                   </div>
@@ -564,13 +580,13 @@ export default function SettingsPage({
                   )}
                 </div>
 
-                <div className="border-b border-white/10 pb-4">
-                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                    <User className="w-5 h-5 text-gold" />
-                    Account & Profile Details
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-1">
-                    Manage your personal details, registered mobile, and login security credentials.
+                <div className="border-b border-white/10 pb-3">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <User className="w-4 h-4 text-gold" />
+                    Personal Details & Mobile
+                  </h3>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Update your display name and contact number for ticket receipts.
                   </p>
                 </div>
 
@@ -594,23 +610,6 @@ export default function SettingsPage({
                       placeholder="e.g. Amarnath Reddy"
                       className="w-full bg-[#18181C] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold transition-colors"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider font-bold text-text-secondary mb-1.5">
-                      Registered Email Address
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        value={user?.email || "Not signed in"}
-                        disabled
-                        className="w-full bg-[#141418] border border-white/5 rounded-xl px-4 py-2.5 text-sm text-text-muted cursor-not-allowed"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/20">
-                        Primary
-                      </span>
-                    </div>
                   </div>
 
                   <div>
@@ -931,51 +930,7 @@ export default function SettingsPage({
             </div>
           )}
 
-          {/* 5. LANGUAGE */}
-          {activeSection === "language" && (
-            <div className="space-y-6 animate-fade-in">
-              <div className="border-b border-white/10 pb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-gold" />
-                  Language & Regional Settings
-                </h2>
-                <p className="text-xs text-text-secondary mt-1">
-                  Active application language and regional cinema audio tracks.
-                </p>
-              </div>
-
-              <div className="bg-[#18181C] border border-white/10 rounded-xl p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold text-white">English (India)</h3>
-                      <span className="text-[10px] uppercase font-mono font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/30">
-                        Active Default
-                      </span>
-                    </div>
-                    <p className="text-xs text-text-secondary">
-                      The core CineVenue application UI, ticketing workflow, and payment gateway are formatted in English (India).
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-full bg-gold text-black shrink-0">
-                    <Check className="w-4 h-4" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" />
-                  Movie & Event Audio Track Selection
-                </h4>
-                <p className="text-xs text-text-secondary leading-relaxed">
-                  Regional language preferences (Telugu, Hindi, Tamil, Kannada, Malayalam, English) are chosen per screening during movie seat booking. Subtitle availability is indicated on the showtime badges.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 6. PRIVACY & SECURITY */}
+          {/* 5. PRIVACY & SECURITY */}
           {activeSection === "privacy" && (
             <div className="space-y-6 animate-fade-in">
               <div className="border-b border-white/10 pb-4">
@@ -988,13 +943,11 @@ export default function SettingsPage({
                 </p>
               </div>
 
-              {/* Legal Documentation Links */}
+              {/* Data Protection Documentation */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { title: "Privacy Policy", path: "/privacy", desc: "Data collection, storage & encryption" },
-                  { title: "Terms & Conditions", path: "/terms", desc: "User rights, booking conditions" },
-                  { title: "Refund & Cancellation Policy", path: "/refund-policy", desc: "Ticket refund eligibility" },
-                  { title: "User Agreement", path: "/user-agreement", desc: "Acceptable use and platform guidelines" },
+                  { title: "Data Privacy Policy", path: "/legal?tab=privacy", desc: "DPDP Act 2023 encryption, storage & patron data rights" },
+                  { title: "User Data Protection Terms", path: "/legal?tab=terms", desc: "Digital data processing, account security & guidelines" },
                 ].map(({ title, path, desc }) => (
                   <button
                     key={title}
