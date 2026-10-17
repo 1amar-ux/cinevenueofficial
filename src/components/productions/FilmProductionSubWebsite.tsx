@@ -57,6 +57,7 @@ import MediaPromotionsSection from "./MediaPromotionsSection";
 import ApplicationFormsHubModal from "./ApplicationFormsHubModal";
 import FilmProductionHub from "../film-production/FilmProductionHub";
 import CineVenueFilmAdminTab from "../film-production/CineVenueFilmAdminTab";
+import { ProposalSubmitForm } from "../proposals/ProposalSubmitForm";
 
 interface FilmProductionSubWebsiteProps {
   userEmail?: string | null;
@@ -384,19 +385,27 @@ export default function FilmProductionSubWebsite({
 
       {/* DYNAMIC MODULE RENDERING */}
       {activeModule === "events" && (
-        <EventManagementSection
-          requests={eventRequests}
-          publicEvents={publicEvents}
-          artistRequests={artistRequests}
-          sponsorshipRequests={sponsorshipRequests}
-          portfolioItems={eventPortfolio}
-          onSubmitRequest={handleAddEventRequest}
-          onSubmitArtistRequest={handleAddArtistRequest}
-          onSubmitSponsorshipRequest={handleAddSponsorshipRequest}
-          onUpdateUserRequestResponse={handleUpdateUserRequestResponse}
-          onBookTickets={onBookTickets}
-          userEmail={userEmail}
-        />
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 animate-fade-in">
+          <div className="text-center space-y-2 pb-2">
+            <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-gold bg-gold/10 px-3 py-1 rounded-full border border-gold/30">
+              EVENT MANAGEMENT & PRODUCTION
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+              Event Management Proposal Form
+            </h2>
+            <p className="text-xs sm:text-sm text-white/60 max-w-2xl mx-auto">
+              Submit your requirements for movie audio launches, pre-release galas, arena concerts, and corporate productions.
+            </p>
+          </div>
+          <div className="bg-[#0D0D12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl">
+            <ProposalSubmitForm
+              userEmail={userEmail || ""}
+              userName={userEmail ? userEmail.split("@")[0] : ""}
+              initialCustomerType="Event Organizer"
+              initialServiceType="Pre-Release Event"
+            />
+          </div>
+        </div>
       )}
 
       {activeModule === "media" && (

@@ -7,6 +7,7 @@ import EventManagementHub from "../components/events/EventManagementHub";
 import FilmProductionHub from "../components/film-production/FilmProductionHub";
 import CineVenueLiveBanner from "../components/advertising/CineVenueLiveBanner";
 import ThemeToggle from "../components/ThemeToggle";
+import { ProposalSubmitForm } from "../components/proposals/ProposalSubmitForm";
 import { 
   Film, Sparkles, Megaphone, Ticket, Shield, Mail, Phone, Users, 
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
@@ -599,7 +600,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               ["Movie Booking", "/booking"],
               ["Event Booking", "/events"],
               ["Film Production", "/productions"],
-              ["Event Management", "/events"],
+              ["Event Management", "/event-management"],
               ["Brand Publicity", "/proposals"],
               ["CineCoins Loyalty", "/cinecoins"],
               ["About", "#contact"],
@@ -889,7 +890,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             </div>
             <div className="pt-6">
               <button
-                onClick={() => navigate("/events")}
+                onClick={() => navigate("/event-management")}
                 className={`w-full py-2.5 text-[9px] uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md border-none font-extrabold ${
                   (serviceControl?.eventManagement?.status ?? true)
                     ? "bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-[#D4AF37]/25"
@@ -2086,555 +2087,45 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
             )}
 
             {activeDivision === "events" && (serviceControl?.eventManagement?.status !== false) && (
-              <div className="space-y-8 text-left">
-                {/* EVENT MANAGEMENT SUB-WEBSITE HEADER BAR */}
-                <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-6 md:p-8 space-y-6 shadow-2xl">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-white/10">
-                    <div className="flex items-center gap-4">
+              <div className="space-y-6 text-left animate-fade-in">
+                {/* Event Management Header Bar */}
+                <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-6 md:p-8 space-y-4 shadow-2xl">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                    <div className="flex items-center gap-3.5">
                       <CineVenueLogo size="md" />
                       <div>
-                        <div className="flex flex-wrap items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">
-                            Cinevenue Event Management Portal
+                            Event Management & Production
                           </h2>
                           <span className="px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-400 bg-amber-950/80 border border-amber-500/30 rounded-md font-mono">
-                            FULLSCREEN SUB-SITE
+                            PROPOSAL ONLY
                           </span>
                         </div>
                         <p className="text-xs text-white/50 mt-1 font-light">
-                          Pre-Release Launches &middot; Audio Meets &middot; Stadium Concerts &middot; Celebrity Management
+                          Pre-Release Launches • Audio Meets • Stadium Concerts • Celebrity Galas
                         </p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3 w-full lg:w-auto">
-                      <button
-                        onClick={() => onOpenAuth?.("signin")}
-                        className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        <UserCheck className="w-4 h-4 text-amber-400" />
-                        <span>Sign In</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveDivision("none")}
-                        className="px-4 py-2.5 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-rose-500/20 flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <X className="w-4 h-4 text-rose-400" />
-                        <span>Exit Event Management</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* SUB-SITE NAVIGATION TABS */}
-                  <div className="flex flex-wrap items-center gap-2.5 pt-2">
-                    {[
-                      { id: "portfolio", label: "EVENT SERVICES PORTFOLIO", icon: "✨ 🎤" },
-                      { id: "gallery", label: "EVENT GALLERY", icon: "🖼️ 🖼️" },
-                      { id: "quote", label: "REQUEST A CUSTOM QUOTE", icon: "📑 📝" }
-                    ].map(tab => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setEventPortalTab(tab.id as any)}
-                        className={`px-5 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                          eventPortalTab === tab.id
-                            ? "bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-lg shadow-red-600/30 border border-red-500 font-extrabold"
-                            : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 hover:text-white"
-                        }`}
-                      >
-                        <span>{tab.icon}</span>
-                        <span>{tab.label}</span>
-                      </button>
-                    ))}
+                    <button
+                      onClick={() => setActiveDivision("none")}
+                      className="px-4 py-2 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-rose-500/20 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                    >
+                      <X className="w-4 h-4 text-rose-400" />
+                      <span>Close</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* TAB 1: EVENT SERVICES PORTFOLIO */}
-                {eventPortalTab === "portfolio" && (
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-amber-400 text-xs font-mono uppercase tracking-widest font-bold">
-                        <Sparkles className="w-4 h-4 animate-pulse" />
-                        <span>Comprehensive Production Services</span>
-                      </div>
-                      <h3 className="font-display text-3xl font-light text-white italic">
-                        Full-Spectrum <span className="text-[#D4AF37] not-italic font-normal">Event Management</span> Services
-                      </h3>
-                      <p className="text-xs text-white/60 font-light max-w-2xl">
-                        From movie pre-release events to stadium concerts and corporate galas. We handle turnkey execution across India.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[
-                        {
-                          id: "pre_release",
-                          title: "Pre-Release Events",
-                          icon: "🎬",
-                          description: "Grand scale audio & trailer launches in stadium venues with LED stage setups & VIP security."
-                        },
-                        {
-                          id: "audio_launches",
-                          title: "Audio Launches",
-                          icon: "🎵",
-                          description: "Live music releases featuring top composers, orchestra performances, and star cast interactions."
-                        },
-                        {
-                          id: "movie_promotions",
-                          title: "Movie Promotions",
-                          icon: "📣",
-                          description: "Pan-India city tours, mall visits, college flashmobs, and press conference management."
-                        },
-                        {
-                          id: "success_meets",
-                          title: "Success Meets",
-                          icon: "🏆",
-                          description: "Celebratory star nights, shield distribution, media Q&A, and red carpet photo calls."
-                        },
-                        {
-                          id: "celebrity_shows",
-                          title: "Celebrity Shows",
-                          icon: "⭐",
-                          description: "Exclusive star dance performances, celebrity meets, comedy nights, and fan park events."
-                        },
-                        {
-                          id: "live_concerts",
-                          title: "Live Concerts",
-                          icon: "🎤",
-                          description: "Massive stadium concerts, international tour logistics, line array audio & light show production."
-                        },
-                        {
-                          id: "musical_nights",
-                          title: "Musical Nights",
-                          icon: "🎶",
-                          description: "Intimate playback singer evenings, classical fusion concerts, and unplugged acoustic sessions."
-                        },
-                        {
-                          id: "corporate_events",
-                          title: "Corporate Events",
-                          icon: "🏢",
-                          description: "Annual general meetings, product unveilings, award ceremonies, and team retreats."
-                        },
-                        {
-                          id: "college_fests",
-                          title: "College Fests",
-                          icon: "🎓",
-                          description: "Campus pro-nights, battle of the bands, star headliner concerts, and youth cultural festivals."
-                        },
-                        {
-                          id: "brand_activations",
-                          title: "Brand Activations",
-                          icon: "🏷️",
-                          description: "Experiential marketing booths, interactive VR setups, and promotional pop-up installations."
-                        },
-                        {
-                          id: "wedding_entertainment",
-                          title: "Wedding Entertainment",
-                          icon: "💍",
-                          description: "Royal sangeet choreography, celebrity guest appearances, and bespoke musical band bookings."
-                        }
-                      ].map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-[#0D0E13] border border-white/10 hover:border-amber-500/40 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col justify-between space-y-4 group"
-                        >
-                          <div className="space-y-3">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                              {item.icon}
-                            </div>
-                            <h4 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                              {item.title}
-                            </h4>
-                            <p className="text-xs text-white/60 leading-relaxed font-light">
-                              {item.description}
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              setEventQuoteForm(prev => ({ ...prev, eventType: item.title }));
-                              setEventPortalTab("quote");
-                            }}
-                            className="pt-4 border-t border-white/5 text-amber-400 hover:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer group-hover:translate-x-1"
-                          >
-                            <span>→ Request Quote</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* B2B ARENA STAGE SETUP CONFIGURATOR */}
-                    <div className="mt-12 bg-white/[0.02] border border-white/10 rounded-2xl p-6 md:p-8 space-y-6">
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block font-mono">B2B BUDGET ESTIMATOR</span>
-                        <h4 className="font-display text-2xl font-light text-white italic">
-                          Arena & Stage Setup <span className="text-[#D4AF37] not-italic font-normal">Configurator</span>
-                        </h4>
-                        <p className="text-xs text-white/60 leading-relaxed font-light max-w-xl">
-                          Calculate instant budget estimates for grand audio launches, press circuits, and stadium galas.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">1. Seating Capacity</label>
-                          <select
-                            value={stageCapacity}
-                            onChange={(e) => setStageCapacity(e.target.value)}
-                            className="w-full bg-black border border-white/10 focus:border-[#D4AF37] rounded-xl p-3 text-xs text-white focus:outline-none"
-                          >
-                            <option value="500">500 Attendees (Multiplex Theater)</option>
-                            <option value="1200">1,200 Attendees (Large Film Screen)</option>
-                            <option value="3000">3,000 Attendees (Arena Concert)</option>
-                            <option value="8000">8,000 Attendees (Stadia Mega-Launch)</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">2. LED Wall & Stage FX</label>
-                          <select
-                            value={ledConfig}
-                            onChange={(e) => setLedConfig(e.target.value)}
-                            className="w-full bg-black border border-white/10 focus:border-[#D4AF37] rounded-xl p-3 text-xs text-white focus:outline-none"
-                          >
-                            <option value="Standard 4K Stage">Standard 4K Backdrop Setup</option>
-                            <option value="Panoramic LED Arena">360° Panoramic LED Curved Wall</option>
-                            <option value="Minimal Classic Setup">Classic Physical Set & Lighting</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">3. Guest Attendance Tier</label>
-                          <select
-                            value={celebrityTier}
-                            onChange={(e) => setCelebrityTier(e.target.value)}
-                            className="w-full bg-black border border-white/10 focus:border-[#D4AF37] rounded-xl p-3 text-xs text-white focus:outline-none"
-                          >
-                            <option value="A-List Elite">Superstars & Elite Critics</option>
-                            <option value="Star Cast">Film Main Characters</option>
-                            <option value="Director Panel">Technical Panel & Media Only</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="bg-gradient-to-r from-amber-500/10 to-transparent border-l-4 border-[#D4AF37] p-5 rounded-r-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="text-left space-y-1">
-                          <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest block font-mono">ESTIMATED LAUNCH BUDGET</span>
-                          <p className="text-3xl font-display font-bold text-white">
-                            ₹{calculateEventBudget().toLocaleString("en-IN")}
-                          </p>
-                          <p className="text-[10px] text-white/40">Includes legal permissions, high-density audio setups, security personnel, and host costs.</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setEventQuoteForm(prev => ({
-                              ...prev,
-                              productionNotes: `Budget estimation requirement: Stage Capacity ${stageCapacity}, ${ledConfig}, ${celebrityTier} guests. Estimated budget: ₹${calculateEventBudget().toLocaleString("en-IN")}`
-                            }));
-                            setEventPortalTab("quote");
-                          }}
-                          className="px-6 py-3 bg-[#D4AF37] hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all text-center cursor-pointer shadow-lg shadow-amber-500/20"
-                        >
-                          Book Event Execution
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* TAB 2: EVENT GALLERY */}
-                {eventPortalTab === "gallery" && (
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-rose-400 text-xs font-mono uppercase tracking-widest font-bold">
-                        <Sparkles className="w-4 h-4 animate-pulse" />
-                        <span>Production Portfolio Showcase</span>
-                      </div>
-                      <h3 className="font-display text-3xl font-light text-white italic">
-                        Cinevenue <span className="text-rose-400 not-italic font-normal">Live Event Gallery</span>
-                      </h3>
-                      <p className="text-xs text-white/60 font-light max-w-2xl">
-                        Glance at our stadium setups, stage lighting setups, and star-studded gatherings.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[
-                        {
-                          id: "gal_1",
-                          title: "Grand Pre-Release Event",
-                          location: "📍 Hyderabad Stadium",
-                          image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1000&q=80"
-                        },
-                        {
-                          id: "gal_2",
-                          title: "Live Star Concert Arena",
-                          location: "📍 Bengaluru Beach Ground",
-                          image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80"
-                        },
-                        {
-                          id: "gal_3",
-                          title: "Audio Launch Light Show",
-                          location: "📍 Chennai Trade Centre",
-                          image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1000&q=80"
-                        },
-                        {
-                          id: "gal_4",
-                          title: "Success Meet Star Gala",
-                          location: "📍 Vijayawada Convention Hall",
-                          image: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1000&q=80"
-                        },
-                        {
-                          id: "gal_5",
-                          title: "College Cultural Pro-Night",
-                          location: "📍 Vizag Campus Ground",
-                          image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1000&q=80"
-                        },
-                        {
-                          id: "gal_6",
-                          title: "Corporate Award Ceremony",
-                          location: "📍 HITEX Exhibition Centre, Hyderabad",
-                          image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=80"
-                        }
-                      ].map((item) => (
-                        <div
-                          key={item.id}
-                          onClick={() => setGalleryModalItem(item)}
-                          className="group relative bg-[#0D0E13] border border-white/10 rounded-2xl overflow-hidden cursor-pointer hover:border-rose-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-rose-500/10"
-                        >
-                          <div className="h-56 w-full overflow-hidden relative">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-                            <span className="absolute top-3 right-3 px-3 py-1 bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-300 rounded-lg border border-amber-500/30 font-mono">
-                              {item.location}
-                            </span>
-                          </div>
-
-                          <div className="p-5 space-y-2 relative z-10">
-                            <h4 className="text-lg font-bold text-white group-hover:text-rose-400 transition-colors">
-                              {item.title}
-                            </h4>
-                            <p className="text-xs text-white/50 flex items-center gap-1">
-                              <span>Click to enlarge stage production view</span>
-                              <ArrowRight className="w-3 h-3 text-rose-400 group-hover:translate-x-1 transition-transform" />
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* TAB 3: REQUEST A CUSTOM QUOTE FORM */}
-                {eventPortalTab === "quote" && (
-                  <div className="bg-[#0B0C10] border border-white/10 rounded-2xl p-6 md:p-10 space-y-8 shadow-2xl max-w-4xl mx-auto">
-                    <div className="space-y-2 text-left">
-                      <div className="flex items-center gap-2 text-red-400 text-xs font-mono uppercase tracking-widest font-bold">
-                        <FileText className="w-4 h-4" />
-                        <span>Direct B2B Inquiry Portal</span>
-                      </div>
-                      <h3 className="font-display text-3xl font-bold text-white">
-                        Request Event Management Quote
-                      </h3>
-                      <p className="text-xs text-white/60 font-light">
-                        Fill in your event details to receive a customized proposal and budget estimation.
-                      </p>
-                    </div>
-
-                    {eventQuoteSubmitted ? (
-                      <div className="p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-4">
-                        <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto animate-bounce" />
-                        <div className="space-y-1">
-                          <h4 className="text-xl font-bold text-emerald-300">
-                            Quote Request Submitted Successfully!
-                          </h4>
-                          <p className="text-xs text-white/70 max-w-md mx-auto">
-                            Thank you, <strong className="text-white">{eventQuoteForm.organizerName || "Organizer"}</strong>. Your event request reference ID is <strong className="text-amber-400 font-mono">{eventQuoteRefId}</strong>.
-                          </p>
-                        </div>
-                        <p className="text-xs text-emerald-400/80 bg-black/40 p-3 rounded-xl inline-block font-mono border border-emerald-500/20">
-                          Our Event Line Production Director will contact you at {eventQuoteForm.contactPhone || "your phone"} within 2 hours.
-                        </p>
-                        <div className="pt-2">
-                          <button
-                            onClick={() => setEventQuoteSubmitted(false)}
-                            className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                          >
-                            Submit Another Request
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          if (!eventQuoteForm.organizerName || !eventQuoteForm.contactPhone || !eventQuoteForm.contactEmail) {
-                            alert("Please fill in all required fields (*).");
-                            return;
-                          }
-
-                          const refId = `EV-QUOTE-${Math.floor(100000 + Math.random() * 900000)}`;
-                          setEventQuoteRefId(refId);
-
-                          if (onAddServiceProposal) {
-                            onAddServiceProposal({
-                              subWebsiteKey: "eventManagement",
-                              subWebsiteName: "Event Management Sub-Website",
-                              customerName: eventQuoteForm.organizerName,
-                              customerEmail: eventQuoteForm.contactEmail,
-                              customerPhone: eventQuoteForm.contactPhone,
-                              projectTitleOrMovie: `${eventQuoteForm.eventType} - ${eventQuoteForm.targetCityVenue || "India"}`,
-                              budgetOrRequirement: `Audience: ${eventQuoteForm.audienceSize || "Standard"}, Date: ${eventQuoteForm.tentativeDate || "TBD"}`,
-                              message: eventQuoteForm.productionNotes || "Event management quote requested."
-                            });
-                          }
-
-                          setEventQuoteSubmitted(true);
-                        }}
-                        className="space-y-6 text-left"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* ORGANIZER NAME / COMPANY */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                              ORGANIZER NAME / COMPANY <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={eventQuoteForm.organizerName}
-                              onChange={(e) => setEventQuoteForm(prev => ({ ...prev, organizerName: e.target.value }))}
-                              placeholder="e.g. Production Company"
-                              className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                            />
-                          </div>
-
-                          {/* EVENT TYPE Dropdown */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                              EVENT TYPE <span className="text-red-400">*</span>
-                            </label>
-                            <select
-                              value={eventQuoteForm.eventType}
-                              onChange={(e) => setEventQuoteForm(prev => ({ ...prev, eventType: e.target.value }))}
-                              className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white focus:outline-none transition-all"
-                            >
-                              <option value="Pre-Release Events">Pre-Release Events</option>
-                              <option value="Audio Launches">Audio Launches</option>
-                              <option value="Movie Promotions">Movie Promotions</option>
-                              <option value="Success Meets">Success Meets</option>
-                              <option value="Celebrity Shows">Celebrity Shows</option>
-                              <option value="Live Concerts">Live Concerts</option>
-                              <option value="Musical Nights">Musical Nights</option>
-                              <option value="Corporate Events">Corporate Events</option>
-                              <option value="College Fests">College Fests</option>
-                              <option value="Brand Activations">Brand Activations</option>
-                              <option value="Wedding Entertainment">Wedding Entertainment</option>
-                            </select>
-                          </div>
-
-                          {/* EXPECTED AUDIENCE SIZE */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                              EXPECTED AUDIENCE SIZE
-                            </label>
-                            <input
-                              type="text"
-                              value={eventQuoteForm.audienceSize}
-                              onChange={(e) => setEventQuoteForm(prev => ({ ...prev, audienceSize: e.target.value }))}
-                              placeholder="e.g. 10,000 People"
-                              className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                            />
-                          </div>
-
-                          {/* TARGET CITY / VENUE */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                              TARGET CITY / VENUE
-                            </label>
-                            <input
-                              type="text"
-                              value={eventQuoteForm.targetCityVenue}
-                              onChange={(e) => setEventQuoteForm(prev => ({ ...prev, targetCityVenue: e.target.value }))}
-                              placeholder="e.g. Gachibowli Stadium, Hyderabad"
-                              className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                            />
-                          </div>
-
-                          {/* TENTATIVE DATE */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                              TENTATIVE DATE
-                            </label>
-                            <input
-                              type="text"
-                              value={eventQuoteForm.tentativeDate}
-                              onChange={(e) => setEventQuoteForm(prev => ({ ...prev, tentativeDate: e.target.value }))}
-                              placeholder="e.g. 20 September 2026"
-                              className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                            />
-                          </div>
-
-                          {/* CONTACT PHONE */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                              CONTACT PHONE <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={eventQuoteForm.contactPhone}
-                              onChange={(e) => setEventQuoteForm(prev => ({ ...prev, contactPhone: e.target.value }))}
-                              placeholder="+91 98765 43210"
-                              className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
-                            />
-                          </div>
-                        </div>
-
-                        {/* CONTACT EMAIL */}
-                        <div className="space-y-2">
-                          <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                            CONTACT EMAIL <span className="text-red-400">*</span>
-                          </label>
-                          <input
-                            type="email"
-                            required
-                            value={eventQuoteForm.contactEmail}
-                            onChange={(e) => setEventQuoteForm(prev => ({ ...prev, contactEmail: e.target.value }))}
-                            placeholder="events@company.com"
-                            className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
-                          />
-                        </div>
-
-                        {/* SPECIFIC REQUIREMENTS / PRODUCTION NOTES */}
-                        <div className="space-y-2">
-                          <label className="text-[11px] font-bold text-white/80 uppercase tracking-wider block">
-                            SPECIFIC REQUIREMENTS / PRODUCTION NOTES
-                          </label>
-                          <textarea
-                            rows={4}
-                            value={eventQuoteForm.productionNotes}
-                            onChange={(e) => setEventQuoteForm(prev => ({ ...prev, productionNotes: e.target.value }))}
-                            placeholder="Specify requirements for LED screens, stage dimensions, VIP celebrity security, fireworks, line array sound, or audio release setups..."
-                            className="w-full bg-black/60 border border-white/15 focus:border-red-500 rounded-xl p-4 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all leading-relaxed"
-                          />
-                        </div>
-
-                        {/* SUBMIT BUTTON */}
-                        <button
-                          type="submit"
-                          className="w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-sm uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <Send className="w-5 h-5 text-white" />
-                          <span>🚀 SUBMIT QUOTE REQUEST</span>
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                )}
+                {/* The Proposal Form Only */}
+                <div className="bg-[#0D0D12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl">
+                  <ProposalSubmitForm
+                    userEmail={userEmail || ""}
+                    userName={userEmail ? userEmail.split("@")[0] : ""}
+                    initialCustomerType="Event Organizer"
+                    initialServiceType="Pre-Release Event"
+                  />
+                </div>
               </div>
             )}
 

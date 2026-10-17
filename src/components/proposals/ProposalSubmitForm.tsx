@@ -34,6 +34,8 @@ interface ProposalSubmitFormProps {
   userEmail?: string;
   userName?: string;
   userPhone?: string;
+  initialCustomerType?: ProposalCustomerType;
+  initialServiceType?: ProposalServiceType;
   onSuccess?: (proposal: Proposal) => void;
   onCancel?: () => void;
   isOpenAsModal?: boolean;
@@ -85,20 +87,22 @@ export const ProposalSubmitForm: React.FC<ProposalSubmitFormProps> = ({
   userEmail = '',
   userName = '',
   userPhone = '',
+  initialCustomerType,
+  initialServiceType,
   onSuccess,
   onCancel,
   isOpenAsModal = false
 }) => {
   // Form State
-  const [customerType, setCustomerType] = useState<ProposalCustomerType>('Brand / Company');
-  const [fullName, setFullName] = useState('');
+  const [customerType, setCustomerType] = useState<ProposalCustomerType>(initialCustomerType || 'Event Organizer');
+  const [fullName, setFullName] = useState(userName || '');
   const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState(userPhone || '');
   const [email, setEmail] = useState(userEmail || '');
   const [city, setCity] = useState('Hyderabad');
   const [contactMethod, setContactMethod] = useState<ProposalContactMethod>('WhatsApp');
   
-  const [serviceType, setServiceType] = useState<ProposalServiceType>('Pre-Release Event');
+  const [serviceType, setServiceType] = useState<ProposalServiceType>(initialServiceType || 'Pre-Release Event');
   const [projectName, setProjectName] = useState('');
   const [location, setLocation] = useState('Hyderabad');
   const [preferredDate, setPreferredDate] = useState('');
