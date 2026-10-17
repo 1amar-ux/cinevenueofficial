@@ -26,7 +26,13 @@ import {
   Ticket,
   Smartphone,
   Eye,
-  Copy
+  Copy,
+  Settings,
+  Palette,
+  Headphones,
+  FileText,
+  ShieldCheck,
+  Crosshair
 } from "lucide-react";
 import CineVenueLogo from "../components/CineVenueLogo";
 import { useTheme, ThemeMode } from "../context/ThemeContext";
@@ -67,10 +73,27 @@ export default function SettingsPage({
   const { themeMode, setThemeMode } = useTheme();
   const { user, isAuthenticated, logout, forgotPassword } = useContext(AuthContext);
 
-  // Active Section / Tab
-  const [activeSection, setActiveSection] = useState<
-    "account" | "notifications" | "location" | "appearance" | "language" | "privacy" | "support" | "about"
-  >("account");
+  type SettingsSectionId =
+    | "account"
+    | "notifications"
+    | "location"
+    | "appearance"
+    | "privacy"
+    | "support"
+    | "terms"
+    | "about";
+
+  // Active Section / Tab (null displays the master settings menu matching the user's reference format)
+  const [activeSection, setActiveSection] = useState<SettingsSectionId | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const sec = params.get("section") || params.get("tab");
+      if (sec && ["account", "notifications", "location", "appearance", "privacy", "support", "terms", "about"].includes(sec)) {
+        return sec as SettingsSectionId;
+      }
+    } catch {}
+    return null;
+  });
 
   // City state
   const [currentCity, setCurrentCity] = useState<string>(() => {
@@ -218,12 +241,14 @@ export default function SettingsPage({
     <div className="min-h-screen bg-[#0A0A0B] text-[#F3F4F6] font-sans flex flex-col selection:bg-gold selection:text-black">
       {/* Top Header with Safe Area Inset Support */}
       <header className="sticky top-0 z-30 bg-[#0A0A0B]/95 backdrop-blur-xl border-b border-white/10 pt-[max(env(safe-area-inset-top),0px)] shadow-lg shadow-black/40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => {
-                if (window.history.length > 1) {
+                if (activeSection !== null) {
+                  setActiveSection(null);
+                } else if (window.history.length > 1) {
                   navigate(-1);
                 } else {
                   navigate("/");
@@ -240,7 +265,7 @@ export default function SettingsPage({
                 Settings
               </span>
               <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/30">
-                Hub
+                {activeSection ? activeSection.toUpperCase() : "HUB"}
               </span>
             </div>
           </div>
@@ -258,95 +283,298 @@ export default function SettingsPage({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 sm:py-8 space-y-6">
         
-        {/* User Identity Hero Banner */}
-        <div className="bg-gradient-to-r from-[#121215] to-[#18181C] border border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold/30 to-gold/10 border border-gold/40 flex items-center justify-center text-gold font-bold text-xl shadow-inner shrink-0">
-              {user?.name ? (
-                user.name.substring(0, 2).toUpperCase()
-              ) : user?.email ? (
-                user.email.substring(0, 2).toUpperCase()
-              ) : (
-                <User className="w-7 h-7 text-gold" />
-              )}
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-base sm:text-lg font-bold text-white">
-                  {user?.name || displayName || "CineVenue Guest User"}
-                </h1>
-                {isAuthenticated ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/30">
-                    <Check className="w-3 h-3" />
-                    VERIFIED
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
-                    GUEST
-                  </span>
-                )}
+        {/* ========================================================
+            MASTER SETTINGS SCREEN (EXACTLY MATCHING USER SCREENSHOT)
+            ======================================================== */}
+        {activeSection === null ? (
+          <div className="bg-[#121215] border border-white/10 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6 animate-fade-in">
+            {/* Header: Yellow/Gold rounded square icon + Title + Subtitle */}
+            <div className="flex items-center gap-3.5 pb-1">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#D4AF37] flex items-center justify-center text-black shadow-md shadow-[#D4AF37]/25 shrink-0">
+                <Settings className="w-6 h-6 text-black stroke-[2.2]" />
               </div>
-              <p className="text-xs text-text-secondary truncate max-w-md">
-                {user?.email || "Sign in to unlock movie rewards, CineCoins, and cloud ticket pass sync."}
-              </p>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Settings</h1>
+                <p className="text-xs sm:text-sm text-text-secondary">Customize your CineVenue experience</p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              
+              {/* GROUP 1: ACCOUNT */}
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#D4AF37] block px-1 mb-1">
+                  Account
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("account")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <User className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Profile & Account
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Personal details, password, sign-in and sign-out
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+              </div>
+
+              <div className="border-t border-white/5" />
+
+              {/* GROUP 2: PREFERENCES */}
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#D4AF37] block px-1 mb-1">
+                  Preferences
+                </span>
+
+                {/* Notifications */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("notifications")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <Bell className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Notifications
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Booking confirmations, reminders and promotions
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+
+                {/* Location & City */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("location")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <Crosshair className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Location & City
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Choose your preferred city {currentCity !== "All Cities" ? `• ${currentCity}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+
+                {/* Appearance */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("appearance")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <Palette className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Appearance
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Theme and display preferences
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+              </div>
+
+              <div className="border-t border-white/5" />
+
+              {/* GROUP 3: PRIVACY & SUPPORT */}
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#D4AF37] block px-1 mb-1">
+                  Privacy & Support
+                </span>
+
+                {/* Privacy & Security */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("privacy")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <ShieldCheck className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Privacy & Security
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Privacy policy, permissions and security options
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+
+                {/* Help & Support */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("support")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <Headphones className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Help & Support
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Contact support, FAQs and report a problem
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+
+                {/* Terms & Policies */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("terms")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <FileText className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        Terms & Policies
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        Terms of service, privacy policy and refund policy
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+
+                {/* About CineVenue */}
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("about")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-transparent hover:border-white/5"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <Info className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                        About CineVenue
+                      </h3>
+                      <p className="text-xs text-text-secondary truncate">
+                        App version and company information
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+              </div>
+
             </div>
           </div>
-
-          {!isAuthenticated && (
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenAuth) onOpenAuth("signin");
-                else navigate("/login");
-              }}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-black text-xs font-extrabold uppercase tracking-wider transition-all shadow-md shadow-gold/20 cursor-pointer border-none shrink-0"
-            >
-              Sign In / Register
-            </button>
-          )}
-        </div>
-
-        {/* Desktop/Tablet Horizontal Category Pills & Mobile Dropdown */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          {sections.map(({ id, label, icon: Icon }) => {
-            const isActive = activeSection === id;
-            return (
+        ) : (
+          /* ========================================================
+              DETAIL SUB-VIEW CONTAINER WITH BACK TO SETTINGS BUTTON
+              ======================================================== */
+          <div className="bg-[#121215] border border-white/10 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <button
-                key={id}
                 type="button"
-                onClick={() => setActiveSection(id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer border ${
-                  isActive
-                    ? "bg-gold text-black border-gold shadow-md shadow-gold/15"
-                    : "bg-[#121215] text-text-secondary border-white/5 hover:border-white/20 hover:text-white"
-                }`}
+                onClick={() => setActiveSection(null)}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#D4AF37] hover:text-white text-xs font-bold transition-all border border-white/10 cursor-pointer active:scale-95"
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-black" : "text-gold"}`} />
-                <span>{label}</span>
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Settings</span>
               </button>
-            );
-          })}
-        </div>
+              <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-text-muted">
+                {activeSection === "account" ? "Profile & Account" :
+                 activeSection === "notifications" ? "Notifications" :
+                 activeSection === "location" ? "Location & City" :
+                 activeSection === "appearance" ? "Appearance" :
+                 activeSection === "privacy" ? "Privacy & Security" :
+                 activeSection === "support" ? "Help & Support" :
+                 activeSection === "terms" ? "Terms & Policies" : "About CineVenue"}
+              </span>
+            </div>
 
-        {/* Section View Container */}
-        <div className="bg-[#121215] border border-white/10 rounded-2xl p-5 sm:p-8 shadow-2xl space-y-6">
+            {/* 1. ACCOUNT & PROFILE */}
+            {activeSection === "account" && (
+              <div className="space-y-6 animate-fade-in">
+                {/* User Identity Summary Header inside Account */}
+                <div className="bg-gradient-to-r from-white/[0.03] to-white/[0.01] border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold/30 to-gold/10 border border-gold/40 flex items-center justify-center text-gold font-bold text-lg shadow-inner shrink-0">
+                      {user?.name ? (
+                        user.name.substring(0, 2).toUpperCase()
+                      ) : user?.email ? (
+                        user.email.substring(0, 2).toUpperCase()
+                      ) : (
+                        <User className="w-6 h-6 text-gold" />
+                      )}
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-sm sm:text-base font-bold text-white">
+                          {user?.name || displayName || "CineVenue Guest User"}
+                        </h2>
+                        {isAuthenticated ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                            <Check className="w-3 h-3" />
+                            VERIFIED
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
+                            GUEST
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-text-secondary truncate max-w-sm">
+                        {user?.email || "Sign in to access VIP tickets and CineCoins rewards."}
+                      </p>
+                    </div>
+                  </div>
 
-          {/* 1. ACCOUNT & PROFILE */}
-          {activeSection === "account" && (
-            <div className="space-y-6 animate-fade-in">
-              <div className="border-b border-white/10 pb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <User className="w-5 h-5 text-gold" />
-                  Account & Profile Information
-                </h2>
-                <p className="text-xs text-text-secondary mt-1">
-                  Manage your personal details, verified mobile, and security credentials.
-                </p>
-              </div>
+                  {!isAuthenticated && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onOpenAuth) onOpenAuth("signin");
+                        else navigate("/login");
+                      }}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gold hover:bg-gold-light text-black text-xs font-extrabold uppercase tracking-wider transition-all shadow-md shadow-gold/20 cursor-pointer border-none shrink-0"
+                    >
+                      Sign In
+                    </button>
+                  )}
+                </div>
 
-              {profileSuccessMsg && (
+                <div className="border-b border-white/10 pb-4">
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <User className="w-5 h-5 text-gold" />
+                    Account & Profile Details
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-1">
+                    Manage your personal details, registered mobile, and login security credentials.
+                  </p>
+                </div>
+
+                {profileSuccessMsg && (
                 <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs rounded-xl flex items-center gap-2 font-medium">
                   <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>{profileSuccessMsg}</span>
@@ -994,7 +1222,81 @@ export default function SettingsPage({
             </div>
           )}
 
-        </div>
+          {/* 9. TERMS & POLICIES */}
+          {activeSection === "terms" && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="border-b border-white/10 pb-4">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-gold" />
+                  Terms & Corporate Policies
+                </h2>
+                <p className="text-xs text-text-secondary mt-1">
+                  Read our verified legal agreements, patron privacy standards, and refund guidelines.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/legal?tab=terms")}
+                  className="p-4 rounded-2xl bg-[#18181C] border border-white/5 hover:border-gold/50 text-left transition-all group cursor-pointer"
+                >
+                  <FileText className="w-5 h-5 text-gold mb-2" />
+                  <h4 className="text-sm font-bold text-white group-hover:text-gold transition-colors">Terms of Service</h4>
+                  <p className="text-xs text-text-secondary mt-1">Ticket bookings, user obligations, and code of conduct.</p>
+                  <span className="text-[10px] font-mono text-gold mt-3 inline-flex items-center gap-1 font-bold">
+                    Read Policy <ChevronRight className="w-3 h-3" />
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/legal?tab=privacy")}
+                  className="p-4 rounded-2xl bg-[#18181C] border border-white/5 hover:border-gold/50 text-left transition-all group cursor-pointer"
+                >
+                  <ShieldCheck className="w-5 h-5 text-gold mb-2" />
+                  <h4 className="text-sm font-bold text-white group-hover:text-gold transition-colors">Privacy Policy</h4>
+                  <p className="text-xs text-text-secondary mt-1">DPDP Act 2023 compliance, data retention, and patron rights.</p>
+                  <span className="text-[10px] font-mono text-gold mt-3 inline-flex items-center gap-1 font-bold">
+                    Read Policy <ChevronRight className="w-3 h-3" />
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/legal?tab=refund")}
+                  className="p-4 rounded-2xl bg-[#18181C] border border-white/5 hover:border-gold/50 text-left transition-all group cursor-pointer"
+                >
+                  <Check className="w-5 h-5 text-gold mb-2" />
+                  <h4 className="text-sm font-bold text-white group-hover:text-gold transition-colors">Refund & Cancellation</h4>
+                  <p className="text-xs text-text-secondary mt-1">Cancellation windows, automated bank refunds, and cinema credits.</p>
+                  <span className="text-[10px] font-mono text-gold mt-3 inline-flex items-center gap-1 font-bold">
+                    Read Policy <ChevronRight className="w-3 h-3" />
+                  </span>
+                </button>
+              </div>
+
+              <div className="bg-[#18181C] border border-white/5 rounded-2xl p-5 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-white">Compliance Standard</h4>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  CineVenue Entertainments Pvt Ltd complies with the Digital Personal Data Protection (DPDP) Act, 2023 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/legal")}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-gold hover:text-gold-light cursor-pointer border-none bg-transparent p-0"
+                  >
+                    <span>Open Comprehensive Legal Portal</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          </div>
+        )}
       </main>
 
       {/* LOCATION SELECTOR MODAL REUSE */}
