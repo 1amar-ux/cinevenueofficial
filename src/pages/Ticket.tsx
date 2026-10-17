@@ -49,8 +49,8 @@ export default function Ticket() {
   };
 
   return (
-    <Container sx={{ mt: 15, maxWidth: "500px !important", mb: 4 }}>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <Container sx={{ mt: { xs: 10, sm: 14 }, maxWidth: "500px !important", mb: 4, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1.5, justifyContent: "space-between", alignItems: "center" }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate("/")}
@@ -89,7 +89,7 @@ export default function Ticket() {
             E-Ticket Confirmed
           </Typography>
         </Box>
-        <CardContent sx={{ p: 4 }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
           <Typography variant="h4" sx={{ fontWeight: "bold", color: "#F5F5F7" }} gutterBottom>
             {movieTitle}
           </Typography>

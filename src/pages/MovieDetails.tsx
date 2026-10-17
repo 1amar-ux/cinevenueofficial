@@ -362,9 +362,9 @@ export default function MovieDetails() {
           </div>
 
           {/* Hero Content Grid */}
-          <div className="relative z-10 p-6 sm:p-8 md:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
+          <div className="relative z-10 p-4 sm:p-8 md:p-10 flex flex-col md:flex-row gap-6 sm:gap-8 items-center md:items-start">
             {/* Left: Movie Poster with Trailer Overlay */}
-            <div className="w-60 sm:w-64 md:w-72 shrink-0 aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/20 relative group bg-black/60">
+            <div className="w-52 sm:w-64 md:w-72 max-w-full shrink-0 aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/20 relative group bg-black/60">
               <img
                 src={movie.poster || movie.img}
                 alt={movie.title}

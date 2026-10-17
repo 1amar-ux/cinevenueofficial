@@ -6,12 +6,14 @@ import { fetchActiveLiveBanner, trackLiveBannerEvent } from "../../services/adve
 interface CineVenueLiveBannerProps {
   placement: BannerPlacementId;
   className?: string;
+  containerClassName?: string;
   showCountdown?: boolean;
 }
 
 export const CineVenueLiveBanner: React.FC<CineVenueLiveBannerProps> = ({
   placement,
   className = "",
+  containerClassName,
   showCountdown = true
 }) => {
   const [bannerData, setBannerData] = useState<{
@@ -103,7 +105,7 @@ export const CineVenueLiveBanner: React.FC<CineVenueLiveBannerProps> = ({
   if (bannerData?.hasDirectAd && bannerData.banner) {
     const { banner } = bannerData;
 
-    return (
+    const bannerContent = (
       <div
         className={`relative w-full overflow-hidden rounded-2xl border border-gold/30 bg-[#0C0D12] shadow-2xl transition-all hover:border-gold/60 cursor-pointer group ${className}`}
         onClick={handleBannerClick}
@@ -168,6 +170,12 @@ export const CineVenueLiveBanner: React.FC<CineVenueLiveBannerProps> = ({
         </div>
       </div>
     );
+
+    return containerClassName ? (
+      <div className={containerClassName}>{bannerContent}</div>
+    ) : (
+      bannerContent
+    );
   }
 
   // -------------------------------------------------------------
@@ -178,7 +186,7 @@ export const CineVenueLiveBanner: React.FC<CineVenueLiveBannerProps> = ({
     const publisherId = (typeof window !== "undefined" && (window as any).__VITE_ENV__?.VITE_ADSENSE_PUBLISHER_ID) || "";
 
     if (isAdSenseEnabled && publisherId) {
-      return (
+      const adContent = (
         <div className={`w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B0C10] p-2 text-center text-xs text-text-muted ${className}`}>
           <div className="text-[9px] uppercase tracking-widest text-text-muted/60 mb-1">Advertisement</div>
           <div className="min-h-[90px] flex items-center justify-center bg-white/[0.02] rounded border border-dashed border-white/10">
@@ -193,6 +201,12 @@ export const CineVenueLiveBanner: React.FC<CineVenueLiveBannerProps> = ({
             />
           </div>
         </div>
+      );
+
+      return containerClassName ? (
+        <div className={containerClassName}>{adContent}</div>
+      ) : (
+        adContent
       );
     }
   }

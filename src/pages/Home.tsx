@@ -652,31 +652,32 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       )}
 
       {/* LIVE BANNER ADVERTISEMENT PLACEMENT: HOMEPAGE TOP */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-24 pb-0 z-20 relative">
-        <CineVenueLiveBanner placement="homepage_top" />
-      </div>
+      <CineVenueLiveBanner
+        placement="homepage_top"
+        containerClassName="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-20 pb-4 z-20 relative"
+      />
 
       {/* LUXURY CINEMATIC HERO */}
-      <section className="relative pt-16 pb-16 sm:pt-24 sm:pb-24 md:pt-28 md:pb-36 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
+      <section className="relative pt-20 sm:pt-24 md:pt-24 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">
         {/* Subtle decorative glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-[#D4AF37]/5 rounded-full blur-[90px] sm:blur-[120px] pointer-events-none" />
         
-        <div className="space-y-6 relative z-10 max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#D4AF37]/10 dark:bg-white/5 border border-[#D4AF37]/30 dark:border-white/10 rounded-full text-[10px] font-black tracking-widest text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
+        <div className="space-y-4 sm:space-y-5 md:space-y-6 relative z-10 max-w-4xl">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#D4AF37]/10 dark:bg-white/5 border border-[#D4AF37]/30 dark:border-white/10 rounded-full text-[10px] sm:text-xs font-black tracking-widest text-[#D4AF37] uppercase animate-fade-in shadow-xs dark:shadow-none">
             <Award className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" style={{ animationDuration: "12s" }} />
             The Standard of Indian Cinema & Entertainment
           </div>
 
-          <h1 className="font-display text-[clamp(2.2rem,9vw,4.5rem)] md:text-7xl font-light tracking-tight text-slate-950 dark:text-white italic leading-[1.08] break-words">
+          <h1 className="font-display text-[clamp(1.85rem,4.5vw,3.75rem)] md:text-5xl lg:text-6xl font-light tracking-tight text-slate-950 dark:text-white italic leading-[1.12] break-words">
             Redefining Luxury in <br className="hidden md:inline" />
             <span className="text-[#D4AF37] not-italic font-bold">Cinema & Corporate Entertainment</span>
           </h1>
 
-          <p className="text-sm md:text-base text-slate-700 dark:text-white/60 font-normal max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-slate-700 dark:text-white/60 font-normal max-w-2xl mx-auto leading-relaxed">
             From premier live movie ticket engines with verified offline-first seat mappings, to major pan-Indian physical film production, celebrity launches, viral media campaigns, and CineCoins rewards.
           </p>
 
-          <div className="flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4">
+          <div className="flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
             <button
               onClick={() => navigate("/booking")}
               className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-[#D4AF37]/30 flex items-center justify-center gap-2 cursor-pointer"
@@ -993,9 +994,10 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       </section>
 
       {/* LIVE BANNER ADVERTISEMENT PLACEMENT: HOMEPAGE MIDDLE */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 py-6">
-        <CineVenueLiveBanner placement="homepage_middle" />
-      </div>
+      <CineVenueLiveBanner
+        placement="homepage_middle"
+        containerClassName="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 py-6"
+      />
 
       {/* DYNAMIC SHOWCASE CONTAINER */}
       <AnimatePresence mode="wait">
@@ -3075,7 +3077,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       </footer>
 
       {/* FLOATING ACTION DOCK: AI BOT & SHARE BUTTON */}
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+      <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom,0px))] md:bottom-6 right-4 sm:right-6 z-40 flex items-center gap-3">
         {/* Floating AI Concierge Trigger Button */}
         <button
           onClick={() => setIsAiConciergeOpen(!isAiConciergeOpen)}

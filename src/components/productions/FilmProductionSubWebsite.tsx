@@ -377,9 +377,10 @@ export default function FilmProductionSubWebsite({
       </header>
 
       {/* LIVE BANNER ADVERTISEMENT PLACEMENT: FILM PRODUCTION TOP */}
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-2">
-        <CineVenueLiveBanner placement="film_production_top" />
-      </div>
+      <CineVenueLiveBanner
+        placement="film_production_top"
+        containerClassName="w-full max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-2"
+      />
 
       {/* DYNAMIC MODULE RENDERING */}
       {activeModule === "events" && (

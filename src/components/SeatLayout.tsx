@@ -48,16 +48,18 @@ export default function SeatLayout() {
   };
 
   return (
-    <div style={{ textAlign: "center", margin: "20px 0" }}>
-      {["A", "B", "C", "D", "E"].map((row) => (
-        <div key={row} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-          {seats
-            .filter((seat) => seat.id.startsWith(row))
-            .map((seat) => (
-              <Seat key={seat.id} seat={seat} onSelect={toggleSeat} />
-            ))}
-        </div>
-      ))}
+    <div style={{ textAlign: "center", margin: "20px 0", maxWidth: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "12px" }}>
+      <div style={{ minWidth: "max-content", margin: "0 auto", padding: "0 8px" }}>
+        {["A", "B", "C", "D", "E"].map((row) => (
+          <div key={row} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+            {seats
+              .filter((seat) => seat.id.startsWith(row))
+              .map((seat) => (
+                <Seat key={seat.id} seat={seat} onSelect={toggleSeat} />
+              ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -46,7 +46,7 @@ export default function SeatBooking() {
         </Typography>
       )}
 
-      <Paper sx={{ width: "100%", maxWidth: 600, p: 4, display: "flex", flexDirection: "column", alignItems: "center", borderRadius: 2 }}>
+      <Paper sx={{ width: "100%", maxWidth: 600, p: { xs: 2, sm: 4 }, display: "flex", flexDirection: "column", alignItems: "center", borderRadius: 2, overflow: "hidden" }}>
         <Box sx={{ width: "80%", height: 30, backgroundColor: "#E4E6EB", borderBottomLeftRadius: "50%", borderBottomRightRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", mb: 6, boxShadow: "0px 8px 16px rgba(0,0,0,0.1)" }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: "bold" }}>
             All eyes this way (Screen)
@@ -55,7 +55,7 @@ export default function SeatBooking() {
 
         <SeatLayout />
 
-        <Box sx={{ display: "flex", gap: 3, mt: 4, flexWrap: "wrap", justifyContent: "center" }}>
+        <Box sx={{ display: "flex", gap: 2, sm: 3, mt: 4, flexWrap: "wrap", justifyContent: "center" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 18, height: 18, border: "1px solid #4caf50", borderRadius: 1 }} />
             <Typography variant="caption">Available</Typography>
@@ -70,8 +70,8 @@ export default function SeatBooking() {
           </Box>
         </Box>
 
-        <Box sx={{ mt: 4, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Box>
+        <Box sx={{ mt: 4, width: "100%", display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 0 }, justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}>
+          <Box sx={{ textAlign: { xs: "center", sm: "left" } }}>
             <Typography variant="body2" color="text.secondary">
               Seats: {booking.seats.join(", ") || "None"}
             </Typography>

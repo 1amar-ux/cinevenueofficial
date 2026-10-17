@@ -658,9 +658,10 @@ export default function EventsShowcase({
       </div>
 
       {/* LIVE BANNER ADVERTISEMENT PLACEMENT: EVENTS TOP */}
-      <div className="w-full mb-6">
-        <CineVenueLiveBanner placement="events_top" />
-      </div>
+      <CineVenueLiveBanner
+        placement="events_top"
+        containerClassName="w-full mb-6"
+      />
 
        {/* EVENT BOOKING CATEGORIES & QUICK ACTIONS BAR (INTENTIONALLY DARK BRANDED IN BOTH THEMES) */}
       <div className="bg-[#0B0C10] border border-white/15 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl text-left">

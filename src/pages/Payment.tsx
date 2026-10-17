@@ -237,7 +237,7 @@ export default function Payment() {
   };
 
   return (
-    <Container sx={{ mt: 15, maxWidth: "500px !important" }}>
+    <Container sx={{ mt: { xs: 10, sm: 14 }, maxWidth: "500px !important", px: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
         <Button
           startIcon={<ArrowBackIcon />}
@@ -257,7 +257,7 @@ export default function Payment() {
         </Button>
       </Box>
       <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
-        <CardContent sx={{ p: 4 }}>
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
           <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom align="center">
             Payment Gateway
           </Typography>

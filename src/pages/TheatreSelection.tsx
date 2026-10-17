@@ -79,8 +79,8 @@ export default function TheatreSelection() {
             boxShadow: 3,
           }}
         >
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 3, alignItems: { sm: "flex-start" } }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 2, sm: 3 }, alignItems: { sm: "flex-start" } }}>
               {(currentMovie.poster || currentMovie.img) && (
                 <Box
                   component="img"
