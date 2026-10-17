@@ -68,11 +68,11 @@ html[data-theme="light"],
   --cv-modal-bg: #FFFFFF;
   --cv-dropdown-bg: #FFFFFF;
   
-  --cv-gold: #B45309;
-  --cv-gold-light: #D97706;
-  --cv-gold-dim: #78350F;
-  --cv-gold-glow: rgba(253, 224, 71, 0.3);
-  --cv-accent: #B45309;
+  --cv-gold: #D4AF37;
+  --cv-gold-light: #F3D77A;
+  --cv-gold-dim: #967B27;
+  --cv-gold-glow: rgba(212, 175, 55, 0.25);
+  --cv-accent: #D4AF37;
 
   /* Butter Yellow & Luxury Champagne Highlights */
   --cv-butter: #FEF08A;
@@ -513,23 +513,43 @@ html[data-theme="light"] h3,
 html[data-theme="light"] h4,
 html[data-theme="light"] h5,
 html[data-theme="light"] h6 {
-  color: #0F172A !important;
+  color: #0F172A;
 }
 
-/* Enforce Black & Dark Charcoal Typography (No Yellow Body Letters) */
-html[data-theme="light"] .text-gold:not(svg):not(button.bg-slate-950 *):not(button.bg-black *):not(button.bg-gray-950 *),
-.light .text-gold:not(svg):not(button.bg-slate-950 *):not(button.bg-black *):not(button.bg-gray-950 *) {
-  color: #0F172A !important;
+/* Restore Signature CineVenue Yellow Gold (#D4AF37) in Light Mode */
+html[data-theme="light"] :is(.text-gold, .text-\[\#D4AF37\], [class*="text-[#D4AF37]"]),
+.light :is(.text-gold, .text-\[\#D4AF37\], [class*="text-[#D4AF37]"]) {
+  color: #D4AF37 !important;
+}
+
+html[data-theme="light"] :is(h1, h2, h3, h4, h5, h6) :is(.text-gold, .text-\[\#D4AF37\], [class*="text-[#D4AF37]"]) {
+  color: #D4AF37 !important;
 }
 
 html[data-theme="light"] .text-gold-light,
 .light .text-gold-light {
-  color: #1E293B !important;
+  color: #F3D77A !important;
 }
 
 html[data-theme="light"] .text-gold-dim,
 .light .text-gold-dim {
-  color: #475569 !important;
+  color: #967B27 !important;
+}
+
+/* Hover effects with signature yellow/gold shade */
+html[data-theme="light"] .hover\:text-\[\#D4AF37\]:hover,
+html[data-theme="light"] .hover\:text-gold:hover,
+html[data-theme="light"] .group:hover .group-hover\:text-\[\#D4AF37\],
+html[data-theme="light"] .group:hover .group-hover\:text-gold {
+  color: #D4AF37 !important;
+}
+
+html[data-theme="light"] .hover\:border-\[\#D4AF37\]:hover,
+html[data-theme="light"] .hover\:border-\[\#D4AF37\]\/50:hover,
+html[data-theme="light"] .hover\:border-gold:hover,
+html[data-theme="light"] .group:hover .group-hover\:border-\[\#D4AF37\] {
+  border-color: #D4AF37 !important;
+  box-shadow: 0 8px 24px -4px rgba(212, 175, 55, 0.22) !important;
 }
 
 /* In Light Mode, text-white becomes crisp dark charcoal #0F172A UNLESS on dark buttons/badges */
