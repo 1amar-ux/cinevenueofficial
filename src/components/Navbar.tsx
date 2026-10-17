@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft, Search } from "lucide-react";
+import { Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft, Search, Settings } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 import ThemeToggle from "./ThemeToggle";
 import { useAppSettings } from "../context/AppSettingsContext";
@@ -244,6 +244,17 @@ export default function Navbar({
                 <span>My Passes</span>
               </button>
 
+              {/* Settings Shortcut */}
+              <button
+                type="button"
+                onClick={() => window.location.href = "/settings"}
+                className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold transition-all cursor-pointer shadow-xs dark:shadow-none"
+                title="Application Settings"
+                aria-label="Settings"
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+
               {/* Profile Avatar Pill */}
               <div 
                 className="flex items-center gap-2 bg-slate-100 hover:bg-yellow-100/60 dark:bg-white/[0.05] dark:hover:bg-white/[0.09] border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-full cursor-pointer transition-all shadow-xs dark:shadow-none"
@@ -374,6 +385,16 @@ export default function Navbar({
           >
             <User className="w-4 h-4 text-gold" />
             <span>My Account & Orders</span>
+          </button>
+          <button 
+            onClick={() => { 
+              setMobileMenuOpen(false); 
+              window.location.href = "/settings"; 
+            }} 
+            className="text-left px-3 py-2 text-xs uppercase font-semibold text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer border-none bg-transparent flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4 text-gold" />
+            <span>Settings & Preferences</span>
           </button>
           <button 
             onClick={() => { setMobileMenuOpen(false); handleScroll("contact"); }} 

@@ -40,6 +40,7 @@ import Services from "./pages/Services";
 import AuthCallback from "./pages/AuthCallback";
 import VerifyTicket from "./pages/VerifyTicket";
 import MobileBottomNav from "./components/MobileBottomNav";
+import SettingsPage from "./pages/SettingsPage";
 
 // Admin Sub-Pages
 import AdminLayout from "./admin/AdminLayout";
@@ -2782,6 +2783,18 @@ export default function App() {
             userWallet={cineCoinsUserWallet}
             transactions={cineCoinsTransactions}
             onOpenCineCoins={() => window.location.href = "/cinecoins"}
+          />
+        } 
+      />
+
+      {/* Complete User Settings Section */}
+      <Route 
+        path="/settings" 
+        element={
+          <SettingsPage 
+            selectedCity={selectedCity}
+            setSelectedCity={setSelectedCity}
+            onOpenAuth={handleOpenAuth}
           />
         } 
       />

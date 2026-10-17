@@ -417,10 +417,24 @@ export default function MyAccountModule({
         {/* 5. SETTINGS TAB */}
         {activeTab === "settings" && (
           <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
-            <div className="bg-[#0F0F12] border border-white/10 rounded-2xl p-8 space-y-6 shadow-2xl">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                ⚙️ User Profile & Preferences
-              </h2>
+            <div className="bg-[#0F0F12] border border-white/10 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    ⚙️ User Profile & App Settings
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-1">
+                    Manage your account credentials, notifications, appearance, and city.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.location.href = "/settings"}
+                  className="px-4 py-2 bg-gold/15 hover:bg-gold text-gold hover:text-black border border-gold/40 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shadow-md shadow-gold/10"
+                >
+                  Open Full Settings Hub ⚙️
+                </button>
+              </div>
 
               {isSavedSettings && (
                 <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3 rounded-xl font-bold text-center">

@@ -603,6 +603,7 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
               ["Brand Publicity", "/proposals"],
               ["CineCoins Loyalty", "/cinecoins"],
               ["About", "#contact"],
+              ["Settings", "/settings"],
             ].map(([label, path]) => (
               <button
                 key={label}
