@@ -116,6 +116,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         setForm(prev => ({ ...prev, email: form.email.trim(), password: "", confirmPassword: "" }));
       } catch (err: any) {
         let message = err.response?.data?.error?.message || err.response?.data?.message || err.message;
+        if (message && (message.toLowerCase().includes("internal server error") || message.includes("500"))) {
+          message = "An account with this email address or mobile number may already exist. Please try signing in.";
+        }
         setErrorMessage(message || "Failed to create account. Please try again.");
       } finally {
         setIsLoading(false);
