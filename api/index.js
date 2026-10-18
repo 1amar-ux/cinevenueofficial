@@ -1593,7 +1593,7 @@ async function sendEventPassEmail(params) {
           <!-- Footer -->
           <tr>
             <td style="background: #08080C; padding: 16px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
-              <div style="font-size: 10px; color: #E5A93C; font-family: monospace; letter-spacing: 1px; font-weight: 700;">CINEVENUE ENTERTAINMENTS \u2022 OFFICIAL PASS</div>
+              <div style="font-size: 10px; color: #E5A93C; font-family: monospace; letter-spacing: 1px; font-weight: 700;">CINEVENUE \u2022 OFFICIAL PASS</div>
               <div style="font-size: 10px; color: #4B5563; margin-top: 4px;">Order ID: ${orderId || passId} \u2022 Verified Digital Security</div>
             </td>
           </tr>
@@ -1622,7 +1622,7 @@ Live Pass Link: ${webPassUrl}
 QR Code Reference: ${qrImage}
 
 Please show this pass ID or the QR code at the venue gate for direct admission.
-\xA9 CineVenue Entertainments
+\xA9 CineVenue
 `;
   if (transporter) {
     try {
@@ -1707,7 +1707,7 @@ async function sendPasswordResetOtpEmail(params) {
           </tr>
           <tr>
             <td style="background: #08080C; padding: 14px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
-              <div style="font-size: 10px; color: #4B5563;">\xA9 CineVenue Entertainments \u2022 Automated Security System</div>
+              <div style="font-size: 10px; color: #4B5563;">\xA9 CineVenue \u2022 Automated Security System</div>
             </td>
           </tr>
         </table>
@@ -12248,7 +12248,7 @@ router15.post("/send-ticket-email", async (req, res, next) => {
       to: email,
       passId: ticketCode || bookingId || `TKT-${Date.now()}`,
       orderId: bookingId,
-      eventTitle: title || "CineVenue Entertainment",
+      eventTitle: title || "CineVenue",
       attendeeName: name || "Customer",
       venueName: venue || "CineVenue Multiplex",
       date: date || "Upcoming",
@@ -15147,7 +15147,7 @@ function createApp() {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.send(
       `# CineVenue Authoritative ads.txt
-# Authorized Digital Sellers file for CineVenue Entertainment Portal
+# Authorized Digital Sellers file for CineVenue Portal
 google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
 `
     );
@@ -15912,7 +15912,7 @@ async function handler(req, res) {
       formatDbEventToClient({
         id: "EVT-100",
         title: "CineVenue Official Grand Launch Celebration Gala",
-        description: "The prestigious official grand launch of CineVenue Entertainments! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.",
+        description: "The prestigious official grand launch of CineVenue! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.",
         category: "Film Events",
         bannerUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
         date: "2026-10-12T17:00:00",

@@ -52,7 +52,7 @@ export default function CineVenueLogo({
         </div>
       )}
 
-      {/* Typography: CineVenue + — Entertainments — directly below name */}
+      {/* Typography: CineVenue */}
       <div className="flex flex-col items-start leading-none">
         <span
           className={`font-serif ${sizeClasses[size]} tracking-tight font-bold inline-flex items-center transition-all duration-300 drop-shadow-xs dark:drop-shadow-lg`}
@@ -66,14 +66,16 @@ export default function CineVenueLogo({
           </span>
         </span>
 
-        {/* Tagline / Subtitle placed directly below CineVenue name */}
-        <div className="flex items-center justify-between w-full gap-1 mt-0.5">
-          <span className="h-[1px] flex-1 bg-gray-300 dark:bg-gold/40" />
-          <span className={`${subtitleSizes[size]} tracking-[0.24em] uppercase font-semibold text-gray-600 dark:text-gold/90 font-serif whitespace-nowrap px-0.5`}>
-            {subText || "Entertainments"}
-          </span>
-          <span className="h-[1px] flex-1 bg-gray-300 dark:bg-gold/40" />
-        </div>
+        {/* Tagline / Subtitle placed directly below CineVenue name (only rendered when explicit custom subText is provided) */}
+        {subText && subText.trim().toLowerCase() !== "entertainments" && subText.trim().toLowerCase() !== "entertainment" && (
+          <div className="flex items-center justify-between w-full gap-1 mt-0.5">
+            <span className="h-[1px] flex-1 bg-gray-300 dark:bg-gold/40" />
+            <span className={`${subtitleSizes[size]} tracking-[0.24em] uppercase font-semibold text-gray-600 dark:text-gold/90 font-serif whitespace-nowrap px-0.5`}>
+              {subText}
+            </span>
+            <span className="h-[1px] flex-1 bg-gray-300 dark:bg-gold/40" />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -881,7 +881,7 @@ export default async function handler(req: any, res: any) {
       formatDbEventToClient({
         id: "EVT-100",
         title: "CineVenue Official Grand Launch Celebration Gala",
-        description: "The prestigious official grand launch of CineVenue Entertainments! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.",
+        description: "The prestigious official grand launch of CineVenue! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.",
         category: "Film Events",
         bannerUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
         date: "2026-10-12T17:00:00",

@@ -159,7 +159,7 @@ export default function AdminPanel({
   schedules,
   upiGatewaySettings = {
     upiId: "cinevenue@ybl",
-    accountHolderName: "CineVenue Entertainment Pvt Ltd",
+    accountHolderName: "CineVenue Pvt Ltd",
     qrImageUrl: "https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&fit=crop&q=80&w=400",
     instructions: "Scan the QR code using any UPI app (GPay, PhonePe, Paytm). Complete the transfer, capture a screenshot, and enter the 12-digit UTR reference number below.",
     supportMobile: "+91 9876543210"
@@ -6844,7 +6844,7 @@ export default function AdminPanel({
                         type="text"
                         value={upiForm.accountHolderName}
                         onChange={e => setUpiForm({ ...upiForm, accountHolderName: e.target.value })}
-                        placeholder="CineVenue Entertainment Pvt Ltd"
+                        placeholder="CineVenue Pvt Ltd"
                         className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold"
                         required
                       />

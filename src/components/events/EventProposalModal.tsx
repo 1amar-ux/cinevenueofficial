@@ -303,7 +303,7 @@ export default function EventProposalModal({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono tracking-widest text-gold uppercase px-2 py-0.5 rounded bg-gold/10 border border-gold/30">
-                  CINEVENUE ENTERTAINMENT
+                  CINEVENUE
                 </span>
                 <span className="text-[11px] text-zinc-400">Turnkey Event Planning & Production</span>
               </div>

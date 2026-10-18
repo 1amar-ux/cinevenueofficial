@@ -131,7 +131,7 @@ export async function triggerRazorpayCheckout(options: RazorpayCheckoutOptions):
   const resolvedKey = options.keyId || orderData?.keyId || orderData?.key_id || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || "rzp_test_TkyaAeNaWcbJho";
   const resolvedAmount = options.amount !== undefined ? options.amount : (orderData?.amount || 0);
   const resolvedCurrency = options.currency || orderData?.currency || "INR";
-  const resolvedName = options.name || "CineVenue Entertainments";
+  const resolvedName = options.name || "CineVenue";
   const resolvedDesc = options.description || (orderData?.isTestMode ? "🎟️ CineVenue Test Mode Checkout" : "🎟️ CineVenue Ticket Checkout");
 
   const logoUrl = typeof window !== "undefined"

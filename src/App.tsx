@@ -448,7 +448,7 @@ export default function App() {
     const saved = localStorage.getItem("cine_upi_settings");
     return saved ? JSON.parse(saved) : {
       upiId: "cinevenue@ybl",
-      accountHolderName: "CineVenue Entertainment Pvt Ltd",
+      accountHolderName: "CineVenue Pvt Ltd",
       qrImageUrl: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80",
       instructions: "Scan the QR code using Google Pay, PhonePe, or Paytm. Submit the 12-digit UTR reference number and upload payment screenshot.",
       supportMobile: "+91 9876543210"

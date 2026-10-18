@@ -12,7 +12,7 @@ export interface AppMetadata {
 
 export const APP_CONFIG: AppMetadata = {
   appName: "CineVenue",
-  companyName: "CINEVENUE ENTERTAINMENTS PVT LTD",
+  companyName: "CINEVENUE PVT LTD",
   version: "1.0.6",
   buildNumber: "7",
   packageId: "com.cinevenue.app",

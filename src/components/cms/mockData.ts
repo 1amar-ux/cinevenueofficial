@@ -98,7 +98,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: Record<PillarKey, CMSSection[]> = {
     { id: "sec_upcoming", type: "Featured Movies", title: "Upcoming Blockbusters", enabled: true, order: 4, content: { filter: "upcoming", limit: 6 } },
     { id: "sec_offers", type: "Banners", title: "Credit Card & UPI Discount Banners", enabled: true, order: 5, content: { layout: "grid" } },
     { id: "sec_faq", type: "FAQ", title: "Frequently Asked Questions", enabled: true, order: 6, content: { itemsCount: 6 } },
-    { id: "sec_footer", type: "Footer", title: "Site Footer & Social Links", enabled: true, order: 7, content: { copyright: "© 2026 CineVenue Entertainment" } }
+    { id: "sec_footer", type: "Footer", title: "Site Footer & Social Links", enabled: true, order: 7, content: { copyright: "© 2026 CineVenue" } }
   ],
   eventBooking: [
     { id: "sec_hero", type: "Hero Banner", title: "Live Events Hero Carousel", enabled: true, order: 1, content: { slidesCount: 4 } },

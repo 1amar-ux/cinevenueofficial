@@ -75,7 +75,7 @@ export const SupportPoliciesScreen: React.FC<{ navigation: any }> = () => {
         <Text style={styles.sectionHeading}>TERMS & COMPLIANCE</Text>
         <View style={styles.card}>
           <Text style={styles.policyText}>
-            CineVenue Entertainments strictly adheres to digital entertainment ticketing guidelines, encrypted PCI-DSS payment compliance, and authorized theatre POS synchronization protocols. All rights reserved.
+            CineVenue strictly adheres to digital entertainment ticketing guidelines, encrypted PCI-DSS payment compliance, and authorized theatre POS synchronization protocols. All rights reserved.
           </Text>
         </View>
       </ScrollView>

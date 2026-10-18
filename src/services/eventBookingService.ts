@@ -117,7 +117,7 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     title: 'CineVenue Grand Launch',
     slug: 'cinevenue-grand-launch-hyderabad',
     description:
-      'The prestigious official grand launch of CineVenue Entertainments! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.',
+      'The prestigious official grand launch of CineVenue! Featuring premier celebrity appearances, keynote address, exclusive sneak peeks, musical performances, and industry networking gala.',
     category: 'Film Events',
     bannerUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80',
     galleryUrls: [
@@ -126,10 +126,10 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
     ],
     organizer: {
       id: 'ORG-CV',
-      name: 'CineVenue Entertainments',
+      name: 'CineVenue',
       email: 'events@cinevenue.in',
       phone: '+91 99887 76655',
-      companyName: 'CineVenue Entertainments Private Limited',
+      companyName: 'CineVenue Private Limited',
       logoUrl: '/logo.jpg',
       isVerified: true,
       rating: 5.0,
@@ -563,7 +563,7 @@ export const INITIAL_TICKETED_EVENTS: EventItem[] = [
       name: 'CineVenue Music Club',
       email: 'events@cinevenue.in',
       phone: '+91 99887 76655',
-      companyName: 'CineVenue Entertainments',
+      companyName: 'CineVenue',
       logoUrl: '/logo.jpg',
       isVerified: true,
       rating: 4.95,

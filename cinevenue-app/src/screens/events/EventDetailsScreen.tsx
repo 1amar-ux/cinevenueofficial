@@ -125,7 +125,7 @@ export const EventDetailsScreen: React.FC<{ route: any; navigation: any }> = ({
           <Text style={styles.sectionHeading}>ABOUT THE EVENT</Text>
           <Text style={styles.descriptionText}>
             {description ||
-              'Experience an unforgettable night featuring leading artists, mesmerizing visuals, Dolby Atmos live audio amplification, and premium VIP lounge hospitality hosted exclusively by CineVenue Entertainments.'}
+              'Experience an unforgettable night featuring leading artists, mesmerizing visuals, Dolby Atmos live audio amplification, and premium VIP lounge hospitality hosted exclusively by CineVenue.'}
           </Text>
 
           {/* Terms / Highlights */}

@@ -383,7 +383,7 @@ export default function EntertainmentEventManagementAdmin({
             </span>
             <div>
               <span className="text-[10px] font-mono tracking-widest text-gold uppercase px-2 py-0.5 rounded bg-gold/10 border border-gold/30">
-                CINEVENUE ENTERTAINMENTS PVT LTD
+                CINEVENUE PVT LTD
               </span>
               <h2 className="text-xl md:text-2xl font-black text-white tracking-wide mt-0.5">
                 Entertainment Event Management Directorate

@@ -256,7 +256,7 @@ export default function LiveEventPassCard({
         {/* Footer */}
         <div className="bg-[#08080C] p-2 text-center border-t border-white/5">
           <p className="text-[8px] font-mono text-gold font-bold uppercase tracking-widest">
-            CINEVENUE ENTERTAINMENTS
+            CINEVENUE
           </p>
         </div>
       </div>

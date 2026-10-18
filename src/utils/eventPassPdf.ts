@@ -732,9 +732,9 @@ export function generatePassHtml(pass: any): string {
       </div>
     </div>
 
-    <!-- Footer: CINEVENUE ENTERTAINMENTS -->
+    <!-- Footer: CINEVENUE -->
     <div class="pass-footer">
-      <div class="footer-title">CINEVENUE ENTERTAINMENTS</div>
+      <div class="footer-title">CINEVENUE</div>
       <div class="footer-text">
         Official Digital Event Pass • Valid for designated entry only • All rights reserved
       </div>

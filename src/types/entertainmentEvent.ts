@@ -1,6 +1,6 @@
 /**
- * CineVenue Entertainment Event Management Types
- * Company: CINEVENUE ENTERTAINMENTS PVT LTD
+ * CineVenue Event Management Types
+ * Company: CINEVENUE PVT LTD
  * Pure entertainment-only event domain models, proposals, quotations, and operations.
  */
 

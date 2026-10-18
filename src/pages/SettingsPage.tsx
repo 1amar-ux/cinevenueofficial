@@ -1232,7 +1232,7 @@ export default function SettingsPage({
               <div className="bg-[#18181C] border border-white/5 rounded-2xl p-5 space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-white">Compliance Standard</h4>
                 <p className="text-xs text-text-secondary leading-relaxed">
-                  CineVenue Entertainments Pvt Ltd complies with the Digital Personal Data Protection (DPDP) Act, 2023 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
+                  CineVenue Pvt Ltd complies with the Digital Personal Data Protection (DPDP) Act, 2023 and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
                 </p>
                 <div className="pt-2">
                   <button

@@ -1247,8 +1247,8 @@ router.delete("/:id", verifyAdminAccess, async (req: Request, res: Response, nex
 });
 
 // -------------------------------------------------------------
-// CineVenue Entertainment Event Proposals & Quotations Endpoints
-// Company: CINEVENUE ENTERTAINMENTS PVT LTD
+// CineVenue Event Proposals & Quotations Endpoints
+// Company: CINEVENUE PVT LTD
 // -------------------------------------------------------------
 
 const PROPOSALS_FILE_PATH = path.join(process.cwd(), "server", "config", "event_proposals.json");

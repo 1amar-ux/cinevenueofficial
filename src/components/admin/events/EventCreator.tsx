@@ -110,7 +110,7 @@ export default function EventCreator({
     editingEvent?.organizer?.phone || ''
   );
   const [organizerCompany, setOrganizerCompany] = useState(
-    editingEvent?.organizer?.companyName || 'CineVenue Entertainment Pvt Ltd'
+    editingEvent?.organizer?.companyName || 'CineVenue Pvt Ltd'
   );
 
   // 8. Capacities & Limits
@@ -1665,7 +1665,7 @@ export default function EventCreator({
                   {/* Footer */}
                   <div className="bg-[#08080C] p-2 text-center border-t border-white/5">
                     <p className="text-[8px] font-mono text-gold font-bold uppercase tracking-widest">
-                      CINEVENUE ENTERTAINMENTS
+                      CINEVENUE
                     </p>
                   </div>
                 </div>

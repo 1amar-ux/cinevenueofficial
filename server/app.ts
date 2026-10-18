@@ -69,7 +69,7 @@ export function createApp(): Express {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.send(
       `# CineVenue Authoritative ads.txt\n` +
-      `# Authorized Digital Sellers file for CineVenue Entertainment Portal\n` +
+      `# Authorized Digital Sellers file for CineVenue Portal\n` +
       `google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0\n`
     );
   });

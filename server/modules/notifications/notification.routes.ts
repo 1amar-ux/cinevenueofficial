@@ -36,7 +36,7 @@ router.post("/send-ticket-email", async (req: Request, res: Response, next: Next
       to: email,
       passId: ticketCode || bookingId || `TKT-${Date.now()}`,
       orderId: bookingId,
-      eventTitle: title || "CineVenue Entertainment",
+      eventTitle: title || "CineVenue",
       attendeeName: name || "Customer",
       venueName: venue || "CineVenue Multiplex",
       date: date || "Upcoming",

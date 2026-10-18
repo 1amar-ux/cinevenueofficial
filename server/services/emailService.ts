@@ -219,7 +219,7 @@ export async function sendEventPassEmail(params: EventPassEmailParams): Promise<
           <!-- Footer -->
           <tr>
             <td style="background: #08080C; padding: 16px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
-              <div style="font-size: 10px; color: #E5A93C; font-family: monospace; letter-spacing: 1px; font-weight: 700;">CINEVENUE ENTERTAINMENTS • OFFICIAL PASS</div>
+              <div style="font-size: 10px; color: #E5A93C; font-family: monospace; letter-spacing: 1px; font-weight: 700;">CINEVENUE • OFFICIAL PASS</div>
               <div style="font-size: 10px; color: #4B5563; margin-top: 4px;">Order ID: ${orderId || passId} • Verified Digital Security</div>
             </td>
           </tr>
@@ -249,7 +249,7 @@ Live Pass Link: ${webPassUrl}
 QR Code Reference: ${qrImage}
 
 Please show this pass ID or the QR code at the venue gate for direct admission.
-© CineVenue Entertainments
+© CineVenue
 `;
 
   if (transporter) {
@@ -347,7 +347,7 @@ export async function sendPasswordResetOtpEmail(params: {
           </tr>
           <tr>
             <td style="background: #08080C; padding: 14px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
-              <div style="font-size: 10px; color: #4B5563;">© CineVenue Entertainments • Automated Security System</div>
+              <div style="font-size: 10px; color: #4B5563;">© CineVenue • Automated Security System</div>
             </td>
           </tr>
         </table>

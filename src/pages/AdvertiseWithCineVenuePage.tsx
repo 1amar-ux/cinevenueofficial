@@ -612,7 +612,7 @@ export default function AdvertiseWithCineVenuePage() {
           <Link to="/terms" className="hover:text-text-primary transition-colors">Terms of Service</Link>
           <a href="mailto:advertise@cinevenue.in" className="hover:text-text-primary transition-colors">advertise@cinevenue.in</a>
         </div>
-        <span>© {new Date().getFullYear()} CineVenue Entertainment Pvt Ltd</span>
+        <span>© {new Date().getFullYear()} CineVenue Pvt Ltd</span>
       </footer>
     </div>
   );

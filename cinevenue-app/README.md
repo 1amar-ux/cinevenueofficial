@@ -1,6 +1,6 @@
 # 🎬 CineVenue Mobile Application (Android + iOS)
 
-> **Official native mobile application for CineVenue Entertainments.**  
+> **Official native mobile application for CineVenue.**  
 > Built with React Native, Expo SDK, TypeScript, React Navigation, and direct real-time integration with CineVenue's authoritative Backend API & POS engines.
 
 ---

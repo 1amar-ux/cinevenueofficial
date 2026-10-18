@@ -2,7 +2,7 @@ import { EventProposalRecord, EventQuotation } from "../types/entertainmentEvent
 
 /**
  * Generates an official, branded CineVenue Quotation Document
- * Company: CINEVENUE ENTERTAINMENTS PVT LTD
+ * Company: CINEVENUE PVT LTD
  * Print / Save as PDF compliant vertical A4 layout
  */
 export function generateAndDownloadQuotationPdf(
@@ -131,7 +131,7 @@ function generateQuotationHtml(
             <div style="width: 38px; height: 38px; background: #D4AF37; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #000; font-size: 20px; font-family: serif;">C</div>
             <div>
               <div style="font-size: 22px; font-weight: 900; letter-spacing: 2px; color: #FFFFFF;">CINE<span style="color: #D4AF37;">VENUE</span></div>
-              <div style="font-size: 9px; letter-spacing: 1.5px; color: #9A9AA8; text-transform: uppercase;">ENTERTAINMENTS PVT LTD</div>
+              <div style="font-size: 9px; letter-spacing: 1.5px; color: #9A9AA8; text-transform: uppercase;">PVT LTD</div>
             </div>
           </div>
           <div style="margin-top: 10px; font-size: 10px; color: #888899; line-height: 1.4;">
@@ -264,7 +264,7 @@ function generateQuotationHtml(
     <table style="width: 100%; border-top: 1px dashed #333348; padding-top: 18px; font-size: 11px;">
       <tr>
         <td style="width: 50%; vertical-align: bottom;">
-          <div style="color: #D4AF37; font-weight: 800;">FOR CINEVENUE ENTERTAINMENTS PVT LTD</div>
+          <div style="color: #D4AF37; font-weight: 800;">FOR CINEVENUE PVT LTD</div>
           <div style="margin-top: 36px; border-bottom: 1px solid #555566; width: 180px;"></div>
           <div style="font-size: 10px; color: #888899; margin-top: 4px;">Authorized Directorate Signatory</div>
           <div style="font-size: 9px; color: #666677;">Prepared by: ${quotation.preparedBy}</div>
