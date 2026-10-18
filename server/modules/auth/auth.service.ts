@@ -134,12 +134,13 @@ export class AuthService {
     return { rawToken, tokenHash };
   }
 
-  private generateTokens(user: { id: string; email: string; role: any; name: string }): TokenPair {
+  private generateTokens(user: { id: string; email: string; role: any; name: string; theatreId?: string }): TokenPair {
     const payload = {
       userId: user.id,
       email: user.email,
       role: user.role,
-      name: user.name
+      name: user.name,
+      theatreId: user.theatreId
     };
 
     const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
@@ -455,6 +456,68 @@ export class AuthService {
       orConditions.push({ mobile: rawIdentifier });
     }
 
+    // 1. Direct Super Admin authentication
+    const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com").toLowerCase();
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2026";
+    if (rawIdentifier === superAdminEmail && data.password === superAdminPassword) {
+      const superUser = {
+        id: "superadmin_direct",
+        email: superAdminEmail,
+        name: "Super Admin",
+        mobile: null,
+        role: "SUPER_ADMIN" as const,
+        isVerified: true
+      };
+      const tokens = this.generateTokens(superUser);
+      return { user: superUser, tokens };
+    }
+
+    // 2. Preconfigured authorized venue operators fallback
+    const configuredAdmins = [
+      {
+        id: "TA-001",
+        email: "pvr.admin@cinevenue.com",
+        password: "PvrAdmin123",
+        role: "THEATRE_ADMIN",
+        name: "PVR Grand Admin",
+        theatreId: "1"
+      },
+      {
+        id: "TA-002",
+        email: "imax.admin@cinevenue.com",
+        password: "ImaxAdmin123",
+        role: "THEATRE_ADMIN",
+        name: "IMAX Elite Admin",
+        theatreId: "2"
+      },
+      {
+        id: "TM-001",
+        email: "manager@cinevenue.com",
+        password: "Manager@2026",
+        role: "THEATRE_MANAGER",
+        name: "Prasads Duty Manager",
+        theatreId: "1"
+      }
+    ];
+
+    const matchedConfigAdmin = configuredAdmins.find(a => a.email.toLowerCase() === rawIdentifier);
+    if (matchedConfigAdmin) {
+      if (data.password !== matchedConfigAdmin.password) {
+        throw new UnauthorizedError("Invalid email or password");
+      }
+      const adminUser = {
+        id: matchedConfigAdmin.id,
+        email: matchedConfigAdmin.email,
+        name: matchedConfigAdmin.name,
+        mobile: null,
+        role: matchedConfigAdmin.role,
+        theatreId: matchedConfigAdmin.theatreId,
+        isVerified: true
+      };
+      const tokens = this.generateTokens(adminUser);
+      return { user: adminUser, tokens };
+    }
+
     try {
       const user = await prisma.user.findFirst({
         where: { OR: orConditions }
@@ -477,7 +540,21 @@ export class AuthService {
         user.isVerified = true;
       }
 
-      const tokens = this.generateTokens(user);
+      let resolvedRole = user.role as any;
+      let userTheatreId = (user as any).theatreId || undefined;
+
+      // Ensure theatre administrators have valid theatre binding
+      if (user.role === "THEATRE_ADMIN" && !userTheatreId) {
+        userTheatreId = rawIdentifier.includes("imax") ? "2" : "1";
+      }
+
+      const tokens = this.generateTokens({
+        id: user.id,
+        email: user.email,
+        role: resolvedRole,
+        name: user.name,
+        theatreId: userTheatreId
+      });
 
       try {
         await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
@@ -499,7 +576,7 @@ export class AuthService {
         logger.debug(`RefreshToken storage notice: ${tokErr?.message || tokErr}`);
       }
 
-      logger.info(`User logged in successfully: ${user.email} (Role: ${user.role})`);
+      logger.info(`User logged in successfully: ${user.email} (Role: ${resolvedRole}, TheatreId: ${userTheatreId || "Global"})`);
 
       return {
         user: {
@@ -507,7 +584,8 @@ export class AuthService {
           email: user.email,
           name: user.name,
           mobile: user.mobile,
-          role: user.role,
+          role: resolvedRole,
+          theatreId: userTheatreId,
           isVerified: user.isVerified
         },
         tokens
@@ -1113,8 +1191,23 @@ export class AuthService {
         name: "Super Admin",
         mobile: null,
         role: "SUPER_ADMIN",
+        theatreId: undefined,
         createdAt: new Date(),
         wallet: { balance: 999999, lifetimeEarned: 999999, totalRedeemed: 0 }
+      };
+    }
+
+    if (userId === "TA-001" || userId === "TA-002" || userId === "TM-001") {
+      const isPvr = userId === "TA-001";
+      const isImax = userId === "TA-002";
+      return {
+        id: userId,
+        email: isPvr ? "pvr.admin@cinevenue.com" : isImax ? "imax.admin@cinevenue.com" : "manager@cinevenue.com",
+        name: isPvr ? "PVR Grand Admin" : isImax ? "IMAX Elite Admin" : "Prasads Duty Manager",
+        mobile: null,
+        role: userId === "TM-001" ? "THEATRE_MANAGER" : "THEATRE_ADMIN",
+        theatreId: isImax ? "2" : "1",
+        createdAt: new Date()
       };
     }
 

@@ -52,6 +52,7 @@ interface TheatreManagerDashboardProps {
   onDeleteSchedule: (id: string) => void;
   onSettleVenueBookings: (theatreName: string) => void;
   onUpdateTheatre: (theatre: Theatre) => void;
+  onOpenManagerOperations?: () => void;
 }
 
 export default function TheatreManagerDashboard({
@@ -64,7 +65,8 @@ export default function TheatreManagerDashboard({
   onScheduleShow,
   onDeleteSchedule,
   onSettleVenueBookings,
-  onUpdateTheatre
+  onUpdateTheatre,
+  onOpenManagerOperations
 }: TheatreManagerDashboardProps) {
   const theatre = theatres.find((t) => t.id === theatreId);
   const [copied, setCopied] = useState(false);
@@ -95,7 +97,7 @@ export default function TheatreManagerDashboard({
     { id: "pos-integration", label: "POS Integration & Sync", icon: Cpu },
     { id: "profile", label: "Theatre Profile", icon: Landmark },
     { id: "screens", label: "Screens", icon: Layers },
-    { id: "seat-layout", label: "Seat Layout", icon: Sliders },
+    { id: "seat-layout", label: "Seat Layout & Show Occupancy", icon: Sliders },
     { id: "movies", label: "Movies", icon: Film },
     { id: "shows", label: "Shows", icon: CalendarRange },
     { id: "bookings", label: "Bookings", icon: Ticket },
@@ -206,11 +208,31 @@ export default function TheatreManagerDashboard({
           <div className="p-6 border-b border-white/5 space-y-1.5 shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-gold animate-pulse" />
-              <span className="text-[10px] text-gold font-bold uppercase tracking-[0.2em]">Partner Portal</span>
+              <span className="text-[10px] text-gold font-bold uppercase tracking-[0.2em]">Theatre Owner Portal</span>
             </div>
             <h2 className="text-sm font-display font-bold text-text-primary tracking-wide truncate">
               {theatre.name}
             </h2>
+          </div>
+
+          {/* Quick Switch to Daily Manager Operations Panel */}
+          <div className="px-4 pt-3 pb-1">
+            <button
+              onClick={() => {
+                if (onOpenManagerOperations) {
+                  onOpenManagerOperations();
+                } else {
+                  window.location.href = `/theatre-manager?theatreId=${theatre.id}`;
+                }
+              }}
+              className="w-full py-2.5 px-3 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/30 text-gold text-xs font-bold flex items-center justify-between cursor-pointer transition-colors shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Daily Operations Panel</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Navigation Links */}

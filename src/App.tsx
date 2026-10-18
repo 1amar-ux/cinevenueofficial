@@ -2,12 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppSettings } from "./context/AppSettingsContext";
 import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
 import Featured from "./components/Featured";
 import NowShowing from "./components/NowShowing";
 import EventsShowcase from "./components/EventsShowcase";
-import Theatres from "./components/Theatres";
-import PrivateRental from "./components/PrivateRental";
 import ContactForm from "./components/ContactForm";
 import Footer from "./components/Footer";
 
@@ -17,6 +14,7 @@ import BookingModal from "./components/BookingModal";
 import RentalModal from "./components/RentalModal";
 import AdminPanel from "./components/AdminPanel";
 import TheatreManagerDashboard from "./components/TheatreManagerDashboard";
+import TheatreManagerOperationsDashboard from "./components/theatre-manager/TheatreManagerOperationsDashboard";
 import EventManagerDashboard from "./components/EventManagerDashboard";
 import OrdersModal from "./components/OrdersModal";
 import UserDashboardModal from "./components/UserDashboardModal";
@@ -55,6 +53,8 @@ import EventsAdminModule from "./components/admin/events/EventsAdminModule";
 
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedTheatreRoute from "./components/theatre-admin/ProtectedTheatreRoute";
+import TheatreAdminLogin from "./pages/theatre-admin/Login";
 
 import CineCoinsComingSoon from "./components/cinecoins/CineCoinsComingSoon";
 import CineCoinsModule from "./components/cinecoins/CineCoinsModule";
@@ -2201,17 +2201,6 @@ export default function App() {
             ) : (
               /* Normal Customer Immersive Single Page Website */
               <div className="animate-fade-in">
-                {/* Scroll Anchors Section */}
-                <Hero
-                  selectedCity={selectedCity}
-                  setSelectedCity={setSelectedCity}
-                  onSearch={handleSearch}
-                  cities={cities}
-                  advertisements={advertisements}
-                  onRecordAdImpression={handleRecordAdImpression}
-                  onRecordAdClick={handleRecordAdClick}
-                />
-                
                 <Featured
                   spotlight={spotlight}
                   onBookMovie={handleBookMovie}
@@ -2230,20 +2219,6 @@ export default function App() {
                   advertisements={advertisements}
                   onRecordAdImpression={handleRecordAdImpression}
                   onRecordAdClick={handleRecordAdClick}
-                />
-
-                <Theatres
-                  theatres={theatres}
-                  selectedCity={selectedCity}
-                  searchQuery={searchQuery}
-                  onSelectTheatre={(name) => {
-                    const defaultMovie = movies[0]?.title || "Kalki 2898 AD";
-                    handleBookMovie(defaultMovie);
-                  }}
-                />
-
-                <PrivateRental
-                  onOpenRental={() => setRentalOpen(true)}
                 />
 
                 <ContactForm
@@ -3017,32 +2992,80 @@ export default function App() {
       <Route path="/cookies" element={<LegalPolicies initialPolicy="cookie" />} />
       <Route path="/user-agreement" element={<LegalPolicies initialPolicy="user-agreement" />} />
 
-      {/* Dedicated Theatre Admin Workspace Route */}
+      {/* Dedicated Theatre Partner / Admin Login Route */}
+      <Route
+        path="/theatre-admin/login"
+        element={
+          <TheatreAdminLogin
+            onLoginSuccess={(email) => {
+              handleLoginSuccess(email);
+            }}
+            theatreAdmins={theatreAdmins}
+          />
+        }
+      />
+
+      {/* Dedicated Theatre Owner/Partner Admin Workspace Route (Protected) */}
       <Route
         path="/theatre-admin"
         element={
-          <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
-            <TheatreManagerDashboard
-              theatreId={activeTheatreId || (new URLSearchParams(window.location.search).get("theatreId")) || theatres[0]?.id || 1}
-              theatres={theatres}
-              bookings={bookings}
-              schedules={schedules}
-              movies={movies}
-              onClose={() => {
-                handleCloseManagerDashboard();
-                window.location.href = "/";
-              }}
-              onScheduleShow={(sch) => setSchedules([...schedules, sch])}
-              onDeleteSchedule={(id) => setSchedules(schedules.filter((s) => s.id !== id))}
-              onSettleVenueBookings={(name) => {
-                const updated = bookings.map((b) =>
-                  b.theatreName === name ? { ...b, status: "Settled" as const } : b
-                );
-                setBookings(updated);
-              }}
-              onUpdateTheatre={(t) => setTheatres(theatres.map((item) => (item.id === t.id ? t : item)))}
-            />
-          </div>
+          <ProtectedTheatreRoute requiredPortal="OWNER">
+            {({ authorizedTheatreId }) => (
+              <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
+                <TheatreManagerDashboard
+                  theatreId={authorizedTheatreId}
+                  theatres={theatres}
+                  bookings={bookings}
+                  schedules={schedules}
+                  movies={movies}
+                  onClose={() => {
+                    handleCloseManagerDashboard();
+                    window.location.href = "/";
+                  }}
+                  onScheduleShow={(sch) => setSchedules([...schedules, sch])}
+                  onDeleteSchedule={(id) => setSchedules(schedules.filter((s) => s.id !== id))}
+                  onSettleVenueBookings={(name) => {
+                    const updated = bookings.map((b) =>
+                      b.theatreName === name ? { ...b, status: "Settled" as const } : b
+                    );
+                    setBookings(updated);
+                  }}
+                  onUpdateTheatre={(t) => setTheatres(theatres.map((item) => (item.id === t.id ? t : item)))}
+                  onOpenManagerOperations={() => {
+                    window.location.href = `/theatre-manager?theatreId=${authorizedTheatreId}`;
+                  }}
+                />
+              </div>
+            )}
+          </ProtectedTheatreRoute>
+        }
+      />
+
+      {/* Dedicated Theatre Manager Operations Control Centre Route (Protected) */}
+      <Route
+        path="/theatre-manager"
+        element={
+          <ProtectedTheatreRoute requiredPortal="MANAGER">
+            {({ authorizedTheatreId, userRole }) => (
+              <div className="bg-[#09090B] min-h-screen text-slate-100">
+                <TheatreManagerOperationsDashboard
+                  theatreId={authorizedTheatreId}
+                  theatres={theatres}
+                  bookings={bookings}
+                  schedules={schedules}
+                  movies={movies}
+                  userRole={userRole}
+                  onClose={() => {
+                    handleCloseManagerDashboard();
+                    window.location.href = "/";
+                  }}
+                  onOpenOwnerPortal={() => {
+                    window.location.href = `/theatre-admin?theatreId=${authorizedTheatreId}`;
+                  }}
+                />
+              </div>
+            )}
+          </ProtectedTheatreRoute>
         }
       />
 

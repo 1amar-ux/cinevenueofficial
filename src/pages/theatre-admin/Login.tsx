@@ -1,41 +1,75 @@
-import React, { useState } from "react";
-import { Film, Shield, Lock, Mail, ArrowRight, Sparkles } from "lucide-react";
+import React, { useState, useContext } from "react";
+import { Film, Shield, Lock, Mail, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import CineVenueLogo from "../../components/CineVenueLogo";
+import apiClient from "../../services/apiClient";
+import { AuthContext } from "../../context/AuthContext";
 
 interface LoginProps {
   onLoginSuccess: (email: string) => void;
-  theatreAdmins: any[];
+  theatreAdmins?: any[];
 }
 
-export default function Login({ onLoginSuccess, theatreAdmins }: LoginProps) {
+export default function Login({ onLoginSuccess, theatreAdmins = [] }: LoginProps) {
+  const { login } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      const superAdminEmail = (import.meta as any).env?.VITE_SUPER_ADMIN_EMAIL || "";
-      const superAdminPassword = (import.meta as any).env?.VITE_SUPER_ADMIN_PASSWORD || "";
+    try {
+      const response = await apiClient.post("/auth/login", {
+        identifier: email.trim(),
+        password
+      });
 
-      const admin = theatreAdmins.find(
-        (a) => a.email.toLowerCase() === email.toLowerCase()
-      );
+      if (response.data?.success && response.data?.data?.user) {
+        const authedUser = response.data.data.user;
+        const role = authedUser.role || "CUSTOMER";
 
-      const isSuperAdmin = superAdminEmail && email.toLowerCase() === superAdminEmail.toLowerCase() && password === superAdminPassword;
-      const isTheatreAdmin = admin && password === admin.passwordHash;
+        // Enforce role barrier: Customers are blocked from Theatre Admin & Manager Portals
+        if (role !== "THEATRE_ADMIN" && role !== "THEATRE_MANAGER" && role !== "SUPER_ADMIN" && role !== "ADMIN") {
+          setError("Access denied. This workspace is strictly restricted to authorized theatre owners, administrators, and operations managers.");
+          setLoading(false);
+          return;
+        }
 
-      if (isSuperAdmin || isTheatreAdmin) {
-        onLoginSuccess(email);
+        // Store tokens for API client Bearer header
+        if (response.data?.token) {
+          localStorage.setItem("cine_auth_token", response.data.token);
+          localStorage.setItem("cine_access_token", response.data.token);
+        }
+        localStorage.setItem("cine_user_email", authedUser.email);
+        if (authedUser.theatreId) {
+          localStorage.setItem("cine_theatre_id", String(authedUser.theatreId));
+        }
+
+        login(authedUser);
+        onLoginSuccess(authedUser.email);
+
+        const targetTheatreId = authedUser.theatreId || 1;
+        if (role === "THEATRE_MANAGER") {
+          window.location.href = `/theatre-manager?theatreId=${targetTheatreId}`;
+        } else {
+          window.location.href = `/theatre-admin?theatreId=${targetTheatreId}`;
+        }
       } else {
-        setError("Invalid credentials. Please check your email and password.");
+        setError(response.data?.message || "Authentication failed. Please check your credentials.");
       }
+    } catch (err: any) {
+      console.error("[THEATRE_LOGIN_FAIL]", err);
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Invalid credentials. Please check your email and password."
+      );
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

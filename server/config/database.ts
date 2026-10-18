@@ -287,17 +287,18 @@ function applyWhereClause(query: any, where: any) {
     if (v === null) {
       q = q.is(k, null);
     } else if (v !== undefined) {
-      if (typeof v === "object") {
+      const formatVal = (val: any) => val instanceof Date ? val.toISOString() : val;
+      if (typeof v === "object" && !(v instanceof Date)) {
         if ("in" in (v as any) && Array.isArray((v as any).in)) {
-          q = q.in(k, (v as any).in);
+          q = q.in(k, (v as any).in.map(formatVal));
         } else if ("gt" in (v as any)) {
-          q = q.gt(k, (v as any).gt);
+          q = q.gt(k, formatVal((v as any).gt));
         } else if ("gte" in (v as any)) {
-          q = q.gte(k, (v as any).gte);
+          q = q.gte(k, formatVal((v as any).gte));
         } else if ("lt" in (v as any)) {
-          q = q.lt(k, (v as any).lt);
+          q = q.lt(k, formatVal((v as any).lt));
         } else if ("lte" in (v as any)) {
-          q = q.lte(k, (v as any).lte);
+          q = q.lte(k, formatVal((v as any).lte));
         } else {
           // Compound unique constraint object like provider_providerAccountId: { provider: "google", providerAccountId: "123" }
           for (const [subK, subV] of Object.entries(v as any)) {
@@ -307,7 +308,7 @@ function applyWhereClause(query: any, where: any) {
           }
         }
       } else {
-        q = q.eq(k, v);
+        q = q.eq(k, formatVal(v));
       }
     }
   }
@@ -321,8 +322,6 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   "EventTicketType",
   "AuthProvider",
   "ShowSeat",
-  "Seat",
-  "Screen",
   "EventRegistration",
   "BookingItem",
   "app_settings",

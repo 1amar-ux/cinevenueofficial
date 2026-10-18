@@ -156,14 +156,6 @@ export default function Navbar({
             )}
           </button>
 
-          <button
-            onClick={() => {
-              window.location.href = "/#theatres";
-            }}
-            className="px-4 py-2 rounded-full text-sm font-extrabold transition-all cursor-pointer border-0 bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5 whitespace-nowrap"
-          >
-            Dining / Theatres
-          </button>
 
           <button
             onClick={() => {

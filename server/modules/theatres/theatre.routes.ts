@@ -2,7 +2,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/database";
 import { NotFoundError } from "../../shared/errors";
 import { authenticate } from "../../middleware/auth";
-import { authorize } from "../../middleware/authorize";
+import { authorize, authorizeTheatre, preventManagerFinancials } from "../../middleware/authorize";
+import { theatreLayoutService } from "./theatreLayout.service";
 
 const router = Router();
 
@@ -104,7 +105,7 @@ router.post("/", authenticate, authorize("SUPER_ADMIN", "ADMIN"), async (req: Re
 });
 
 // 4. Create Screen for Theatre
-router.post("/:theatreId/screens", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:theatreId/screens", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { theatreId } = req.params;
     const { name, capacity } = req.body;
@@ -127,8 +128,99 @@ router.post("/:theatreId/screens", authenticate, authorize("SUPER_ADMIN", "ADMIN
   }
 });
 
-// 5. Get Bank Accounts for Theatre (Authorized)
-router.get("/:theatreId/bank-accounts", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+// 4A. List Screens for Authorized Theatre
+router.get("/:theatreId/screens", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { theatreId } = req.params;
+    const result = await theatreLayoutService.getTheatreScreens(theatreId);
+    return res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 4B. Get Screen Original Seat Layout
+router.get("/:theatreId/screens/:screenId/layout", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { theatreId, screenId } = req.params;
+    const layout = await theatreLayoutService.getScreenSeatLayout(theatreId, screenId);
+    return res.json({
+      success: true,
+      data: { layout }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 4C. Synchronize / Import Seat Layout from POS
+router.post("/:theatreId/screens/:screenId/sync-layout", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { theatreId, screenId } = req.params;
+    const result = await theatreLayoutService.syncScreenLayoutFromPos(theatreId, screenId);
+    return res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 4D. List Shows for Theatre on Selected Date
+router.get("/:theatreId/shows", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { theatreId } = req.params;
+    const { date, screenId } = req.query;
+    const shows = await theatreLayoutService.getTheatreShows(
+      theatreId,
+      date ? String(date) : undefined,
+      screenId ? String(screenId) : undefined
+    );
+    return res.json({
+      success: true,
+      count: shows.length,
+      data: { shows }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 4E. Get Authoritative Show-wise Seat Status & Realtime Occupancy Heatmap
+router.get("/:theatreId/shows/:showId/seat-status", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { theatreId, showId } = req.params;
+    const result = await theatreLayoutService.getShowSeatStatus(theatreId, showId);
+    return res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 4F. Refresh Live Seat Availability
+router.post("/:theatreId/shows/:showId/refresh-availability", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"), authorizeTheatre("theatreId"), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { theatreId, showId } = req.params;
+    const result = await theatreLayoutService.getShowSeatStatus(theatreId, showId);
+    return res.json({
+      success: true,
+      message: "Seat availability refreshed against authoritative inventory.",
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 5. Get Bank Accounts for Theatre (Authorized Owner only - Managers strictly forbidden)
+router.get("/:theatreId/bank-accounts", authenticate, authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN"), authorizeTheatre("theatreId"), preventManagerFinancials(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { theatreId } = req.params;
     const accounts = await prisma.theatreBankAccount.findMany({

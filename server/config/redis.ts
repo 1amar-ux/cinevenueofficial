@@ -7,6 +7,7 @@ interface RedisClientInterface {
   del(key: string): Promise<number>;
   exists(key: string): Promise<number>;
   flushall(): Promise<string>;
+  keys(pattern: string): Promise<string[]>;
   isHealthy(): Promise<boolean>;
 }
 
@@ -54,6 +55,22 @@ class InMemoryRedisFallback implements RedisClientInterface {
   async flushall(): Promise<string> {
     this.store.clear();
     return "OK";
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    const now = Date.now();
+    const result: string[] = [];
+    const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
+    for (const [k, v] of this.store.entries()) {
+      if (v.expiresAt && now > v.expiresAt) {
+        this.store.delete(k);
+        continue;
+      }
+      if (regex.test(k)) {
+        result.push(k);
+      }
+    }
+    return result;
   }
 
   async isHealthy(): Promise<boolean> {

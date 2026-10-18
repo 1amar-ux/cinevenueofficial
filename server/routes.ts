@@ -2,6 +2,7 @@ import { Router } from "express";
 import authRoutes from "./modules/auth/auth.routes";
 import movieRoutes from "./modules/movies/movie.routes";
 import theatreRoutes from "./modules/theatres/theatre.routes";
+import { theatreManagerOperationsRouter } from "./modules/theatres/theatreManagerOperations.routes";
 import showRoutes from "./modules/shows/show.routes";
 import bookingRoutes from "./modules/bookings/booking.routes";
 import movieFeeRoutes from "./modules/bookings/movieFee.routes";
@@ -72,6 +73,7 @@ router.get("/ready", async (req, res) => {
 // ==========================================
 router.use("/auth", authRoutes);
 router.use("/movies", movieRoutes);
+router.use("/theatres", theatreManagerOperationsRouter);
 router.use("/theatres", theatreRoutes);
 router.use("/shows", showRoutes);
 router.use("/bookings", bookingRoutes);

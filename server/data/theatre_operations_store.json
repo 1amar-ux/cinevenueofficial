@@ -1,0 +1,200 @@
+{
+  "tasks": [
+    {
+      "id": "task_1",
+      "theatreId": "1",
+      "title": "Screen 1 Recliner E-12 Mechanism Repair",
+      "description": "Footrest motor jammed in fully extended position. Inspect power relay.",
+      "category": "MAINTENANCE",
+      "screenName": "Audi 1 (IMAX)",
+      "assignedTo": "K. Ramesh (Maintenance Lead)",
+      "priority": "HIGH",
+      "status": "PENDING",
+      "deadline": "2026-10-18T13:11:24.446Z",
+      "createdAt": "2026-10-18T11:11:24.446Z",
+      "updatedAt": "2026-10-18T11:11:24.446Z",
+      "incidentNotes": "Seat blocked in booking system to prevent double selling."
+    },
+    {
+      "id": "task_2",
+      "theatreId": "1",
+      "title": "Audi 2 Turnaround Sanitisation between Shows",
+      "description": "Vacuum aisles, wipe armrests, and restock 3D glasses bins before 4:00 PM show.",
+      "category": "CLEANING",
+      "screenName": "Audi 2 (Dolby Atmos)",
+      "assignedTo": "Housekeeping Team B (Led by M. Suresh)",
+      "priority": "CRITICAL",
+      "status": "IN_PROGRESS",
+      "deadline": "2026-10-18T11:56:24.446Z",
+      "createdAt": "2026-10-18T11:11:24.446Z",
+      "updatedAt": "2026-10-18T11:11:24.446Z"
+    },
+    {
+      "id": "task_3",
+      "theatreId": "1",
+      "title": "Concessions Counter 3 Popcorn Machine Temp Sensor",
+      "description": "Kettle heater temperature fluctuation observed during matinee interval.",
+      "category": "EQUIPMENT",
+      "assignedTo": "V. Anand (Concessions Supervisor)",
+      "priority": "MEDIUM",
+      "status": "PENDING",
+      "deadline": "2026-10-18T15:11:24.446Z",
+      "createdAt": "2026-10-18T11:11:24.446Z",
+      "updatedAt": "2026-10-18T11:11:24.446Z"
+    },
+    {
+      "id": "task_4",
+      "theatreId": "1",
+      "title": "Customer Beverage Spill Resolution - Audi 3 Row G",
+      "description": "Patron spilled iced beverage on carpet. Quick dry extraction required.",
+      "category": "CUSTOMER_COMPLAINT",
+      "screenName": "Audi 3 (Gold Lounge)",
+      "assignedTo": "Duty Usher Team",
+      "priority": "HIGH",
+      "status": "PENDING",
+      "deadline": "2026-10-18T11:41:24.446Z",
+      "createdAt": "2026-10-18T11:11:24.446Z",
+      "updatedAt": "2026-10-18T11:11:24.446Z"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "appr_1",
+      "theatreId": "1",
+      "type": "PRICE_CHANGE",
+      "requestedBy": "Sanjay Varma (Duty Manager)",
+      "requesterRole": "THEATRE_MANAGER",
+      "status": "APPROVED",
+      "details": {
+        "showTitle": "Kalki 2898 AD",
+        "screenName": "Audi 1 (IMAX)",
+        "oldValue": "₹450",
+        "newValue": "₹500",
+        "reason": "Surge demand for weekend evening prime show approved by regional circuit distribution."
+      },
+      "createdAt": "2026-10-18T10:11:24.446Z",
+      "approvedBy": "Theatre Owner",
+      "respondedAt": "2026-10-18T11:17:35.577Z"
+    },
+    {
+      "id": "appr_2",
+      "theatreId": "1",
+      "type": "REFUND_OVERRIDE",
+      "requestedBy": "Sanjay Varma (Duty Manager)",
+      "requesterRole": "THEATRE_MANAGER",
+      "status": "APPROVED",
+      "details": {
+        "showTitle": "Coolie",
+        "bookingId": "CV-BKG-8842",
+        "refundAmount": 760,
+        "reason": "AC compressor tripped in Audi 2 for 20 minutes; patron requested partial compensatory refund."
+      },
+      "approvedBy": "P. Rajesh (Theatre Owner)",
+      "respondedAt": "2026-10-18T10:41:24.446Z",
+      "createdAt": "2026-10-18T09:11:24.446Z",
+      "comments": "Approved under goodwill budget code GW-AUDI2."
+    }
+  ],
+  "checklists": [
+    {
+      "id": "chk_open_today",
+      "theatreId": "1",
+      "date": "2026-10-18",
+      "type": "OPENING",
+      "completedBy": "Sanjay Varma (Duty Manager)",
+      "signOffManager": "Sanjay Varma",
+      "status": "COMPLETED",
+      "completedAt": "2026-10-18T06:11:24.446Z",
+      "items": [
+        {
+          "id": "1",
+          "task": "DCP Server and Projector Lamp Power Check",
+          "done": true,
+          "verifiedBy": "K. Ramesh"
+        },
+        {
+          "id": "2",
+          "task": "Dolby Atmos Processor & Subwoofer Sweep",
+          "done": true,
+          "verifiedBy": "K. Ramesh"
+        },
+        {
+          "id": "3",
+          "task": "Box Office POS Terminals & UPI QR displays active",
+          "done": true,
+          "verifiedBy": "Cashier Shift A"
+        },
+        {
+          "id": "4",
+          "task": "Turnstile QR Scanner connectivity test (Gate 1 & 2)",
+          "done": true,
+          "verifiedBy": "Security Lead"
+        },
+        {
+          "id": "5",
+          "task": "Fire Extinguishers & Emergency Exit Pathways Clear",
+          "done": true,
+          "verifiedBy": "Sanjay Varma"
+        }
+      ]
+    }
+  ],
+  "shifts": [
+    {
+      "id": "shift_1",
+      "theatreId": "1",
+      "cashierName": "P. Lakshmi",
+      "counterNumber": "Box Office Counter 1",
+      "shiftType": "MORNING",
+      "status": "ACTIVE",
+      "openingFloat": 2500,
+      "upiAmount": 34200,
+      "ticketsSold": 84,
+      "openedAt": "2026-10-18T07:11:24.446Z",
+      "notes": "Float verified with ₹100 x 15, ₹50 x 20 notes."
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log_1792322255577",
+      "theatreId": "1",
+      "timestamp": "2026-10-18T11:17:35.577Z",
+      "action": "APPROVAL_DECISION_APPROVED",
+      "category": "APPROVAL",
+      "performedBy": "Theatre Owner",
+      "userRole": "THEATRE_ADMIN",
+      "details": {
+        "approvalId": "appr_1",
+        "status": "APPROVED"
+      }
+    },
+    {
+      "id": "log_1",
+      "theatreId": "1",
+      "timestamp": "2026-10-18T06:11:24.446Z",
+      "action": "DAILY_OPENING_CHECKLIST_SIGNED",
+      "category": "SECURITY",
+      "performedBy": "Sanjay Varma (Duty Manager)",
+      "userRole": "THEATRE_MANAGER",
+      "details": {
+        "screensVerified": 4,
+        "issuesLogged": 0
+      }
+    },
+    {
+      "id": "log_2",
+      "theatreId": "1",
+      "timestamp": "2026-10-18T08:11:24.446Z",
+      "action": "SEAT_MAINTENANCE_BLOCKED",
+      "category": "OVERRIDE",
+      "performedBy": "Sanjay Varma (Duty Manager)",
+      "userRole": "THEATRE_MANAGER",
+      "details": {
+        "screenName": "Audi 1",
+        "seatNumber": "E-12",
+        "reason": "Recliner mechanical repair"
+      }
+    }
+  ],
+  "supportTickets": []
+}

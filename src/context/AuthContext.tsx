@@ -10,6 +10,7 @@ export interface AuthUser {
   role?: string;
   isVerified?: boolean;
   profileImageUrl?: string | null;
+  theatreId?: string | number;
 }
 
 interface AuthContextType {

@@ -38,10 +38,15 @@ class ApiClient {
       timeout: 15000
     });
 
-    // Request Interceptor: attach admin passcode header if present in localStorage
+    // Request Interceptor: attach JWT Bearer token and admin passcode header if present
     this.client.interceptors.request.use(
       (config) => {
         if (typeof window !== "undefined") {
+          const token = localStorage.getItem("cine_auth_token") || localStorage.getItem("token") || localStorage.getItem("cine_access_token");
+          if (token && config.headers && !config.headers.Authorization) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+
           const passcode = localStorage.getItem("cine_admin_passcode");
           if (passcode && config.headers) {
             (config.headers as any)["x-admin-passcode"] = passcode;

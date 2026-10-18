@@ -3,7 +3,7 @@
     "enabled": true,
     "defaultGstRate": 18,
     "defaultFeeApplication": "PER_TICKET",
-    "updatedAt": "2026-10-15T05:43:14.592Z",
+    "updatedAt": "2026-10-18T11:07:05.973Z",
     "updatedBy": "Super Admin"
   },
   "configs": [
@@ -224,5 +224,5 @@
       "updatedAt": "2026-10-15T05:25:54.368Z"
     }
   ],
-  "updatedAt": "2026-10-15T05:43:15.963Z"
+  "updatedAt": "2026-10-18T11:07:07.657Z"
 }

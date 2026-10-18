@@ -84,17 +84,55 @@ router.all("/verify", async (req: Request, res: Response, next: NextFunction) =>
         });
       }
 
-      // If checkIn requested, mark used
+      // Check show status & eligibility
+      if (booking?.show && booking.show.status === "CANCELLED") {
+        return res.json({
+          success: true,
+          status: "CANCELLED",
+          message: "The scheduled show for this ticket has been cancelled. Entry denied.",
+          ticket: {
+            ticketCode: movieTicket.ticketCode,
+            bookingNumber: booking.bookingNumber,
+            title: booking.show?.movie?.title || "Movie Show",
+            venue: booking.theatre?.name || "Theatre",
+            status: "CANCELLED"
+          }
+        });
+      }
+
+      // If checkIn requested, mark used atomically to prevent concurrent double check-in
       if (doCheckIn) {
-        await prisma.ticket.update({
-          where: { id: movieTicket.id },
+        const updateResult = await prisma.ticket.updateMany({
+          where: {
+            id: movieTicket.id,
+            isUsed: false
+          },
           data: {
             isUsed: true,
             usedAt: new Date(),
             scannedBy: operatorName
           }
         });
-        logger.info(`Ticket ${movieTicket.ticketCode} checked in by ${operatorName}`);
+
+        if (updateResult.count === 0) {
+          // Another scanner terminal checked this ticket in concurrently!
+          const refreshedTicket = await prisma.ticket.findUnique({ where: { id: movieTicket.id } });
+          return res.json({
+            success: true,
+            status: "ALREADY_USED",
+            message: `Ticket already checked in at ${refreshedTicket?.usedAt ? new Date(refreshedTicket.usedAt).toLocaleTimeString() : "an earlier moment"}. Concurrent duplicate admission blocked.`,
+            ticket: {
+              ticketCode: movieTicket.ticketCode,
+              bookingNumber: booking?.bookingNumber,
+              title: booking?.show?.movie?.title || "Movie Show",
+              venue: booking?.theatre?.name || "Theatre",
+              usedAt: refreshedTicket?.usedAt,
+              scannedBy: refreshedTicket?.scannedBy
+            }
+          });
+        }
+
+        logger.info(`Ticket ${movieTicket.ticketCode} safely checked in by ${operatorName}`);
       }
 
       return res.json({
@@ -157,28 +195,22 @@ router.all("/verify", async (req: Request, res: Response, next: NextFunction) =>
       });
     }
 
-    // 3. Check for synthetic/offline encrypted QR tokens (e.g. CVQR-*)
-    if (cleanToken.startsWith("CVQR-") || cleanToken.startsWith("QR_") || cleanToken.startsWith("PASS-")) {
-      return res.json({
-        success: true,
-        status: "VALID",
-        message: "Digital entry token verified through CineVenue Cryptographic Authority.",
-        ticket: {
-          token: cleanToken,
-          type: cleanToken.includes("EVT") ? "EVENT" : "MOVIE",
-          verifiedAt: new Date().toISOString()
-        }
-      });
-    }
-
+    // Strict validation: Reject fabricated and non-existent tokens
     return res.status(404).json({
       success: false,
       status: "INVALID",
-      message: "No matching CineVenue ticket or admission pass found. Entry denied."
+      message: "No matching CineVenue ticket or admission pass found in authoritative database. Entry denied."
     });
   } catch (error) {
     next(error);
   }
+});
+
+// Alias to ensure both /verify and /validate work consistently
+router.all("/validate", async (req: Request, res: Response, next: NextFunction) => {
+  // Delegate to /verify handler logic
+  req.url = "/verify";
+  return router.handle(req, res, next);
 });
 
 export default router;

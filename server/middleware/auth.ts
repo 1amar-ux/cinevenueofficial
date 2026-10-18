@@ -6,8 +6,9 @@ import { UnauthorizedError } from "../shared/errors";
 export interface AuthenticatedUserPayload {
   userId: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "THEATRE_ADMIN" | "EVENT_ORGANIZER" | "CUSTOMER";
+  role: "SUPER_ADMIN" | "ADMIN" | "THEATRE_ADMIN" | "THEATRE_MANAGER" | "EVENT_ORGANIZER" | "CUSTOMER";
   name?: string;
+  theatreId?: string;
 }
 
 declare global {
