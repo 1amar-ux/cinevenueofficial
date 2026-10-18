@@ -6,7 +6,7 @@ const supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || process.env.
 const supabaseSecretKey =
   env.SUPABASE_SECRET_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
-  Buffer.from("c2Jfc2VjcmV0X1k1S3lDVDdCT1dzRnJRTm4yQjNLR2dfQndLUVNGOTE=", "base64").toString("utf-8");
+  Buffer.from("c2Jfc2VjcmV0X1k1S3lDVDdCT1dzRnJRTm4yQjNLSmdfQndLUVNGOTE=", "base64").toString("utf-8");
 
 export const isSupabaseAdminConfigured = Boolean(
   supabaseUrl &&

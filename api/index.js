@@ -207,7 +207,7 @@ var init_supabaseAdmin = __esm({
     init_env();
     init_logger();
     supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://mpeedjoyvimegnmymweb.supabase.co";
-    supabaseSecretKey = env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SECRET_KEY || Buffer.from("c2Jfc2VjcmV0X1k1S3lDVDdCT1dzRnJRTm4yQjNLR2dfQndLUVNGOTE=", "base64").toString("utf-8");
+    supabaseSecretKey = env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SECRET_KEY || Buffer.from("c2Jfc2VjcmV0X1k1S3lDVDdCT1dzRnJRTm4yQjNLSmdfQndLUVNGOTE=", "base64").toString("utf-8");
     isSupabaseAdminConfigured = Boolean(
       supabaseUrl && supabaseSecretKey
     );
@@ -1660,8 +1660,8 @@ var init_emailService = __esm({
 });
 
 // server/serverless.ts
-import fs5 from "fs";
-import path5 from "path";
+import fs6 from "fs";
+import path6 from "path";
 
 // server/app.ts
 init_env();
@@ -1735,7 +1735,8 @@ function isDbConnectionError(err) {
   if (!err) return false;
   const msg = String(err.message || "").toLowerCase();
   const code = String(err.code || "").toUpperCase();
-  return code === "P1001" || code === "P1002" || code === "P1003" || code === "ECONNREFUSED" || code === "ETIMEDOUT" || code === "ENOTFOUND" || msg.includes("can't reach database server") || msg.includes("connection closed") || msg.includes("prismaclientinitializationerror") || msg.includes("prismaclientrustpanicerror") || msg.includes("database server is running");
+  const name = String(err.name || "").toLowerCase();
+  return code === "P1001" || code === "P1002" || code === "P1003" || code === "P2021" || code === "P2022" || code === "P2024" || code === "ECONNREFUSED" || code === "ETIMEDOUT" || code === "ENOTFOUND" || code === "EAI_AGAIN" || name.includes("prismaclientinitializationerror") || name.includes("prismaclientrustpanicerror") || msg.includes("can't reach database server") || msg.includes("connection closed") || msg.includes("prismaclientinitializationerror") || msg.includes("prismaclientrustpanicerror") || msg.includes("database server is running") || msg.includes("database offline") || msg.includes("tenant or user not found") || msg.includes("password authentication failed") || msg.includes("prepared statement") || msg.includes("timed out") || msg.includes("timeout") || msg.includes("pool") || msg.includes("ssl") || msg.includes("does not exist");
 }
 var AuthService = class {
   generateEmailVerificationToken() {
@@ -1762,63 +1763,177 @@ var AuthService = class {
   }
   async register(data) {
     const emailLower = data.email.toLowerCase().trim();
+    const rawMobile = (data.mobile || "").trim();
+    const digitsOnly = rawMobile.replace(/\D/g, "");
+    const phone10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+    const cleanMobile = phone10 ? phone10.length === 10 ? phone10 : rawMobile : null;
     try {
-      const existing = await prisma.user.findUnique({
+      const existingEmail = await prisma.user.findFirst({
         where: { email: emailLower }
+      }).catch((e) => {
+        logger.warn(`findUnique email check notice: ${e.message}`);
+        return null;
       });
-      if (existing) {
-        throw new ConflictError("An account with this email address already exists.");
+      if (existingEmail) {
+        throw new ConflictError("An account with this email address already exists. Please sign in instead.");
       }
-      if (data.mobile) {
-        const existingMobile = await prisma.user.findFirst({ where: { mobile: data.mobile } });
-        if (existingMobile) throw new ConflictError("An account with this mobile number already exists.");
+      if (phone10 && phone10.length >= 10) {
+        const existingMobile = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { mobile: rawMobile },
+              { mobile: phone10 },
+              { mobile: `+91${phone10}` },
+              { mobile: `91${phone10}` },
+              { mobile: `0${phone10}` }
+            ]
+          }
+        }).catch((e) => {
+          logger.warn(`findFirst mobile check notice: ${e.message}`);
+          return null;
+        });
+        if (existingMobile) {
+          const exEmail = String(existingMobile.email || "").toLowerCase();
+          if (exEmail.endsWith(".test") || exEmail.includes("@cinevenue.test") || exEmail.endsWith("@example.com")) {
+            logger.info(`Reclaiming mobile number ${cleanMobile} from mock account ${exEmail}`);
+            await prisma.user.update({
+              where: { id: existingMobile.id },
+              data: { mobile: null }
+            }).catch(() => null);
+          } else {
+            throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+          }
+        }
+      }
+      for (const existing of resilientUsers.values()) {
+        if (existing.email === emailLower) {
+          throw new ConflictError("An account with this email address already exists. Please sign in instead.");
+        }
+        if (cleanMobile && existing.mobile === cleanMobile) {
+          throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+        }
       }
       const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
-      const user = await prisma.user.create({
-        data: {
-          email: emailLower,
-          passwordHash,
-          name: data.name,
-          mobile: data.mobile || null,
-          role: "CUSTOMER",
-          isVerified: emailLower.endsWith("@cinevenue.test") || process.env.NODE_ENV === "test",
-          wallet: {
-            create: {
-              balance: 100,
-              // 100 welcome CineCoins
-              lifetimeEarned: 100,
-              totalRedeemed: 0
-            }
+      let user = null;
+      try {
+        user = await prisma.user.create({
+          data: {
+            email: emailLower,
+            passwordHash,
+            name: data.name.trim(),
+            mobile: cleanMobile,
+            role: "CUSTOMER",
+            isVerified: true
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            mobile: true,
+            role: true,
+            createdAt: true
           }
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          mobile: true,
-          role: true,
-          createdAt: true
+        });
+      } catch (createErr) {
+        const msg = String(createErr.message || "").toLowerCase();
+        const code = String(createErr.code || "").toUpperCase();
+        if (code === "P2002" || code === "23505" || msg.includes("duplicate key") || msg.includes("unique constraint") || msg.includes("already exists")) {
+          const isMobile = msg.includes("mobile") || createErr.meta?.target && String(createErr.meta.target).includes("mobile");
+          if (isMobile) {
+            try {
+              const testHolder = await prisma.user.findFirst({
+                where: { OR: [{ mobile: rawMobile }, { mobile: cleanMobile }] }
+              });
+              const holderEmail = String(testHolder?.email || "").toLowerCase();
+              if (testHolder && (holderEmail.endsWith(".test") || holderEmail.includes("@cinevenue.test") || holderEmail.endsWith("@example.com"))) {
+                logger.info(`Reclaiming mobile ${cleanMobile} from test account ${holderEmail} after P2002/23505`);
+                await prisma.user.update({
+                  where: { id: testHolder.id },
+                  data: { mobile: null }
+                });
+                user = await prisma.user.create({
+                  data: {
+                    email: emailLower,
+                    passwordHash,
+                    name: data.name.trim(),
+                    mobile: cleanMobile,
+                    role: "CUSTOMER",
+                    isVerified: true
+                  },
+                  select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    mobile: true,
+                    role: true,
+                    createdAt: true
+                  }
+                });
+              } else {
+                throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+              }
+            } catch (retryErr) {
+              if (retryErr instanceof ConflictError) throw retryErr;
+              throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+            }
+          } else {
+            throw new ConflictError("An account with this email address already exists. Please sign in instead.");
+          }
         }
-      });
+        logger.warn(`Database user create exception: ${createErr.message}. Activating resilient user session.`);
+        user = {
+          id: `usr_${randomBytes(8).toString("hex")}`,
+          email: emailLower,
+          name: data.name.trim(),
+          mobile: cleanMobile,
+          passwordHash,
+          role: "CUSTOMER",
+          isActive: true,
+          isVerified: true,
+          createdAt: /* @__PURE__ */ new Date()
+        };
+        resilientUsers.set(user.id, user);
+      }
+      try {
+        await prisma.cineCoinWallet?.create?.({
+          data: {
+            userId: user.id,
+            balance: 100,
+            // 100 welcome CineCoins
+            lifetimeEarned: 100,
+            totalRedeemed: 0
+          }
+        });
+      } catch (wErr) {
+        logger.debug(`Wallet creation notice: ${wErr?.message || wErr}`);
+      }
       const tokens = this.generateTokens(user);
       const { rawToken, tokenHash } = this.generateEmailVerificationToken();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1e3);
-      await prisma.emailVerificationToken.create({
-        data: {
-          tokenHash,
-          userId: user.id,
-          expiresAt
-        }
-      });
-      const refreshExpiresAt = /* @__PURE__ */ new Date();
-      refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
-      await prisma.refreshToken.create({
-        data: {
-          token: tokens.refreshToken,
-          userId: user.id,
-          expiresAt: refreshExpiresAt
-        }
-      });
+      try {
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1e3);
+        await prisma.emailVerificationToken.create({
+          data: {
+            tokenHash,
+            userId: user.id,
+            expiresAt
+          }
+        });
+      } catch (tokErr) {
+        logger.debug(`EmailVerificationToken creation notice: ${tokErr?.message || tokErr}`);
+      }
+      try {
+        const refreshExpiresAt = /* @__PURE__ */ new Date();
+        refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
+        await prisma.refreshToken.create({
+          data: {
+            token: tokens.refreshToken,
+            userId: user.id,
+            expiresAt: refreshExpiresAt
+          }
+        });
+      } catch (refErr) {
+        logger.debug(`RefreshToken storage notice: ${refErr?.message || refErr}`);
+      }
       logger.info(`User registered successfully: ${user.email}`);
       return {
         user,
@@ -1829,51 +1944,57 @@ var AuthService = class {
       if (err instanceof ConflictError || err instanceof ValidationError) {
         throw err;
       }
-      if (isDbConnectionError(err)) {
-        logger.warn(`Database unreachable during register: ${err.message}. Activating resilient user session.`);
-        for (const existing of resilientUsers.values()) {
-          if (existing.email === emailLower) {
-            throw new ConflictError("An account with this email address already exists.");
-          }
-          if (data.mobile && existing.mobile === data.mobile) {
-            throw new ConflictError("An account with this mobile number already exists.");
-          }
+      const msg = String(err.message || "").toLowerCase();
+      const code = String(err.code || "").toUpperCase();
+      if (code === "P2002" || code === "23505" || msg.includes("duplicate key") || msg.includes("unique constraint") || msg.includes("already exists")) {
+        const isMobile = msg.includes("mobile") || err.meta?.target && String(err.meta.target).includes("mobile");
+        if (isMobile) {
+          throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
         }
-        const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
-        const resilientUser = {
-          id: `usr_${randomBytes(8).toString("hex")}`,
-          email: emailLower,
-          name: data.name,
-          mobile: data.mobile || null,
-          passwordHash,
-          role: "CUSTOMER",
-          isActive: true,
-          isVerified: true,
-          createdAt: /* @__PURE__ */ new Date(),
-          wallet: {
-            balance: 100,
-            lifetimeEarned: 100,
-            totalRedeemed: 0
-          }
-        };
-        resilientUsers.set(resilientUser.id, resilientUser);
-        const tokens = this.generateTokens(resilientUser);
-        const { rawToken } = this.generateEmailVerificationToken();
-        logger.info(`Resilient session user registered: ${resilientUser.email}`);
-        return {
-          user: {
-            id: resilientUser.id,
-            email: resilientUser.email,
-            name: resilientUser.name,
-            mobile: resilientUser.mobile,
-            role: resilientUser.role,
-            createdAt: resilientUser.createdAt
-          },
-          tokens,
-          verificationToken: rawToken
-        };
+        throw new ConflictError("An account with this email address already exists. Please sign in instead.");
       }
-      throw err;
+      logger.warn(`Register resilient fallback activated for ${emailLower}: ${err.message}`);
+      for (const existing of resilientUsers.values()) {
+        if (existing.email === emailLower) {
+          throw new ConflictError("An account with this email address already exists. Please sign in instead.");
+        }
+        if (cleanMobile && existing.mobile === cleanMobile) {
+          throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+        }
+      }
+      const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
+      const resilientUser = {
+        id: `usr_${randomBytes(8).toString("hex")}`,
+        email: emailLower,
+        name: data.name.trim(),
+        mobile: cleanMobile,
+        passwordHash,
+        role: "CUSTOMER",
+        isActive: true,
+        isVerified: true,
+        createdAt: /* @__PURE__ */ new Date(),
+        wallet: {
+          balance: 100,
+          lifetimeEarned: 100,
+          totalRedeemed: 0
+        }
+      };
+      resilientUsers.set(resilientUser.id, resilientUser);
+      const tokens = this.generateTokens(resilientUser);
+      const { rawToken } = this.generateEmailVerificationToken();
+      logger.info(`Resilient session user registered: ${resilientUser.email}`);
+      return {
+        user: {
+          id: resilientUser.id,
+          email: resilientUser.email,
+          name: resilientUser.name,
+          mobile: resilientUser.mobile,
+          role: resilientUser.role,
+          createdAt: resilientUser.createdAt
+        },
+        tokens,
+        verificationToken: rawToken
+      };
     }
   }
   async login(data) {
@@ -1911,16 +2032,24 @@ var AuthService = class {
         user.isVerified = true;
       }
       const tokens = this.generateTokens(user);
-      await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: /* @__PURE__ */ new Date() } });
-      const expiresAt = /* @__PURE__ */ new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-      await prisma.refreshToken.create({
-        data: {
-          token: tokens.refreshToken,
-          userId: user.id,
-          expiresAt
-        }
-      });
+      try {
+        await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: /* @__PURE__ */ new Date() } });
+      } catch (logErr) {
+        logger.debug(`lastLoginAt update notice: ${logErr?.message || logErr}`);
+      }
+      try {
+        const expiresAt = /* @__PURE__ */ new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+        await prisma.refreshToken.create({
+          data: {
+            token: tokens.refreshToken,
+            userId: user.id,
+            expiresAt
+          }
+        });
+      } catch (tokErr) {
+        logger.debug(`RefreshToken storage notice: ${tokErr?.message || tokErr}`);
+      }
       logger.info(`User logged in successfully: ${user.email} (Role: ${user.role})`);
       return {
         user: {
@@ -7307,6 +7436,8 @@ var cinecoins_routes_default = router8;
 init_database();
 import { Router as Router9 } from "express";
 import { randomBytes as randomBytes2 } from "crypto";
+import fs3 from "fs";
+import path3 from "path";
 import bcrypt2 from "bcryptjs";
 init_emailService();
 init_logger();
@@ -8369,6 +8500,252 @@ router9.delete("/:id", async (req, res, next) => {
     return res.json({
       success: true,
       message: `Event ${id} deleted successfully.`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+var PROPOSALS_FILE_PATH = path3.join(process.cwd(), "server", "config", "event_proposals.json");
+function readProposalsStore() {
+  try {
+    if (fs3.existsSync(PROPOSALS_FILE_PATH)) {
+      const raw = fs3.readFileSync(PROPOSALS_FILE_PATH, "utf-8");
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    logger.warn({ error: e }, "Failed to read event proposals file");
+  }
+  return [];
+}
+function writeProposalsStore(proposals) {
+  try {
+    fs3.writeFileSync(PROPOSALS_FILE_PATH, JSON.stringify(proposals, null, 2), "utf-8");
+  } catch (e) {
+    logger.error({ error: e }, "Failed to write event proposals file");
+  }
+}
+router9.get("/proposals", async (req, res, next) => {
+  try {
+    const { category, status, email } = req.query;
+    let list = readProposalsStore();
+    if (category) {
+      list = list.filter((p) => p.category === category);
+    }
+    if (status) {
+      list = list.filter((p) => p.status === status);
+    }
+    if (email) {
+      const emailLower = String(email).toLowerCase();
+      list = list.filter((p) => (p.email || "").toLowerCase() === emailLower);
+    }
+    return res.json({
+      success: true,
+      data: list
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.post("/proposals", async (req, res, next) => {
+  try {
+    const proposalData = req.body;
+    if (!proposalData.eventName || !proposalData.email) {
+      return res.status(400).json({ success: false, message: "Event name and contact email are required." });
+    }
+    const list = readProposalsStore();
+    const existingIndex = list.findIndex((p) => p.id === proposalData.id || p.referenceId === proposalData.referenceId);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    let saved;
+    if (existingIndex >= 0) {
+      saved = {
+        ...list[existingIndex],
+        ...proposalData,
+        updatedAt: now
+      };
+      list[existingIndex] = saved;
+    } else {
+      const refYear = (/* @__PURE__ */ new Date()).getFullYear();
+      const randNum = Math.floor(1e4 + Math.random() * 9e4);
+      const generatedRef = `CVE-PROP-${refYear}-${randNum}`;
+      saved = {
+        ...proposalData,
+        id: proposalData.id || generatedRef,
+        referenceId: proposalData.referenceId || generatedRef,
+        status: proposalData.status || "New",
+        createdAt: proposalData.createdAt || now,
+        updatedAt: now,
+        internalNotes: proposalData.internalNotes || [],
+        followUps: proposalData.followUps || [],
+        isConvertedToEvent: false
+      };
+      list.unshift(saved);
+    }
+    writeProposalsStore(list);
+    return res.status(201).json({
+      success: true,
+      message: "Proposal saved successfully.",
+      data: saved
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.put("/proposals/:id/status", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, note, authorName, nextFollowUpDate } = req.body;
+    const list = readProposalsStore();
+    const item = list.find((p) => p.id === id || p.referenceId === id);
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+    item.status = status;
+    item.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    if (nextFollowUpDate) {
+      item.nextFollowUpDate = nextFollowUpDate;
+    }
+    if (note) {
+      const followUp = {
+        id: `FU-${Date.now()}`,
+        date: (/* @__PURE__ */ new Date()).toISOString(),
+        type: "Status Change",
+        summary: `Status changed to: ${status}. ${note}`,
+        nextFollowUpDate: nextFollowUpDate || item.nextFollowUpDate,
+        authorName: authorName || "Executive Admin"
+      };
+      item.followUps = [followUp, ...item.followUps || []];
+    }
+    writeProposalsStore(list);
+    return res.json({
+      success: true,
+      message: `Status updated to ${status}.`,
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.put("/proposals/:id/manager", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { managerName, managerEmail } = req.body;
+    const list = readProposalsStore();
+    const item = list.find((p) => p.id === id || p.referenceId === id);
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+    item.assignedEventManager = managerName;
+    item.assignedManagerEmail = managerEmail;
+    item.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    const followUp = {
+      id: `FU-${Date.now()}`,
+      date: (/* @__PURE__ */ new Date()).toISOString(),
+      type: "Manager Assignment",
+      summary: `Assigned event production manager: ${managerName}`,
+      authorName: "Operations Directorate"
+    };
+    item.followUps = [followUp, ...item.followUps || []];
+    writeProposalsStore(list);
+    return res.json({
+      success: true,
+      message: `Manager ${managerName} assigned successfully.`,
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.post("/proposals/:id/follow-up", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { type, summary, nextFollowUpDate, authorName } = req.body;
+    const list = readProposalsStore();
+    const item = list.find((p) => p.id === id || p.referenceId === id);
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+    const followUp = {
+      id: `FU-${Date.now()}`,
+      date: (/* @__PURE__ */ new Date()).toISOString(),
+      type: type || "Internal Note",
+      summary: summary || "",
+      nextFollowUpDate,
+      authorName: authorName || "CineVenue Executive"
+    };
+    item.followUps = [followUp, ...item.followUps || []];
+    item.lastFollowUpDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    if (nextFollowUpDate) {
+      item.nextFollowUpDate = nextFollowUpDate;
+    }
+    item.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    writeProposalsStore(list);
+    return res.json({
+      success: true,
+      message: "Follow-up recorded.",
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.put("/proposals/:id/quotation", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { quotation } = req.body;
+    const list = readProposalsStore();
+    const item = list.find((p) => p.id === id || p.referenceId === id);
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+    item.quotation = quotation;
+    item.status = "Quotation Sent";
+    item.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    const followUp = {
+      id: `FU-${Date.now()}`,
+      date: (/* @__PURE__ */ new Date()).toISOString(),
+      type: "Quotation Generated",
+      summary: `Quotation #${quotation?.quotationNumber || "N/A"} generated with total \u20B9${quotation?.grandTotal?.toLocaleString("en-IN") || 0}.`,
+      authorName: quotation?.preparedBy || "CineVenue Executive"
+    };
+    item.followUps = [followUp, ...item.followUps || []];
+    writeProposalsStore(list);
+    return res.json({
+      success: true,
+      message: "Quotation saved and linked to proposal.",
+      data: item
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router9.post("/proposals/:id/convert", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const list = readProposalsStore();
+    const item = list.find((p) => p.id === id || p.referenceId === id);
+    if (!item) {
+      return res.status(404).json({ success: false, message: "Proposal not found." });
+    }
+    if (item.isConvertedToEvent && item.convertedEventId) {
+      return res.status(400).json({
+        success: false,
+        message: `Proposal has already been converted to Event #${item.convertedEventId}.`
+      });
+    }
+    const eventId = `EVT-${Date.now()}`;
+    item.isConvertedToEvent = true;
+    item.convertedEventId = eventId;
+    item.convertedAt = (/* @__PURE__ */ new Date()).toISOString();
+    item.status = "Converted to Event";
+    item.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    writeProposalsStore(list);
+    return res.json({
+      success: true,
+      message: "Proposal converted to live Event.",
+      data: {
+        proposal: item,
+        eventId
+      }
     });
   } catch (error) {
     next(error);
@@ -11540,10 +11917,10 @@ import { Router as Router16 } from "express";
 // server/modules/advertising/advertising.service.ts
 init_env();
 init_logger();
-import fs3 from "fs";
-import path3 from "path";
-var DATA_FILE_PATH = path3.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
-var PLACEMENTS_FILE_PATH = path3.resolve(process.cwd(), "server/config/live_banner_placements.json");
+import fs4 from "fs";
+import path4 from "path";
+var DATA_FILE_PATH = path4.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
+var PLACEMENTS_FILE_PATH = path4.resolve(process.cwd(), "server/config/live_banner_placements.json");
 var DEFAULT_PLACEMENTS = [
   {
     id: "homepage_top",
@@ -11704,14 +12081,14 @@ var AdvertisingService = class {
   loadData() {
     if (this.isLoaded) return;
     try {
-      if (fs3.existsSync(PLACEMENTS_FILE_PATH)) {
-        const raw = fs3.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
+      if (fs4.existsSync(PLACEMENTS_FILE_PATH)) {
+        const raw = fs4.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
         this.placements = JSON.parse(raw);
       } else {
         this.savePlacements();
       }
-      if (fs3.existsSync(DATA_FILE_PATH)) {
-        const raw = fs3.readFileSync(DATA_FILE_PATH, "utf8");
+      if (fs4.existsSync(DATA_FILE_PATH)) {
+        const raw = fs4.readFileSync(DATA_FILE_PATH, "utf8");
         this.campaigns = JSON.parse(raw);
       } else {
         this.saveCampaigns();
@@ -11727,18 +12104,18 @@ var AdvertisingService = class {
   }
   saveCampaigns() {
     try {
-      const dir = path3.dirname(DATA_FILE_PATH);
-      if (!fs3.existsSync(dir)) fs3.mkdirSync(dir, { recursive: true });
-      fs3.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
+      const dir = path4.dirname(DATA_FILE_PATH);
+      if (!fs4.existsSync(dir)) fs4.mkdirSync(dir, { recursive: true });
+      fs4.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner campaigns: ${err.message}`);
     }
   }
   savePlacements() {
     try {
-      const dir = path3.dirname(PLACEMENTS_FILE_PATH);
-      if (!fs3.existsSync(dir)) fs3.mkdirSync(dir, { recursive: true });
-      fs3.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
+      const dir = path4.dirname(PLACEMENTS_FILE_PATH);
+      if (!fs4.existsSync(dir)) fs4.mkdirSync(dir, { recursive: true });
+      fs4.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
     } catch (err) {
       logger.error(`Failed saving live banner placements: ${err.message}`);
     }
@@ -12455,8 +12832,8 @@ init_database();
 import { Router as Router17 } from "express";
 import bcrypt3 from "bcryptjs";
 import jwt3 from "jsonwebtoken";
-import fs4 from "fs";
-import path4 from "path";
+import fs5 from "fs";
+import path5 from "path";
 init_env();
 var employeeRouter = Router17();
 var SYSTEM_MODULES = [
@@ -12635,11 +13012,11 @@ var INITIAL_ROLES = [
     }
   }
 ];
-var FALLBACK_STORE_PATH = path4.resolve(process.cwd(), "server/config/employee_store.json");
+var FALLBACK_STORE_PATH = path5.resolve(process.cwd(), "server/config/employee_store.json");
 function loadFallbackStore() {
   try {
-    if (fs4.existsSync(FALLBACK_STORE_PATH)) {
-      const data = JSON.parse(fs4.readFileSync(FALLBACK_STORE_PATH, "utf-8"));
+    if (fs5.existsSync(FALLBACK_STORE_PATH)) {
+      const data = JSON.parse(fs5.readFileSync(FALLBACK_STORE_PATH, "utf-8"));
       return data;
     }
   } catch (err) {
@@ -12749,9 +13126,9 @@ function loadFallbackStore() {
 }
 function saveFallbackStore(store) {
   try {
-    const dir = path4.dirname(FALLBACK_STORE_PATH);
-    if (!fs4.existsSync(dir)) fs4.mkdirSync(dir, { recursive: true });
-    fs4.writeFileSync(FALLBACK_STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
+    const dir = path5.dirname(FALLBACK_STORE_PATH);
+    if (!fs5.existsSync(dir)) fs5.mkdirSync(dir, { recursive: true });
+    fs5.writeFileSync(FALLBACK_STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
   } catch (err) {
     console.error("[EMPLOYEE_STORE_WRITE_ERROR]", err);
   }
@@ -13635,13 +14012,13 @@ router16.get(["/public/platform-config", "/public/maintenance-status"], async (r
 });
 router16.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
   try {
-    const fs6 = await import("fs");
-    const path6 = await import("path");
-    const configPath = path6.resolve(process.cwd(), "platform_config.json");
+    const fs7 = await import("fs");
+    const path7 = await import("path");
+    const configPath = path7.resolve(process.cwd(), "platform_config.json");
     let currentConfig = {};
-    if (fs6.existsSync(configPath)) {
+    if (fs7.existsSync(configPath)) {
       try {
-        currentConfig = JSON.parse(fs6.readFileSync(configPath, "utf-8"));
+        currentConfig = JSON.parse(fs7.readFileSync(configPath, "utf-8"));
       } catch (e) {
       }
     }
@@ -13654,7 +14031,7 @@ router16.all(["/admin/platform-config", "/public/event-highlights"], async (req,
         currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
       }
       currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-      fs6.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+      fs7.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
       return res.json({
         success: true,
         message: "Highlights updated successfully.",
@@ -14345,8 +14722,8 @@ google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
 init_database();
 init_supabaseAdmin();
 init_maintenance();
-var CONFIG_FILE_PATH2 = path5.resolve(process.cwd(), "server/config/global_settings.json");
-var TMP_CONFIG_PATH2 = path5.resolve("/tmp", "cine_global_settings.json");
+var CONFIG_FILE_PATH2 = path6.resolve(process.cwd(), "server/config/global_settings.json");
+var TMP_CONFIG_PATH2 = path6.resolve("/tmp", "cine_global_settings.json");
 var globalServerlessState = {
   globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
@@ -14369,8 +14746,8 @@ var globalServerlessState = {
 function syncServerlessStateFromDisk() {
   const readFromPath = (p) => {
     try {
-      if (fs5.existsSync(p)) {
-        const data = JSON.parse(fs5.readFileSync(p, "utf-8"));
+      if (fs6.existsSync(p)) {
+        const data = JSON.parse(fs6.readFileSync(p, "utf-8"));
         if (typeof data.globalSubwebsiteEnabled === "boolean") {
           globalServerlessState.globalSubwebsiteEnabled = data.globalSubwebsiteEnabled;
         }
@@ -14435,11 +14812,11 @@ function persistServerlessState(enabled, message) {
   }
   const payload = JSON.stringify(globalServerlessState, null, 2);
   try {
-    fs5.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
+    fs6.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
   } catch (e) {
   }
   try {
-    fs5.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
+    fs6.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
   } catch (e) {
   }
 }
@@ -14702,11 +15079,11 @@ async function handler(req, res) {
     globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     const serialized = JSON.stringify(globalServerlessState, null, 2);
     try {
-      fs5.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+      fs6.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs5.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+      fs6.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
@@ -14829,8 +15206,8 @@ async function handler(req, res) {
       globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
       try {
         const serialized = JSON.stringify(globalServerlessState, null, 2);
-        fs5.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
-        fs5.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+        fs6.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+        fs6.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
       } catch (e) {
       }
       return res.status(200).json({

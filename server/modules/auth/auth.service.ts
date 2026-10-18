@@ -137,7 +137,16 @@ export class AuthService {
         });
 
         if (existingMobile) {
-          throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+          const exEmail = String((existingMobile as any).email || "").toLowerCase();
+          if (exEmail.endsWith(".test") || exEmail.includes("@cinevenue.test") || exEmail.endsWith("@example.com")) {
+            logger.info(`Reclaiming mobile number ${cleanMobile} from mock account ${exEmail}`);
+            await prisma.user.update({
+              where: { id: (existingMobile as any).id },
+              data: { mobile: null }
+            }).catch(() => null);
+          } else {
+            throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+          }
         }
       }
 
@@ -189,9 +198,45 @@ export class AuthService {
         ) {
           const isMobile = msg.includes("mobile") || (createErr.meta?.target && String(createErr.meta.target).includes("mobile"));
           if (isMobile) {
-            throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+            try {
+              const testHolder = await prisma.user.findFirst({
+                where: { OR: [{ mobile: rawMobile }, { mobile: cleanMobile }] }
+              });
+              const holderEmail = String((testHolder as any)?.email || "").toLowerCase();
+              if (testHolder && (holderEmail.endsWith(".test") || holderEmail.includes("@cinevenue.test") || holderEmail.endsWith("@example.com"))) {
+                logger.info(`Reclaiming mobile ${cleanMobile} from test account ${holderEmail} after P2002/23505`);
+                await prisma.user.update({
+                  where: { id: (testHolder as any).id },
+                  data: { mobile: null }
+                });
+                user = await prisma.user.create({
+                  data: {
+                    email: emailLower,
+                    passwordHash,
+                    name: data.name.trim(),
+                    mobile: cleanMobile,
+                    role: "CUSTOMER",
+                    isVerified: true
+                  },
+                  select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    mobile: true,
+                    role: true,
+                    createdAt: true
+                  }
+                });
+              } else {
+                throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+              }
+            } catch (retryErr: any) {
+              if (retryErr instanceof ConflictError) throw retryErr;
+              throw new ConflictError("An account with this mobile number already exists. Please sign in instead.");
+            }
+          } else {
+            throw new ConflictError("An account with this email address already exists. Please sign in instead.");
           }
-          throw new ConflictError("An account with this email address already exists. Please sign in instead.");
         }
 
         // Database unreachable or table error: fall back to resilient in-memory session user
