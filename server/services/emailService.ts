@@ -284,3 +284,99 @@ Please show this pass ID or the QR code at the venue gate for direct admission.
     };
   }
 }
+
+/**
+ * Sends a password reset OTP verification code email to the user.
+ */
+export async function sendPasswordResetOtpEmail(params: {
+  to: string;
+  otpCode: string;
+  userName?: string;
+}): Promise<{ success: boolean; message: string; liveSent: boolean }> {
+  const { to, otpCode, userName = "Valued Customer" } = params;
+
+  if (!to || !to.includes("@")) {
+    return { success: false, message: "A valid email address is required.", liveSent: false };
+  }
+
+  const transporter = getMailTransporter();
+  const fromAddress = process.env.SMTP_FROM || env.SMTP_FROM || process.env.EMAIL_USER || env.EMAIL_USER || "noreply@cinevenue.com";
+  const fromHeader = `"CineVenue Security" <${fromAddress}>`;
+
+  const subject = `🔐 CineVenue Verification Code: ${otpCode}`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineVenue Password Reset Code</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #060608; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #FFFFFF;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #060608; padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; background: #0F0F14; border: 2px solid #E5A93C; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #1C190D 0%, #2E250A 50%, #15130A 100%); padding: 20px 24px; border-bottom: 1px solid rgba(229,169,60,0.5); text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #E5A93C; letter-spacing: 2px; text-transform: uppercase;">SECURITY VERIFICATION</div>
+              <div style="font-size: 20px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; margin-top: 4px;">CINEVENUE</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px 24px; text-align: center;">
+              <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 800; color: #FFFFFF;">Password Reset Code</h2>
+              <p style="margin: 0 0 20px 0; font-size: 13px; color: #9CA3AF; line-height: 1.5;">
+                Hello <strong style="color: #FFFFFF;">${userName}</strong>,<br>
+                We received a request to reset the password for your CineVenue account. Please enter the 6-digit verification code below on the password reset screen:
+              </p>
+              
+              <div style="display: inline-block; background: #08080C; border: 2px dashed #E5A93C; border-radius: 12px; padding: 16px 36px; margin: 8px 0 20px 0;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #E5A93C;">${otpCode}</span>
+              </div>
+              
+              <p style="margin: 0 0 16px 0; font-size: 12px; color: #E5A93C; font-weight: 600;">
+                ⏳ This code is valid for 15 minutes.
+              </p>
+              
+              <p style="margin: 0; font-size: 11px; color: #6B7280; line-height: 1.4;">
+                If you did not request this verification code, please ignore this email. Your CineVenue account remains completely secure.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #08080C; padding: 14px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
+              <div style="font-size: 10px; color: #4B5563;">© CineVenue Entertainments • Automated Security System</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+  const text = `CineVenue Security Verification\n\nYour 6-digit password reset code is: ${otpCode}\n\nValid for 15 minutes.\nIf you did not request this, please ignore this email.`;
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromHeader,
+        to,
+        subject,
+        html,
+        text
+      });
+      logger.info(`[EmailService] Password reset verification code successfully emailed to ${to}`);
+      return { success: true, message: `Verification code delivered to ${to}`, liveSent: true };
+    } catch (err: any) {
+      logger.warn(`[EmailService] SMTP error sending OTP to ${to}: ${err.message}`);
+      return { success: false, message: err.message, liveSent: false };
+    }
+  }
+
+  return { success: false, message: "SMTP transporter not configured", liveSent: false };
+}
+

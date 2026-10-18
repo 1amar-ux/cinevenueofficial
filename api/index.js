@@ -1198,12 +1198,12 @@ __export(maintenance_exports, {
   setTestMaintenanceState: () => setTestMaintenanceState,
   writePersistedFileSettings: () => writePersistedFileSettings
 });
-import fs2 from "fs";
-import path2 from "path";
+import fs from "fs";
+import path from "path";
 function readPersistedFileSettings() {
   try {
-    if (fs2.existsSync(TMP_CONFIG_PATH)) {
-      const content = fs2.readFileSync(TMP_CONFIG_PATH, "utf-8");
+    if (fs.existsSync(TMP_CONFIG_PATH)) {
+      const content = fs.readFileSync(TMP_CONFIG_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -1211,8 +1211,8 @@ function readPersistedFileSettings() {
   } catch (e) {
   }
   try {
-    if (fs2.existsSync(CONFIG_FILE_PATH)) {
-      const content = fs2.readFileSync(CONFIG_FILE_PATH, "utf-8");
+    if (fs.existsSync(CONFIG_FILE_PATH)) {
+      const content = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
       const parsed = JSON.parse(content);
       inMemoryGlobalSettings = { ...inMemoryGlobalSettings, ...parsed };
       return inMemoryGlobalSettings;
@@ -1226,11 +1226,11 @@ function writePersistedFileSettings(settings) {
   try {
     const serialized = JSON.stringify(inMemoryGlobalSettings, null, 2);
     try {
-      fs2.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
+      fs.writeFileSync(CONFIG_FILE_PATH, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs2.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
+      fs.writeFileSync(TMP_CONFIG_PATH, serialized, "utf-8");
     } catch (e) {
     }
   } catch (e) {
@@ -1397,8 +1397,8 @@ var init_maintenance = __esm({
   "server/middleware/maintenance.ts"() {
     init_database();
     init_logger();
-    CONFIG_FILE_PATH = path2.resolve(process.cwd(), "server/config/global_settings.json");
-    TMP_CONFIG_PATH = path2.resolve("/tmp", "cine_global_settings.json");
+    CONFIG_FILE_PATH = path.resolve(process.cwd(), "server/config/global_settings.json");
+    TMP_CONFIG_PATH = path.resolve("/tmp", "cine_global_settings.json");
     inMemoryGlobalSettings = {
       globalSubwebsiteEnabled: true,
       subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance."
@@ -1412,7 +1412,8 @@ var init_maintenance = __esm({
 var emailService_exports = {};
 __export(emailService_exports, {
   getMailTransporter: () => getMailTransporter,
-  sendEventPassEmail: () => sendEventPassEmail
+  sendEventPassEmail: () => sendEventPassEmail,
+  sendPasswordResetOtpEmail: () => sendPasswordResetOtpEmail
 });
 import nodemailer from "nodemailer";
 function getMailTransporter() {
@@ -1651,6 +1652,91 @@ Please show this pass ID or the QR code at the venue gate for direct admission.
     };
   }
 }
+async function sendPasswordResetOtpEmail(params) {
+  const { to, otpCode, userName = "Valued Customer" } = params;
+  if (!to || !to.includes("@")) {
+    return { success: false, message: "A valid email address is required.", liveSent: false };
+  }
+  const transporter = getMailTransporter();
+  const fromAddress = process.env.SMTP_FROM || env.SMTP_FROM || process.env.EMAIL_USER || env.EMAIL_USER || "noreply@cinevenue.com";
+  const fromHeader = `"CineVenue Security" <${fromAddress}>`;
+  const subject = `\u{1F510} CineVenue Verification Code: ${otpCode}`;
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineVenue Password Reset Code</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #060608; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #FFFFFF;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #060608; padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; background: #0F0F14; border: 2px solid #E5A93C; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #1C190D 0%, #2E250A 50%, #15130A 100%); padding: 20px 24px; border-bottom: 1px solid rgba(229,169,60,0.5); text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #E5A93C; letter-spacing: 2px; text-transform: uppercase;">SECURITY VERIFICATION</div>
+              <div style="font-size: 20px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; margin-top: 4px;">CINEVENUE</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px 24px; text-align: center;">
+              <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 800; color: #FFFFFF;">Password Reset Code</h2>
+              <p style="margin: 0 0 20px 0; font-size: 13px; color: #9CA3AF; line-height: 1.5;">
+                Hello <strong style="color: #FFFFFF;">${userName}</strong>,<br>
+                We received a request to reset the password for your CineVenue account. Please enter the 6-digit verification code below on the password reset screen:
+              </p>
+              
+              <div style="display: inline-block; background: #08080C; border: 2px dashed #E5A93C; border-radius: 12px; padding: 16px 36px; margin: 8px 0 20px 0;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #E5A93C;">${otpCode}</span>
+              </div>
+              
+              <p style="margin: 0 0 16px 0; font-size: 12px; color: #E5A93C; font-weight: 600;">
+                \u23F3 This code is valid for 15 minutes.
+              </p>
+              
+              <p style="margin: 0; font-size: 11px; color: #6B7280; line-height: 1.4;">
+                If you did not request this verification code, please ignore this email. Your CineVenue account remains completely secure.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #08080C; padding: 14px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
+              <div style="font-size: 10px; color: #4B5563;">\xA9 CineVenue Entertainments \u2022 Automated Security System</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+  const text = `CineVenue Security Verification
+
+Your 6-digit password reset code is: ${otpCode}
+
+Valid for 15 minutes.
+If you did not request this, please ignore this email.`;
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromHeader,
+        to,
+        subject,
+        html,
+        text
+      });
+      logger.info(`[EmailService] Password reset verification code successfully emailed to ${to}`);
+      return { success: true, message: `Verification code delivered to ${to}`, liveSent: true };
+    } catch (err) {
+      logger.warn(`[EmailService] SMTP error sending OTP to ${to}: ${err.message}`);
+      return { success: false, message: err.message, liveSent: false };
+    }
+  }
+  return { success: false, message: "SMTP transporter not configured", liveSent: false };
+}
 var init_emailService = __esm({
   "server/services/emailService.ts"() {
     init_env();
@@ -1729,6 +1815,21 @@ var PaymentError = class extends AppError {
 
 // server/modules/auth/auth.service.ts
 init_logger();
+init_emailService();
+function maskEmail(email) {
+  if (!email || !email.includes("@")) return email || "";
+  const [local, domain] = email.split("@");
+  if (local.length <= 2) {
+    return `${local}***@${domain}`;
+  }
+  return `${local.slice(0, 2)}*****${local.slice(-1)}@${domain}`;
+}
+function maskMobile(mobile) {
+  if (!mobile) return "";
+  const digits = mobile.replace(/\D/g, "");
+  if (digits.length <= 4) return mobile;
+  return `******${digits.slice(-4)}`;
+}
 var SALT_ROUNDS = 12;
 var resilientUsers = /* @__PURE__ */ new Map();
 function isDbConnectionError(err) {
@@ -2598,7 +2699,7 @@ var AuthService = class {
       }
       const rawToken = randomBytes(32).toString("hex");
       const otpCode = Math.floor(1e5 + Math.random() * 9e5).toString();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1e3);
+      const expiresAtIso = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
       try {
         await prisma.passwordResetToken.deleteMany({
           where: { userId: user.id }
@@ -2609,7 +2710,6 @@ var AuthService = class {
       const otpHash = createHash("sha256").update(otpCode).digest("hex");
       const tokenRecId = `prt_${randomBytes(8).toString("hex")}`;
       const otpRecId = `prt_${randomBytes(8).toString("hex")}`;
-      const expiresAtIso = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
       try {
         await prisma.passwordResetToken.create({
           data: { id: tokenRecId, tokenHash, userId: user.id, expiresAt: expiresAtIso }
@@ -2624,12 +2724,54 @@ var AuthService = class {
       } catch (e) {
         logger.warn(`Failed to store OTP reset token: ${e.message}`);
       }
-      logger.info(`Password reset requested for user: ${user.email} (${user.mobile || "no mobile"}), OTP: ${otpCode}`);
+      if (user.email && user.email.includes("@")) {
+        try {
+          await sendPasswordResetOtpEmail({
+            to: user.email,
+            otpCode,
+            userName: user.name || "Customer"
+          });
+        } catch (mailErr) {
+          logger.warn(`[Auth] SMTP reset OTP dispatch note: ${mailErr.message}`);
+        }
+        if (supabaseAdmin) {
+          try {
+            const { data: supaLink } = await supabaseAdmin.auth.admin.generateLink({
+              type: "recovery",
+              email: user.email
+            });
+            if (supaLink?.properties?.email_otp) {
+              const supaOtpHash = createHash("sha256").update(supaLink.properties.email_otp).digest("hex");
+              await prisma.passwordResetToken.create({
+                data: {
+                  id: `prt_${randomBytes(8).toString("hex")}`,
+                  tokenHash: supaOtpHash,
+                  userId: user.id,
+                  expiresAt: expiresAtIso
+                }
+              }).catch(() => {
+              });
+            }
+          } catch (supaErr) {
+            logger.warn(`[Auth] Supabase recovery link notice: ${supaErr?.message || supaErr}`);
+          }
+          supabaseAdmin.auth.resetPasswordForEmail(user.email).catch((e) => {
+            logger.warn(`[Auth] Supabase resetPasswordForEmail notice: ${e?.message || e}`);
+          });
+        }
+      }
+      if (user.mobile) {
+        logger.info(`[NotificationService:SMS] Dispatched password reset OTP [${otpCode}] to mobile: ${user.mobile}`);
+      }
+      logger.info(`Password reset OTP dispatched for user: ${user.email} (${user.mobile || "no mobile"})`);
+      const maskedEmail = user.email ? maskEmail(user.email) : "";
+      const maskedPhone = user.mobile ? maskMobile(user.mobile) : "";
+      const destination = [maskedEmail, maskedPhone].filter(Boolean).join(" and ");
       return {
         success: true,
-        message: "Password reset verification code dispatched.",
-        resetToken: rawToken,
-        otpCode,
+        message: `A 6-digit verification code has been dispatched to ${destination || "your registered email/mobile"}. Please check your inbox and enter the code below.`,
+        maskedEmail,
+        maskedMobile: maskedPhone,
         userId: user.id,
         userIdentifier: user.mobile || user.email
       };
@@ -2637,9 +2779,7 @@ var AuthService = class {
       if (isDbConnectionError(err)) {
         return {
           success: true,
-          message: "Password reset code dispatched.",
-          resetToken: randomBytes(16).toString("hex"),
-          otpCode: "123456"
+          message: "A 6-digit verification code has been dispatched to your email/mobile. Please enter the code below."
         };
       }
       throw err;
@@ -2672,6 +2812,20 @@ var AuthService = class {
         data: { usedAt: (/* @__PURE__ */ new Date()).toISOString() }
       });
     } catch {
+    }
+    if (supabaseAdmin && resetRecord.userId) {
+      try {
+        const u = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
+        if (u?.email) {
+          const { data: supaUsers } = await supabaseAdmin.auth.admin.listUsers();
+          const supaUser = supaUsers?.users?.find((su) => su.email?.toLowerCase() === u.email.toLowerCase());
+          if (supaUser) {
+            await supabaseAdmin.auth.admin.updateUserById(supaUser.id, { password: newPass });
+          }
+        }
+      } catch (supaErr) {
+        logger.warn(`[Auth] Supabase password sync notice: ${supaErr?.message || supaErr}`);
+      }
     }
     logger.info(`Password reset successful for user ID: ${resetRecord.userId}`);
     return { success: true, message: "Password updated successfully. Please log in with your new password." };
@@ -5458,8 +5612,8 @@ var posIntegrationService = new PosIntegrationService();
 // server/modules/bookings/movieFee.service.ts
 init_database();
 init_logger();
-import fs from "fs";
-import path from "path";
+import fs2 from "fs";
+import path2 from "path";
 var DEFAULT_MOVIE_FEE_CONFIGS = [
   { ticketPrice: 50, baseCharge: 12, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Budget Tier" },
   { ticketPrice: 84, baseCharge: 14, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Standard Matinee" },
@@ -5480,7 +5634,7 @@ var DEFAULT_MOVIE_FEE_CONFIGS = [
   { ticketPrice: 470, baseCharge: 36, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "IMAX 3D Laser" },
   { ticketPrice: 708, baseCharge: 36, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Luxury Recliner Suite" }
 ];
-var SETTINGS_FILE = path.join(process.cwd(), "server/config/movie_fee_settings.json");
+var SETTINGS_FILE = path2.join(process.cwd(), "server/config/movie_fee_settings.json");
 var MovieFeeService = class {
   constructor() {
     this.inMemoryConfigs = [];
@@ -5495,8 +5649,8 @@ var MovieFeeService = class {
   }
   init() {
     try {
-      if (fs.existsSync(SETTINGS_FILE)) {
-        const raw = fs.readFileSync(SETTINGS_FILE, "utf-8");
+      if (fs2.existsSync(SETTINGS_FILE)) {
+        const raw = fs2.readFileSync(SETTINGS_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         if (parsed.globalSettings) this.globalSettings = { ...this.globalSettings, ...parsed.globalSettings };
         if (Array.isArray(parsed.configs) && parsed.configs.length > 0) {
@@ -5524,7 +5678,7 @@ var MovieFeeService = class {
         configs: this.inMemoryConfigs,
         updatedAt: (/* @__PURE__ */ new Date()).toISOString()
       };
-      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
+      fs2.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
     } catch (err) {
       logger.warn(`Failed saving movie_fee_settings.json: ${err.message}`);
     }

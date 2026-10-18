@@ -178,14 +178,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
           return;
         }
 
-        const tokenOrOtp = resData?.otpCode || resData?.resetToken || "";
-        if (tokenOrOtp) {
-          setResetCode(tokenOrOtp);
-        }
+        // Clear OTP code so user enters the OTP code received via email / SMS
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
         setSuccessMessage(
-          resData?.otpCode
-            ? `Verification code generated: ${resData.otpCode}. Please set your new password below.`
-            : "Reset code dispatched. Enter your verification code and new password below."
+          resData?.message ||
+          "A 6-digit verification code has been dispatched to your registered email / mobile. Please check your inbox and enter the code below."
         );
         setMode("reset");
       } catch (err: any) {
@@ -199,7 +198,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
 
     if (mode === "reset") {
       if (!resetCode.trim()) {
-        setErrorMessage("Verification code is required.");
+        setErrorMessage("Please enter the 6-digit verification code you received.");
         return;
       }
       if (!newPassword) {
@@ -224,7 +223,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         });
         setSuccessMessage(response.data?.message || "Password updated successfully! Please sign in with your new password.");
         setMode("signin");
-        setForm(prev => ({ ...prev, password: "" }));
+        const ident = forgotIdentifier.trim() || form.email.trim();
+        if (ident.includes("@")) {
+          setForm(prev => ({ ...prev, email: ident, password: "" }));
+        } else {
+          setForm(prev => ({ ...prev, password: "" }));
+        }
+        setResetCode("");
         setNewPassword("");
         setConfirmNewPassword("");
       } catch (err: any) {
@@ -522,7 +527,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                       setErrorMessage("");
                     }}
                     className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60 font-mono tracking-wider"
-                    placeholder="Verification Code / OTP"
+                    placeholder="Enter 6-digit verification code"
+                    maxLength={10}
                     required
                   />
                 </div>
@@ -556,6 +562,33 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                     placeholder="Confirm New Password"
                     required
                   />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={async () => {
+                      const identifier = forgotIdentifier.trim() || form.email.trim();
+                      if (!identifier) {
+                        setErrorMessage("Identifier is missing. Please restart forgot password.");
+                        return;
+                      }
+                      setIsLoading(true);
+                      setErrorMessage("");
+                      try {
+                        const response = await apiClient.post("/auth/forgot-password", { identifier });
+                        setSuccessMessage(response.data?.message || "A new 6-digit verification code has been dispatched.");
+                      } catch (err: any) {
+                        setErrorMessage(err.response?.data?.message || "Failed to resend verification code.");
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    className="text-[11px] text-gold/80 hover:text-gold transition cursor-pointer"
+                  >
+                    Didn't receive code? Resend OTP
+                  </button>
                 </div>
               </>
             )}

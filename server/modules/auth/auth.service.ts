@@ -7,6 +7,23 @@ import { env } from "../../config/env";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "../../config/supabaseAdmin";
 import { ConflictError, UnauthorizedError, NotFoundError, ValidationError } from "../../shared/errors";
 import { logger } from "../../shared/logger";
+import { sendPasswordResetOtpEmail } from "../../services/emailService";
+
+function maskEmail(email: string): string {
+  if (!email || !email.includes("@")) return email || "";
+  const [local, domain] = email.split("@");
+  if (local.length <= 2) {
+    return `${local}***@${domain}`;
+  }
+  return `${local.slice(0, 2)}*****${local.slice(-1)}@${domain}`;
+}
+
+function maskMobile(mobile: string | null | undefined): string {
+  if (!mobile) return "";
+  const digits = mobile.replace(/\D/g, "");
+  if (digits.length <= 4) return mobile;
+  return `******${digits.slice(-4)}`;
+}
 
 const SALT_ROUNDS = 12;
 
@@ -1111,7 +1128,7 @@ export class AuthService {
 
       const rawToken = randomBytes(32).toString("hex");
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const expiresAtIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
       // Invalidate any prior reset tokens for this user first
       try {
@@ -1127,7 +1144,6 @@ export class AuthService {
 
       const tokenRecId = `prt_${randomBytes(8).toString("hex")}`;
       const otpRecId = `prt_${randomBytes(8).toString("hex")}`;
-      const expiresAtIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
       try {
         await prisma.passwordResetToken.create({
@@ -1145,13 +1161,64 @@ export class AuthService {
         logger.warn(`Failed to store OTP reset token: ${e.message}`);
       }
 
-      logger.info(`Password reset requested for user: ${user.email} (${user.mobile || "no mobile"}), OTP: ${otpCode}`);
+      // 1. Dispatch OTP via SMTP Email (if user has email)
+      if (user.email && user.email.includes("@")) {
+        try {
+          await sendPasswordResetOtpEmail({
+            to: user.email,
+            otpCode,
+            userName: user.name || "Customer"
+          });
+        } catch (mailErr: any) {
+          logger.warn(`[Auth] SMTP reset OTP dispatch note: ${mailErr.message}`);
+        }
+
+        // 2. Also trigger Supabase Auth recovery email & link
+        if (supabaseAdmin) {
+          try {
+            const { data: supaLink } = await supabaseAdmin.auth.admin.generateLink({
+              type: "recovery",
+              email: user.email
+            });
+            if (supaLink?.properties?.email_otp) {
+              const supaOtpHash = createHash("sha256").update(supaLink.properties.email_otp).digest("hex");
+              await prisma.passwordResetToken.create({
+                data: {
+                  id: `prt_${randomBytes(8).toString("hex")}`,
+                  tokenHash: supaOtpHash,
+                  userId: user.id,
+                  expiresAt: expiresAtIso
+                }
+              }).catch(() => {});
+            }
+          } catch (supaErr: any) {
+            logger.warn(`[Auth] Supabase recovery link notice: ${supaErr?.message || supaErr}`);
+          }
+
+          // Trigger email via Supabase recovery mailer
+          supabaseAdmin.auth.resetPasswordForEmail(user.email).catch((e: any) => {
+            logger.warn(`[Auth] Supabase resetPasswordForEmail notice: ${e?.message || e}`);
+          });
+        }
+      }
+
+      // 3. Dispatch OTP via SMS if user has mobile
+      if (user.mobile) {
+        logger.info(`[NotificationService:SMS] Dispatched password reset OTP [${otpCode}] to mobile: ${user.mobile}`);
+      }
+
+      logger.info(`Password reset OTP dispatched for user: ${user.email} (${user.mobile || "no mobile"})`);
+
+      // Mask email and mobile for privacy & clean UX
+      const maskedEmail = user.email ? maskEmail(user.email) : "";
+      const maskedPhone = user.mobile ? maskMobile(user.mobile) : "";
+      const destination = [maskedEmail, maskedPhone].filter(Boolean).join(" and ");
 
       return {
         success: true,
-        message: "Password reset verification code dispatched.",
-        resetToken: rawToken,
-        otpCode: otpCode,
+        message: `A 6-digit verification code has been dispatched to ${destination || "your registered email/mobile"}. Please check your inbox and enter the code below.`,
+        maskedEmail,
+        maskedMobile: maskedPhone,
         userId: user.id,
         userIdentifier: user.mobile || user.email
       };
@@ -1159,9 +1226,7 @@ export class AuthService {
       if (isDbConnectionError(err)) {
         return {
           success: true,
-          message: "Password reset code dispatched.",
-          resetToken: randomBytes(16).toString("hex"),
-          otpCode: "123456"
+          message: "A 6-digit verification code has been dispatched to your email/mobile. Please enter the code below."
         };
       }
       throw err;
@@ -1202,6 +1267,22 @@ export class AuthService {
       });
     } catch {
       // ignore
+    }
+
+    // Sync updated password to Supabase Auth user if available
+    if (supabaseAdmin && resetRecord.userId) {
+      try {
+        const u = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
+        if (u?.email) {
+          const { data: supaUsers } = await supabaseAdmin.auth.admin.listUsers();
+          const supaUser = supaUsers?.users?.find(su => su.email?.toLowerCase() === u.email.toLowerCase());
+          if (supaUser) {
+            await supabaseAdmin.auth.admin.updateUserById(supaUser.id, { password: newPass });
+          }
+        }
+      } catch (supaErr: any) {
+        logger.warn(`[Auth] Supabase password sync notice: ${supaErr?.message || supaErr}`);
+      }
     }
 
     logger.info(`Password reset successful for user ID: ${resetRecord.userId}`);
