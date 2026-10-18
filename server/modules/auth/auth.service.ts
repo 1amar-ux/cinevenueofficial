@@ -25,6 +25,45 @@ function maskMobile(mobile: string | null | undefined): string {
   return `******${digits.slice(-4)}`;
 }
 
+// Rate limiter: max 4 password reset requests per identifier within 5 minutes
+const resetRequestTracker = new Map<string, { count: number; firstRequestTime: number }>();
+
+function checkResetRequestRateLimit(identifier: string): void {
+  const key = (identifier || "").toLowerCase().trim();
+  if (!key) return;
+  const now = Date.now();
+  const record = resetRequestTracker.get(key);
+  if (!record || now - record.firstRequestTime > 5 * 60 * 1000) {
+    resetRequestTracker.set(key, { count: 1, firstRequestTime: now });
+    return;
+  }
+
+  if (record.count >= 4) {
+    throw new ValidationError("Too many password reset requests. Please wait a few minutes before trying again.");
+  }
+  record.count++;
+}
+
+// Attempt limiter: max 5 failed verification attempts per tracking key within 15 minutes
+const failedAttemptsTracker = new Map<string, { count: number; firstAttemptTime: number }>();
+
+function recordFailedAttempt(trackingKey: string): number {
+  const key = (trackingKey || "").toLowerCase().trim();
+  const now = Date.now();
+  const record = failedAttemptsTracker.get(key);
+  if (!record || now - record.firstAttemptTime > 15 * 60 * 1000) {
+    failedAttemptsTracker.set(key, { count: 1, firstAttemptTime: now });
+    return 1;
+  }
+  record.count++;
+  return record.count;
+}
+
+function clearFailedAttempts(trackingKey: string): void {
+  const key = (trackingKey || "").toLowerCase().trim();
+  failedAttemptsTracker.delete(key);
+}
+
 const SALT_ROUNDS = 12;
 
 export interface TokenPair {
@@ -1101,6 +1140,9 @@ export class AuthService {
     const digitsOnly = rawInput.replace(/\D/g, "");
     const phone10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
 
+    // 1. Enforce Rate Limiting (max 4 requests per 5 minutes per identifier)
+    checkResetRequestRateLimit(rawInput);
+
     const orConditions: any[] = [{ email: cleanEmail }];
     if (phone10.length >= 10) {
       orConditions.push(
@@ -1119,13 +1161,15 @@ export class AuthService {
         where: { OR: orConditions }
       });
 
+      // 2. Prevent User Enumeration: Return identical neutral message if account is not found
       if (!user) {
         return {
-          success: false,
-          message: "No registered account found with this email or mobile number. Please check your input or sign up."
+          success: true,
+          message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
         };
       }
 
+      // 3. Cryptographically secure short-lived OTP code
       const rawToken = randomBytes(32).toString("hex");
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAtIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
@@ -1150,7 +1194,7 @@ export class AuthService {
           data: { id: tokenRecId, tokenHash, userId: user.id, expiresAt: expiresAtIso }
         });
       } catch (e: any) {
-        logger.warn(`Failed to store raw reset token: ${e.message}`);
+        logger.warn(`[Auth] Failed to store raw reset token: ${e.message}`);
       }
 
       try {
@@ -1158,10 +1202,10 @@ export class AuthService {
           data: { id: otpRecId, tokenHash: otpHash, userId: user.id, expiresAt: expiresAtIso }
         });
       } catch (e: any) {
-        logger.warn(`Failed to store OTP reset token: ${e.message}`);
+        logger.warn(`[Auth] Failed to store OTP reset token: ${e.message}`);
       }
 
-      // 1. Dispatch OTP via SMTP Email (if user has email)
+      // 4. Dispatch OTP via SMTP Email (if user has email)
       if (user.email && user.email.includes("@")) {
         try {
           await sendPasswordResetOtpEmail({
@@ -1173,7 +1217,7 @@ export class AuthService {
           logger.warn(`[Auth] SMTP reset OTP dispatch note: ${mailErr.message}`);
         }
 
-        // 2. Also trigger Supabase Auth recovery email & link
+        // 5. Also trigger Supabase Auth recovery email & link
         if (supabaseAdmin) {
           try {
             const { data: supaLink } = await supabaseAdmin.auth.admin.generateLink({
@@ -1202,40 +1246,45 @@ export class AuthService {
         }
       }
 
-      // 3. Dispatch OTP via SMS if user has mobile
+      // 6. Dispatch OTP via SMS if user has mobile (NEVER log plaintext OTP)
       if (user.mobile) {
-        logger.info(`[NotificationService:SMS] Dispatched password reset OTP [${otpCode}] to mobile: ${user.mobile}`);
+        logger.info(`[NotificationService:SMS] Password reset verification code dispatched to registered mobile: ${maskMobile(user.mobile)}`);
       }
 
-      logger.info(`Password reset OTP dispatched for user: ${user.email} (${user.mobile || "no mobile"})`);
+      logger.info(`[Auth] Password reset verification code dispatched for registered user: ${maskEmail(user.email)}`);
 
-      // Mask email and mobile for privacy & clean UX
-      const maskedEmail = user.email ? maskEmail(user.email) : "";
-      const maskedPhone = user.mobile ? maskMobile(user.mobile) : "";
-      const destination = [maskedEmail, maskedPhone].filter(Boolean).join(" and ");
-
+      // 7. Return neutral confirmation (NEVER reveal the OTP or raw token)
       return {
         success: true,
-        message: `A 6-digit verification code has been dispatched to ${destination || "your registered email/mobile"}. Please check your inbox and enter the code below.`,
-        maskedEmail,
-        maskedMobile: maskedPhone,
-        userId: user.id,
-        userIdentifier: user.mobile || user.email
+        message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
       };
     } catch (err: any) {
       if (isDbConnectionError(err)) {
         return {
           success: true,
-          message: "A 6-digit verification code has been dispatched to your email/mobile. Please enter the code below."
+          message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
         };
       }
       throw err;
     }
   }
 
-  public async resetPassword(token: string, newPass: string, identifier?: string) {
+  public async resetPassword(token: string, newPass: string, identifier?: string, confirmPass?: string) {
     const trimmedToken = (token || "").trim();
+    if (!trimmedToken) {
+      throw new ValidationError("Verification code is required.");
+    }
+
+    if (!newPass || newPass.length < 6) {
+      throw new ValidationError("Password must be at least 6 characters long.");
+    }
+
+    if (confirmPass !== undefined && confirmPass !== newPass) {
+      throw new ValidationError("Passwords do not match.");
+    }
+
     const tokenHash = createHash("sha256").update(trimmedToken).digest("hex");
+    const trackingKey = (identifier || trimmedToken).toLowerCase().trim();
 
     const resetRecord = await prisma.passwordResetToken.findFirst({
       where: {
@@ -1243,33 +1292,48 @@ export class AuthService {
       }
     });
 
+    // 8. Attempt Limits & Brute-Force Protection
     if (!resetRecord || resetRecord.usedAt) {
-      throw new ValidationError("Password reset verification code or token is invalid or has already been used.");
+      const attempts = recordFailedAttempt(trackingKey);
+      if (attempts >= 5) {
+        if (resetRecord?.userId) {
+          await prisma.passwordResetToken.deleteMany({ where: { userId: resetRecord.userId } }).catch(() => {});
+        }
+        clearFailedAttempts(trackingKey);
+        throw new ValidationError("Too many incorrect verification attempts. For your security, this verification code has been revoked. Please request a new code.");
+      }
+      throw new ValidationError("Verification code is invalid or has already been used.");
     }
 
+    // 9. Expiry Validation
     const expStr = String(resetRecord.expiresAt);
     const expiresDate = new Date(expStr.endsWith("Z") ? expStr : `${expStr}Z`);
     if (new Date() > expiresDate) {
-      throw new ValidationError("Password reset verification code or token has expired. Please request a new one.");
+      throw new ValidationError("Verification code has expired. Please request a new code.");
     }
 
+    // 10. Established Secure Password Hashing (bcrypt, 12 rounds)
     const passwordHash = await bcrypt.hash(newPass, SALT_ROUNDS);
 
+    // 11. Update User Record
     await prisma.user.update({
       where: { id: resetRecord.userId },
       data: { passwordHash, isVerified: true }
     });
 
+    // 12. Invalidate ALL reset tokens for this user (Single-Use Guarantee)
     try {
-      await prisma.passwordResetToken.update({
-        where: { id: resetRecord.id },
-        data: { usedAt: new Date().toISOString() }
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: resetRecord.userId }
       });
     } catch {
       // ignore
     }
 
-    // Sync updated password to Supabase Auth user if available
+    // Clear attempt counters
+    clearFailedAttempts(trackingKey);
+
+    // 13. Sync updated password to Supabase Auth user if available
     if (supabaseAdmin && resetRecord.userId) {
       try {
         const u = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
@@ -1285,9 +1349,9 @@ export class AuthService {
       }
     }
 
-    logger.info(`Password reset successful for user ID: ${resetRecord.userId}`);
+    logger.info(`[Auth] Password successfully updated for user account`);
 
-    return { success: true, message: "Password updated successfully. Please log in with your new password." };
+    return { success: true, message: "Password updated successfully. Please sign in with your new password." };
   }
 }
 

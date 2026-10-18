@@ -154,8 +154,8 @@ export class AuthController {
 
   public resetPassword = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { token, newPassword, identifier } = req.body;
-      const result = await authService.resetPassword(token, newPassword, identifier);
+      const { token, newPassword, confirmPassword, identifier } = req.body;
+      const result = await authService.resetPassword(token, newPassword, identifier, confirmPassword);
       return res.json(result);
     } catch (error) {
       next(error);

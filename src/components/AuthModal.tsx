@@ -219,6 +219,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         const response = await apiClient.post("/auth/reset-password", {
           token: resetCode.trim(),
           newPassword,
+          confirmPassword: confirmNewPassword,
           identifier: forgotIdentifier.trim() || form.email.trim()
         });
         setSuccessMessage(response.data?.message || "Password updated successfully! Please sign in with your new password.");

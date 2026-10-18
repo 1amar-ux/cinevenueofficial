@@ -369,10 +369,10 @@ export async function sendPasswordResetOtpEmail(params: {
         html,
         text
       });
-      logger.info(`[EmailService] Password reset verification code successfully emailed to ${to}`);
-      return { success: true, message: `Verification code delivered to ${to}`, liveSent: true };
+      logger.info(`[EmailService] Password reset verification code successfully emailed`);
+      return { success: true, message: `Verification code delivered`, liveSent: true };
     } catch (err: any) {
-      logger.warn(`[EmailService] SMTP error sending OTP to ${to}: ${err.message}`);
+      logger.warn(`[EmailService] SMTP error sending OTP: ${err.message}`);
       return { success: false, message: err.message, liveSent: false };
     }
   }

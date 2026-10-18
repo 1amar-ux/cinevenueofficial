@@ -1728,10 +1728,10 @@ If you did not request this, please ignore this email.`;
         html,
         text
       });
-      logger.info(`[EmailService] Password reset verification code successfully emailed to ${to}`);
-      return { success: true, message: `Verification code delivered to ${to}`, liveSent: true };
+      logger.info(`[EmailService] Password reset verification code successfully emailed`);
+      return { success: true, message: `Verification code delivered`, liveSent: true };
     } catch (err) {
-      logger.warn(`[EmailService] SMTP error sending OTP to ${to}: ${err.message}`);
+      logger.warn(`[EmailService] SMTP error sending OTP: ${err.message}`);
       return { success: false, message: err.message, liveSent: false };
     }
   }
@@ -1829,6 +1829,37 @@ function maskMobile(mobile) {
   const digits = mobile.replace(/\D/g, "");
   if (digits.length <= 4) return mobile;
   return `******${digits.slice(-4)}`;
+}
+var resetRequestTracker = /* @__PURE__ */ new Map();
+function checkResetRequestRateLimit(identifier) {
+  const key = (identifier || "").toLowerCase().trim();
+  if (!key) return;
+  const now = Date.now();
+  const record = resetRequestTracker.get(key);
+  if (!record || now - record.firstRequestTime > 5 * 60 * 1e3) {
+    resetRequestTracker.set(key, { count: 1, firstRequestTime: now });
+    return;
+  }
+  if (record.count >= 4) {
+    throw new ValidationError("Too many password reset requests. Please wait a few minutes before trying again.");
+  }
+  record.count++;
+}
+var failedAttemptsTracker = /* @__PURE__ */ new Map();
+function recordFailedAttempt(trackingKey) {
+  const key = (trackingKey || "").toLowerCase().trim();
+  const now = Date.now();
+  const record = failedAttemptsTracker.get(key);
+  if (!record || now - record.firstAttemptTime > 15 * 60 * 1e3) {
+    failedAttemptsTracker.set(key, { count: 1, firstAttemptTime: now });
+    return 1;
+  }
+  record.count++;
+  return record.count;
+}
+function clearFailedAttempts(trackingKey) {
+  const key = (trackingKey || "").toLowerCase().trim();
+  failedAttemptsTracker.delete(key);
 }
 var SALT_ROUNDS = 12;
 var resilientUsers = /* @__PURE__ */ new Map();
@@ -2675,6 +2706,7 @@ var AuthService = class {
     const cleanEmail = rawInput.toLowerCase();
     const digitsOnly = rawInput.replace(/\D/g, "");
     const phone10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+    checkResetRequestRateLimit(rawInput);
     const orConditions = [{ email: cleanEmail }];
     if (phone10.length >= 10) {
       orConditions.push(
@@ -2693,8 +2725,8 @@ var AuthService = class {
       });
       if (!user) {
         return {
-          success: false,
-          message: "No registered account found with this email or mobile number. Please check your input or sign up."
+          success: true,
+          message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
         };
       }
       const rawToken = randomBytes(32).toString("hex");
@@ -2715,14 +2747,14 @@ var AuthService = class {
           data: { id: tokenRecId, tokenHash, userId: user.id, expiresAt: expiresAtIso }
         });
       } catch (e) {
-        logger.warn(`Failed to store raw reset token: ${e.message}`);
+        logger.warn(`[Auth] Failed to store raw reset token: ${e.message}`);
       }
       try {
         await prisma.passwordResetToken.create({
           data: { id: otpRecId, tokenHash: otpHash, userId: user.id, expiresAt: expiresAtIso }
         });
       } catch (e) {
-        logger.warn(`Failed to store OTP reset token: ${e.message}`);
+        logger.warn(`[Auth] Failed to store OTP reset token: ${e.message}`);
       }
       if (user.email && user.email.includes("@")) {
         try {
@@ -2761,45 +2793,57 @@ var AuthService = class {
         }
       }
       if (user.mobile) {
-        logger.info(`[NotificationService:SMS] Dispatched password reset OTP [${otpCode}] to mobile: ${user.mobile}`);
+        logger.info(`[NotificationService:SMS] Password reset verification code dispatched to registered mobile: ${maskMobile(user.mobile)}`);
       }
-      logger.info(`Password reset OTP dispatched for user: ${user.email} (${user.mobile || "no mobile"})`);
-      const maskedEmail = user.email ? maskEmail(user.email) : "";
-      const maskedPhone = user.mobile ? maskMobile(user.mobile) : "";
-      const destination = [maskedEmail, maskedPhone].filter(Boolean).join(" and ");
+      logger.info(`[Auth] Password reset verification code dispatched for registered user: ${maskEmail(user.email)}`);
       return {
         success: true,
-        message: `A 6-digit verification code has been dispatched to ${destination || "your registered email/mobile"}. Please check your inbox and enter the code below.`,
-        maskedEmail,
-        maskedMobile: maskedPhone,
-        userId: user.id,
-        userIdentifier: user.mobile || user.email
+        message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
       };
     } catch (err) {
       if (isDbConnectionError(err)) {
         return {
           success: true,
-          message: "A 6-digit verification code has been dispatched to your email/mobile. Please enter the code below."
+          message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
         };
       }
       throw err;
     }
   }
-  async resetPassword(token, newPass, identifier) {
+  async resetPassword(token, newPass, identifier, confirmPass) {
     const trimmedToken = (token || "").trim();
+    if (!trimmedToken) {
+      throw new ValidationError("Verification code is required.");
+    }
+    if (!newPass || newPass.length < 6) {
+      throw new ValidationError("Password must be at least 6 characters long.");
+    }
+    if (confirmPass !== void 0 && confirmPass !== newPass) {
+      throw new ValidationError("Passwords do not match.");
+    }
     const tokenHash = createHash("sha256").update(trimmedToken).digest("hex");
+    const trackingKey = (identifier || trimmedToken).toLowerCase().trim();
     const resetRecord = await prisma.passwordResetToken.findFirst({
       where: {
         tokenHash
       }
     });
     if (!resetRecord || resetRecord.usedAt) {
-      throw new ValidationError("Password reset verification code or token is invalid or has already been used.");
+      const attempts = recordFailedAttempt(trackingKey);
+      if (attempts >= 5) {
+        if (resetRecord?.userId) {
+          await prisma.passwordResetToken.deleteMany({ where: { userId: resetRecord.userId } }).catch(() => {
+          });
+        }
+        clearFailedAttempts(trackingKey);
+        throw new ValidationError("Too many incorrect verification attempts. For your security, this verification code has been revoked. Please request a new code.");
+      }
+      throw new ValidationError("Verification code is invalid or has already been used.");
     }
     const expStr = String(resetRecord.expiresAt);
     const expiresDate = new Date(expStr.endsWith("Z") ? expStr : `${expStr}Z`);
     if (/* @__PURE__ */ new Date() > expiresDate) {
-      throw new ValidationError("Password reset verification code or token has expired. Please request a new one.");
+      throw new ValidationError("Verification code has expired. Please request a new code.");
     }
     const passwordHash = await bcrypt.hash(newPass, SALT_ROUNDS);
     await prisma.user.update({
@@ -2807,12 +2851,12 @@ var AuthService = class {
       data: { passwordHash, isVerified: true }
     });
     try {
-      await prisma.passwordResetToken.update({
-        where: { id: resetRecord.id },
-        data: { usedAt: (/* @__PURE__ */ new Date()).toISOString() }
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: resetRecord.userId }
       });
     } catch {
     }
+    clearFailedAttempts(trackingKey);
     if (supabaseAdmin && resetRecord.userId) {
       try {
         const u = await prisma.user.findUnique({ where: { id: resetRecord.userId } });
@@ -2827,8 +2871,8 @@ var AuthService = class {
         logger.warn(`[Auth] Supabase password sync notice: ${supaErr?.message || supaErr}`);
       }
     }
-    logger.info(`Password reset successful for user ID: ${resetRecord.userId}`);
-    return { success: true, message: "Password updated successfully. Please log in with your new password." };
+    logger.info(`[Auth] Password successfully updated for user account`);
+    return { success: true, message: "Password updated successfully. Please sign in with your new password." };
   }
 };
 var authService = new AuthService();
@@ -2975,8 +3019,8 @@ var AuthController = class {
     };
     this.resetPassword = async (req, res, next) => {
       try {
-        const { token, newPassword, identifier } = req.body;
-        const result = await authService.resetPassword(token, newPassword, identifier);
+        const { token, newPassword, confirmPassword, identifier } = req.body;
+        const result = await authService.resetPassword(token, newPassword, identifier, confirmPassword);
         return res.json(result);
       } catch (error) {
         next(error);
