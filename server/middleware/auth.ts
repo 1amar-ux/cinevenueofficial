@@ -18,6 +18,27 @@ declare global {
   }
 }
 
+export function isValidAdminPasscode(passcode: string | undefined): boolean {
+  if (!passcode) return false;
+  const isDev = process.env.NODE_ENV !== "production";
+  if (isDev) {
+    return (
+      passcode === "8888" ||
+      passcode === "admin8888" ||
+      passcode === (process.env.ADMIN_PASSCODE || "8888") ||
+      (!!process.env.SUPER_ADMIN_PASSWORD && passcode === process.env.SUPER_ADMIN_PASSWORD)
+    );
+  }
+  // Production mode: never accept hardcoded defaults; require explicit non-default secret
+  const configured = process.env.ADMIN_PASSCODE;
+  const superPassword = process.env.SUPER_ADMIN_PASSWORD;
+  if (!configured && !superPassword) return false;
+  return (
+    (!!configured && configured !== "8888" && configured !== "admin8888" && passcode === configured) ||
+    (!!superPassword && passcode === superPassword)
+  );
+}
+
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
@@ -32,12 +53,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     }
 
     const passcode = req.headers["x-admin-passcode"] as string | undefined;
-    if (
-      passcode &&
-      (passcode === "8888" ||
-        passcode === (process.env.ADMIN_PASSCODE || "8888") ||
-        passcode === process.env.SUPER_ADMIN_PASSWORD)
-    ) {
+    if (isValidAdminPasscode(passcode)) {
       req.user = {
         userId: "superadmin_direct",
         email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",

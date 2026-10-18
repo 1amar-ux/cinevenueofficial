@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../config/database";
-import { authenticate, optionalAuthenticate } from "../../middleware/auth";
+import { authenticate, optionalAuthenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
 import { NotFoundError, ValidationError, PaymentError } from "../../shared/errors";
 import { sendEventPassEmail } from "../../services/emailService";
@@ -12,6 +12,25 @@ import { razorpayService } from "../payments/razorpay.service";
 import { logger } from "../../shared/logger";
 
 const router = Router();
+
+// Helper for admin authorization
+const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
+  const passcode = req.headers["x-admin-passcode"] as string | undefined;
+  if (isValidAdminPasscode(passcode)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+
+  return authenticate(req, res, (err) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER")(req, res, next);
+  });
+};
 
 // 0. Send Event Pass via Email (SMTP / Live Gateway)
 router.post("/send-pass-email", async (req: Request, res: Response, next: NextFunction) => {
@@ -217,8 +236,8 @@ router.get("/pass/:passCode", async (req: Request, res: Response, next: NextFunc
   }
 });
 
-// 1.6 Reset / Clear Registrations for Event (useful for test events like example1)
-router.post("/:id/reset-bookings", async (req: Request, res: Response, next: NextFunction) => {
+// 1.6 Reset / Clear Registrations for Event (Admin only)
+router.post("/:id/reset-bookings", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     await prisma.eventRegistration.deleteMany({
@@ -775,30 +794,6 @@ router.post("/:id/register", optionalAuthenticate, async (req: Request, res: Res
   }
 });
 
-// Helper for admin authorization
-const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
-  const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  if (
-    passcode &&
-    (passcode === "8888" ||
-      passcode === (process.env.ADMIN_PASSCODE || "8888") ||
-      passcode === process.env.SUPER_ADMIN_PASSWORD)
-  ) {
-    req.user = {
-      userId: "superadmin_direct",
-      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
-      role: "SUPER_ADMIN",
-      name: "Super Admin"
-    };
-    return next();
-  }
-
-  return authenticate(req, res, (err) => {
-    if (err) return next(err);
-    return authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER")(req, res, next);
-  });
-};
-
 // 6. Fee Approval Workflow Endpoint: Approve Convenience Fee
 router.post("/:id/approve-fee", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1231,8 +1226,8 @@ router.post("/registrations/:registrationId/cancel", async (req: Request, res: R
   }
 });
 
-// 14. Delete Event
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// 14. Delete Event (Admin only)
+router.delete("/:id", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     try {
@@ -1278,8 +1273,8 @@ function writeProposalsStore(proposals: any[]): void {
   }
 }
 
-// 15. List Proposals
-router.get("/proposals", async (req: Request, res: Response, next: NextFunction) => {
+// 15. List Proposals (Admin only)
+router.get("/proposals", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { category, status, email } = req.query;
     let list = readProposalsStore();
@@ -1356,8 +1351,8 @@ router.post("/proposals", async (req: Request, res: Response, next: NextFunction
   }
 });
 
-// 17. Update Proposal Status
-router.put("/proposals/:id/status", async (req: Request, res: Response, next: NextFunction) => {
+// 17. Update Proposal Status (Admin only)
+router.put("/proposals/:id/status", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { status, note, authorName, nextFollowUpDate } = req.body;
@@ -1399,8 +1394,8 @@ router.put("/proposals/:id/status", async (req: Request, res: Response, next: Ne
   }
 });
 
-// 18. Assign Event Manager
-router.put("/proposals/:id/manager", async (req: Request, res: Response, next: NextFunction) => {
+// 18. Assign Event Manager (Admin only)
+router.put("/proposals/:id/manager", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { managerName, managerEmail } = req.body;
@@ -1437,8 +1432,8 @@ router.put("/proposals/:id/manager", async (req: Request, res: Response, next: N
   }
 });
 
-// 19. Add Follow-Up Log
-router.post("/proposals/:id/follow-up", async (req: Request, res: Response, next: NextFunction) => {
+// 19. Add Follow-Up Log (Admin only)
+router.post("/proposals/:id/follow-up", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { type, summary, nextFollowUpDate, authorName } = req.body;
@@ -1478,8 +1473,8 @@ router.post("/proposals/:id/follow-up", async (req: Request, res: Response, next
   }
 });
 
-// 20. Save Quotation
-router.put("/proposals/:id/quotation", async (req: Request, res: Response, next: NextFunction) => {
+// 20. Save Quotation (Admin only)
+router.put("/proposals/:id/quotation", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { quotation } = req.body;
@@ -1516,8 +1511,8 @@ router.put("/proposals/:id/quotation", async (req: Request, res: Response, next:
   }
 });
 
-// 21. Convert Proposal to Event
-router.post("/proposals/:id/convert", async (req: Request, res: Response, next: NextFunction) => {
+// 21. Convert Proposal to Event (Admin only)
+router.post("/proposals/:id/convert", verifyAdminAccess, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const list = readProposalsStore();

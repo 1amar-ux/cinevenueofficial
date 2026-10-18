@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
 import { prisma } from "../../config/database";
-import { authenticate } from "../../middleware/auth";
+import { authenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { env } from "../../config/env";
 
 export const employeeRouter = Router();
@@ -375,12 +375,7 @@ export function computeEffectivePermissions(roleId: string, customOverrides?: { 
 // Privilege Escalation & Super Admin Authentication Middleware
 export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
   const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  if (
-    passcode &&
-    (passcode === "8888" ||
-      passcode === (process.env.ADMIN_PASSCODE || "8888") ||
-      passcode === process.env.SUPER_ADMIN_PASSWORD)
-  ) {
+  if (isValidAdminPasscode(passcode)) {
     req.user = {
       userId: "superadmin_direct",
       email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",

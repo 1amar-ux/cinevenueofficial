@@ -141,6 +141,52 @@ function getExpressApp() {
   return expressApp;
 }
 
+function isAuthorizedAdminRequest(req: any): boolean {
+  // Check x-admin-passcode
+  const passcode = req.headers?.["x-admin-passcode"] || req.headers?.["X-Admin-Passcode"];
+  if (passcode) {
+    if (process.env.NODE_ENV !== "production") {
+      if (
+        passcode === "8888" ||
+        passcode === "admin8888" ||
+        passcode === (process.env.ADMIN_PASSCODE || "8888") ||
+        (process.env.SUPER_ADMIN_PASSWORD && passcode === process.env.SUPER_ADMIN_PASSWORD)
+      ) {
+        return true;
+      }
+    } else {
+      const configured = process.env.ADMIN_PASSCODE;
+      const superPassword = process.env.SUPER_ADMIN_PASSWORD;
+      if (
+        (configured && configured !== "8888" && configured !== "admin8888" && passcode === configured) ||
+        (superPassword && passcode === superPassword)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  // Check Bearer JWT token or cookie
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  const cookieHeader = req.headers?.cookie || req.headers?.Cookie;
+  const cookieToken = cookieHeader?.split(";").map((v: string) => v.trim()).find((v: string) => v.startsWith("cine_access_token="))?.split("=")[1];
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+  const token = bearerToken || cookieToken;
+
+  if (token) {
+    try {
+      const jwt = require("jsonwebtoken");
+      const secret = process.env.JWT_ACCESS_SECRET || "cinevenue_dev_access_jwt_secret_key_991823";
+      const decoded: any = jwt.verify(token, secret);
+      if (decoded && (decoded.role === "SUPER_ADMIN" || decoded.role === "ADMIN")) {
+        return true;
+      }
+    } catch (e) {}
+  }
+
+  return false;
+}
+
 export default async function handler(req: any, res: any) {
   // 1. Set Universal CORS & Strict No-Cache Headers for all API and Maintenance Routes
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -309,6 +355,9 @@ export default async function handler(req: any, res: any) {
     (url === "/api/v1/admin/settings/subwebsite" || url === "/api/admin/settings/subwebsite" || url === "/admin/settings/subwebsite") &&
     req.method === "POST"
   ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -372,6 +421,9 @@ export default async function handler(req: any, res: any) {
     ) &&
     (req.method === "POST" || req.method === "PUT")
   ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -522,6 +574,9 @@ export default async function handler(req: any, res: any) {
     ) &&
     req.method === "POST"
   ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -559,6 +614,9 @@ export default async function handler(req: any, res: any) {
     url === "/public/event-highlights"
   ) {
     if (req.method === "POST" || req.method === "PUT") {
+      if (!isAuthorizedAdminRequest(req)) {
+        return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+      }
       let body = req.body;
       if (typeof body === "string") {
         try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -849,6 +907,9 @@ export default async function handler(req: any, res: any) {
     url === "/admin/events";
 
   if (isAdminEventsEndpoint && req.method === "GET") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     try {
       const { data: dbEvents } = await supabaseAdmin
         .from("Event")
@@ -870,6 +931,9 @@ export default async function handler(req: any, res: any) {
   }
 
   if (isAdminEventsEndpoint && req.method === "POST") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -971,6 +1035,9 @@ export default async function handler(req: any, res: any) {
     url.includes("/admin/events/") &&
     req.method === "DELETE"
   ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     const parts = url.split("/");
     const eventId = parts[parts.length - 1];
     try {
@@ -986,6 +1053,9 @@ export default async function handler(req: any, res: any) {
     (url.endsWith("/publish") || url.endsWith("/unpublish") || url.endsWith("/cancel") || url.endsWith("/status")) &&
     (req.method === "POST" || req.method === "PATCH")
   ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     const parts = url.split("/");
     let action = parts[parts.length - 1]; // "publish" | "unpublish" | "cancel" | "status"
     let eventId = parts[parts.length - 2];

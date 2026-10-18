@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { advertisingService } from "./advertising.service";
 import { BannerPlacementId, LiveCampaignStatus } from "./advertising.types";
-import { authenticate, optionalAuthenticate } from "../../middleware/auth";
+import { authenticate, optionalAuthenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
 import { ValidationError, NotFoundError } from "../../shared/errors";
 
@@ -185,8 +185,8 @@ export const adminAdvertisingRouter = Router();
 
 // Require admin passcode or superadmin auth for admin endpoints
 adminAdvertisingRouter.use((req: Request, res: Response, next: NextFunction) => {
-  const passcode = req.headers["x-admin-passcode"] || req.query.passcode;
-  if (passcode === "8888" || passcode === "admin8888") {
+  const passcode = (req.headers["x-admin-passcode"] as string | undefined) || (req.query.passcode as string | undefined);
+  if (isValidAdminPasscode(passcode)) {
     return next();
   }
   return authenticate(req, res, () => {

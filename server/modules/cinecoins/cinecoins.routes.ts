@@ -149,6 +149,21 @@ router.post("/claim-daily", async (req: Request, res: Response, next: NextFuncti
       where: { userId }
     });
 
+    // 24h cooldown rate check
+    const lastClaim = await prisma.cineCoinTransaction.findFirst({
+      where: {
+        wallet: { userId },
+        activityKey: "DAILY_LOGIN",
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        }
+      }
+    });
+
+    if (lastClaim) {
+      throw new ValidationError("Daily CineCoins reward already claimed. Next daily reward unlocks in 24 hours.");
+    }
+
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
         data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
@@ -189,7 +204,10 @@ router.post("/spin", async (req: Request, res: Response, next: NextFunction) => 
   try {
     const userId = req.user!.userId;
     const { rewardCoins, rewardName } = req.body;
-    const coins = Math.max(0, Number(rewardCoins) || 10);
+    // Strictly clamp spin reward to authorized prize table [5, 10, 15, 20, 25, 50]
+    const allowedRewards = [5, 10, 15, 20, 25, 50];
+    const requested = Number(rewardCoins) || 10;
+    const coins = allowedRewards.includes(requested) ? requested : 10;
 
     let wallet = await prisma.cineCoinWallet.findUnique({ where: { userId } });
     if (!wallet) {
@@ -257,6 +275,10 @@ router.post("/send", async (req: Request, res: Response, next: NextFunction) => 
       throw new NotFoundError("Recipient user with email", recipientEmail);
     }
 
+    if (recipientUser.id === senderUserId) {
+      throw new ValidationError("You cannot transfer CineCoins to your own wallet.");
+    }
+
     let recipientWallet = await prisma.cineCoinWallet.findUnique({
       where: { userId: recipientUser.id }
     });
@@ -312,7 +334,8 @@ router.post("/claim", async (req: Request, res: Response, next: NextFunction) =>
   try {
     const userId = req.user!.userId;
     const { challengeId, rewardAmount, title } = req.body;
-    const coins = Number(rewardAmount) || 50;
+    // Server-enforced safety cap: maximum 50 CineCoins per quest to prevent coin fabrication
+    const coins = Math.min(50, Math.max(1, Number(rewardAmount) || 25));
 
     let wallet = await prisma.cineCoinWallet.findUnique({ where: { userId } });
     if (!wallet) {

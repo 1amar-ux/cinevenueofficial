@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/database";
 import { posIntegrationService } from "./pos.service";
 import { decryptSecret, maskSecret } from "./pos.encryption";
-import { authenticate } from "../../middleware/auth";
+import { authenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
 
 const router = Router();
@@ -168,12 +168,7 @@ router.post("/pos/cancel", async (req: Request, res: Response, next: NextFunctio
 // Protect all admin endpoints with Super Admin authorization
 const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
   const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  if (
-    passcode &&
-    (passcode === "8888" ||
-      passcode === (process.env.ADMIN_PASSCODE || "8888") ||
-      passcode === process.env.SUPER_ADMIN_PASSWORD)
-  ) {
+  if (isValidAdminPasscode(passcode)) {
     req.user = {
       userId: "superadmin_direct",
       email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",

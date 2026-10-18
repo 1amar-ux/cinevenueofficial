@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/database";
-import { authenticate } from "../../middleware/auth";
+import { authenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
 import { movieFeeService } from "../bookings/movieFee.service";
 
@@ -8,12 +8,7 @@ const router = Router();
 
 const verifyAdminPasscode = (req: Request): boolean => {
   const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  return !!(
-    passcode &&
-    (passcode === "8888" ||
-      passcode === (process.env.ADMIN_PASSCODE || "8888") ||
-      passcode === process.env.SUPER_ADMIN_PASSWORD)
-  );
+  return isValidAdminPasscode(passcode);
 };
 
 // Protect ALL admin routes with authentication & RBAC (supports JWT cookie/Bearer OR admin security PIN header)

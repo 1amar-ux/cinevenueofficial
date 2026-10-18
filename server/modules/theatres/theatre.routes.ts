@@ -132,7 +132,27 @@ router.get("/:theatreId/bank-accounts", authenticate, authorize("SUPER_ADMIN", "
   try {
     const { theatreId } = req.params;
     const accounts = await prisma.theatreBankAccount.findMany({
-      where: { theatreId, isActive: true }
+      where: { theatreId, isActive: true },
+      select: {
+        id: true,
+        theatreId: true,
+        accountHolderName: true,
+        bankName: true,
+        maskedAccountNumber: true,
+        ifscCode: true,
+        accountType: true,
+        branchName: true,
+        branchAddress: true,
+        beneficiaryName: true,
+        pan: true,
+        gstin: true,
+        upiId: true,
+        verificationStatus: true,
+        isPrimary: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
 
     return res.json({

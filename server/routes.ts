@@ -19,8 +19,27 @@ import employeeRouter from "./modules/admin/employee.routes";
 import { checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
 import { razorpayService } from "./modules/payments/razorpay.service";
+import { authenticate, isValidAdminPasscode } from "./middleware/auth";
+import { authorize } from "./middleware/authorize";
 
 const router = Router();
+
+const verifyAdminAccess = (req: any, res: any, next: any) => {
+  const passcode = req.headers["x-admin-passcode"] as string | undefined;
+  if (isValidAdminPasscode(passcode)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+  return authenticate(req, res, (err: any) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
+  });
+};
 
 // ==========================================
 // 1. HEALTH & READINESS PROBES (Cloud Run / K8s / ECS)
@@ -214,7 +233,7 @@ router.get(["/public/platform-config", "/public/maintenance-status"], async (req
   }
 });
 
-router.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
+router.get(["/admin/platform-config", "/public/event-highlights", "/public/platform-config"], async (req, res, next) => {
   try {
     const fs = await import("fs");
     const path = await import("path");
@@ -227,27 +246,76 @@ router.all(["/admin/platform-config", "/public/event-highlights"], async (req, r
       } catch (e) {}
     }
 
-    if (req.method === "POST" || req.method === "PUT") {
-      const body = req.body || {};
-      if (body.trendingExperiences !== undefined) {
-        currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
-      }
-      if (body.browseLiveCategories !== undefined) {
-        currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
-      }
-      currentConfig.updatedAt = new Date().toISOString();
-      fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    return res.json({
+      success: true,
+      trendingExperiences: currentConfig.trendingExperiences || [],
+      browseLiveCategories: currentConfig.browseLiveCategories || []
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
-      return res.json({
-        success: true,
-        message: "Highlights updated successfully.",
-        trendingExperiences: currentConfig.trendingExperiences || [],
-        browseLiveCategories: currentConfig.browseLiveCategories || []
-      });
+router.post("/admin/platform-config", verifyAdminAccess, async (req, res, next) => {
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const configPath = path.resolve(process.cwd(), "platform_config.json");
+
+    let currentConfig: any = {};
+    if (fs.existsSync(configPath)) {
+      try {
+        currentConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      } catch (e) {}
     }
+
+    const body = req.body || {};
+    if (body.trendingExperiences !== undefined) {
+      currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+    }
+    if (body.browseLiveCategories !== undefined) {
+      currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+    }
+    currentConfig.updatedAt = new Date().toISOString();
+    fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
 
     return res.json({
       success: true,
+      message: "Highlights updated successfully.",
+      trendingExperiences: currentConfig.trendingExperiences || [],
+      browseLiveCategories: currentConfig.browseLiveCategories || []
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/admin/platform-config", verifyAdminAccess, async (req, res, next) => {
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const configPath = path.resolve(process.cwd(), "platform_config.json");
+
+    let currentConfig: any = {};
+    if (fs.existsSync(configPath)) {
+      try {
+        currentConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      } catch (e) {}
+    }
+
+    const body = req.body || {};
+    if (body.trendingExperiences !== undefined) {
+      currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+    }
+    if (body.browseLiveCategories !== undefined) {
+      currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+    }
+    currentConfig.updatedAt = new Date().toISOString();
+    fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+
+    return res.json({
+      success: true,
+      message: "Highlights updated successfully.",
       trendingExperiences: currentConfig.trendingExperiences || [],
       browseLiveCategories: currentConfig.browseLiveCategories || []
     });

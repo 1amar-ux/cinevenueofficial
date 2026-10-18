@@ -26,6 +26,28 @@ async function bootstrap() {
     // In production, serve static files from dist
     const distPath = path.resolve(process.cwd(), "dist");
     const express = (await import("express")).default;
+    
+    // Strict security guard: forbid static serving of sensitive, source, or config files
+    app.use((req, res, next) => {
+      const lower = req.path.toLowerCase();
+      if (
+        lower.endsWith(".cjs") ||
+        lower.endsWith(".mjs") ||
+        lower.endsWith(".ts") ||
+        lower.endsWith(".tsx") ||
+        lower.endsWith(".map") ||
+        lower.includes(".env") ||
+        lower.endsWith(".prisma") ||
+        lower.endsWith(".sql") ||
+        lower.endsWith(".keystore") ||
+        lower.endsWith(".jks") ||
+        lower.includes("/.git")
+      ) {
+        return res.status(404).send("Not Found");
+      }
+      next();
+    });
+
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

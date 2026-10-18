@@ -211,7 +211,7 @@ var init_supabaseAdmin = __esm({
     isSupabaseAdminConfigured = Boolean(
       supabaseUrl && supabaseSecretKey
     );
-    supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
+    supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey || "unconfigured_service_role_key", {
       auth: {
         persistSession: false,
         autoRefreshToken: false

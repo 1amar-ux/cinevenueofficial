@@ -13,12 +13,16 @@ export const isSupabaseAdminConfigured = Boolean(
   supabaseSecretKey
 );
 
-export const supabaseAdmin: SupabaseClient = createClient(supabaseUrl, supabaseSecretKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false
+export const supabaseAdmin: SupabaseClient = createClient(
+  supabaseUrl,
+  supabaseSecretKey || "unconfigured_service_role_key",
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
   }
-});
+);
 
 /**
  * Synchronizes global application and maintenance settings directly to the Supabase cloud database.
