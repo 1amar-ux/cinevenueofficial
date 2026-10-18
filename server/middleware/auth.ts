@@ -91,3 +91,36 @@ export function optionalAuthenticate(req: Request, res: Response, next: NextFunc
     next();
   }
 }
+
+export function verifyAdminAccess(req: Request, res: Response, next: NextFunction) {
+  const passcode = req.headers["x-admin-passcode"] as string | undefined;
+  if (isValidAdminPasscode(passcode)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.headers.cookie?.split(";").map(v => v.trim()).find(v => v.startsWith("cine_access_token="))?.split("=")[1];
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+  const token = bearerToken || cookieToken;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthenticatedUserPayload;
+      if (decoded.role === "SUPER_ADMIN" || decoded.role === "ADMIN") {
+        req.user = decoded;
+        return next();
+      }
+    } catch {}
+  }
+
+  return res.status(401).json({
+    success: false,
+    message: "Administrator authentication required. Pass a valid admin passcode or admin token."
+  });
+}

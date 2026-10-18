@@ -653,6 +653,120 @@ export default async function handler(req: any, res: any) {
     });
   }
 
+  // 5C-3. High-Priority Direct Route: CineCoins Admin Wallets & Adjustments
+  if (
+    url === "/api/v1/cinecoins/admin/wallets" ||
+    url === "/api/cinecoins/admin/wallets" ||
+    url === "/cinecoins/admin/wallets"
+  ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, message: "Unauthorized. Admin authentication required." });
+    }
+
+    try {
+      const wallets = await prisma.cineCoinWallet.findMany({
+        include: {
+          user: {
+            select: { id: true, email: true, name: true, mobile: true, role: true, createdAt: true }
+          },
+          transactions: { orderBy: { createdAt: "desc" }, take: 5 }
+        },
+        orderBy: { updatedAt: "desc" }
+      });
+
+      const formatted = wallets.map(w => ({
+        walletId: w.id,
+        userId: w.userId,
+        userEmail: w.user.email,
+        userName: w.user.name,
+        userMobile: w.user.mobile,
+        userRole: w.user.role,
+        balanceCoins: w.balance,
+        lifetimeEarned: w.lifetimeEarned,
+        totalRedeemed: w.totalRedeemed,
+        status: "Active" as const,
+        isFrozen: false,
+        dailyStreak: 1,
+        createdAt: w.createdAt,
+        updatedAt: w.updatedAt,
+        recentTransactions: w.transactions
+      }));
+
+      return res.status(200).json({ success: true, data: formatted });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, message: e.message || "Failed to load wallets" });
+    }
+  }
+
+  if (
+    (url === "/api/v1/cinecoins/admin/adjust" ||
+     url === "/api/cinecoins/admin/adjust" ||
+     url === "/cinecoins/admin/adjust") &&
+    req.method === "POST"
+  ) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, message: "Unauthorized. Admin authentication required." });
+    }
+
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+    const { userEmail, amount, type, reason } = body;
+    const coins = Number(amount);
+    if (!userEmail) return res.status(400).json({ success: false, message: "Target user email is required" });
+    if (!coins || coins <= 0) return res.status(400).json({ success: false, message: "Adjustment amount must be > 0" });
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail.toLowerCase() },
+        include: { wallet: true }
+      });
+
+      if (!user) return res.status(404).json({ success: false, message: `User not found: ${userEmail}` });
+
+      let wallet = user.wallet;
+      if (!wallet) {
+        wallet = await prisma.cineCoinWallet.create({
+          data: { userId: user.id, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
+        });
+      }
+
+      const isCredit = type === "Credit";
+      const delta = isCredit ? coins : -coins;
+      const newBalance = Math.max(0, wallet.balance + delta);
+
+      const [updatedWallet, tx] = await prisma.$transaction([
+        prisma.cineCoinWallet.update({
+          where: { id: wallet.id },
+          data: {
+            balance: newBalance,
+            lifetimeEarned: isCredit ? { increment: coins } : undefined,
+            totalRedeemed: !isCredit ? { increment: coins } : undefined
+          }
+        }),
+        prisma.cineCoinTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: delta,
+            type: isCredit ? "EARNED" : "REDEEMED",
+            activityKey: isCredit ? "ADMIN_CREDIT" : "ADMIN_DEBIT",
+            description: reason || `Manual balance ${type} by admin`
+          }
+        })
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: `Successfully adjusted balance for ${user.email}`,
+        data: {
+          userEmail: user.email,
+          balanceCoins: updatedWallet.balance,
+          transaction: tx
+        }
+      });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, message: e.message || "Failed to adjust wallet" });
+    }
+  }
+
   // Helper: Format database event row into full client EventItem
   const formatDbEventToClient = (evt: any) => {
     const price = Number(evt.price) || 0;

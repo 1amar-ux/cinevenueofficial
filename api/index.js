@@ -211,12 +211,16 @@ var init_supabaseAdmin = __esm({
     isSupabaseAdminConfigured = Boolean(
       supabaseUrl && supabaseSecretKey
     );
-    supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey || "unconfigured_service_role_key", {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
+    supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseSecretKey || "unconfigured_service_role_key",
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
       }
-    });
+    );
   }
 });
 
@@ -3062,6 +3066,17 @@ function validate(schemas) {
 // server/middleware/auth.ts
 init_env();
 import jwt2 from "jsonwebtoken";
+function isValidAdminPasscode(passcode) {
+  if (!passcode) return false;
+  const isDev = process.env.NODE_ENV !== "production";
+  if (isDev) {
+    return passcode === "8888" || passcode === "admin8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || !!process.env.SUPER_ADMIN_PASSWORD && passcode === process.env.SUPER_ADMIN_PASSWORD;
+  }
+  const configured = process.env.ADMIN_PASSCODE;
+  const superPassword = process.env.SUPER_ADMIN_PASSWORD;
+  if (!configured && !superPassword) return false;
+  return !!configured && configured !== "8888" && configured !== "admin8888" && passcode === configured || !!superPassword && passcode === superPassword;
+}
 function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -3074,7 +3089,7 @@ function authenticate(req, res, next) {
       return next();
     }
     const passcode = req.headers["x-admin-passcode"];
-    if (passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD)) {
+    if (isValidAdminPasscode(passcode)) {
       req.user = {
         userId: "superadmin_direct",
         email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
@@ -3108,6 +3123,36 @@ function optionalAuthenticate(req, res, next) {
   } catch {
     next();
   }
+}
+function verifyAdminAccess(req, res, next) {
+  const passcode = req.headers["x-admin-passcode"];
+  if (isValidAdminPasscode(passcode)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.headers.cookie?.split(";").map((v) => v.trim()).find((v) => v.startsWith("cine_access_token="))?.split("=")[1];
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : void 0;
+  const token = bearerToken || cookieToken;
+  if (token) {
+    try {
+      const decoded = jwt2.verify(token, env.JWT_ACCESS_SECRET);
+      if (decoded.role === "SUPER_ADMIN" || decoded.role === "ADMIN") {
+        req.user = decoded;
+        return next();
+      }
+    } catch {
+    }
+  }
+  return res.status(401).json({
+    success: false,
+    message: "Administrator authentication required. Pass a valid admin passcode or admin token."
+  });
 }
 
 // server/modules/auth/auth.validation.ts
@@ -3510,7 +3555,27 @@ router3.get("/:theatreId/bank-accounts", authenticate, authorize("SUPER_ADMIN", 
   try {
     const { theatreId } = req.params;
     const accounts = await prisma.theatreBankAccount.findMany({
-      where: { theatreId, isActive: true }
+      where: { theatreId, isActive: true },
+      select: {
+        id: true,
+        theatreId: true,
+        accountHolderName: true,
+        bankName: true,
+        maskedAccountNumber: true,
+        ifscCode: true,
+        accountType: true,
+        branchName: true,
+        branchAddress: true,
+        beneficiaryName: true,
+        pan: true,
+        gstin: true,
+        upiId: true,
+        verificationStatus: true,
+        isPrimary: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
     return res.json({
       success: true,
@@ -6448,7 +6513,7 @@ var booking_routes_default = router5;
 import { Router as Router6 } from "express";
 init_maintenance();
 var router6 = Router6();
-var verifyAdminAccess = (req, res, next) => {
+var verifyAdminAccess2 = (req, res, next) => {
   const user = req.user;
   if (!user) {
     return res.status(401).json({
@@ -6512,7 +6577,7 @@ router6.post("/calculate", checkMovieBookingMaintenance, async (req, res, next) 
     next(error);
   }
 });
-router6.get("/admin/all", authenticate, verifyAdminAccess, async (req, res, next) => {
+router6.get("/admin/all", authenticate, verifyAdminAccess2, async (req, res, next) => {
   try {
     const configs = await movieFeeService.getAllConfigs();
     const globalSettings = movieFeeService.getGlobalSettings();
@@ -6527,7 +6592,7 @@ router6.get("/admin/all", authenticate, verifyAdminAccess, async (req, res, next
     next(error);
   }
 });
-router6.post("/admin", authenticate, verifyAdminAccess, async (req, res, next) => {
+router6.post("/admin", authenticate, verifyAdminAccess2, async (req, res, next) => {
   try {
     const { ticketPrice, baseCharge, category, gstRate, feeApplication, enabled, description } = req.body;
     const actorEmail = req.user?.email || "Super Admin";
@@ -6552,7 +6617,7 @@ router6.post("/admin", authenticate, verifyAdminAccess, async (req, res, next) =
     next(error);
   }
 });
-router6.put("/admin/:id", authenticate, verifyAdminAccess, async (req, res, next) => {
+router6.put("/admin/:id", authenticate, verifyAdminAccess2, async (req, res, next) => {
   try {
     const { id } = req.params;
     const actorEmail = req.user?.email || "Super Admin";
@@ -6566,7 +6631,7 @@ router6.put("/admin/:id", authenticate, verifyAdminAccess, async (req, res, next
     next(error);
   }
 });
-router6.delete("/admin/:id", authenticate, verifyAdminAccess, async (req, res, next) => {
+router6.delete("/admin/:id", authenticate, verifyAdminAccess2, async (req, res, next) => {
   try {
     const { id } = req.params;
     const actorEmail = req.user?.email || "Super Admin";
@@ -6579,7 +6644,7 @@ router6.delete("/admin/:id", authenticate, verifyAdminAccess, async (req, res, n
     next(error);
   }
 });
-router6.patch("/admin/settings", authenticate, verifyAdminAccess, async (req, res, next) => {
+router6.patch("/admin/settings", authenticate, verifyAdminAccess2, async (req, res, next) => {
   try {
     const actorEmail = req.user?.email || "Super Admin";
     const updated = await movieFeeService.updateGlobalSettings(req.body, actorEmail);
@@ -6592,7 +6657,7 @@ router6.patch("/admin/settings", authenticate, verifyAdminAccess, async (req, re
     next(error);
   }
 });
-router6.get("/admin/audit-logs", authenticate, verifyAdminAccess, async (req, res, next) => {
+router6.get("/admin/audit-logs", authenticate, verifyAdminAccess2, async (req, res, next) => {
   try {
     const logs = await movieFeeService.getAuditLogs();
     return res.json({
@@ -7348,7 +7413,118 @@ var gateCineCoinsMutations = (req, res, next) => {
   }
   next();
 };
+router8.get("/admin/wallets", verifyAdminAccess, async (req, res, next) => {
+  try {
+    const wallets = await prisma.cineCoinWallet.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            mobile: true,
+            role: true,
+            createdAt: true
+          }
+        },
+        transactions: {
+          orderBy: { createdAt: "desc" },
+          take: 5
+        }
+      },
+      orderBy: { updatedAt: "desc" }
+    });
+    const formatted = wallets.map((w) => ({
+      walletId: w.id,
+      userId: w.userId,
+      userEmail: w.user.email,
+      userName: w.user.name,
+      userMobile: w.user.mobile,
+      userRole: w.user.role,
+      balanceCoins: w.balance,
+      lifetimeEarned: w.lifetimeEarned,
+      totalRedeemed: w.totalRedeemed,
+      status: "Active",
+      isFrozen: false,
+      dailyStreak: 1,
+      createdAt: w.createdAt,
+      updatedAt: w.updatedAt,
+      recentTransactions: w.transactions
+    }));
+    return res.json({
+      success: true,
+      data: formatted
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router8.post("/admin/adjust", verifyAdminAccess, async (req, res, next) => {
+  try {
+    const { userEmail, amount, type, reason } = req.body;
+    const coins = Number(amount);
+    if (!userEmail) throw new ValidationError("Target user email is required");
+    if (!coins || coins <= 0) throw new ValidationError("Adjustment coin amount must be greater than 0");
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail.toLowerCase() },
+      include: { wallet: true }
+    });
+    if (!user) {
+      throw new NotFoundError("User with email", userEmail);
+    }
+    let wallet = user.wallet;
+    if (!wallet) {
+      wallet = await prisma.cineCoinWallet.create({
+        data: {
+          userId: user.id,
+          balance: 0,
+          lifetimeEarned: 0,
+          totalRedeemed: 0
+        }
+      });
+    }
+    const isCredit = type === "Credit";
+    const delta = isCredit ? coins : -coins;
+    const newBalance = Math.max(0, wallet.balance + delta);
+    const [updatedWallet, tx] = await prisma.$transaction([
+      prisma.cineCoinWallet.update({
+        where: { id: wallet.id },
+        data: {
+          balance: newBalance,
+          lifetimeEarned: isCredit ? { increment: coins } : void 0,
+          totalRedeemed: !isCredit ? { increment: coins } : void 0
+        }
+      }),
+      prisma.cineCoinTransaction.create({
+        data: {
+          walletId: wallet.id,
+          amount: delta,
+          type: isCredit ? "EARNED" : "REDEEMED",
+          activityKey: isCredit ? "ADMIN_CREDIT" : "ADMIN_DEBIT",
+          description: reason || `Manual balance ${type} by admin`
+        }
+      })
+    ]);
+    return res.json({
+      success: true,
+      message: `Successfully ${isCredit ? "credited" : "debited"} ${coins} CineCoins for ${user.email}`,
+      data: {
+        userEmail: user.email,
+        walletId: updatedWallet.id,
+        balanceCoins: updatedWallet.balance,
+        lifetimeEarned: updatedWallet.lifetimeEarned,
+        totalRedeemed: updatedWallet.totalRedeemed,
+        transaction: tx
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 router8.use((req, res, next) => {
+  if (req.path.startsWith("/admin")) {
+    return next();
+  }
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
     return gateCineCoinsMutations(req, res, next);
   }
@@ -7451,6 +7627,18 @@ router8.post("/claim-daily", async (req, res, next) => {
     let wallet = await prisma.cineCoinWallet.findUnique({
       where: { userId }
     });
+    const lastClaim = await prisma.cineCoinTransaction.findFirst({
+      where: {
+        wallet: { userId },
+        activityKey: "DAILY_LOGIN",
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1e3)
+        }
+      }
+    });
+    if (lastClaim) {
+      throw new ValidationError("Daily CineCoins reward already claimed. Next daily reward unlocks in 24 hours.");
+    }
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
         data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
@@ -7487,7 +7675,9 @@ router8.post("/spin", async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const { rewardCoins, rewardName } = req.body;
-    const coins = Math.max(0, Number(rewardCoins) || 10);
+    const allowedRewards = [5, 10, 15, 20, 25, 50];
+    const requested = Number(rewardCoins) || 10;
+    const coins = allowedRewards.includes(requested) ? requested : 10;
     let wallet = await prisma.cineCoinWallet.findUnique({ where: { userId } });
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
@@ -7544,6 +7734,9 @@ router8.post("/send", async (req, res, next) => {
     if (!recipientUser) {
       throw new NotFoundError("Recipient user with email", recipientEmail);
     }
+    if (recipientUser.id === senderUserId) {
+      throw new ValidationError("You cannot transfer CineCoins to your own wallet.");
+    }
     let recipientWallet = await prisma.cineCoinWallet.findUnique({
       where: { userId: recipientUser.id }
     });
@@ -7594,7 +7787,7 @@ router8.post("/claim", async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const { challengeId, rewardAmount, title } = req.body;
-    const coins = Number(rewardAmount) || 50;
+    const coins = Math.min(50, Math.max(1, Number(rewardAmount) || 25));
     let wallet = await prisma.cineCoinWallet.findUnique({ where: { userId } });
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
@@ -7640,6 +7833,22 @@ import bcrypt2 from "bcryptjs";
 init_emailService();
 init_logger();
 var router9 = Router9();
+var verifyAdminAccess3 = (req, res, next) => {
+  const passcode = req.headers["x-admin-passcode"];
+  if (isValidAdminPasscode(passcode)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER")(req, res, next);
+  });
+};
 router9.post("/send-pass-email", async (req, res, next) => {
   try {
     const {
@@ -7820,7 +8029,7 @@ router9.get("/pass/:passCode", async (req, res, next) => {
     next(error);
   }
 });
-router9.post("/:id/reset-bookings", async (req, res, next) => {
+router9.post("/:id/reset-bookings", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.eventRegistration.deleteMany({
@@ -8289,23 +8498,7 @@ router9.post("/:id/register", optionalAuthenticate, async (req, res, next) => {
     next(error);
   }
 });
-var verifyAdminAccess2 = (req, res, next) => {
-  const passcode = req.headers["x-admin-passcode"];
-  if (passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD)) {
-    req.user = {
-      userId: "superadmin_direct",
-      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
-      role: "SUPER_ADMIN",
-      name: "Super Admin"
-    };
-    return next();
-  }
-  return authenticate(req, res, (err) => {
-    if (err) return next(err);
-    return authorize("SUPER_ADMIN", "ADMIN", "EVENT_ORGANIZER")(req, res, next);
-  });
-};
-router9.post("/:id/approve-fee", verifyAdminAccess2, async (req, res, next) => {
+router9.post("/:id/approve-fee", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const event = await fetchEventWithTicketTypes(id);
@@ -8347,7 +8540,7 @@ router9.post("/:id/approve-fee", verifyAdminAccess2, async (req, res, next) => {
     next(error);
   }
 });
-router9.post("/:id/reject-fee", verifyAdminAccess2, async (req, res, next) => {
+router9.post("/:id/reject-fee", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const event = await fetchEventWithTicketTypes(id);
@@ -8386,7 +8579,7 @@ router9.post("/:id/reject-fee", verifyAdminAccess2, async (req, res, next) => {
     next(error);
   }
 });
-router9.patch("/:id/fee-settings", verifyAdminAccess2, async (req, res, next) => {
+router9.patch("/:id/fee-settings", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const event = await fetchEventWithTicketTypes(id);
@@ -8440,7 +8633,7 @@ router9.patch("/:id/fee-settings", verifyAdminAccess2, async (req, res, next) =>
     next(error);
   }
 });
-router9.get("/:id/fee-audit-logs", verifyAdminAccess2, async (req, res, next) => {
+router9.get("/:id/fee-audit-logs", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const logs = await prisma.eventFeeAuditLog.findMany({
@@ -8456,7 +8649,7 @@ router9.get("/:id/fee-audit-logs", verifyAdminAccess2, async (req, res, next) =>
     next(error);
   }
 });
-router9.post("/", verifyAdminAccess2, async (req, res, next) => {
+router9.post("/", verifyAdminAccess3, async (req, res, next) => {
   try {
     const {
       title,
@@ -8541,7 +8734,7 @@ router9.post("/", verifyAdminAccess2, async (req, res, next) => {
     next(error);
   }
 });
-router9.put("/:id", verifyAdminAccess2, async (req, res, next) => {
+router9.put("/:id", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const body = req.body || {};
@@ -8684,7 +8877,7 @@ router9.post("/registrations/:registrationId/cancel", async (req, res, next) => 
     next(error);
   }
 });
-router9.delete("/:id", async (req, res, next) => {
+router9.delete("/:id", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     try {
@@ -8722,7 +8915,7 @@ function writeProposalsStore(proposals) {
     logger.error({ error: e }, "Failed to write event proposals file");
   }
 }
-router9.get("/proposals", async (req, res, next) => {
+router9.get("/proposals", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { category, status, email } = req.query;
     let list = readProposalsStore();
@@ -8788,7 +8981,7 @@ router9.post("/proposals", async (req, res, next) => {
     next(error);
   }
 });
-router9.put("/proposals/:id/status", async (req, res, next) => {
+router9.put("/proposals/:id/status", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, note, authorName, nextFollowUpDate } = req.body;
@@ -8823,7 +9016,7 @@ router9.put("/proposals/:id/status", async (req, res, next) => {
     next(error);
   }
 });
-router9.put("/proposals/:id/manager", async (req, res, next) => {
+router9.put("/proposals/:id/manager", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { managerName, managerEmail } = req.body;
@@ -8853,7 +9046,7 @@ router9.put("/proposals/:id/manager", async (req, res, next) => {
     next(error);
   }
 });
-router9.post("/proposals/:id/follow-up", async (req, res, next) => {
+router9.post("/proposals/:id/follow-up", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { type, summary, nextFollowUpDate, authorName } = req.body;
@@ -8886,7 +9079,7 @@ router9.post("/proposals/:id/follow-up", async (req, res, next) => {
     next(error);
   }
 });
-router9.put("/proposals/:id/quotation", async (req, res, next) => {
+router9.put("/proposals/:id/quotation", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { quotation } = req.body;
@@ -8916,7 +9109,7 @@ router9.put("/proposals/:id/quotation", async (req, res, next) => {
     next(error);
   }
 });
-router9.post("/proposals/:id/convert", async (req, res, next) => {
+router9.post("/proposals/:id/convert", verifyAdminAccess3, async (req, res, next) => {
   try {
     const { id } = req.params;
     const list = readProposalsStore();
@@ -9970,9 +10163,9 @@ import { Router as Router12 } from "express";
 var router12 = Router12();
 var verifyAdminPasscode = (req) => {
   const passcode = req.headers["x-admin-passcode"];
-  return !!(passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD));
+  return isValidAdminPasscode(passcode);
 };
-var verifyAdminAccess3 = (req, res, next) => {
+var verifyAdminAccess4 = (req, res, next) => {
   if (verifyAdminPasscode(req)) {
     req.user = {
       userId: "superadmin_direct",
@@ -9987,7 +10180,7 @@ var verifyAdminAccess3 = (req, res, next) => {
     return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
   });
 };
-router12.use(verifyAdminAccess3);
+router12.use(verifyAdminAccess4);
 router12.get("/health", (req, res) => {
   return res.json({ success: true, status: "ok", role: req.user?.role || "ADMIN" });
 });
@@ -11590,9 +11783,9 @@ router13.post("/pos/cancel", async (req, res, next) => {
     });
   }
 });
-var verifyAdminAccess4 = (req, res, next) => {
+var verifyAdminAccess5 = (req, res, next) => {
   const passcode = req.headers["x-admin-passcode"];
-  if (passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD)) {
+  if (isValidAdminPasscode(passcode)) {
     req.user = {
       userId: "superadmin_direct",
       email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
@@ -11606,7 +11799,7 @@ var verifyAdminAccess4 = (req, res, next) => {
     return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
   });
 };
-router13.use("/admin", verifyAdminAccess4);
+router13.use("/admin", verifyAdminAccess5);
 router13.get("/admin/integrations", async (req, res, next) => {
   try {
     const theatres = await prisma.theatre.findMany({
@@ -12901,7 +13094,7 @@ advertisingPublicRouter.post("/track", (req, res) => {
 var adminAdvertisingRouter = Router16();
 adminAdvertisingRouter.use((req, res, next) => {
   const passcode = req.headers["x-admin-passcode"] || req.query.passcode;
-  if (passcode === "8888" || passcode === "admin8888") {
+  if (isValidAdminPasscode(passcode)) {
     return next();
   }
   return authenticate(req, res, () => {
@@ -13364,7 +13557,7 @@ function computeEffectivePermissions(roleId, customOverrides) {
 }
 var requireSuperAdmin = (req, res, next) => {
   const passcode = req.headers["x-admin-passcode"];
-  if (passcode && (passcode === "8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || passcode === process.env.SUPER_ADMIN_PASSWORD)) {
+  if (isValidAdminPasscode(passcode)) {
     req.user = {
       userId: "superadmin_direct",
       email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
@@ -14047,6 +14240,22 @@ var employee_routes_default = employeeRouter;
 // server/routes.ts
 init_database();
 var router16 = Router18();
+var verifyAdminAccess6 = (req, res, next) => {
+  const passcode = req.headers["x-admin-passcode"];
+  if (isValidAdminPasscode(passcode)) {
+    req.user = {
+      userId: "superadmin_direct",
+      email: process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com",
+      role: "SUPER_ADMIN",
+      name: "Super Admin"
+    };
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
+  });
+};
 router16.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -14208,7 +14417,7 @@ router16.get(["/public/platform-config", "/public/maintenance-status"], async (r
     next(error);
   }
 });
-router16.all(["/admin/platform-config", "/public/event-highlights"], async (req, res, next) => {
+router16.get(["/admin/platform-config", "/public/event-highlights", "/public/platform-config"], async (req, res, next) => {
   try {
     const fs7 = await import("fs");
     const path7 = await import("path");
@@ -14220,25 +14429,70 @@ router16.all(["/admin/platform-config", "/public/event-highlights"], async (req,
       } catch (e) {
       }
     }
-    if (req.method === "POST" || req.method === "PUT") {
-      const body = req.body || {};
-      if (body.trendingExperiences !== void 0) {
-        currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
-      }
-      if (body.browseLiveCategories !== void 0) {
-        currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
-      }
-      currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-      fs7.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
-      return res.json({
-        success: true,
-        message: "Highlights updated successfully.",
-        trendingExperiences: currentConfig.trendingExperiences || [],
-        browseLiveCategories: currentConfig.browseLiveCategories || []
-      });
-    }
     return res.json({
       success: true,
+      trendingExperiences: currentConfig.trendingExperiences || [],
+      browseLiveCategories: currentConfig.browseLiveCategories || []
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router16.post("/admin/platform-config", verifyAdminAccess6, async (req, res, next) => {
+  try {
+    const fs7 = await import("fs");
+    const path7 = await import("path");
+    const configPath = path7.resolve(process.cwd(), "platform_config.json");
+    let currentConfig = {};
+    if (fs7.existsSync(configPath)) {
+      try {
+        currentConfig = JSON.parse(fs7.readFileSync(configPath, "utf-8"));
+      } catch (e) {
+      }
+    }
+    const body = req.body || {};
+    if (body.trendingExperiences !== void 0) {
+      currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+    }
+    if (body.browseLiveCategories !== void 0) {
+      currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+    }
+    currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    fs7.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    return res.json({
+      success: true,
+      message: "Highlights updated successfully.",
+      trendingExperiences: currentConfig.trendingExperiences || [],
+      browseLiveCategories: currentConfig.browseLiveCategories || []
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router16.put("/admin/platform-config", verifyAdminAccess6, async (req, res, next) => {
+  try {
+    const fs7 = await import("fs");
+    const path7 = await import("path");
+    const configPath = path7.resolve(process.cwd(), "platform_config.json");
+    let currentConfig = {};
+    if (fs7.existsSync(configPath)) {
+      try {
+        currentConfig = JSON.parse(fs7.readFileSync(configPath, "utf-8"));
+      } catch (e) {
+      }
+    }
+    const body = req.body || {};
+    if (body.trendingExperiences !== void 0) {
+      currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
+    }
+    if (body.browseLiveCategories !== void 0) {
+      currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
+    }
+    currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    fs7.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    return res.json({
+      success: true,
+      message: "Highlights updated successfully.",
       trendingExperiences: currentConfig.trendingExperiences || [],
       browseLiveCategories: currentConfig.browseLiveCategories || []
     });
@@ -15030,6 +15284,39 @@ function getExpressApp() {
   }
   return expressApp;
 }
+function isAuthorizedAdminRequest(req) {
+  const passcode = req.headers?.["x-admin-passcode"] || req.headers?.["X-Admin-Passcode"];
+  if (passcode) {
+    if (process.env.NODE_ENV !== "production") {
+      if (passcode === "8888" || passcode === "admin8888" || passcode === (process.env.ADMIN_PASSCODE || "8888") || process.env.SUPER_ADMIN_PASSWORD && passcode === process.env.SUPER_ADMIN_PASSWORD) {
+        return true;
+      }
+    } else {
+      const configured = process.env.ADMIN_PASSCODE;
+      const superPassword = process.env.SUPER_ADMIN_PASSWORD;
+      if (configured && configured !== "8888" && configured !== "admin8888" && passcode === configured || superPassword && passcode === superPassword) {
+        return true;
+      }
+    }
+  }
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  const cookieHeader = req.headers?.cookie || req.headers?.Cookie;
+  const cookieToken = cookieHeader?.split(";").map((v) => v.trim()).find((v) => v.startsWith("cine_access_token="))?.split("=")[1];
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : void 0;
+  const token = bearerToken || cookieToken;
+  if (token) {
+    try {
+      const jwt4 = __require("jsonwebtoken");
+      const secret = process.env.JWT_ACCESS_SECRET || "cinevenue_dev_access_jwt_secret_key_991823";
+      const decoded = jwt4.verify(token, secret);
+      if (decoded && (decoded.role === "SUPER_ADMIN" || decoded.role === "ADMIN")) {
+        return true;
+      }
+    } catch (e) {
+    }
+  }
+  return false;
+}
 async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
@@ -15169,6 +15456,9 @@ async function handler(req, res) {
     });
   }
   if ((url === "/api/v1/admin/settings/subwebsite" || url === "/api/admin/settings/subwebsite" || url === "/admin/settings/subwebsite") && req.method === "POST") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -15221,6 +15511,9 @@ async function handler(req, res) {
     });
   }
   if ((url === "/api/v1/admin/settings/global" || url === "/api/admin/settings/global" || url === "/admin/settings/global" || url === "/api/v1/admin/settings/maintenance" || url === "/api/admin/settings/maintenance" || url === "/admin/settings/maintenance") && (req.method === "POST" || req.method === "PUT")) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -15359,6 +15652,9 @@ async function handler(req, res) {
     });
   }
   if ((url === "/api/v1/admin/uploads/event-poster" || url === "/api/admin/uploads/event-poster" || url === "/admin/uploads/event-poster" || url === "/api/v1/admin/uploads/event-banner" || url === "/api/admin/uploads/event-banner" || url === "/admin/uploads/event-banner" || url === "/api/v1/admin/uploads/image" || url === "/api/admin/uploads/image" || url === "/admin/uploads/image") && req.method === "POST") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -15387,6 +15683,9 @@ async function handler(req, res) {
   }
   if (url === "/api/v1/admin/platform-config" || url === "/api/admin/platform-config" || url === "/admin/platform-config" || url === "/api/v1/public/event-highlights" || url === "/api/public/event-highlights" || url === "/public/event-highlights") {
     if (req.method === "POST" || req.method === "PUT") {
+      if (!isAuthorizedAdminRequest(req)) {
+        return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+      }
       let body = req.body;
       if (typeof body === "string") {
         try {
@@ -15421,6 +15720,98 @@ async function handler(req, res) {
       trendingExperiences: globalServerlessState.trendingExperiences || [],
       browseLiveCategories: globalServerlessState.browseLiveCategories || []
     });
+  }
+  if (url === "/api/v1/cinecoins/admin/wallets" || url === "/api/cinecoins/admin/wallets" || url === "/cinecoins/admin/wallets") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, message: "Unauthorized. Admin authentication required." });
+    }
+    try {
+      const wallets = await prisma.cineCoinWallet.findMany({
+        include: {
+          user: {
+            select: { id: true, email: true, name: true, mobile: true, role: true, createdAt: true }
+          },
+          transactions: { orderBy: { createdAt: "desc" }, take: 5 }
+        },
+        orderBy: { updatedAt: "desc" }
+      });
+      const formatted = wallets.map((w) => ({
+        walletId: w.id,
+        userId: w.userId,
+        userEmail: w.user.email,
+        userName: w.user.name,
+        userMobile: w.user.mobile,
+        userRole: w.user.role,
+        balanceCoins: w.balance,
+        lifetimeEarned: w.lifetimeEarned,
+        totalRedeemed: w.totalRedeemed,
+        status: "Active",
+        isFrozen: false,
+        dailyStreak: 1,
+        createdAt: w.createdAt,
+        updatedAt: w.updatedAt,
+        recentTransactions: w.transactions
+      }));
+      return res.status(200).json({ success: true, data: formatted });
+    } catch (e) {
+      return res.status(500).json({ success: false, message: e.message || "Failed to load wallets" });
+    }
+  }
+  if ((url === "/api/v1/cinecoins/admin/adjust" || url === "/api/cinecoins/admin/adjust" || url === "/cinecoins/admin/adjust") && req.method === "POST") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, message: "Unauthorized. Admin authentication required." });
+    }
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+    const { userEmail, amount, type, reason } = body;
+    const coins = Number(amount);
+    if (!userEmail) return res.status(400).json({ success: false, message: "Target user email is required" });
+    if (!coins || coins <= 0) return res.status(400).json({ success: false, message: "Adjustment amount must be > 0" });
+    try {
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail.toLowerCase() },
+        include: { wallet: true }
+      });
+      if (!user) return res.status(404).json({ success: false, message: `User not found: ${userEmail}` });
+      let wallet = user.wallet;
+      if (!wallet) {
+        wallet = await prisma.cineCoinWallet.create({
+          data: { userId: user.id, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
+        });
+      }
+      const isCredit = type === "Credit";
+      const delta = isCredit ? coins : -coins;
+      const newBalance = Math.max(0, wallet.balance + delta);
+      const [updatedWallet, tx] = await prisma.$transaction([
+        prisma.cineCoinWallet.update({
+          where: { id: wallet.id },
+          data: {
+            balance: newBalance,
+            lifetimeEarned: isCredit ? { increment: coins } : void 0,
+            totalRedeemed: !isCredit ? { increment: coins } : void 0
+          }
+        }),
+        prisma.cineCoinTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: delta,
+            type: isCredit ? "EARNED" : "REDEEMED",
+            activityKey: isCredit ? "ADMIN_CREDIT" : "ADMIN_DEBIT",
+            description: reason || `Manual balance ${type} by admin`
+          }
+        })
+      ]);
+      return res.status(200).json({
+        success: true,
+        message: `Successfully adjusted balance for ${user.email}`,
+        data: {
+          userEmail: user.email,
+          balanceCoins: updatedWallet.balance,
+          transaction: tx
+        }
+      });
+    } catch (e) {
+      return res.status(500).json({ success: false, message: e.message || "Failed to adjust wallet" });
+    }
   }
   const formatDbEventToClient = (evt) => {
     const price = Number(evt.price) || 0;
@@ -15643,6 +16034,9 @@ async function handler(req, res) {
   }
   const isAdminEventsEndpoint = url === "/api/v1/admin/events" || url === "/api/admin/events" || url === "/admin/events";
   if (isAdminEventsEndpoint && req.method === "GET") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     try {
       const { data: dbEvents } = await supabaseAdmin.from("Event").select("*").order("createdAt", { ascending: false });
       if (dbEvents && dbEvents.length > 0) {
@@ -15659,6 +16053,9 @@ async function handler(req, res) {
     }
   }
   if (isAdminEventsEndpoint && req.method === "POST") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     let body = req.body;
     if (typeof body === "string") {
       try {
@@ -15753,6 +16150,9 @@ async function handler(req, res) {
     });
   }
   if (url.includes("/admin/events/") && req.method === "DELETE") {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     const parts = url.split("/");
     const eventId = parts[parts.length - 1];
     try {
@@ -15764,6 +16164,9 @@ async function handler(req, res) {
     return res.status(200).json({ success: true, message: `Event ${eventId} deleted successfully.` });
   }
   if (url.includes("/admin/events/") && (url.endsWith("/publish") || url.endsWith("/unpublish") || url.endsWith("/cancel") || url.endsWith("/status")) && (req.method === "POST" || req.method === "PATCH")) {
+    if (!isAuthorizedAdminRequest(req)) {
+      return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
+    }
     const parts = url.split("/");
     let action = parts[parts.length - 1];
     let eventId = parts[parts.length - 2];

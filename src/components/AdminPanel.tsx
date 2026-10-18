@@ -16,7 +16,7 @@ import CloudinaryPhotoUploader from "./admin/common/CloudinaryPhotoUploader";
 import MovieCastCrewEditorModal from "./admin/movies/MovieCastCrewEditorModal";
 import MovieDashboardModal from "./admin/movies/MovieDashboardModal";
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
-import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CastMember, CrewMember } from "../types";
+import { Movie, Theatre, RentalRequest, ContactMessage, Booking, MovieSchedule, TheatreAdmin, Event, EventRegistration, EventOrganizer, SpotlightMovie, NotifyMeRequest, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CineCoinsUserWallet, CastMember, CrewMember } from "../types";
 import { DEFAULT_CINECOINS_SETTINGS } from "../data";
 import { calculateRevenueMetrics, generateAuthoritativeDashboardData } from "../services/revenueService";
 import CineVenueLogo from "./CineVenueLogo";
@@ -142,6 +142,8 @@ interface AdminPanelProps {
   onUpdateCineCoinsChallenges?: (challenges: CineCoinsChallenge[]) => void;
   cineCoinsTransactions?: CineCoinsTransaction[];
   onUpdateCineCoinsTransactions?: (txs: CineCoinsTransaction[]) => void;
+  userWallets?: CineCoinsUserWallet[];
+  onUpdateWallet?: (wallet: CineCoinsUserWallet) => void;
 }
 
 type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management" | "movie_fees";
@@ -235,6 +237,8 @@ export default function AdminPanel({
   onUpdateCineCoinsChallenges,
   cineCoinsTransactions,
   onUpdateCineCoinsTransactions,
+  userWallets = [],
+  onUpdateWallet,
 }: AdminPanelProps) {
   const { settings: globalAppSettings, updateGlobalSettings, setGlobalSubwebsiteEnabled, setSubsiteMaintenance } = useAppSettings();
 
@@ -2682,6 +2686,8 @@ export default function AdminPanel({
                 onUpdateChallenges={onUpdateCineCoinsChallenges || (() => {})}
                 transactions={cineCoinsTransactions || []}
                 onUpdateTransactions={onUpdateCineCoinsTransactions || (() => {})}
+                userWallets={userWallets || []}
+                onUpdateWallet={onUpdateWallet || (() => {})}
               />
             </div>
           )}

@@ -514,15 +514,106 @@ export default function CineCoinsAdminControl({
     setAuditLogs(prev => [newLog, ...prev]);
   };
 
-  // Financial Stats Calculation
-  const totalInCirculation = userWallets.reduce((acc, w) => acc + w.balanceCoins, 0) || 25000000;
+  // Manual Balance Adjustment Handler (Syncs directly with user wallet and profiles)
+  const handleExecuteManualAdjustment = () => {
+    if (!manualAdjustUser) {
+      setManualAdjustError("Please select a target user account.");
+      return;
+    }
+    const targetWallet = userWallets.find(w => w.userEmail.toLowerCase() === manualAdjustUser.toLowerCase());
+    if (!targetWallet) {
+      setManualAdjustError(`No wallet profile found for: ${manualAdjustUser}`);
+      return;
+    }
+    if (!manualAdjustCoins || manualAdjustCoins <= 0) {
+      setManualAdjustError("Please specify a valid coin adjustment greater than 0.");
+      return;
+    }
+    if (!manualAdjustReason.trim()) {
+      setManualAdjustError("A reason or justification is required for manual balance adjustments.");
+      return;
+    }
+
+    const isCredit = manualAdjustType === "Credit";
+    const prevBalance = targetWallet.balanceCoins || 0;
+    const newBalance = isCredit 
+      ? prevBalance + manualAdjustCoins 
+      : Math.max(0, prevBalance - manualAdjustCoins);
+
+    const updatedWallet: CineCoinsUserWallet = {
+      ...targetWallet,
+      balanceCoins: newBalance,
+      lifetimeEarned: isCredit ? (targetWallet.lifetimeEarned || 0) + manualAdjustCoins : targetWallet.lifetimeEarned,
+      totalDebited: !isCredit ? (targetWallet.totalDebited || 0) + manualAdjustCoins : targetWallet.totalDebited,
+      totalRedeemed: !isCredit ? (targetWallet.totalRedeemed || 0) + manualAdjustCoins : targetWallet.totalRedeemed,
+      lastTransactionDate: new Date().toISOString()
+    };
+
+    if (onUpdateWallet) {
+      onUpdateWallet(updatedWallet);
+    }
+
+    const newTx: CineCoinsTransaction = {
+      id: `TX-ADJ-${Date.now().toString().slice(-6)}`,
+      type: isCredit ? "Credit" : "Debit",
+      coins: manualAdjustCoins,
+      title: isCredit ? `Admin Credit: ${manualAdjustReason}` : `Admin Debit: ${manualAdjustReason}`,
+      date: new Date().toISOString().split("T")[0],
+      status: "Completed",
+      description: manualAdjustReason
+    };
+    onUpdateTransactions([newTx, ...transactions]);
+
+    logAuditEvent(
+      `Manual Balance ${manualAdjustType}`,
+      manualAdjustUser,
+      targetWallet.walletId || "N/A",
+      manualAdjustReason,
+      `${prevBalance} CC`,
+      `${newBalance} CC`
+    );
+
+    setIsManualAdjustModalOpen(false);
+    setManualAdjustUser("");
+    setManualAdjustCoins(500);
+    setManualAdjustReason("");
+    setManualAdjustError("");
+    alert(`✅ Successfully ${isCredit ? "credited" : "debited"} ${manualAdjustCoins} CC for ${targetWallet.userEmail}. New Balance: ${newBalance} CC.`);
+  };
+
+  const handleToggleFreezeWallet = (wallet: CineCoinsUserWallet) => {
+    const isNowFrozen = !wallet.isFrozen;
+    const updated: CineCoinsUserWallet = {
+      ...wallet,
+      isFrozen: isNowFrozen,
+      status: (isNowFrozen ? "Frozen" : "Active") as "Active" | "Frozen"
+    };
+    if (onUpdateWallet) {
+      onUpdateWallet(updated);
+    }
+    logAuditEvent(
+      isNowFrozen ? "Wallet Security Frozen by Admin" : "Wallet Unfrozen by Admin",
+      wallet.userEmail,
+      wallet.walletId || "N/A",
+      "Admin security management"
+    );
+  };
+
+  // Financial Stats Calculation (Calculated dynamically from real user profile wallets)
+  const totalInCirculation = userWallets.length > 0
+    ? userWallets.reduce((acc, w) => acc + (w.balanceCoins || 0), 0)
+    : 25000000;
   const totalPurchased = transactions.filter(t => t.type === 'Purchase').reduce((a, t) => a + t.coins, 0) || 12450000;
   const totalCredited = transactions.filter(t => t.type === 'Earned' || t.type === 'Credit' || t.type === 'Cashback' || t.type === 'Bonus' || t.type === 'Manual Credit').reduce((a, t) => a + t.coins, 0) || 16800000;
-  const totalRedeemed = transactions.filter(t => t.type === 'Redeemed' || t.type === 'Redemption').reduce((a, t) => a + t.coins, 0) || 4250000;
+  const totalRedeemed = transactions.filter(t => t.type === 'Redeemed' || t.type === 'Redemption' || t.type === 'Debit' || t.type === 'Manual Debit').reduce((a, t) => a + t.coins, 0) || 4250000;
   const totalRefunded = transactions.filter(t => (t.type as string) === 'Refunded' || t.type === 'Refund').reduce((a, t) => a + t.coins, 0) || 85000;
   const totalExpired = transactions.filter(t => (t.type as string) === 'Expired' || t.type === 'Expiry').reduce((a, t) => a + t.coins, 0) || 32000;
-  const activeWalletsCount = userWallets.filter(w => !w.isFrozen && w.status !== 'Frozen' && w.status !== 'Suspended').length || 45280;
-  const frozenWalletsCount = userWallets.filter(w => w.isFrozen || w.status === 'Frozen' || w.status === 'Suspended').length || 14;
+  const activeWalletsCount = userWallets.length > 0
+    ? userWallets.filter(w => !w.isFrozen && w.status !== 'Frozen' && w.status !== 'Suspended').length
+    : 45280;
+  const frozenWalletsCount = userWallets.length > 0
+    ? userWallets.filter(w => w.isFrozen || w.status === 'Frozen' || w.status === 'Suspended').length
+    : 14;
 
   // Emergency Control Confirmation Modal State
   const [emergencyActionPending, setEmergencyActionPending] = useState<string | null>(null);
@@ -1174,52 +1265,82 @@ export default function CineCoinsAdminControl({
                 placeholder="Search wallets by email..."
                 value={walletSearch}
                 onChange={(e) => setWalletSearch(e.target.value)}
-                className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 outline-none focus:border-amber-400"
+                className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 outline-none focus:border-amber-400 font-mono"
               />
               <div className="flex items-center gap-2">
                 <button
-                  disabled
-                  title="Manual coin credit / debit actions are paused until December launch."
-                  className="px-3 py-1.5 bg-amber-500/10 text-amber-400/60 border border-amber-500/20 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
+                  type="button"
+                  onClick={() => {
+                    setManualAdjustUser(userWallets[0]?.userEmail || "");
+                    setManualAdjustType("Credit");
+                    setManualAdjustCoins(500);
+                    setManualAdjustReason("");
+                    setManualAdjustError("");
+                    setIsManualAdjustModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm shadow-amber-500/10"
                 >
                   <span>➕ Manual Adjust</span>
-                  <span className="text-[9px] px-1 bg-amber-500/20 rounded font-mono">PAUSED</span>
-                </button>
-                <button
-                  disabled
-                  title="Reward drop distribution is paused until December launch."
-                  className="px-3 py-1.5 bg-amber-500/10 text-amber-400/60 border border-amber-500/20 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
-                >
-                  <span>🎁 Drop Bonus</span>
-                  <span className="text-[9px] px-1 bg-amber-500/20 rounded font-mono">PAUSED</span>
+                  <span className="text-[9px] px-1.5 py-0.2 bg-amber-500/30 text-amber-200 rounded font-mono font-bold">SYNCED</span>
                 </button>
                 <span className="text-xs text-amber-400 font-mono font-bold">
-                  {userWallets.length} Wallets
+                  {userWallets.length} User Wallets
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userWallets.map(w => (
-                <div key={w.userEmail} className="bg-[#0D0E13] border border-white/10 p-5 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">{w.userEmail}</span>
-                    <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold tracking-wider">
-                      PAUSED (DEC)
-                    </span>
+              {userWallets
+                .filter(w => (w.userEmail || "").toLowerCase().includes(walletSearch.toLowerCase()))
+                .map(w => (
+                  <div key={w.userEmail} className="bg-[#0D0E13] border border-white/10 p-5 rounded-2xl space-y-3.5 hover:border-amber-500/30 transition-all">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white truncate max-w-[180px]" title={w.userEmail}>{w.userEmail}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${
+                        w.isFrozen 
+                          ? "bg-rose-500/15 border border-rose-500/30 text-rose-300"
+                          : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                      }`}>
+                        {w.isFrozen ? "FROZEN" : "ACTIVE"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-2xl font-black text-amber-400 font-mono">{w.balanceCoins.toLocaleString()} CC</span>
+                      <span className="text-xs text-white/50 font-mono">≈ ₹{(w.balanceCoins * currentCoinValueRupees).toFixed(2)}</span>
+                    </div>
+                    <div className="pt-2 border-t border-white/5 text-[11px] text-white/50 flex justify-between items-center">
+                      <span>Streak: {w.dailyStreak || 0}d</span>
+                      <span className="text-white/40 font-mono text-[10px]">{w.walletId || `WAL-${w.userEmail.slice(0, 4).toUpperCase()}`}</span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManualAdjustUser(w.userEmail);
+                          setManualAdjustType("Credit");
+                          setManualAdjustCoins(500);
+                          setManualAdjustReason("");
+                          setManualAdjustError("");
+                          setIsManualAdjustModalOpen(true);
+                        }}
+                        className="flex-1 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
+                      >
+                        Adjust Coins
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFreezeWallet(w)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+                          w.isFrozen
+                            ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                            : "bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/30"
+                        }`}
+                      >
+                        {w.isFrozen ? "Unfreeze" : "Freeze"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-2xl font-black text-amber-400 font-mono">{w.balanceCoins.toLocaleString()} CC</span>
-                    <span className="text-xs text-white/50 font-mono">≈ ₹{(w.balanceCoins * currentCoinValueRupees).toFixed(2)}</span>
-                  </div>
-                  <div className="pt-2 border-t border-white/5 text-[11px] text-white/50 flex justify-between items-center">
-                    <span>Streak: {w.dailyStreak || 0} days</span>
-                    <span className="text-amber-400/80 font-mono text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                      Wallet actions paused
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         )}
@@ -1235,13 +1356,24 @@ export default function CineCoinsAdminControl({
                   placeholder="Search user balances by email..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 outline-none focus:border-amber-400"
+                  className="bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 outline-none focus:border-amber-400 font-mono"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold rounded-xl">
-                  Wallet Actions: Paused for Dec Launch
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualAdjustUser(userWallets[0]?.userEmail || "");
+                    setManualAdjustType("Credit");
+                    setManualAdjustCoins(500);
+                    setManualAdjustReason("");
+                    setManualAdjustError("");
+                    setIsManualAdjustModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5"
+                >
+                  <span>➕ Adjust User</span>
+                </button>
                 <span className="text-xs font-mono text-amber-400 font-bold">
                   {userWallets.length} Accounts
                 </span>
@@ -1256,8 +1388,8 @@ export default function CineCoinsAdminControl({
                     <th className="p-3">Wallet ID</th>
                     <th className="p-3">CineCoins Balance</th>
                     <th className="p-3">Approx. Value</th>
-                    <th className="p-3">Wallet Status</th>
-                    <th className="p-3">Operational State</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-[11px]">
@@ -1270,12 +1402,29 @@ export default function CineCoinsAdminControl({
                         <td className="p-3 font-bold text-amber-400">{w.balanceCoins.toLocaleString()} CC</td>
                         <td className="p-3 text-white/60">₹{(w.balanceCoins * currentCoinValueRupees).toFixed(2)}</td>
                         <td className="p-3">
-                          <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
-                            PAUSED (DEC)
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            w.isFrozen
+                              ? "bg-rose-500/15 border border-rose-500/30 text-rose-300"
+                              : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                          }`}>
+                            {w.isFrozen ? "FROZEN" : "ACTIVE"}
                           </span>
                         </td>
-                        <td className="p-3">
-                          <span className="text-white/40 text-[10px] italic">Wallet actions gated until launch</span>
+                        <td className="p-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setManualAdjustUser(w.userEmail);
+                              setManualAdjustType("Credit");
+                              setManualAdjustCoins(500);
+                              setManualAdjustReason("");
+                              setManualAdjustError("");
+                              setIsManualAdjustModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded text-[10px] font-bold transition-colors cursor-pointer"
+                          >
+                            Adjust
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1862,6 +2011,127 @@ export default function CineCoinsAdminControl({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* MANUAL ADJUSTMENT MODAL */}
+        {isManualAdjustModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[#0F1015] border border-amber-500/40 max-w-lg w-full rounded-2xl p-6 space-y-5 text-left shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">
+                    🪙
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-white">Manual CineCoins Adjustment</h3>
+                    <p className="text-[11px] text-white/50">Credit or debit coins directly on a user's account profile</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsManualAdjustModalOpen(false)}
+                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {manualAdjustError && (
+                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{manualAdjustError}</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-white/80 block mb-1">Target User Account</label>
+                  <select
+                    value={manualAdjustUser}
+                    onChange={(e) => setManualAdjustUser(e.target.value)}
+                    className="w-full bg-black/70 border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-amber-400 font-mono"
+                  >
+                    <option value="">Select a user account...</option>
+                    {userWallets.map(w => (
+                      <option key={w.userEmail} value={w.userEmail}>
+                        {w.userEmail} ({w.balanceCoins.toLocaleString()} CC) {w.isFrozen ? "[FROZEN]" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-white/80 block mb-1">Action Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setManualAdjustType("Credit")}
+                        className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                          manualAdjustType === "Credit"
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                            : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10"
+                        }`}
+                      >
+                        ➕ Credit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setManualAdjustType("Debit")}
+                        className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                          manualAdjustType === "Debit"
+                            ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                            : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10"
+                        }`}
+                      >
+                        ➖ Debit
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-white/80 block mb-1">Amount (Coins)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50000}
+                      value={manualAdjustCoins}
+                      onChange={(e) => setManualAdjustCoins(Math.max(1, parseInt(e.target.value) || 0))}
+                      className="w-full bg-black/70 border border-white/15 rounded-xl px-3 py-2 text-xs text-amber-400 font-mono font-bold outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-white/80 block mb-1">Reason / Ledger Justification <span className="text-rose-400">*</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Goodwill customer service credit, Ticket refund cashback, etc."
+                    value={manualAdjustReason}
+                    onChange={(e) => setManualAdjustReason(e.target.value)}
+                    className="w-full bg-black/70 border border-white/15 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsManualAdjustModalOpen(false)}
+                  className="flex-1 py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteManualAdjustment}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  Confirm & Sync Wallet
+                </button>
+              </div>
             </div>
           </div>
         )}

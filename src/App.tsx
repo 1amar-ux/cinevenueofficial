@@ -1122,6 +1122,112 @@ export default function App() {
     return DEFAULT_CINECOINS_USER_WALLET;
   });
 
+  // Master Multi-User CineCoins Wallets (Synced across user profiles & admin panel)
+  const [allUserWallets, setAllUserWallets] = useState<Record<string, CineCoinsUserWallet>>(() => {
+    try {
+      const saved = localStorage.getItem("cine_coins_all_user_wallets");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn("Failed to parse cine_coins_all_user_wallets", e);
+    }
+    return {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem("cine_coins_all_user_wallets", JSON.stringify(allUserWallets));
+  }, [allUserWallets]);
+
+  // Synchronize registered user accounts with userWallets
+  useEffect(() => {
+    setAllUserWallets(prev => {
+      let updated = false;
+      const nextMap = { ...prev };
+
+      registeredUsers.forEach(u => {
+        const email = u.email.toLowerCase().trim();
+        if (!nextMap[email]) {
+          const namePart = (u.name || email.split("@")[0]).replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
+          nextMap[email] = {
+            ...DEFAULT_CINECOINS_USER_WALLET,
+            walletId: `WAL-${email.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`,
+            userEmail: email,
+            balanceCoins: 100, // 100 welcome bonus on signup
+            lifetimeEarned: 100,
+            totalRedeemed: 0,
+            status: "Active",
+            membershipTier: "Bronze Member",
+            isFrozen: false,
+            dailyStreak: 1,
+            referralCode: `CINE-${namePart || "VIP"}${Math.floor(100 + Math.random() * 900)}`,
+            lastLoginDate: new Date().toISOString().split("T")[0],
+            createdDate: u.joinedAt || new Date().toISOString().split("T")[0]
+          };
+          updated = true;
+        }
+      });
+
+      if (userEmail) {
+        const cleanEmail = userEmail.toLowerCase().trim();
+        if (!nextMap[cleanEmail]) {
+          const namePart = cleanEmail.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
+          nextMap[cleanEmail] = {
+            ...DEFAULT_CINECOINS_USER_WALLET,
+            walletId: `WAL-${cleanEmail.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`,
+            userEmail: cleanEmail,
+            balanceCoins: 100,
+            lifetimeEarned: 100,
+            totalRedeemed: 0,
+            status: "Active",
+            membershipTier: "Bronze Member",
+            isFrozen: false,
+            dailyStreak: 1,
+            referralCode: `CINE-${namePart || "VIP"}${Math.floor(100 + Math.random() * 900)}`,
+            lastLoginDate: new Date().toISOString().split("T")[0],
+            createdDate: new Date().toISOString().split("T")[0]
+          };
+          updated = true;
+        }
+      }
+
+      return updated ? nextMap : prev;
+    });
+  }, [registeredUsers, userEmail]);
+
+  // Sync active user wallet when current userEmail changes or allUserWallets updates
+  useEffect(() => {
+    const activeEmail = (userEmail || "member@cinevenue.com").toLowerCase().trim();
+    if (allUserWallets[activeEmail]) {
+      setCineCoinsUserWallet(allUserWallets[activeEmail]);
+    }
+  }, [userEmail, allUserWallets]);
+
+  // Bi-directional wallet update handler: synchronizes active user wallet and master userWallets store
+  const handleUpdateUserWallet = (updated: CineCoinsUserWallet) => {
+    const email = (updated.userEmail || userEmail || "member@cinevenue.com").toLowerCase().trim();
+    const finalWallet = { ...updated, userEmail: email };
+    
+    const currentActiveEmail = (userEmail || "member@cinevenue.com").toLowerCase().trim();
+    if (email === currentActiveEmail) {
+      setCineCoinsUserWallet(finalWallet);
+    }
+
+    setAllUserWallets(prev => ({
+      ...prev,
+      [email]: finalWallet
+    }));
+  };
+
+  const effectiveUserWallets: CineCoinsUserWallet[] = Object.values(allUserWallets).length > 0 
+    ? Object.values(allUserWallets)
+    : (registeredUsers.length > 0 
+        ? registeredUsers.map(u => ({
+            ...DEFAULT_CINECOINS_USER_WALLET,
+            userEmail: u.email,
+            balanceCoins: 100,
+            lifetimeEarned: 100
+          }))
+        : [DEFAULT_CINECOINS_USER_WALLET]);
+
   const [castingApplications, setCastingApplications] = useState<CastingApplication[]>(() => {
     const saved = localStorage.getItem("cine_casting_applications");
     return saved ? JSON.parse(saved) : [];
@@ -1998,6 +2104,16 @@ export default function App() {
               onDeleteAd={(id) => setAdvertisements(advertisements.filter(a => a.id !== id))}
               onVerifyBookingPayment={handleVerifyBookingPayment}
               onVerifyRegistrationPayment={handleVerifyRegistrationPayment}
+              cineCoinsSettings={cineCoinsSettings}
+              onUpdateCineCoinsSettings={(s) => setCineCoinsSettings(s)}
+              cineCoinsRewards={cineCoinsRewards}
+              onUpdateCineCoinsRewards={(r) => setCineCoinsRewards(r)}
+              cineCoinsChallenges={cineCoinsChallenges}
+              onUpdateCineCoinsChallenges={(c) => setCineCoinsChallenges(c)}
+              cineCoinsTransactions={cineCoinsTransactions}
+              onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
+              userWallets={effectiveUserWallets}
+              onUpdateWallet={handleUpdateUserWallet}
             />
           </div>
         }
@@ -2323,6 +2439,8 @@ export default function App() {
               onUpdateCineCoinsChallenges={(c) => setCineCoinsChallenges(c)}
               cineCoinsTransactions={cineCoinsTransactions}
               onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
+              userWallets={effectiveUserWallets}
+              onUpdateWallet={handleUpdateUserWallet}
             />
           </div>
           )
@@ -2454,6 +2572,8 @@ export default function App() {
               onUpdateCineCoinsChallenges={(c) => setCineCoinsChallenges(c)}
               cineCoinsTransactions={cineCoinsTransactions}
               onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
+              userWallets={effectiveUserWallets}
+              onUpdateWallet={handleUpdateUserWallet}
             />
           </div>
         }
@@ -2607,7 +2727,7 @@ export default function App() {
                 transactions={cineCoinsTransactions}
                 userEmail={userEmail}
                 onOpenAuth={() => setAuthOpen(true)}
-                onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
+                onUpdateWallet={handleUpdateUserWallet}
                 onAddTransaction={(tx) => setCineCoinsTransactions([tx, ...cineCoinsTransactions])}
               />
             )
@@ -2750,7 +2870,7 @@ export default function App() {
                         onToggleEventSystemActive={(active) => setIsEventBookingSystemActive(active)}
                         onToggleEventBookingStatus={handleToggleEventActive}
                         userWallet={cineCoinsUserWallet}
-                        onUpdateWallet={(updated) => setCineCoinsUserWallet(updated)}
+                        onUpdateWallet={handleUpdateUserWallet}
                       />
                     </main>
                     <Footer 
