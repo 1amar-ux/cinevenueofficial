@@ -182,9 +182,8 @@ export default function AuthCallback() {
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw new Error(
-            `[Step: Backend Sync] ${res.status}: ${errData.message || errData.error || res.statusText || "Server verification failed"}`
-          );
+          const errMsg = errData.error?.message || errData.message || (typeof errData.error === "string" ? errData.error : "") || res.statusText || "Server verification failed";
+          throw new Error(`[Step: Backend Sync] ${res.status}: ${errMsg}`);
         }
 
         const json = await res.json().catch(() => ({}));

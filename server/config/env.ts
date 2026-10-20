@@ -20,7 +20,7 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_CALLBACK_URL: z.string().optional().default("http://localhost:3000/api/v1/auth/google"),
+  GOOGLE_CALLBACK_URL: z.string().optional(),
   
   // Payment Gateways (Razorpay & Cashfree)
   RAZORPAY_KEY_ID: z.string().optional(),
@@ -48,6 +48,9 @@ const envSchema = z.object({
   CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
   
   // Email & SMTP Notification Gateway
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.union([z.string(), z.number()]).optional().transform((val) => val ? Number(val) : 587),
   SMTP_USER: z.string().optional(),

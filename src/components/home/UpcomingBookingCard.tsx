@@ -40,6 +40,7 @@ export interface UnifiedUpcomingBooking {
 }
 
 interface UpcomingBookingCardProps {
+  userEmail?: string | null;
   bookings?: any[]; // Raw movie bookings
   eventBookings?: any[]; // Raw event bookings
   theatres?: any[]; // To look up coordinates and full addresses
@@ -48,6 +49,7 @@ interface UpcomingBookingCardProps {
 }
 
 export default function UpcomingBookingCard({
+  userEmail,
   bookings = [],
   eventBookings = [],
   theatres = [],
@@ -66,20 +68,30 @@ export default function UpcomingBookingCard({
     return () => clearInterval(timer);
   }, []);
 
-  // Normalize and merge movie and event bookings
+  // Normalize and merge movie and event bookings strictly belonging to the authenticated customer
   const upcomingList: UnifiedUpcomingBooking[] = React.useMemo(() => {
+    // If visitor is not logged in or has no email, strictly do not show any upcoming card
+    if (!userEmail || !userEmail.trim()) {
+      return [];
+    }
+
+    const normalizedUserEmail = userEmail.trim().toLowerCase();
     const list: UnifiedUpcomingBooking[] = [];
 
-    // 1. Process Movie Bookings
+    // 1. Process Movie Bookings (strictly matching logged-in customer)
     bookings.forEach((b: any) => {
-      const statusUpper = String(b.status || "").toUpperCase();
-      // Only include eligible confirmed bookings (not cancelled/refunded)
+      const bEmail = (b.userEmail || b.email || "").trim().toLowerCase();
+      if (!bEmail || bEmail !== normalizedUserEmail) {
+        return;
+      }
+
+      const statusUpper = String(b.status || b.paymentStatus || "").toUpperCase();
+      // Only include eligible confirmed bookings (not cancelled/refunded/pending)
       if (
         statusUpper === "CONFIRMED" ||
         statusUpper === "SETTLED" ||
         statusUpper === "ACTIVE" ||
-        statusUpper === "APPROVED" ||
-        !b.status // default to active if confirmed on client
+        statusUpper === "APPROVED"
       ) {
         // Look up registered theatre for coordinates and full address
         const matchedTheatre = theatres.find(
@@ -117,7 +129,7 @@ export default function UpcomingBookingCard({
       }
     });
 
-    // 2. Process Event Bookings (from eventRegistrations or localStorage cv_event_bookings)
+    // 2. Process Event Bookings (strictly matching logged-in customer)
     let storedEvents: any[] = [];
     try {
       const rawStored = localStorage.getItem("cv_event_bookings");
@@ -132,12 +144,16 @@ export default function UpcomingBookingCard({
       if (!ebId || seenEventIds.has(ebId)) return;
       seenEventIds.add(ebId);
 
+      const ebEmail = (eb.userEmail || eb.email || "").trim().toLowerCase();
+      if (!ebEmail || ebEmail !== normalizedUserEmail) {
+        return;
+      }
+
       const statusUpper = String(eb.bookingStatus || eb.status || "").toUpperCase();
       if (
         statusUpper === "CONFIRMED" ||
         statusUpper === "PAID" ||
-        statusUpper === "ACTIVE" ||
-        !eb.status
+        statusUpper === "ACTIVE"
       ) {
         list.push({
           id: ebId,
@@ -181,10 +197,10 @@ export default function UpcomingBookingCard({
     });
 
     return validUpcoming;
-  }, [bookings, eventBookings, theatres, currentTime]);
+  }, [bookings, eventBookings, theatres, currentTime, userEmail]);
 
-  if (upcomingList.length === 0) {
-    return null; // Gracefully collapse if user has no upcoming bookings
+  if (!userEmail || upcomingList.length === 0) {
+    return null; // Gracefully collapse if visitor is not logged in or has no confirmed upcoming bookings
   }
 
   const safeIndex = Math.min(activeIndex, upcomingList.length - 1);

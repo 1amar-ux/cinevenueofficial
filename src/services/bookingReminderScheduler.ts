@@ -16,6 +16,7 @@ export interface ScheduledReminderItem {
   title: string;
   venueName: string;
   venueAddress?: string;
+  recipientEmail?: string;
   interval: "24h" | "3h" | "1h" | "15m";
   scheduledTime: number; // epoch ms
   targetTimeFormatted: string;
@@ -193,6 +194,7 @@ class BookingReminderScheduler {
         title: booking.title,
         venueName: booking.venueName,
         venueAddress: booking.venueAddress,
+        recipientEmail: booking.recipientEmail,
         interval: item.id,
         scheduledTime: triggerEpoch,
         targetTimeFormatted: new Date(triggerEpoch).toLocaleString(),
@@ -284,15 +286,28 @@ class BookingReminderScheduler {
   /**
    * Run client-side check to dispatch any due web notifications and in-app alerts.
    */
-  public checkAndDispatchDueReminders(): void {
+  public checkAndDispatchDueReminders(currentUserEmail?: string | null): void {
     const registry = this.getRegistry();
     const now = Date.now();
     let updated = false;
+
+    const activeUserEmail = (
+      currentUserEmail ||
+      (typeof localStorage !== "undefined" ? localStorage.getItem("cine_user_email") : "") ||
+      ""
+    ).trim().toLowerCase();
 
     Object.keys(registry).forEach((key) => {
       const item = registry[key];
       // Due if within 2 minutes of scheduled time and not yet dispatched
       if (!item.dispatched && now >= item.scheduledTime && now - item.scheduledTime < 24 * 3600 * 1000) {
+        // If an authenticated user email is defined and the item has a recipient, verify ownership
+        if (item.recipientEmail && activeUserEmail) {
+          if (item.recipientEmail.trim().toLowerCase() !== activeUserEmail) {
+            return; // Skip dispatching reminders intended for a different user
+          }
+        }
+
         item.dispatched = true;
         updated = true;
 

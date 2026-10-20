@@ -38,10 +38,23 @@
         "body": "Your event \"{eventTitle}\" starts soon at {venueName}! Check your ticket and venue location on CineVenue."
       }
     },
-    "updatedAt": "2026-10-20T13:31:10.027Z",
+    "updatedAt": "2026-10-20T13:53:07.387Z",
     "updatedBy": "Automated Test Runner"
   },
   "logs": [
+    {
+      "id": "rem-log-1792504388653-29doa",
+      "bookingId": "TEST-BK-1792504388653",
+      "type": "MOVIE",
+      "title": "Devara: Part 1",
+      "venueName": "PVR Nexus",
+      "recipient": "test@cinevenue.com",
+      "interval": "1h",
+      "channel": "PUSH_AND_INAPP",
+      "status": "CANCELLED",
+      "scheduledFor": "2026-10-20T13:53:08.653Z",
+      "details": "Cancelled: Customer requested ticket cancellation at 2026-10-20T13:53:08.657Z"
+    },
     {
       "id": "rem-log-1792503072094-b7rzp",
       "bookingId": "TEST-BK-1792503072092",

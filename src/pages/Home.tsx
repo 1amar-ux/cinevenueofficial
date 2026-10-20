@@ -132,14 +132,18 @@ export default function Home({
     };
   }, []);
 
-  // Automated background reminder and notification check
+  // Automated background reminder and notification check (only for authenticated user)
   React.useEffect(() => {
-    bookingReminderScheduler.checkAndDispatchDueReminders();
+    if (userEmail) {
+      bookingReminderScheduler.checkAndDispatchDueReminders(userEmail);
+    }
     const timer = setInterval(() => {
-      bookingReminderScheduler.checkAndDispatchDueReminders();
+      if (userEmail) {
+        bookingReminderScheduler.checkAndDispatchDueReminders(userEmail);
+      }
     }, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [userEmail]);
 
   // Gemini Concierge Types & Intelligent Redirect Parser
   interface ConciergeAction {
@@ -685,23 +689,26 @@ export default function Home({
         containerClassName="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-20 pb-4 z-20 relative"
       />
 
-      {/* UPCOMING CONFIRMED BOOKING & LOCATION NAVIGATION CARD */}
-      <UpcomingBookingCard
-        bookings={bookings}
-        eventBookings={eventRegistrations}
-        theatres={theatres}
-        onViewTicket={(booking) => {
-          if (booking.type === "MOVIE") {
-            if (onOpenOrders) {
-              onOpenOrders();
+      {/* UPCOMING CONFIRMED BOOKING & LOCATION NAVIGATION CARD (Only shown for authenticated customer's own confirmed tickets) */}
+      {userEmail && (
+        <UpcomingBookingCard
+          userEmail={userEmail}
+          bookings={bookings}
+          eventBookings={eventRegistrations}
+          theatres={theatres}
+          onViewTicket={(booking) => {
+            if (booking.type === "MOVIE") {
+              if (onOpenOrders) {
+                onOpenOrders();
+              } else {
+                navigate("/booking");
+              }
             } else {
-              navigate("/booking");
+              navigate("/events");
             }
-          } else {
-            navigate("/events");
-          }
-        }}
-      />
+          }}
+        />
+      )}
 
       {/* LUXURY CINEMATIC HERO */}
       <section className="relative pt-20 sm:pt-24 md:pt-24 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center overflow-hidden">

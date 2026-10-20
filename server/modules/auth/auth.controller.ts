@@ -59,8 +59,37 @@ export class AuthController {
     }
   };
 
+  public handleGoogleCallback = async (req: Request, res: Response, next: NextFunction) => {
+    const frontendUrl = env.FRONTEND_URL || "http://localhost:3000";
+    try {
+      const { code, error, error_description } = req.query as { code?: string; error?: string; error_description?: string };
+
+      if (error) {
+        logger.warn(`[Auth:Google] Provider returned error on callback: ${error} - ${error_description}`);
+        const errMsg = encodeURIComponent(error_description || error || "Google authentication was cancelled.");
+        return res.redirect(`${frontendUrl}/?authError=${errMsg}`);
+      }
+
+      if (code) {
+        const result = await authService.googleLogin({ code: String(code) });
+        this.setSessionCookies(res, result.tokens);
+        return res.redirect(`${frontendUrl}/?authSuccess=true&email=${encodeURIComponent(result.user.email)}`);
+      }
+
+      return this.googleLoginRedirect(req, res, next);
+    } catch (err: any) {
+      logger.error(`[Auth:Google] Callback error: ${err.message}`, err);
+      const errMsg = encodeURIComponent(err.message || "Failed to complete Google authentication.");
+      return res.redirect(`${frontendUrl}/?authError=${errMsg}`);
+    }
+  };
+
   public googleLoginRedirect = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // If code or error arrived on this endpoint directly, route to callback handler
+      if (req.query?.code || req.query?.error) {
+        return this.handleGoogleCallback(req, res, next);
+      }
       const redirectUrl = await authService.getGoogleAuthRedirectUrl();
       return res.redirect(redirectUrl);
     } catch (error: any) {

@@ -76,7 +76,10 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   ]),
   User: new Set([
     'id', 'email', 'passwordHash', 'name', 'mobile', 'role', 'isActive', 'isVerified',
-    'createdAt', 'updatedAt'
+    'profileImageUrl', 'dateOfBirth', 'lastLoginAt', 'createdAt', 'updatedAt'
+  ]),
+  AuthProvider: new Set([
+    'id', 'userId', 'provider', 'providerAccountId', 'createdAt'
   ]),
   app_settings: new Set([
     'id', 'maintenance_mode', 'maintenance_title', 'maintenance_message',
@@ -289,7 +292,32 @@ function applyWhereClause(query: any, where: any) {
     } else if (v !== undefined) {
       const formatVal = (val: any) => val instanceof Date ? val.toISOString() : val;
       if (typeof v === "object" && !(v instanceof Date)) {
-        if ("in" in (v as any) && Array.isArray((v as any).in)) {
+        // Skip Prisma relational filters like authProviders: { some: ... }
+        if ("some" in (v as any) || "every" in (v as any) || "none" in (v as any)) {
+          continue;
+        }
+        if ("equals" in (v as any)) {
+          const eqVal = formatVal((v as any).equals);
+          if ((v as any).mode === "insensitive" && typeof eqVal === "string") {
+            q = q.ilike(k, eqVal);
+          } else {
+            q = q.eq(k, eqVal);
+          }
+        } else if ("contains" in (v as any)) {
+          const cVal = formatVal((v as any).contains);
+          if ((v as any).mode === "insensitive" && typeof cVal === "string") {
+            q = q.ilike(k, `%${cVal}%`);
+          } else {
+            q = q.like(k, `%${cVal}%`);
+          }
+        } else if ("startsWith" in (v as any)) {
+          const sVal = formatVal((v as any).startsWith);
+          if ((v as any).mode === "insensitive" && typeof sVal === "string") {
+            q = q.ilike(k, `${sVal}%`);
+          } else {
+            q = q.like(k, `${sVal}%`);
+          }
+        } else if ("in" in (v as any) && Array.isArray((v as any).in)) {
           q = q.in(k, (v as any).in.map(formatVal));
         } else if ("gt" in (v as any)) {
           q = q.gt(k, formatVal((v as any).gt));
