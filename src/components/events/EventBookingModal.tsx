@@ -32,6 +32,7 @@ import {
 import DigitalTicketPassModal from './DigitalTicketPassModal';
 import { sendEventPassToEmail } from '../../utils/eventPassPdf';
 import apiClient from '../../services/apiClient';
+import { bookingReminderScheduler } from '../../services/bookingReminderScheduler';
 
 interface EventBookingModalProps {
   event: EventItem;
@@ -342,6 +343,20 @@ export default function EventBookingModal({
 
       // Automatically dispatch event pass directly to attendee's email
       sendEventPassToEmail(booking);
+
+      // Automatically schedule multi-interval reminders (24h, 3h, 1h, 15m)
+      bookingReminderScheduler.scheduleBookingReminders({
+        bookingId: booking.id || booking.passCode || `EVT-${Date.now()}`,
+        type: "EVENT",
+        title: booking.eventTitle || event.title,
+        venueName: booking.venueName || event.venueName || (typeof event.venue === "string" ? event.venue : "Grand Event Venue"),
+        venueAddress: booking.venueAddress || event.venueAddress || `${event.city}, India`,
+        city: booking.city || event.city,
+        date: booking.eventDate || event.date,
+        time: booking.eventTime || event.time || event.startTime,
+        status: "CONFIRMED",
+        recipientEmail: primaryEmail.trim(),
+      });
     } catch (err) {
       console.error('Booking failed:', err);
       alert('Failed to process booking. Please try again.');

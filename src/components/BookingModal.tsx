@@ -3,7 +3,7 @@ import {
   X, Calendar, MapPin, Armchair, CheckCircle, ShieldCheck, CreditCard, 
   AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info,
   Download, Printer, Share2, Mail, Smartphone, Heart, SlidersHorizontal, ArrowLeft, Clock,
-  Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search, Users
+  Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search, Users, Navigation, CalendarPlus, Ticket
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { MovieSchedule, Booking, Theatre, Movie } from "../types";
@@ -14,6 +14,8 @@ import { FeeCalculationResult, FeeRule, TaxRule, DiscountRule } from "../types/f
 import { movieFeeClient, calculateLocalMovieFeeFallback, MovieFeeBreakdown } from "../services/movieFeeService";
 import { generateAndDownloadTicketPdf, getTicketVerificationUrl } from "../utils/ticketDeliveryService";
 import { getEligibleTheatresAndShows, parseTimeToMinutes, getPrimaryMovieTrailer } from "../utils/movieAvailability";
+import { openVenueDirections, downloadCalendarEvent } from "../services/venueLocationService";
+import { bookingReminderScheduler } from "../services/bookingReminderScheduler";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -474,13 +476,31 @@ export default function BookingModal({
           paymentMethod: paymentMethod,
           feeLines: movieFeeBreakdown?.feeLines || [],
           feeSnapshot: movieFeeBreakdown?.feeSnapshot || null,
+          theatreAddress: currentTheatre?.address || currentTheatre?.location || `${selectedCity}, India`,
+          theatreLatitude: currentTheatre?.latitude,
+          theatreLongitude: currentTheatre?.longitude,
         } as any
       );
 
-      setGeneratedBookingId(confirmedBooking.id || `BK-${Math.floor(100000 + Math.random() * 900000)}`);
+      const finalBookingId = confirmedBooking.id || `BK-${Math.floor(100000 + Math.random() * 900000)}`;
+      setGeneratedBookingId(finalBookingId);
       setIsProcessingPayment(false);
       setBookingSuccess(true);
       setBookingStep("confirmed");
+
+      // Automated Multi-Interval Reminder Scheduling (24h, 3h, 1h, 15m)
+      bookingReminderScheduler.scheduleBookingReminders({
+        bookingId: finalBookingId,
+        type: "MOVIE",
+        title: movieTitle,
+        venueName: displayTheatre,
+        venueAddress: currentTheatre?.address || currentTheatre?.location || `${selectedCity}, India`,
+        city: currentTheatre?.city || selectedCity,
+        date: activeDate.fullDayName,
+        time: displayTimeSlot,
+        status: "CONFIRMED",
+        recipientEmail: userEmail || "guest@cinevenue.com",
+      });
     }, 800);
   };
 
@@ -1501,13 +1521,22 @@ export default function BookingModal({
 
                 <div className="border-t border-gray-100" />
 
-                <div className="text-xs sm:text-sm font-medium text-gray-800 leading-snug">
-                  {displayTheatre}
+                {/* Venue Name & Complete Verified Address */}
+                <div className="flex items-start gap-2.5 py-1">
+                  <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <div className="text-xs sm:text-sm font-bold text-gray-900 leading-snug">
+                      {displayTheatre}
+                    </div>
+                    <div className="text-[11px] text-gray-500 leading-relaxed font-normal">
+                      {currentTheatre?.address || currentTheatre?.location || `${selectedCity}, India`}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* District Branding Banner */}
-              <div className="bg-gradient-to-r from-[#9333EA] via-[#8527DE] to-[#7319CE] rounded-2xl p-4 text-center text-white shadow-md mb-5 flex flex-col items-center justify-center">
+              <div className="bg-gradient-to-r from-[#9333EA] via-[#8527DE] to-[#7319CE] rounded-2xl p-4 text-center text-white shadow-md mb-4 flex flex-col items-center justify-center">
                 <span className="font-extrabold tracking-tight text-3xl font-sans leading-none select-none drop-shadow-xs">
                   district
                 </span>
@@ -1516,8 +1545,9 @@ export default function BookingModal({
                 </span>
               </div>
 
-              {/* Actions: Download PDF & Dismiss */}
+              {/* Actions: View Ticket, Get Directions, Add to Calendar, Done */}
               <div className="space-y-2.5">
+                {/* 1. View Ticket / Download PDF Button */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1538,11 +1568,53 @@ export default function BookingModal({
                       paymentMethod: paymentMethod,
                     });
                   }}
-                  className="w-full bg-gray-900 hover:bg-black text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full bg-[#10B981] hover:bg-emerald-600 text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center gap-2 shadow-sm"
                 >
-                  <Download className="w-4 h-4 text-emerald-400" />
-                  <span>Download Ticket PDF</span>
+                  <Ticket className="w-4 h-4 text-white" />
+                  <span>View Ticket / Download PDF</span>
                 </button>
+
+                {/* 2. Get Directions & Add to Calendar Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openVenueDirections({
+                        name: displayTheatre,
+                        address: currentTheatre?.address || currentTheatre?.location,
+                        city: currentTheatre?.city || selectedCity,
+                        latitude: currentTheatre?.latitude,
+                        longitude: currentTheatre?.longitude,
+                      });
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Navigation className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Get Directions</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      downloadCalendarEvent({
+                        title: movieTitle,
+                        type: "MOVIE",
+                        bookingId: numericBookingId,
+                        venueName: displayTheatre,
+                        venueAddress: currentTheatre?.address || currentTheatre?.location,
+                        city: currentTheatre?.city || selectedCity,
+                        dateStr: activeDate.fullDayName,
+                        timeStr: displayTimeSlot,
+                        seats: selectedSeats,
+                        screen: currentTheatre?.screens?.[0]?.name || "Screen 1",
+                      });
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-800 text-xs font-bold tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Add to Calendar</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={onClose}

@@ -39,6 +39,7 @@ import { useTheme, ThemeMode } from "../context/ThemeContext";
 import { AuthContext } from "../context/AuthContext";
 import LocationSelector from "../components/location/LocationSelector";
 import { APP_CONFIG, getAppRuntimePlatform } from "../config/appVersion";
+import { saveUserNotificationPreferences } from "../services/bookingReminderScheduler";
 
 interface SettingsPageProps {
   selectedCity?: string;
@@ -48,6 +49,7 @@ interface SettingsPageProps {
 
 interface NotificationPrefs {
   bookingConfirmations: boolean;
+  movieReminders: boolean;
   eventReminders: boolean;
   promotions: boolean;
   newReleases: boolean;
@@ -57,6 +59,7 @@ interface NotificationPrefs {
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   bookingConfirmations: true,
+  movieReminders: true,
   eventReminders: true,
   promotions: false,
   newReleases: true,
@@ -177,6 +180,7 @@ export default function SettingsPage({
     setNotifPrefs((prev) => {
       const updated = { ...prev, [key]: !prev[key] };
       localStorage.setItem("cv_user_notification_preferences", JSON.stringify(updated));
+      saveUserNotificationPreferences(updated);
       return updated;
     });
     setNotifToast(true);
@@ -744,9 +748,14 @@ export default function SettingsPage({
                     desc: "Receive instant booking confirmation receipts and barcode/QR access links.",
                   },
                   {
+                    key: "movieReminders",
+                    title: "Movie Ticket Reminders & Directions",
+                    desc: "Automated alerts (24h, 3h, 1h, 15m prior to showtime) with registered theatre address and navigation.",
+                  },
+                  {
                     key: "eventReminders",
-                    title: "Movie & Live Event Reminders",
-                    desc: "Timely alerts 2 hours prior to scheduled showtimes to ensure smooth entry.",
+                    title: "Live Event Pass Reminders & Venue Navigation",
+                    desc: "Automated alerts (24h, 3h, 1h, 15m prior to event start) with verified venue entry coordinates and digital passes.",
                   },
                   {
                     key: "newReleases",

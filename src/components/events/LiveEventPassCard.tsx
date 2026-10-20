@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import QRCode from 'react-qr-code';
-import { Download, Share2, Printer, CheckCircle2, Ticket, ShieldCheck, Copy, Check, Mail, Send } from 'lucide-react';
+import { Download, Share2, Printer, CheckCircle2, Ticket, ShieldCheck, Copy, Check, Mail, Send, Navigation, CalendarPlus, MapPin } from 'lucide-react';
 import { formatEventDateAndDay, generateAndDownloadEventPassPdf, printEventPassPdf, sendEventPassToEmail, buildPassMailtoUrl } from '../../utils/eventPassPdf';
 import { getBookingPassId, getBookingOrderId, isFreeEventBooking } from '../../services/eventBookingService';
+import { openVenueDirections, downloadCalendarEvent } from '../../services/venueLocationService';
 
 interface LiveEventPassCardProps {
   pass: any;
@@ -182,7 +183,8 @@ export default function LiveEventPassCard({
             <div className="bg-white/5 p-2 rounded-lg border border-white/5">
               <span className="text-[7.5px] uppercase font-bold text-white/40 block">Time & Venue</span>
               <span className="font-bold text-gold block truncate">{time}</span>
-              <span className="text-white/70 block truncate text-[9px]">{venueName}</span>
+              <span className="text-white/80 block truncate text-[9px] font-semibold">{venueName}</span>
+              <span className="text-white/40 block truncate text-[7.5px]">{pass.venueAddress || event?.venueAddress || `${city}, India`}</span>
             </div>
           </div>
 
@@ -300,6 +302,44 @@ export default function LiveEventPassCard({
             >
               <Mail className="w-3.5 h-3.5 text-blue-400" />
               <span>{emailing ? 'Sending...' : 'Email Pass'}</span>
+            </button>
+          </div>
+
+          {/* Smart Location Navigation & Calendar Automation */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => openVenueDirections({
+                name: venueName,
+                address: pass.venueAddress || event?.venueAddress,
+                city: city,
+                latitude: pass.latitude || event?.latitude,
+                longitude: pass.longitude || event?.longitude,
+              })}
+              className="w-full py-2.5 px-3 bg-[#D4AF37] hover:bg-[#E5C158] text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Navigation className="w-3.5 h-3.5 text-black" />
+              <span>Get Directions</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => downloadCalendarEvent({
+                title: title,
+                type: "EVENT",
+                bookingId: passId,
+                venueName: venueName,
+                venueAddress: pass.venueAddress || event?.venueAddress,
+                city: city,
+                dateStr: rawDate,
+                timeStr: time,
+                seats: seatCodes,
+                screen: ticketTypeName,
+              })}
+              className="w-full py-2.5 px-3 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all border border-white/10 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <CalendarPlus className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Add to Calendar</span>
             </button>
           </div>
 

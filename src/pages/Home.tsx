@@ -22,6 +22,8 @@ import {
   getTrendingExperiences,
   getBrowseLiveCategories,
 } from "../services/eventHighlightsService";
+import UpcomingBookingCard, { UnifiedUpcomingBooking } from "../components/home/UpcomingBookingCard";
+import { bookingReminderScheduler } from "../services/bookingReminderScheduler";
 
 type DivisionType = "none" | "live_booking" | "production" | "events" | "promotions";
 type SubWebsiteKey = "movieBooking" | "eventBooking" | "filmProduction" | "eventManagement" | "brandPromotion" | "cineCoinsLoyalty";
@@ -36,9 +38,25 @@ interface HomeProps {
   onOpenOrders?: () => void;
   onOpenAuth?: (mode?: "signin" | "signup") => void;
   onLogout?: () => void;
+  bookings?: any[];
+  theatres?: any[];
+  eventRegistrations?: any[];
 }
 
-export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceControl, setServiceControl, onAddServiceProposal, onOpenOrders, onOpenAuth, onLogout }: HomeProps) {
+export default function Home({
+  userEmail,
+  onOpenAdmin,
+  onSendMessage,
+  serviceControl,
+  setServiceControl,
+  onAddServiceProposal,
+  onOpenOrders,
+  onOpenAuth,
+  onLogout,
+  bookings = [],
+  theatres = [],
+  eventRegistrations = []
+}: HomeProps) {
   const navigate = useNavigate();
   const [activeDivision, setActiveDivision] = useState<DivisionType>("none");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -112,6 +130,15 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       window.removeEventListener("cinevenue:browse_categories_updated", handleCatUpdate);
       window.removeEventListener("storage", handleStorage);
     };
+  }, []);
+
+  // Automated background reminder and notification check
+  React.useEffect(() => {
+    bookingReminderScheduler.checkAndDispatchDueReminders();
+    const timer = setInterval(() => {
+      bookingReminderScheduler.checkAndDispatchDueReminders();
+    }, 30000);
+    return () => clearInterval(timer);
   }, []);
 
   // Gemini Concierge Types & Intelligent Redirect Parser
@@ -656,6 +683,24 @@ export default function Home({ userEmail, onOpenAdmin, onSendMessage, serviceCon
       <CineVenueLiveBanner
         placement="homepage_top"
         containerClassName="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-20 pb-4 z-20 relative"
+      />
+
+      {/* UPCOMING CONFIRMED BOOKING & LOCATION NAVIGATION CARD */}
+      <UpcomingBookingCard
+        bookings={bookings}
+        eventBookings={eventRegistrations}
+        theatres={theatres}
+        onViewTicket={(booking) => {
+          if (booking.type === "MOVIE") {
+            if (onOpenOrders) {
+              onOpenOrders();
+            } else {
+              navigate("/booking");
+            }
+          } else {
+            navigate("/events");
+          }
+        }}
       />
 
       {/* LUXURY CINEMATIC HERO */}

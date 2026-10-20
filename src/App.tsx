@@ -39,6 +39,7 @@ import AuthCallback from "./pages/AuthCallback";
 import VerifyTicket from "./pages/VerifyTicket";
 import MobileBottomNav from "./components/MobileBottomNav";
 import SettingsPage from "./pages/SettingsPage";
+import { bookingReminderScheduler } from "./services/bookingReminderScheduler";
 
 // Admin Sub-Pages
 import AdminLayout from "./admin/AdminLayout";
@@ -497,6 +498,9 @@ export default function App() {
 
   // Payment Verification & UTR Handlers
   const handleVerifyBookingPayment = (bookingId: string, status: "Approved" | "Rejected") => {
+    if (status !== "Approved") {
+      bookingReminderScheduler.cancelBookingReminders(bookingId);
+    }
     setBookings(prev => prev.map(b => {
       if (b.id === bookingId) {
         return {
@@ -511,6 +515,9 @@ export default function App() {
   };
 
   const handleVerifyRegistrationPayment = (regId: string, status: "Approved" | "Rejected") => {
+    if (status !== "Approved") {
+      bookingReminderScheduler.cancelBookingReminders(regId);
+    }
     setEventRegistrations(prev => prev.map(r => {
       if (r.id === regId) {
         return {
@@ -1994,6 +2001,9 @@ export default function App() {
               onOpenOrders={() => setOrdersOpen(true)}
               onOpenAuth={handleOpenAuth}
               onLogout={handleLogout}
+              bookings={bookings}
+              theatres={theatres}
+              eventRegistrations={eventRegistrations}
             />
             <AdminPanel
               isOpen={adminOpen}

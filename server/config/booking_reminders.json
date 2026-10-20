@@ -1,0 +1,87 @@
+{
+  "settings": {
+    "movieRemindersEnabled": true,
+    "eventRemindersEnabled": true,
+    "intervals": [
+      {
+        "id": "24h",
+        "label": "24 Hours Before",
+        "minutes": 1440,
+        "enabled": true
+      },
+      {
+        "id": "3h",
+        "label": "3 Hours Before",
+        "minutes": 180,
+        "enabled": true
+      },
+      {
+        "id": "1h",
+        "label": "1 Hour Before",
+        "minutes": 60,
+        "enabled": true
+      },
+      {
+        "id": "15m",
+        "label": "15 Minutes Before",
+        "minutes": 15,
+        "enabled": true
+      }
+    ],
+    "templates": {
+      "movie": {
+        "title": "Your Movie Starts in {timeRemaining}!",
+        "body": "Your movie \"{movieTitle}\" starts in {timeRemaining} at {theatreName}! Open CineVenue to view your ticket and get directions."
+      },
+      "event": {
+        "title": "Your Event Starts in {timeRemaining}!",
+        "body": "Your event \"{eventTitle}\" starts soon at {venueName}! Check your ticket and venue location on CineVenue."
+      }
+    },
+    "updatedAt": "2026-10-20T13:31:10.027Z",
+    "updatedBy": "Automated Test Runner"
+  },
+  "logs": [
+    {
+      "id": "rem-log-1792503072094-b7rzp",
+      "bookingId": "TEST-BK-1792503072092",
+      "type": "MOVIE",
+      "title": "Devara: Part 1",
+      "venueName": "PVR Nexus",
+      "recipient": "test@cinevenue.com",
+      "interval": "1h",
+      "channel": "PUSH_AND_INAPP",
+      "status": "CANCELLED",
+      "scheduledFor": "2026-10-20T13:31:12.092Z",
+      "details": "Cancelled: Customer requested ticket cancellation at 2026-10-20T13:31:12.097Z"
+    },
+    {
+      "id": "log-seed-1",
+      "bookingId": "BK-10000081019258",
+      "type": "MOVIE",
+      "title": "Devara: Part 1",
+      "venueName": "PVR Nexus, Kukatpally",
+      "recipient": "member@cinevenue.com",
+      "interval": "24h",
+      "channel": "PUSH_AND_INAPP",
+      "status": "DELIVERED",
+      "scheduledFor": "2026-10-20T14:30:00.000Z",
+      "dispatchedAt": "2026-10-20T14:30:02.000Z",
+      "details": "Automated 24h reminder delivered successfully with venue directions."
+    },
+    {
+      "id": "log-seed-2",
+      "bookingId": "EVT-BK-2026-00101",
+      "type": "EVENT",
+      "title": "CineVenue Grand Musical Launch",
+      "venueName": "LB Stadium, Hyderabad",
+      "recipient": "patron@cinevenue.com",
+      "interval": "3h",
+      "channel": "PUSH_AND_INAPP",
+      "status": "DELIVERED",
+      "scheduledFor": "2026-10-20T15:00:00.000Z",
+      "dispatchedAt": "2026-10-20T15:00:01.000Z",
+      "details": "Automated 3h reminder delivered with Google Maps venue coordinates."
+    }
+  ]
+}

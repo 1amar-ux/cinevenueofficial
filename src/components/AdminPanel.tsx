@@ -34,6 +34,7 @@ import TheatreBankManagement from "./TheatreBankManagement";
 import EventManagementAdminPanel from "./productions/EventManagementAdminPanel";
 import CineVenueFilmAdminTab from "./film-production/CineVenueFilmAdminTab";
 import AdvertisingAdminModule from "./admin/AdvertisingAdminModule";
+import BookingRemindersAdminModule from "./admin/BookingRemindersAdminModule";
 import { getEventRequests, submitEventRequest } from "../services/eventService";
 import { EventManagementRequest, PublicEvent, ArtistRequest, SponsorshipRequest, EventPortfolioItem } from "../types/productions";
 import { INITIAL_EVENT_PORTFOLIO, INITIAL_ARTIST_REQUESTS, INITIAL_SPONSORSHIP_REQUESTS, INITIAL_EVENT_MANAGEMENT_REQUESTS } from "../data/productionsData";
@@ -146,7 +147,7 @@ interface AdminPanelProps {
   onUpdateWallet?: (wallet: CineCoinsUserWallet) => void;
 }
 
-type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management" | "movie_fees";
+type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management" | "movie_fees" | "booking_reminders";
 
 export default function AdminPanel({
   isOpen,
@@ -2404,6 +2405,13 @@ export default function AdminPanel({
           label: "Platform Settings",
           icon: Settings,
           domId: "tab-btn-settings",
+        },
+        {
+          id: "booking_reminders",
+          label: "Booking Reminders & Location",
+          icon: Bell,
+          badge: <span className="text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded">AUTO</span>,
+          domId: "tab-btn-booking-reminders",
         },
       ],
     },
@@ -6558,6 +6566,15 @@ export default function AdminPanel({
                   </form>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: BOOKING REMINDERS & NOTIFICATIONS */}
+          {/* ========================================================= */}
+          {activeTab === "booking_reminders" && (
+            <div className="space-y-8 animate-fade-in" id="tab-booking-reminders">
+              <BookingRemindersAdminModule />
             </div>
           )}
 
