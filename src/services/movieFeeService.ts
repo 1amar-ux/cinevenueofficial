@@ -9,6 +9,7 @@ export interface MovieFeeConfig {
   feeApplication: "PER_TICKET" | "PER_BOOKING";
   enabled: boolean;
   description?: string | null;
+  actorEmail?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -17,6 +18,7 @@ export interface GlobalMovieFeeSettings {
   enabled: boolean;
   defaultGstRate: number;
   defaultFeeApplication: "PER_TICKET" | "PER_BOOKING";
+  actorEmail?: string;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -324,9 +326,9 @@ export const movieFeeClient = {
   },
 
   // Super Admin: Get audit logs
-  async getAuditLogs(): Promise<any[]> {
+  async getAuditLogs(limit?: number): Promise<any[]> {
     try {
-      const res = await apiClient.get<any>("/admin/movie-fees/audit-logs");
+      const res = await apiClient.get<any>("/admin/movie-fees/audit-logs", { params: { limit } });
       if (res.data?.success) return res.data.logs || [];
     } catch (e) {}
     return [];

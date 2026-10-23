@@ -40,6 +40,7 @@ import StaffSubpage from "../pages/theatre-admin/Staff";
 import SettingsSubpage from "../pages/theatre-admin/Settings";
 import QRScannerSubpage from "../pages/theatre-admin/QRScanner";
 import TheatreOnboardingWizard from "./theatre-admin/TheatreOnboardingWizard";
+import ThemeToggle from "./ThemeToggle";
 
 interface TheatreManagerDashboardProps {
   theatreId: number | string;
@@ -330,6 +331,8 @@ export default function TheatreManagerDashboard({
             <span className="text-[11px] font-mono text-text-muted hidden lg:inline">
               Venue ID: #{theatre.id}
             </span>
+
+            <ThemeToggle variant="dropdown" />
 
             <button
               onClick={onClose}

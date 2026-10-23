@@ -167,7 +167,7 @@ export interface AdditionalAttendee {
 
 export interface EventFeeBreakdown {
   ticketSubtotal: number;
-  convenienceFee: number;
+  convenienceFee?: number;
   platformBookingFee: number;
   taxAmount: number; // e.g., 18% GST on booking fee
   discountAmount: number;

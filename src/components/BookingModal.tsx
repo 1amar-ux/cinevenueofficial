@@ -414,7 +414,7 @@ export default function BookingModal({
         tickets,
         couponDiscount: discount,
         otherCharges: donation,
-      })
+      } as any)
       .then((serverCalc) => {
         if (serverCalc) {
           setMovieFeeBreakdown(serverCalc);
@@ -662,7 +662,8 @@ export default function BookingModal({
                 {(movieObj.cast || movieObj.actors) && (movieObj.cast || movieObj.actors)!.length > 0 ? (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {(movieObj.cast || movieObj.actors)!.map((actor, idx) => {
-                      const initials = actor
+                      const actorName = typeof actor === "string" ? actor : ((actor as any)?.name || "");
+                      const initials = actorName
                         .split(" ")
                         .map((n) => n[0])
                         .filter(Boolean)
@@ -671,7 +672,7 @@ export default function BookingModal({
                         .toUpperCase();
                       return (
                         <div
-                          key={actor + idx}
+                          key={actorName + idx}
                           className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] transition-all group"
                         >
                           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gold/30 to-amber-500/20 text-gold flex items-center justify-center text-[10px] font-bold shrink-0 border border-gold/30">
@@ -679,7 +680,7 @@ export default function BookingModal({
                           </div>
                           <div className="flex flex-col text-left">
                             <span className="text-xs font-semibold text-white/90 group-hover:text-gold transition-colors">
-                              {actor}
+                              {actorName}
                             </span>
                             <span className="text-[9px] text-text-muted uppercase tracking-wider">
                               Cast

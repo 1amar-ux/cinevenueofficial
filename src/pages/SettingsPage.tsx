@@ -256,9 +256,9 @@ export default function SettingsPage({
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-[#F3F4F6] font-sans flex flex-col selection:bg-gold selection:text-black">
+    <div className="min-h-screen bg-white dark:bg-[#0A0A0B] text-slate-950 dark:text-[#F3F4F6] font-sans flex flex-col selection:bg-gold selection:text-black">
       {/* Top Header with Safe Area Inset Support */}
-      <header className="sticky top-0 z-30 bg-[#0A0A0B]/95 backdrop-blur-xl border-b border-white/10 pt-[max(env(safe-area-inset-top),0px)] shadow-lg shadow-black/40">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0A0A0B]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/10 pt-[max(env(safe-area-inset-top),0px)] shadow-lg shadow-black/5 dark:shadow-black/40">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button

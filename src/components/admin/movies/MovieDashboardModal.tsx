@@ -1223,7 +1223,7 @@ export default function MovieDashboardModal({
                     const showBookings = confirmedBookingsInRange.filter(
                       (b) =>
                         (b.theatreName || "").toLowerCase() === (sch.theatreName || "").toLowerCase() &&
-                        (b.time || "").includes(sch.time || "")
+                        (b.time || "").includes((sch as any).time || (sch as any).showTime || "")
                     );
                     const bookedTickets = showBookings.reduce((sum, b) => {
                       const seatsAny = b.seats as any;
@@ -1252,11 +1252,11 @@ export default function MovieDashboardModal({
                             </div>
                             <div className="text-neutral-400 text-xs flex items-center gap-2 mt-0.5">
                               <MapPin className="w-3 h-3 text-neutral-500" />
-                              <span>Screen: {sch.screenName || "Screen 1 (Main Auditorium)"}</span>
+                              <span>Screen: {(sch as any).screenName || "Screen 1 (Main Auditorium)"}</span>
                               <span>•</span>
                               <span>{sch.date || "Today"}</span>
                               <span>•</span>
-                              <span className="text-gold font-semibold">{sch.time || "07:30 PM"}</span>
+                              <span className="text-gold font-semibold">{(sch as any).time || (sch as any).showTime || "07:30 PM"}</span>
                             </div>
                           </div>
                         </div>
@@ -1295,7 +1295,7 @@ export default function MovieDashboardModal({
 
                           {/* Price Tag */}
                           <div className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-neutral-200 font-bold">
-                            ₹{sch.ticketPrice || 250}
+                            ₹{(sch as any).ticketPrice || (sch as any).price || 250}
                           </div>
                         </div>
                       </div>

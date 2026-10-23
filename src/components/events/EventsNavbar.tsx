@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Calendar, Search, Ticket, User, Menu, X } from "lucide-react";
+import ThemeToggle from "../ThemeToggle";
 
 export default function EventsNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,7 +14,7 @@ export default function EventsNavbar() {
   ];
 
   return (
-    <nav className="fixed w-full z-50 bg-[#09090A]/90 backdrop-blur-xl border-b border-white/5 transition-all">
+    <nav className="fixed w-full z-50 bg-white/95 dark:bg-[#09090A]/90 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center gap-8">
@@ -22,7 +23,7 @@ export default function EventsNavbar() {
                 <Calendar className="w-6 h-6 text-black" />
               </div>
               <div>
-                <span className="text-xl font-bold font-display tracking-wide text-white group-hover:text-gold transition-colors">
+                <span className="text-xl font-bold font-display tracking-wide text-slate-950 dark:text-white group-hover:text-gold transition-colors">
                   CineVenue
                 </span>
                 <span className="text-sm font-semibold text-gold block -mt-1 tracking-widest">
@@ -39,7 +40,7 @@ export default function EventsNavbar() {
                   className={`text-sm font-medium transition-colors ${
                     location.pathname === link.path || (location.pathname === '/events' && link.path === '/events') && !location.search
                       ? "text-gold"
-                      : "text-text-secondary hover:text-white"
+                      : "text-text-secondary hover:text-slate-950 dark:hover:text-white"
                   }`}
                 >
                   {link.name}
@@ -49,18 +50,17 @@ export default function EventsNavbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <button className="p-2 text-text-secondary hover:text-white transition-colors rounded-full hover:bg-white/5">
-              <Search className="w-5 h-5" />
-            </button>
+            <ThemeToggle variant="segmented" />
             <Link
               to="/"
-              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-white border border-white/10 rounded-full hover:bg-white/5 transition-all"
+              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-slate-950 dark:hover:text-white border border-gray-300 dark:border-white/10 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
             >
               Back to Movies
             </Link>
           </div>
 
-          <div className="md:hidden flex items-center gap-4">
+          <div className="md:hidden flex items-center gap-3">
+            <ThemeToggle variant="dropdown" />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-text-secondary hover:text-white"

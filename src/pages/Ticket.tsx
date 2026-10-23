@@ -83,25 +83,25 @@ export default function Ticket() {
           Download PDF
         </Button>
       </Box>
-      <Card sx={{ borderRadius: 3, border: "2px dashed #D4AF37", boxShadow: 4, overflow: "hidden", backgroundColor: "#0D111A", color: "#F5F5F7" }}>
+      <Card sx={{ borderRadius: 3, border: "2px dashed #D4AF37", boxShadow: 4, overflow: "hidden", backgroundColor: "var(--cv-card)", color: "var(--cv-text-primary)" }}>
         <Box sx={{ backgroundColor: "#D4AF37", color: "#000", py: 2, textAlign: "center" }}>
           <Typography variant="h5" sx={{ fontWeight: "bold" }}>
             E-Ticket Confirmed
           </Typography>
         </Box>
         <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "#F5F5F7" }} gutterBottom>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "var(--cv-text-primary)" }} gutterBottom>
             {movieTitle}
           </Typography>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1, my: 3 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography color="text.secondary">Theatre:</Typography>
-              <Typography sx={{ fontWeight: "medium" }}>{theatreName}</Typography>
+              <Typography sx={{ fontWeight: "medium", color: "var(--cv-text-primary)" }}>{theatreName}</Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography color="text.secondary">Date & Time:</Typography>
-              <Typography sx={{ fontWeight: "medium" }}>Today • {booking.show && !String(booking.show).startsWith("BMS") ? booking.show : "7:00 PM"}</Typography>
+              <Typography sx={{ fontWeight: "medium", color: "var(--cv-text-primary)" }}>Today • {booking.show && !String(booking.show).startsWith("BMS") ? booking.show : "7:00 PM"}</Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography color="text.secondary">Seats:</Typography>
@@ -119,7 +119,7 @@ export default function Ticket() {
             )}
           </Box>
 
-          <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.1)" }} />
+          <Divider sx={{ my: 3, borderColor: "var(--cv-border)" }} />
 
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -135,7 +135,7 @@ export default function Ticket() {
             >
               <QRCode value={qrUrl} size={150} />
             </Box>
-            <Typography variant="caption" sx={{ mt: 1, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>
+            <Typography variant="caption" sx={{ mt: 1, color: "var(--cv-text-muted)", fontFamily: "monospace" }}>
               {bookingId}
             </Typography>
           </Box>

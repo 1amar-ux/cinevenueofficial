@@ -15,6 +15,7 @@ import {
   QrCode
 } from "lucide-react";
 import apiClient from "../services/apiClient";
+import ThemeToggle from "../components/ThemeToggle";
 
 interface VerificationResult {
   success: boolean;
@@ -87,7 +88,7 @@ export default function VerifyTicket() {
   }, [initialToken]);
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-text-primary flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-white dark:bg-[#07090E] text-slate-950 dark:text-text-primary flex flex-col items-center justify-center p-4 sm:p-6 transition-colors">
       {/* Header Bar */}
       <div className="w-full max-w-md flex items-center justify-between mb-6">
         <button
@@ -97,14 +98,17 @@ export default function VerifyTicket() {
           <ArrowLeft className="w-4 h-4" />
           <span>Return to CineVenue</span>
         </button>
-        <div className="flex items-center gap-1.5 text-xs font-mono text-gold bg-gold/10 border border-gold/20 px-2.5 py-1 rounded-full">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Gate Security</span>
+        <div className="flex items-center gap-2">
+          <ThemeToggle variant="dropdown" />
+          <div className="flex items-center gap-1.5 text-xs font-mono text-gold bg-gold/10 border border-gold/20 px-2.5 py-1 rounded-full">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Gate Security</span>
+          </div>
         </div>
       </div>
 
       {/* Main Verification Card */}
-      <div className="w-full max-w-md bg-[#0D111A] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-6">
+      <div className="w-full max-w-md bg-white dark:bg-[#0D111A] border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-xl dark:shadow-2xl space-y-6">
         {/* Title */}
         <div className="text-center space-y-1">
           <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/30 flex items-center justify-center text-gold mx-auto mb-3 shadow-lg shadow-gold/5">

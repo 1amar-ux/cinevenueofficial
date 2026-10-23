@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, CalendarRange, PlusCircle, Trash2, MapPin, DollarSign, Users, Ticket, Copy, Check, LayoutDashboard, Landmark, Sparkles, ArrowLeft, Clock, Activity, FileText, Settings, Plus, Percent } from "lucide-react";
 import { Event, EventOrganizer, EventRegistration, EventCategory } from "../types";
+import ThemeToggle from "./ThemeToggle";
 
 interface EventManagerDashboardProps {
   organizerId: string;
@@ -219,6 +220,7 @@ export default function EventManagerDashboard({
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
+          <ThemeToggle variant="dropdown" />
           <button
             onClick={handleCopyLink}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded bg-gold text-black hover:bg-gold-light text-xs font-bold uppercase tracking-wider transition-all cursor-pointer font-sans border-0 shadow-lg shadow-gold/10"

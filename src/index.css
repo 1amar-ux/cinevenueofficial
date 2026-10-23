@@ -342,7 +342,8 @@ body {
 }
 
 /* =========================================================
-   LIGHT THEME ENHANCEMENTS: PURE WHITE, BUTTER YELLOW & BLACK TEXT
+   LIGHT THEME ENHANCEMENTS: UNIVERSAL PURE WHITE & HIGH CONTRAST
+   Reflecting across EACH and EVERY page of CineVenue
    ========================================================= */
 html[data-theme="light"],
 .light {
@@ -354,169 +355,285 @@ html[data-theme="dark"],
   color-scheme: dark;
 }
 
-/* Crisp Pure White (#FFFFFF) Light Mode Page & Surface Backgrounds */
-html[data-theme="light"] body {
-  background-color: var(--cv-bg);
-  color: var(--cv-text-primary);
+/* Base Light Mode Page & Document Backgrounds */
+html[data-theme="light"] body,
+.light body {
+  background-color: var(--cv-bg) !important;
+  color: var(--cv-text-primary) !important;
   -webkit-font-smoothing: antialiased;
 }
 
-html[data-theme="light"] .home-page,
-html[data-theme="light"] #admin-panel-viewport,
-html[data-theme="light"] #admin-panel-viewport > div,
-html[data-theme="light"] #admin-main-content,
-html[data-theme="light"] .bg-\[\#0A0A0B\],
-html[data-theme="light"] .bg-\[\#09090A\],
-html[data-theme="light"] .bg-\[\#08080A\],
-html[data-theme="light"] .bg-\[\#070709\],
-html[data-theme="light"] .bg-\[\#07070A\],
-html[data-theme="light"] .bg-\[\#070708\],
-html[data-theme="light"] .bg-\[\#08090C\],
-html[data-theme="light"] .bg-\[\#050505\],
-html[data-theme="light"] .bg-\[\#0B0E14\],
-html[data-theme="light"] .bg-\[\#0B0C10\],
-html[data-theme="light"] .bg-\[\#0A0A0C\],
-html[data-theme="light"] .bg-\[\#0B0B0D\] {
+/* =========================================================
+   1. UNIVERSAL PAGE WRAPPERS, CONTAINERS & DEEP DARK BACKGROUNDS
+   ========================================================= */
+html[data-theme="light"] :is(
+  #root,
+  main,
+  .home-page,
+  .cv-page-wrapper,
+  .min-h-screen,
+  [class*="min-h-screen"],
+  #admin-panel-viewport,
+  #admin-panel-viewport > div,
+  #admin-main-content,
+  .bg-dark-bg,
+  .bg-slate-950,
+  .bg-zinc-950,
+  .bg-gray-950,
+  .bg-neutral-950,
+  .bg-\[\#050505\], .bg-\[\#050506\], .bg-\[\#050508\], .bg-\[\#060608\],
+  .bg-\[\#070708\], .bg-\[\#070709\], .bg-\[\#07070A\], .bg-\[\#07080A\],
+  .bg-\[\#07080D\], .bg-\[\#07090E\], .bg-\[\#08080A\], .bg-\[\#08080C\],
+  .bg-\[\#08090C\], .bg-\[\#08090D\], .bg-\[\#09090A\], .bg-\[\#09090B\],
+  .bg-\[\#090A0C\], .bg-\[\#090A0F\], .bg-\[\#090A10\], .bg-\[\#0A0A0B\],
+  .bg-\[\#0A0A0C\], .bg-\[\#0A0A0D\], .bg-\[\#0A0A0E\], .bg-\[\#0A0A0F\],
+  .bg-\[\#0A0B0E\], .bg-\[\#0A0B10\], .bg-\[\#0A0D14\], .bg-\[\#0B0B0D\],
+  .bg-\[\#0B0B0E\], .bg-\[\#0B0B0F\], .bg-\[\#0B0B10\], .bg-\[\#0B0C10\],
+  .bg-\[\#0B0C12\], .bg-\[\#0B0E14\], .bg-\[\#0B0F17\], .bg-\[\#0B1E3B\],
+  .bg-\[\#0C0C0F\], .bg-\[\#0C0D11\], .bg-\[\#0C0D12\], .bg-\[\#0C0D14\],
+  .bg-\[\#0C0D15\], .bg-\[\#0D0B0E\], .bg-\[\#0D0D0F\], .bg-\[\#0D0D10\],
+  .bg-\[\#0D0D11\], .bg-\[\#0D0D12\], .bg-\[\#0D0E12\], .bg-\[\#0D0E13\],
+  .bg-\[\#0D0E14\], .bg-\[\#0D0E15\], .bg-\[\#0D0E16\], .bg-\[\#0D111A\],
+  .bg-\[\#0E0E10\], .bg-\[\#0E0E12\], .bg-\[\#0E0E16\], .bg-\[\#0E0F14\],
+  .bg-\[\#0E0F16\], .bg-\[\#0E0F17\], .bg-\[\#0E0F18\], .bg-\[\#0E121A\],
+  .bg-\[\#0F0F11\], .bg-\[\#0F0F12\], .bg-\[\#0F0F13\], .bg-\[\#0F0F14\],
+  .bg-\[\#0F1015\], .bg-\[\#0F1017\], .bg-\[\#0F1018\], .bg-\[\#0F1019\],
+  .bg-\[\#0a0a0a\], .bg-\[\#0b0c10\], .bg-\[\#0c0c0d\], .bg-\[\#0c0d12\],
+  .bg-\[\#0e0e11\], .bg-\[\#0e0f14\], .bg-\[\#0f1015\], .bg-\[\#101012\],
+  .bg-\[\#101014\], .bg-\[\#101017\], .bg-\[\#101018\], .bg-\[\#101117\],
+  .bg-\[\#101118\], .bg-\[\#10121C\]
+):not(.keep-dark):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\])):not(img):not(video):not(canvas),
+.light :is(
+  #root,
+  main,
+  .home-page,
+  .cv-page-wrapper,
+  .min-h-screen,
+  [class*="min-h-screen"],
+  #admin-panel-viewport,
+  #admin-panel-viewport > div,
+  #admin-main-content,
+  .bg-dark-bg,
+  .bg-slate-950,
+  .bg-zinc-950,
+  .bg-gray-950,
+  .bg-neutral-950,
+  .bg-\[\#050505\], .bg-\[\#050506\], .bg-\[\#050508\], .bg-\[\#060608\],
+  .bg-\[\#070708\], .bg-\[\#070709\], .bg-\[\#07070A\], .bg-\[\#07080A\],
+  .bg-\[\#07080D\], .bg-\[\#07090E\], .bg-\[\#08080A\], .bg-\[\#08080C\],
+  .bg-\[\#08090C\], .bg-\[\#08090D\], .bg-\[\#09090A\], .bg-\[\#09090B\],
+  .bg-\[\#090A0C\], .bg-\[\#090A0F\], .bg-\[\#090A10\], .bg-\[\#0A0A0B\],
+  .bg-\[\#0A0A0C\], .bg-\[\#0A0A0D\], .bg-\[\#0A0A0E\], .bg-\[\#0A0A0F\],
+  .bg-\[\#0A0B0E\], .bg-\[\#0A0B10\], .bg-\[\#0A0D14\], .bg-\[\#0B0B0D\],
+  .bg-\[\#0B0B0E\], .bg-\[\#0B0B0F\], .bg-\[\#0B0B10\], .bg-\[\#0B0C10\],
+  .bg-\[\#0B0C12\], .bg-\[\#0B0E14\], .bg-\[\#0B0F17\], .bg-\[\#0B1E3B\],
+  .bg-\[\#0C0C0F\], .bg-\[\#0C0D11\], .bg-\[\#0C0D12\], .bg-\[\#0C0D14\],
+  .bg-\[\#0C0D15\], .bg-\[\#0D0B0E\], .bg-\[\#0D0D0F\], .bg-\[\#0D0D10\],
+  .bg-\[\#0D0D11\], .bg-\[\#0D0D12\], .bg-\[\#0D0E12\], .bg-\[\#0D0E13\],
+  .bg-\[\#0D0E14\], .bg-\[\#0D0E15\], .bg-\[\#0D0E16\], .bg-\[\#0D111A\],
+  .bg-\[\#0E0E10\], .bg-\[\#0E0E12\], .bg-\[\#0E0E16\], .bg-\[\#0E0F14\],
+  .bg-\[\#0E0F16\], .bg-\[\#0E0F17\], .bg-\[\#0E0F18\], .bg-\[\#0E121A\],
+  .bg-\[\#0F0F11\], .bg-\[\#0F0F12\], .bg-\[\#0F0F13\], .bg-\[\#0F0F14\],
+  .bg-\[\#0F1015\], .bg-\[\#0F1017\], .bg-\[\#0F1018\], .bg-\[\#0F1019\],
+  .bg-\[\#0a0a0a\], .bg-\[\#0b0c10\], .bg-\[\#0c0c0d\], .bg-\[\#0c0d12\],
+  .bg-\[\#0e0e11\], .bg-\[\#0e0f14\], .bg-\[\#0f1015\], .bg-\[\#101012\],
+  .bg-\[\#101014\], .bg-\[\#101017\], .bg-\[\#101018\], .bg-\[\#101117\],
+  .bg-\[\#101118\], .bg-\[\#10121C\]
+):not(.keep-dark):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\])):not(img):not(video):not(canvas) {
   background-color: var(--cv-bg) !important;
   color: var(--cv-text-primary) !important;
 }
 
-/* Light Mode Secondary Surfaces, Navbars & Headers */
-html[data-theme="light"] header.sticky,
-html[data-theme="light"] header.fixed,
-html[data-theme="light"] nav.fixed,
-html[data-theme="light"] #admin-sidebar,
-html[data-theme="light"] .bg-\[\#0F0F11\],
-html[data-theme="light"] .bg-\[\#0C0D12\],
-html[data-theme="light"] .bg-\[\#0D0E13\],
-html[data-theme="light"] .bg-\[\#121216\],
-html[data-theme="light"] .bg-\[\#121213\],
-html[data-theme="light"] .bg-\[\#12131A\],
-html[data-theme="light"] .bg-\[\#14151C\],
-html[data-theme="light"] .bg-\[\#0E0F14\],
-html[data-theme="light"] .bg-\[\#0E121A\],
-html[data-theme="light"] .bg-\[\#111319\] {
+/* =========================================================
+   2. LIGHT MODE SECONDARY SURFACES, HEADERS, NAVBARS & PANELS
+   ========================================================= */
+html[data-theme="light"] :is(
+  header.sticky,
+  header.fixed,
+  header,
+  nav.fixed,
+  nav.sticky,
+  nav,
+  #admin-sidebar,
+  .bg-dark-surface,
+  .bg-\[\#111113\], .bg-\[\#111115\], .bg-\[\#111116\], .bg-\[\#111218\],
+  .bg-\[\#111219\], .bg-\[\#11121A\], .bg-\[\#111319\], .bg-\[\#11131C\],
+  .bg-\[\#11131E\], .bg-\[\#121213\], .bg-\[\#121214\], .bg-\[\#121215\],
+  .bg-\[\#121216\], .bg-\[\#121217\], .bg-\[\#121218\], .bg-\[\#12121A\],
+  .bg-\[\#121318\], .bg-\[\#121319\], .bg-\[\#12131A\], .bg-\[\#12131C\],
+  .bg-\[\#12131F\], .bg-\[\#12131a\], .bg-\[\#12131b\], .bg-\[\#12141C\],
+  .bg-\[\#12141F\], .bg-\[\#121422\], .bg-\[\#121620\], .bg-\[\#121826\],
+  .bg-\[\#13141E\], .bg-\[\#141014\], .bg-\[\#141118\], .bg-\[\#141416\],
+  .bg-\[\#141418\], .bg-\[\#141419\], .bg-\[\#14141A\], .bg-\[\#14141E\],
+  .bg-\[\#141420\], .bg-\[\#14151C\], .bg-\[\#14151D\], .bg-\[\#14151E\],
+  .bg-\[\#141520\], .bg-\[\#141522\], .bg-\[\#141524\], .bg-\[\#141622\],
+  .bg-\[\#151518\], .bg-\[\#15151a\], .bg-\[\#151720\], .bg-\[\#151724\]
+):not(.keep-dark):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\])):not(img):not(video):not(canvas),
+.light :is(
+  header.sticky,
+  header.fixed,
+  header,
+  nav.fixed,
+  nav.sticky,
+  nav,
+  #admin-sidebar,
+  .bg-dark-surface,
+  .bg-\[\#111113\], .bg-\[\#111115\], .bg-\[\#111116\], .bg-\[\#111218\],
+  .bg-\[\#111219\], .bg-\[\#11121A\], .bg-\[\#111319\], .bg-\[\#11131C\],
+  .bg-\[\#11131E\], .bg-\[\#121213\], .bg-\[\#121214\], .bg-\[\#121215\],
+  .bg-\[\#121216\], .bg-\[\#121217\], .bg-\[\#121218\], .bg-\[\#12121A\],
+  .bg-\[\#121318\], .bg-\[\#121319\], .bg-\[\#12131A\], .bg-\[\#12131C\],
+  .bg-\[\#12131F\], .bg-\[\#12131a\], .bg-\[\#12131b\], .bg-\[\#12141C\],
+  .bg-\[\#12141F\], .bg-\[\#121422\], .bg-\[\#121620\], .bg-\[\#121826\],
+  .bg-\[\#13141E\], .bg-\[\#141014\], .bg-\[\#141118\], .bg-\[\#141416\],
+  .bg-\[\#141418\], .bg-\[\#141419\], .bg-\[\#14141A\], .bg-\[\#14141E\],
+  .bg-\[\#141420\], .bg-\[\#14151C\], .bg-\[\#14151D\], .bg-\[\#14151E\],
+  .bg-\[\#141520\], .bg-\[\#141522\], .bg-\[\#141524\], .bg-\[\#141622\],
+  .bg-\[\#151518\], .bg-\[\#15151a\], .bg-\[\#151720\], .bg-\[\#151724\]
+):not(.keep-dark):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\])):not(img):not(video):not(canvas) {
   background-color: var(--cv-surface) !important;
   border-color: var(--cv-border) !important;
   color: var(--cv-text-primary) !important;
 }
 
-/* Light Mode Cards, Panels & Modals */
-html[data-theme="light"] .bg-\[\#18181A\],
-html[data-theme="light"] .bg-\[\#18181C\],
-html[data-theme="light"] .bg-\[\#1A1A1E\],
-html[data-theme="light"] .bg-\[\#212124\],
-html[data-theme="light"] .bg-\[\#191B24\],
-html[data-theme="light"] .bg-\[\#13141E\],
-html[data-theme="light"] .bg-\[\#0E0F16\],
-html[data-theme="light"] .bg-\[\#0A0B10\],
-html[data-theme="light"] .bg-\[\#111115\],
-html[data-theme="light"] .bg-\[\#121215\],
-html[data-theme="light"] .bg-\[\#151518\],
-html[data-theme="light"] .bg-black\/40,
-html[data-theme="light"] .bg-black\/50,
-html[data-theme="light"] .bg-black\/60 {
+/* =========================================================
+   3. LIGHT MODE CARDS, PANELS, MODALS & ELEVATED SURFACES
+   ========================================================= */
+html[data-theme="light"] :is(
+  .bg-dark-card,
+  .bg-dark-card2,
+  .bg-slate-900,
+  .bg-zinc-900,
+  .bg-gray-900,
+  .bg-neutral-900,
+  .bg-slate-900\/50, .bg-slate-900\/80,
+  .bg-zinc-900\/50, .bg-zinc-900\/80,
+  .bg-gray-900\/50, .bg-gray-900\/80,
+  .bg-\[\#161618\], .bg-\[\#161619\], .bg-\[\#16161E\], .bg-\[\#161622\],
+  .bg-\[\#161722\], .bg-\[\#161824\], .bg-\[\#181613\], .bg-\[\#18181A\],
+  .bg-\[\#18181C\], .bg-\[\#18181D\], .bg-\[\#18181E\], .bg-\[\#18181b\],
+  .bg-\[\#181822\], .bg-\[\#181924\], .bg-\[\#181926\], .bg-\[\#181A24\],
+  .bg-\[\#181A26\], .bg-\[\#1A1408\], .bg-\[\#1A1A1E\], .bg-\[\#1A1B26\],
+  .bg-\[\#1A1B28\], .bg-\[\#1A1C27\], .bg-\[\#1A1C28\], .bg-\[\#1C1A1E\],
+  .bg-\[\#1C1C1E\], .bg-\[\#1C1C22\], .bg-\[\#1F1F2C\], .bg-\[\#1c1c1e\],
+  .bg-\[\#1e1e24\], .bg-\[\#1f1f23\], .bg-\[\#212124\], .bg-\[\#222228\],
+  .bg-\[\#242015\], .bg-\[\#262629\], .bg-\[\#2B2312\],
+  .bg-black\/30, .bg-black\/40, .bg-black\/50, .bg-black\/60
+):not(.keep-dark):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\])):not(img):not(video):not(canvas),
+.light :is(
+  .bg-dark-card,
+  .bg-dark-card2,
+  .bg-slate-900,
+  .bg-zinc-900,
+  .bg-gray-900,
+  .bg-neutral-900,
+  .bg-slate-900\/50, .bg-slate-900\/80,
+  .bg-zinc-900\/50, .bg-zinc-900\/80,
+  .bg-gray-900\/50, .bg-gray-900\/80,
+  .bg-\[\#161618\], .bg-\[\#161619\], .bg-\[\#16161E\], .bg-\[\#161622\],
+  .bg-\[\#161722\], .bg-\[\#161824\], .bg-\[\#181613\], .bg-\[\#18181A\],
+  .bg-\[\#18181C\], .bg-\[\#18181D\], .bg-\[\#18181E\], .bg-\[\#18181b\],
+  .bg-\[\#181822\], .bg-\[\#181924\], .bg-\[\#181926\], .bg-\[\#181A24\],
+  .bg-\[\#181A26\], .bg-\[\#1A1408\], .bg-\[\#1A1A1E\], .bg-\[\#1A1B26\],
+  .bg-\[\#1A1B28\], .bg-\[\#1A1C27\], .bg-\[\#1A1C28\], .bg-\[\#1C1A1E\],
+  .bg-\[\#1C1C1E\], .bg-\[\#1C1C22\], .bg-\[\#1F1F2C\], .bg-\[\#1c1c1e\],
+  .bg-\[\#1e1e24\], .bg-\[\#1f1f23\], .bg-\[\#212124\], .bg-\[\#222228\],
+  .bg-\[\#242015\], .bg-\[\#262629\], .bg-\[\#2B2312\],
+  .bg-black\/30, .bg-black\/40, .bg-black\/50, .bg-black\/60
+):not(.keep-dark):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\])):not(img):not(video):not(canvas) {
   background-color: var(--cv-card) !important;
   border-color: var(--cv-border) !important;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
-}
-
-/* Light Mode Inputs, Textareas & Selects */
-html[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-html[data-theme="light"] select,
-html[data-theme="light"] textarea {
-  background-color: var(--cv-input-bg) !important;
   color: var(--cv-text-primary) !important;
-  border-color: var(--cv-input-border) !important;
-}
-
-html[data-theme="light"] input::placeholder,
-html[data-theme="light"] textarea::placeholder {
-  color: var(--cv-text-muted) !important;
-}
-
-/* Light Mode Translucent White Utilities */
-html[data-theme="light"] .border-white\/5,
-.light .border-white\/5,
-html[data-theme="light"] .border-white\/10,
-.light .border-white\/10,
-html[data-theme="light"] .border-white\/15,
-.light .border-white\/15,
-html[data-theme="light"] .border-white\/20,
-.light .border-white\/20,
-html[data-theme="light"] .border-white\/30,
-.light .border-white\/30 {
-  border-color: var(--cv-border) !important;
-}
-
-html[data-theme="light"] .bg-white\/5,
-.light .bg-white\/5 {
-  background-color: #F8FAFC !important;
-}
-
-html[data-theme="light"] .bg-white\/10,
-.light .bg-white\/10 {
-  background-color: #F1F5F9 !important;
-}
-
-html[data-theme="light"] .hover\:bg-white\/5:hover,
-.light .hover\:bg-white\/5:hover {
-  background-color: #FEF9C3 !important; /* Soft warm butter hover */
-}
-
-html[data-theme="light"] .hover\:bg-white\/10:hover,
-.light .hover\:bg-white\/10:hover {
-  background-color: #FEF08A !important;
-}
-
-/* Mobile Bottom Navigation in Light Mode */
-html[data-theme="light"] .mobile-bottom-nav {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border-top: 1px solid var(--cv-border) !important;
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05);
-}
-
-html[data-theme="light"] .mobile-bottom-nav__item {
-  color: #64748B !important;
-}
-
-html[data-theme="light"] .mobile-bottom-nav__item.is-active {
-  color: var(--cv-gold) !important;
-}
-
-/* Seat Booking Layout High Contrast In Light Mode */
-html[data-theme="light"] .seat-available {
-  background-color: #FFFFFF;
-  border-color: #CBD5E1;
-  color: #334155;
-}
-
-html[data-theme="light"] .seat-booked {
-  background-color: #E2E8F0;
-  border-color: #CBD5E1;
-  color: #94A3B8;
-  opacity: 0.55;
-}
-
-/* Ensure Posters, Images, and Video Artwork are NEVER inverted or darkened */
-img,
-video,
-picture,
-canvas,
-svg:not([aria-hidden="true"]) {
-  filter: none !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
 }
 
 /* =========================================================
-   SHARP BLACK & CHARCOAL TYPOGRAPHY IN LIGHT MODE
+   4. TRANSLUCENT OVERLAYS, HOVERS & CHIPS
    ========================================================= */
-html[data-theme="light"] h1,
-html[data-theme="light"] h2,
-html[data-theme="light"] h3,
-html[data-theme="light"] h4,
-html[data-theme="light"] h5,
-html[data-theme="light"] h6 {
-  color: #0F172A;
+html[data-theme="light"] :is(.bg-white\/5, .bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-white\/\[0\.05\]),
+.light :is(.bg-white\/5, .bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-white\/\[0\.05\]) {
+  background-color: #F8FAFC !important;
+  border-color: var(--cv-border) !important;
+}
+
+html[data-theme="light"] :is(.bg-white\/10, .bg-white\/\[0\.07\], .bg-white\/\[0\.08\], .bg-white\/\[0\.09\]),
+.light :is(.bg-white\/10, .bg-white\/\[0\.07\], .bg-white\/\[0\.08\], .bg-white\/\[0\.09\]) {
+  background-color: #F1F5F9 !important;
+  border-color: var(--cv-border) !important;
+}
+
+html[data-theme="light"] :is(.hover\:bg-white\/5:hover, .hover\:bg-white\/\[0\.04\]:hover, .hover\:bg-white\/\[0\.05\]:hover),
+.light :is(.hover\:bg-white\/5:hover, .hover\:bg-white\/\[0\.04\]:hover, .hover\:bg-white\/\[0\.05\]:hover) {
+  background-color: #FEF9C3 !important; /* Soft warm butter hover */
+}
+
+html[data-theme="light"] :is(.hover\:bg-white\/10:hover, .hover\:bg-white\/\[0\.08\]:hover),
+.light :is(.hover\:bg-white\/10:hover, .hover\:bg-white\/\[0\.08\]:hover) {
+  background-color: #FEF08A !important;
+}
+
+/* =========================================================
+   5. UNIVERSAL HIGH-CONTRAST BORDERS
+   ========================================================= */
+html[data-theme="light"] :is(
+  .border-white\/5, .border-white\/10, .border-white\/15, .border-white\/20,
+  .border-white\/30, .border-white\/40,
+  .border-white\/\[0\.03\], .border-white\/\[0\.04\], .border-white\/\[0\.05\],
+  .border-white\/\[0\.06\], .border-white\/\[0\.08\], .border-white\/\[0\.15\],
+  .border-white\/\[0\.2\], .border-white\/\[0\.25\], .border-white\/\[0\.3\],
+  .border-slate-800, .border-slate-700,
+  .border-zinc-800, .border-zinc-700,
+  .border-gray-800, .border-gray-700
+),
+.light :is(
+  .border-white\/5, .border-white\/10, .border-white\/15, .border-white\/20,
+  .border-white\/30, .border-white\/40,
+  .border-white\/\[0\.03\], .border-white\/\[0\.04\], .border-white\/\[0\.05\],
+  .border-white\/\[0\.06\], .border-white\/\[0\.08\], .border-white\/\[0\.15\],
+  .border-white\/\[0\.2\], .border-white\/\[0\.25\], .border-white\/\[0\.3\],
+  .border-slate-800, .border-slate-700,
+  .border-zinc-800, .border-zinc-700,
+  .border-gray-800, .border-gray-700
+) {
+  border-color: var(--cv-border) !important;
+}
+
+/* Dividers in Light Mode */
+html[data-theme="light"] hr,
+.light hr {
+  border-color: var(--cv-border) !important;
+}
+
+/* =========================================================
+   6. CRISP BLACK & CHARCOAL TYPOGRAPHY IN LIGHT MODE
+   ========================================================= */
+html[data-theme="light"] :is(h1, h2, h3, h4, h5, h6):not(.keep-white):not(button:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\]) *):not(a:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\]) *),
+.light :is(h1, h2, h3, h4, h5, h6):not(.keep-white):not(button:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\]) *):not(a:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\]) *) {
+  color: #0F172A !important;
+}
+
+/* Primary Text in Light Mode becomes Deep Charcoal #0F172A */
+html[data-theme="light"] :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-100, .text-zinc-200, .text-\[\#F3F4F6\], .text-\[\#E0D8D0\], .text-text-primary):not(.keep-white):not(button:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) *):not(a:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) *),
+.light :is(.text-white, .text-slate-100, .text-slate-200, .text-zinc-100, .text-zinc-200, .text-\[\#F3F4F6\], .text-\[\#E0D8D0\], .text-text-primary):not(.keep-white):not(button:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) *):not(a:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) *) {
+  color: #0F172A !important;
+}
+
+/* Secondary High-Readability Text (#1E293B) */
+html[data-theme="light"] :is(.text-white\/90, .text-white\/80, .text-slate-300, .text-zinc-300, .text-gray-300):not(.keep-white),
+.light :is(.text-white\/90, .text-white\/80, .text-slate-300, .text-zinc-300, .text-gray-300):not(.keep-white) {
+  color: #1E293B !important;
+}
+
+/* Tertiary Slate Gray (#334155) */
+html[data-theme="light"] :is(.text-white\/70, .text-white\/60, .text-slate-400, .text-zinc-400, .text-gray-400, .text-text-secondary):not(.keep-white),
+.light :is(.text-white\/70, .text-white\/60, .text-slate-400, .text-zinc-400, .text-gray-400, .text-text-secondary):not(.keep-white) {
+  color: #334155 !important;
+}
+
+/* Muted Meta Text (#64748B) */
+html[data-theme="light"] :is(.text-white\/50, .text-white\/40, .text-slate-500, .text-gray-500, .text-zinc-500, .text-text-muted):not(.keep-white),
+.light :is(.text-white\/50, .text-white\/40, .text-slate-500, .text-gray-500, .text-zinc-500, .text-text-muted):not(.keep-white) {
+  color: #64748B !important;
 }
 
 /* Restore Signature CineVenue Yellow Gold (#D4AF37) in Light Mode */
@@ -531,12 +648,12 @@ html[data-theme="light"] :is(h1, h2, h3, h4, h5, h6) :is(.text-gold, .text-\[\#D
 
 html[data-theme="light"] .text-gold-light,
 .light .text-gold-light {
-  color: #F3D77A !important;
+  color: #B45309 !important; /* Slightly deeper tone for pristine contrast on white */
 }
 
 html[data-theme="light"] .text-gold-dim,
 .light .text-gold-dim {
-  color: #967B27 !important;
+  color: #92400E !important;
 }
 
 /* Hover effects with signature yellow/gold shade */
@@ -555,30 +672,9 @@ html[data-theme="light"] .group:hover .group-hover\:border-\[\#D4AF37\] {
   box-shadow: 0 8px 24px -4px rgba(212, 175, 55, 0.22) !important;
 }
 
-/* In Light Mode, text-white becomes crisp dark charcoal #0F172A UNLESS on dark buttons/badges */
-html[data-theme="light"] :is(.text-white):not(.keep-white):not(button:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600) *):not(a:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600) *),
-.light :is(.text-white):not(.keep-white):not(button:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600) *):not(a:is(.bg-slate-950, .bg-gray-950, .bg-black, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600) *) {
-  color: #0F172A;
-}
-
-html[data-theme="light"] :is(.text-white\/90, .text-white\/80):not(.keep-white),
-.light :is(.text-white\/90, .text-white\/80):not(.keep-white) {
-  color: #1E293B;
-}
-
-html[data-theme="light"] :is(.text-white\/70, .text-white\/60):not(.keep-white),
-.light :is(.text-white\/70, .text-white\/60):not(.keep-white) {
-  color: #334155;
-}
-
-html[data-theme="light"] :is(.text-white\/50, .text-white\/40):not(.keep-white),
-.light :is(.text-white\/50, .text-white\/40):not(.keep-white) {
-  color: #475569;
-}
-
 /* Guard against low-contrast yellow/amber text on light backgrounds */
-html[data-theme="light"] :is(p, span, label, a, td, th, li):is(.text-amber-200, .text-amber-300, .text-amber-400, .text-yellow-200, .text-yellow-300, .text-yellow-400):not(.keep-yellow):not(button.bg-black *):not(button.bg-slate-950 *):not(button.bg-gray-950 *) {
-  color: #0F172A !important;
+html[data-theme="light"] :is(p, span, label, a, td, th, li):is(.text-amber-200, .text-amber-300, .text-yellow-200, .text-yellow-300):not(.keep-yellow):not(button:is(.bg-black, .bg-slate-950, .bg-gray-950) *) {
+  color: #92400E !important;
 }
 
 /* SVG icons maintain rich luxury antique gold in Light Mode */
@@ -587,12 +683,210 @@ html[data-theme="light"] svg:is(.text-gold, .text-amber-400, .text-amber-500, .t
 }
 
 /* =========================================================
-   BUTTER YELLOW & LUXURY GOLD HIGHLIGHTS
+   7. INPUTS, TEXTAREAS & SELECTS
+   ========================================================= */
+html[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme="light"] select,
+html[data-theme="light"] textarea,
+.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.light select,
+.light textarea {
+  background-color: var(--cv-input-bg) !important;
+  color: var(--cv-text-primary) !important;
+  border-color: var(--cv-input-border) !important;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder,
+.light input::placeholder,
+.light textarea::placeholder {
+  color: var(--cv-text-muted) !important;
+}
+
+/* =========================================================
+   8. MATERIAL UI (MUI) UNIVERSAL ADAPTATION
+   For TheatreSelection, SeatBooking, Payment, Ticket, etc.
+   ========================================================= */
+html[data-theme="light"] .MuiPaper-root,
+html[data-theme="light"] .MuiCard-root,
+.light .MuiPaper-root,
+.light .MuiCard-root {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: var(--cv-border) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+}
+
+html[data-theme="light"] .MuiTypography-root:not(.keep-white):not(button *),
+.light .MuiTypography-root:not(.keep-white):not(button *) {
+  color: #0F172A;
+}
+
+html[data-theme="light"] .MuiTypography-colorTextSecondary,
+html[data-theme="light"] [class*="MuiTypography-root"][class*="textSecondary"],
+.light .MuiTypography-colorTextSecondary,
+.light [class*="MuiTypography-root"][class*="textSecondary"] {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .MuiDivider-root,
+.light .MuiDivider-root {
+  border-color: var(--cv-border) !important;
+}
+
+html[data-theme="light"] .MuiOutlinedInput-root,
+.light .MuiOutlinedInput-root {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+html[data-theme="light"] .MuiOutlinedInput-notchedOutline,
+.light .MuiOutlinedInput-notchedOutline {
+  border-color: #CBD5E1 !important;
+}
+
+html[data-theme="light"] .MuiInputLabel-root,
+.light .MuiInputLabel-root {
+  color: #64748B !important;
+}
+
+html[data-theme="light"] .MuiChip-root:not([class*="MuiChip-color"]),
+.light .MuiChip-root:not([class*="MuiChip-color"]) {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* =========================================================
+   8B. NATIVE FORM CONTROLS IN LIGHT MODE
+   ========================================================= */
+html[data-theme="light"] :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  textarea,
+  select
+),
+.light :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  textarea,
+  select
+) {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+html[data-theme="light"] :is(input, textarea, select)::placeholder,
+.light :is(input, textarea, select)::placeholder,
+html[data-theme="light"] [class*="placeholder-"],
+.light [class*="placeholder-"] {
+  color: #94A3B8 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] :is(input, textarea, select):focus,
+.light :is(input, textarea, select):focus {
+  border-color: #D4AF37 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25) !important;
+}
+
+html[data-theme="light"] select option,
+.light select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+
+/* =========================================================
+   9. HERO GRADIENT OVERLAYS (PREVENTS BLACK VOID ON BANNER PAGES)
+   ========================================================= */
+html[data-theme="light"] .bg-gradient-to-b:is([class*="from-black"], [class*="from-[#09090A]"]),
+.light .bg-gradient-to-b:is([class*="from-black"], [class*="from-[#09090A]"]) {
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85), #FFFFFF) !important;
+}
+
+html[data-theme="light"] .bg-gradient-to-t:is([class*="from-[#121214]"], [class*="from-[#09090A]"]),
+.light .bg-gradient-to-t:is([class*="from-[#121214]"], [class*="from-[#09090A]"]) {
+  background-image: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0.85), transparent) !important;
+}
+
+html[data-theme="light"] .bg-gradient-to-r:is([class*="from-[#121214]"], [class*="from-[#09090A]"]),
+.light .bg-gradient-to-r:is([class*="from-[#121214]"], [class*="from-[#09090A]"]) {
+  background-image: linear-gradient(to right, #FFFFFF, rgba(255, 255, 255, 0.9), transparent) !important;
+}
+
+/* =========================================================
+   10. TABLES & DATA GRIDS IN LIGHT MODE
+   ========================================================= */
+html[data-theme="light"] table,
+.light table {
+  color: #0F172A !important;
+}
+
+html[data-theme="light"] :is(thead, th),
+.light :is(thead, th) {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+  border-color: var(--cv-border) !important;
+}
+
+html[data-theme="light"] :is(tbody tr, td),
+.light :is(tbody tr, td) {
+  border-color: var(--cv-border) !important;
+}
+
+html[data-theme="light"] tbody tr:hover,
+.light tbody tr:hover {
+  background-color: #FEF9C3 !important;
+}
+
+/* =========================================================
+   11. MOBILE BOTTOM NAVIGATION IN LIGHT MODE
+   ========================================================= */
+html[data-theme="light"] .mobile-bottom-nav,
+.light .mobile-bottom-nav {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1px solid var(--cv-border) !important;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+html[data-theme="light"] .mobile-bottom-nav__item,
+.light .mobile-bottom-nav__item {
+  color: #64748B !important;
+}
+
+html[data-theme="light"] .mobile-bottom-nav__item.is-active,
+.light .mobile-bottom-nav__item.is-active {
+  color: var(--cv-gold) !important;
+}
+
+/* =========================================================
+   12. SEAT BOOKING LAYOUT HIGH CONTRAST IN LIGHT MODE
+   ========================================================= */
+html[data-theme="light"] .seat-available,
+.light .seat-available {
+  background-color: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #334155;
+}
+
+html[data-theme="light"] .seat-booked,
+.light .seat-booked {
+  background-color: #E2E8F0;
+  border-color: #CBD5E1;
+  color: #94A3B8;
+  opacity: 0.55;
+}
+
+/* =========================================================
+   13. BUTTER YELLOW & LUXURY GOLD HIGHLIGHTS
    ========================================================= */
 /* Butter Yellow Active Badges */
 .badge-butter,
 html[data-theme="light"] .badge-butter,
-html[data-theme="light"] :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-amber-200):is(.rounded-full, .rounded-md, .rounded-lg, .rounded) {
+.light .badge-butter,
+html[data-theme="light"] :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-amber-200):is(.rounded-full, .rounded-md, .rounded-lg, .rounded),
+.light :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-amber-200):is(.rounded-full, .rounded-md, .rounded-lg, .rounded) {
   background-color: #FEF08A !important;
   color: #713F12 !important;
   border-color: #FACC15 !important;
@@ -600,12 +894,15 @@ html[data-theme="light"] :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-
 }
 
 html[data-theme="light"] .badge-butter *,
-html[data-theme="light"] :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-amber-200):is(.rounded-full, .rounded-md, .rounded-lg, .rounded) * {
+.light .badge-butter *,
+html[data-theme="light"] :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-amber-200):is(.rounded-full, .rounded-md, .rounded-lg, .rounded) *,
+.light :is(.bg-yellow-100, .bg-yellow-200, .bg-amber-100, .bg-amber-200):is(.rounded-full, .rounded-md, .rounded-lg, .rounded) * {
   color: #713F12 !important;
 }
 
 /* Butter Yellow Action Buttons with Crisp Black Text */
-html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter) {
+html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter),
+.light :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter) {
   background-color: #FDE047 !important;
   color: #000000 !important;
   border-color: #FACC15 !important;
@@ -613,21 +910,34 @@ html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-4
   box-shadow: 0 4px 14px 0 rgba(253, 224, 71, 0.4) !important;
 }
 
-html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter):hover {
+html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter):hover,
+.light :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter):hover {
   background-color: #FEF08A !important;
   color: #000000 !important;
 }
 
-html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter) * {
+html[data-theme="light"] :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter) *,
+.light :is(button, a):is(.bg-gold, .bg-amber-400, .bg-yellow-400, .btn-butter) * {
   color: #000000 !important;
 }
 
 /* Dark CTA Buttons in Light Mode Maintain Pure White Text */
-html[data-theme="light"] :is(button, a):is(.bg-gray-950, .bg-black, .bg-slate-950, .bg-slate-900, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600) {
+html[data-theme="light"] :is(button, a):is(.bg-gray-950, .bg-black, .bg-slate-950, .bg-slate-900, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]),
+.light :is(button, a):is(.bg-gray-950, .bg-black, .bg-slate-950, .bg-slate-900, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) {
   color: #FFFFFF !important;
 }
-html[data-theme="light"] :is(button, a):is(.bg-gray-950, .bg-black, .bg-slate-950, .bg-slate-900, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600) * {
+html[data-theme="light"] :is(button, a):is(.bg-gray-950, .bg-black, .bg-slate-950, .bg-slate-900, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) *,
+.light :is(button, a):is(.bg-gray-950, .bg-black, .bg-slate-950, .bg-slate-900, .bg-rose-500, .bg-rose-600, .bg-emerald-600, .bg-blue-600, .bg-indigo-600, .bg-\[\#eb4e62\], .bg-\[\#d63e51\]) * {
   color: #FFFFFF !important;
+}
+
+/* Media Protection: Ensure Posters, Images, and Video Artwork are NEVER inverted or darkened */
+img,
+video,
+picture,
+canvas,
+svg:not([aria-hidden="true"]) {
+  filter: none !important;
 }
 
 /* Butter Yellow Utility Helpers */

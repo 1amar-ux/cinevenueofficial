@@ -17,13 +17,13 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (user: AuthUser) => void;
+  login: (user: AuthUser, token?: string) => void;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   signIn: (identifier: string, password: string) => Promise<AuthUser>;
   signUp: (data: { name: string; email: string; mobile: string; password: string; confirmPassword?: string }) => Promise<void>;
   signInWithGoogle: (redirectTo?: string) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<any>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
 }
@@ -38,7 +38,7 @@ export const AuthContext = createContext<AuthContextType>({
   signIn: async () => { throw new Error("Auth provider unavailable"); },
   signUp: async () => {},
   signInWithGoogle: async () => {},
-  forgotPassword: async () => {},
+  forgotPassword: async () => ({}),
   resetPassword: async () => {},
   verifyEmail: async () => {},
 });
@@ -130,16 +130,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, [refreshSession]);
 
-  const login = (data: AuthUser) => {
+  const login = (data: AuthUser, token?: string) => {
     setUser(data);
     if (data.email) localStorage.setItem("cine_user_email", data.email);
+    if (token) {
+      localStorage.setItem("cine_access_token", token);
+      localStorage.setItem("cine_auth_token", token);
+    }
   };
 
   const signIn = async (identifier: string, password: string) => {
     const response = await apiClient.post("/auth/login", { identifier, password });
     const authenticatedUser = response.data?.data?.user as AuthUser;
+    const token = response.data?.token || response.data?.data?.tokens?.accessToken;
+    const refreshToken = response.data?.data?.tokens?.refreshToken;
     if (!authenticatedUser) {
       throw new Error("Authentication response was invalid");
+    }
+    if (token) {
+      localStorage.setItem("cine_access_token", token);
+      localStorage.setItem("cine_auth_token", token);
+    }
+    if (refreshToken) {
+      localStorage.setItem("cine_refresh_token", refreshToken);
     }
     setUser(authenticatedUser);
     localStorage.setItem("cine_user_email", authenticatedUser.email);
@@ -150,13 +163,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (data.confirmPassword && data.confirmPassword !== data.password) {
       throw new Error("Passwords do not match.");
     }
-    await apiClient.post("/auth/register", {
+    const response = await apiClient.post("/auth/register", {
       name: data.name,
       email: data.email,
       mobile: data.mobile,
       password: data.password,
     });
-    await refreshSession();
+    const token = response.data?.token || response.data?.data?.tokens?.accessToken;
+    const refreshToken = response.data?.data?.tokens?.refreshToken;
+    if (token) {
+      localStorage.setItem("cine_access_token", token);
+      localStorage.setItem("cine_auth_token", token);
+    }
+    if (refreshToken) {
+      localStorage.setItem("cine_refresh_token", refreshToken);
+    }
+    const newUser = response.data?.data?.user;
+    if (newUser) {
+      setUser(newUser);
+      if (newUser.email) localStorage.setItem("cine_user_email", newUser.email);
+    } else {
+      await refreshSession();
+    }
   };
 
   const signInWithGoogle = async (customRedirectTo?: string) => {
@@ -191,7 +219,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const forgotPassword = async (email: string) => {
-    await apiClient.post("/auth/forgot-password", { email });
+    const res = await apiClient.post("/auth/forgot-password", { email });
+    return res.data;
   };
 
   const resetPassword = async (token: string, newPassword: string) => {
@@ -211,6 +240,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setUser(null);
       localStorage.removeItem("cine_user_email");
+      localStorage.removeItem("cine_access_token");
+      localStorage.removeItem("cine_auth_token");
+      localStorage.removeItem("cine_refresh_token");
     }
   };
 

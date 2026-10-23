@@ -261,19 +261,19 @@ export default function UpcomingBookingCard({
 
   return (
     <div className={`w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-6 pb-2 z-20 relative ${className}`}>
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#12131A] via-[#0E0F14] to-[#0A0B0E] border-2 border-[#D4AF37]/50 shadow-2xl p-5 sm:p-7 text-white animate-fade-in group hover:border-[#D4AF37] transition-all duration-300">
+      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-gradient-to-br dark:from-[#12131A] dark:via-[#0E0F14] dark:to-[#0A0B0E] border-2 border-[#D4AF37]/50 shadow-xl dark:shadow-2xl p-5 sm:p-7 text-slate-950 dark:text-white animate-fade-in group hover:border-[#D4AF37] transition-all duration-300">
         {/* Subtle Ambient Gold Glow */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4AF37]/10 rounded-full blur-[90px] pointer-events-none" />
 
         {/* Top Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-white/10 relative z-10">
           <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
             <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] font-mono flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
               Your Next Confirmed Booking
             </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/40 text-emerald-400">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
               Confirmed
             </span>
           </div>
@@ -281,14 +281,14 @@ export default function UpcomingBookingCard({
           {/* Multiple Bookings Switcher / Pager */}
           {upcomingList.length > 1 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/50 font-mono">
+              <span className="text-xs text-slate-500 dark:text-white/50 font-mono">
                 Booking <span className="text-[#D4AF37] font-bold">{safeIndex + 1}</span> of {upcomingList.length}
               </span>
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : upcomingList.length - 1))}
-                  className="p-1 rounded-lg hover:bg-[#D4AF37] hover:text-black text-white/70 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg hover:bg-[#D4AF37] hover:text-black text-slate-700 dark:text-white/70 transition-colors cursor-pointer"
                   title="Previous Booking"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -296,7 +296,7 @@ export default function UpcomingBookingCard({
                 <button
                   type="button"
                   onClick={() => setActiveIndex((prev) => (prev < upcomingList.length - 1 ? prev + 1 : 0))}
-                  className="p-1 rounded-lg hover:bg-[#D4AF37] hover:text-black text-white/70 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg hover:bg-[#D4AF37] hover:text-black text-slate-700 dark:text-white/70 transition-colors cursor-pointer"
                   title="Next Booking"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -317,7 +317,7 @@ export default function UpcomingBookingCard({
                 className="w-24 sm:w-28 aspect-[2/3] object-cover rounded-2xl border border-[#D4AF37]/30 shadow-lg shrink-0"
               />
             ) : (
-              <div className="w-24 sm:w-28 aspect-[2/3] rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-[#D4AF37] shrink-0">
+              <div className="w-24 sm:w-28 aspect-[2/3] rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-[#D4AF37] shrink-0">
                 <Film className="w-8 h-8 opacity-60" />
                 <span className="text-[9px] uppercase tracking-wider font-mono mt-2">CineVenue</span>
               </div>
@@ -327,11 +327,11 @@ export default function UpcomingBookingCard({
               <span className="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 font-mono">
                 {activeBooking.type === "MOVIE" ? "Movie Ticket" : "Live Event Pass"}
               </span>
-              <h3 className="text-lg sm:text-xl font-extrabold text-white leading-tight">
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white leading-tight">
                 {activeBooking.title}
               </h3>
-              <p className="text-xs text-white/60 font-medium">
-                Ref ID: <span className="text-white/90 font-mono">{activeBooking.id}</span>
+              <p className="text-xs text-slate-600 dark:text-white/60 font-medium">
+                Ref ID: <span className="text-slate-900 dark:text-white/90 font-mono">{activeBooking.id}</span>
               </p>
               {activeBooking.seats && activeBooking.seats.length > 0 && (
                 <p className="text-xs text-[#D4AF37] font-bold">
@@ -342,27 +342,27 @@ export default function UpcomingBookingCard({
           </div>
 
           {/* Middle: Venue Location & Timing Details */}
-          <div className="lg:col-span-5 space-y-3 bg-white/[0.03] p-4 sm:p-5 rounded-2xl border border-white/5">
+          <div className="lg:col-span-5 space-y-3 bg-slate-50 dark:bg-white/[0.03] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-inner dark:shadow-none">
             {/* Venue & Full Address */}
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 flex items-center justify-center shrink-0 mt-0.5">
                 <MapPin className="w-4 h-4" />
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block font-mono">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-white/50 uppercase tracking-wider block font-mono">
                   Venue Location & Address
                 </span>
-                <span className="text-sm font-bold text-white block">
+                <span className="text-sm font-bold text-slate-900 dark:text-white block">
                   {activeBooking.venueName}
                 </span>
-                <p className="text-xs text-white/70 leading-relaxed">
+                <p className="text-xs text-slate-700 dark:text-white/70 leading-relaxed">
                   {activeBooking.venueAddress}
                 </p>
               </div>
             </div>
 
             {/* Date and Time Slot */}
-            <div className="flex items-center gap-6 pt-2 border-t border-white/5 text-xs text-white/80">
+            <div className="flex items-center gap-6 pt-2 border-t border-slate-200 dark:border-white/5 text-xs text-slate-800 dark:text-white/80">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#D4AF37]" />
                 <span className="font-semibold">{activeBooking.dateStr}</span>
@@ -377,14 +377,14 @@ export default function UpcomingBookingCard({
           {/* Right: Live Dynamic Countdown & Action Buttons */}
           <div className="lg:col-span-4 flex flex-col justify-between space-y-3">
             {/* Dynamic Countdown Box */}
-            <div className="bg-black/50 border border-[#D4AF37]/40 p-3.5 rounded-2xl text-center space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60 font-mono block">
+            <div className="bg-slate-100 dark:bg-black/50 border border-[#D4AF37]/40 p-3.5 rounded-2xl text-center space-y-1 shadow-xs dark:shadow-none">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 dark:text-white/60 font-mono block">
                 {isHappeningNow ? "Show Status" : "Live Countdown"}
               </span>
               <div className="text-xl sm:text-2xl font-black text-[#D4AF37] font-mono tracking-wider drop-shadow-sm">
                 {countdownText}
               </div>
-              <span className="text-[10px] text-emerald-400 font-mono block">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono block font-semibold">
                 ● Real-time Sync Active
               </span>
             </div>
@@ -395,7 +395,7 @@ export default function UpcomingBookingCard({
               <button
                 type="button"
                 onClick={() => onViewTicket(activeBooking)}
-                className="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 border border-slate-200 dark:border-white/20 text-slate-900 dark:text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
               >
                 <Ticket className="w-4 h-4 text-[#D4AF37]" />
                 <span>View Ticket</span>
@@ -416,7 +416,7 @@ export default function UpcomingBookingCard({
             <button
               type="button"
               onClick={handleCalendarClick}
-              className="w-full py-2 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white/80 hover:text-white font-medium text-[11px] tracking-wide transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/10 text-slate-700 hover:text-slate-900 dark:text-white/80 dark:hover:text-white font-medium text-[11px] tracking-wide transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <CalendarPlus className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>{calendarAdded ? "✓ Added to Calendar (.ics downloaded)" : "Add to Calendar (with 24h, 3h, 1h, 15m alerts)"}</span>

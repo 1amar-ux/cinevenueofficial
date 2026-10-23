@@ -165,6 +165,8 @@ const INITIAL_ENTERTAINMENT_PROPOSALS: EventProposalRecord[] = [
       ],
       preparedBy: "CineVenue Executive Events Directorate"
     },
+    internalNotes: [],
+    followUps: [],
     isConvertedToEvent: false
   }
 ];
@@ -521,7 +523,7 @@ export async function convertProposalToEvent(
   };
 
   // 1. Save into canonical event repository
-  saveEvent(canonicalEvent);
+  saveEvent(canonicalEvent as any);
 
   // 2. Mark proposal as converted
   proposal.isConvertedToEvent = true;

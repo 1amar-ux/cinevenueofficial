@@ -18,6 +18,7 @@ import api from "../services/api";
 import { triggerCashfreeCheckout, createMovieBookingCashfreeOrder, verifyMovieBookingCashfreePayment } from "../services/cashfreeService";
 import { triggerRazorpayCheckout, createRazorpayOrder, verifyRazorpayPayment } from "../services/razorpayService";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "../utils/ticketDeliveryService";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function Payment() {
   const navigate = useNavigate();
@@ -238,7 +239,7 @@ export default function Payment() {
 
   return (
     <Container sx={{ mt: { xs: 10, sm: 14 }, maxWidth: "500px !important", px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate(-1)}
@@ -255,6 +256,7 @@ export default function Payment() {
         >
           Back
         </Button>
+        <ThemeToggle variant="dropdown" />
       </Box>
       <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
         <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>

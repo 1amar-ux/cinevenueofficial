@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowRight, Clapperboard, Megaphone, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import CineVenueLogo from "../components/CineVenueLogo";
+import ThemeToggle from "../components/ThemeToggle";
 
 const services = [
   {
@@ -9,35 +10,38 @@ const services = [
     description: "Submit movie production proposals, partner with CineVenue, and build your film.",
     path: "/movie-production",
     icon: Clapperboard,
-    accent: "text-amber-300",
+    accent: "text-amber-500 dark:text-amber-300",
   },
   {
     title: "Event Management",
     description: "Create, manage, promote and sell tickets for your events.",
     path: "/event-management",
     icon: Sparkles,
-    accent: "text-cyan-300",
+    accent: "text-cyan-600 dark:text-cyan-300",
   },
   {
     title: "Media Promotions",
     description: "Promote movies, events, brands and entertainment content.",
     path: "/media-promotions",
     icon: Megaphone,
-    accent: "text-rose-300",
+    accent: "text-rose-600 dark:text-rose-300",
   },
 ];
 
 export default function Services() {
   return (
-    <main className="min-h-screen bg-[#09090A] px-4 pb-24 pt-6 text-white sm:px-6 md:px-12 md:pb-12">
+    <main className="min-h-screen bg-white dark:bg-[#09090A] px-4 pb-24 pt-6 text-slate-950 dark:text-white sm:px-6 md:px-12 md:pb-12 transition-colors">
       <div className="mx-auto max-w-6xl">
-        <header className="flex items-center justify-between border-b border-white/10 pb-5">
+        <header className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-5">
           <Link to="/" aria-label="Go to CineVenue home">
             <CineVenueLogo size="md" />
           </Link>
-          <Link className="text-xs uppercase tracking-[0.18em] text-white/60 transition hover:text-gold" to="/">
-            Home
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle variant="dropdown" />
+            <Link className="text-xs uppercase tracking-[0.18em] text-slate-600 dark:text-white/60 transition hover:text-gold" to="/">
+              Home
+            </Link>
+          </div>
         </header>
 
         <section className="py-16 md:py-24">

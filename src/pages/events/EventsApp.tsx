@@ -8,7 +8,7 @@ import PassView from "./PassView";
 
 export default function EventsApp() {
   return (
-    <div className="bg-[#09090A] min-h-screen text-white font-sans">
+    <div className="bg-white dark:bg-[#09090A] min-h-screen text-slate-950 dark:text-white font-sans">
       <Routes>
         <Route path="/" element={<EventsHome />} />
         <Route path="/:eventId" element={<EventDetails />} />

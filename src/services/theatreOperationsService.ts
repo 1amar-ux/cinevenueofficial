@@ -9,6 +9,7 @@ export interface OperationalTask {
   category: "CLEANING" | "MAINTENANCE" | "CUSTOMER_COMPLAINT" | "EQUIPMENT" | "SECURITY" | "GENERAL";
   screenName?: string;
   assignedTo: string;
+  createdBy?: string;
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ESCALATED";
   deadline: string;

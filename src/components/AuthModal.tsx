@@ -105,12 +105,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       setIsLoading(true);
       try {
         const cleanMobile = form.mobile.replace(/\s+/g, "");
-        await apiClient.post("/auth/register", {
+        const res = await apiClient.post("/auth/register", {
           name: form.fullName.trim(),
           email: form.email.trim().toLowerCase(),
           mobile: cleanMobile,
           password: form.password,
         });
+        const token = res.data?.token || res.data?.data?.tokens?.accessToken;
+        if (token) {
+          localStorage.setItem("cine_access_token", token);
+          localStorage.setItem("cine_auth_token", token);
+        }
+        if (res.data?.data?.user && login) {
+          login(res.data.data.user, token);
+          setSuccessMessage("Account created successfully!");
+          onAuthSuccess(form.email.trim());
+          onClose();
+          return;
+        }
         setSuccessMessage("Your account has been created. You can now sign in.");
         setMode("signin");
         setForm(prev => ({ ...prev, email: form.email.trim(), password: "", confirmPassword: "" }));
@@ -141,9 +153,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       try {
         const response = await apiClient.post("/auth/login", { identifier, password: form.password });
         const user = response.data?.data?.user;
+        const token = response.data?.token || response.data?.data?.tokens?.accessToken;
+        if (token) {
+          localStorage.setItem("cine_access_token", token);
+          localStorage.setItem("cine_auth_token", token);
+        }
         const emailAddress = user?.email || identifier;
         if (login && user) {
-          login(user);
+          login(user, token);
         } else if (refreshSession) {
           await refreshSession();
         }
@@ -178,8 +195,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
           return;
         }
 
-        // Clear OTP code so user enters the OTP code received via email / SMS
-        setResetCode("");
+        const deliveredOtp = resData?.code || resData?.devCode || resData?.devOtpCode || "";
+        if (deliveredOtp) {
+          setResetCode(deliveredOtp);
+        } else {
+          setResetCode("");
+        }
         setNewPassword("");
         setConfirmNewPassword("");
         setSuccessMessage(

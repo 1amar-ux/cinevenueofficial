@@ -5,6 +5,7 @@ import {
   AlertCircle, ChevronRight, LogOut, ArrowRight, Sparkles
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
+import ThemeToggle from "../ThemeToggle";
 import { 
   Booking, EventRegistration, CastingApplication, 
   CineCoinsUserWallet, CineCoinsTransaction 
@@ -119,19 +120,20 @@ export default function MyAccountModule({
   };
 
   return (
-    <div className="min-h-screen bg-[#070709] text-text-primary font-sans">
+    <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#0B0B0E]/95 backdrop-blur-md border-b border-white/10 px-4 md:px-8 py-4">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0B0B0E]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
-            <div className="h-6 w-[1px] bg-white/10 hidden sm:block" />
-            <span className="text-xs font-bold text-text-muted uppercase tracking-widest hidden sm:block">
+            <div className="h-6 w-[1px] bg-gray-300 dark:bg-white/10 hidden sm:block" />
+            <span className="text-xs font-bold text-slate-600 dark:text-text-muted uppercase tracking-widest hidden sm:block">
               My Account Sub-Website
             </span>
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle variant="dropdown" />
             <button
               onClick={onOpenCineCoins}
               className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-gold/20 border border-gold/40 px-3.5 py-1.5 rounded-full text-xs font-bold text-gold hover:bg-gold hover:text-black transition-all cursor-pointer"
@@ -141,7 +143,7 @@ export default function MyAccountModule({
 
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 text-text-muted border border-white/10 text-xs font-bold rounded-lg transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/5 hover:bg-rose-500/20 hover:text-rose-600 dark:hover:text-rose-400 text-slate-700 dark:text-text-muted border border-gray-300 dark:border-white/10 text-xs font-bold rounded-lg transition-all cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Logout</span>

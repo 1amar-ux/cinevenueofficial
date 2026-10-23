@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { getEventRequests, submitEventRequest, postEventMessage } from "../../services/eventService";
 import CineVenueLiveBanner from "../advertising/CineVenueLiveBanner";
+import ThemeToggle from "../ThemeToggle";
 
 import { 
   ProductionProject, 
@@ -275,7 +276,7 @@ export default function FilmProductionSubWebsite({
   }
 
   return (
-    <div className="min-h-screen bg-[#070709] text-white font-sans antialiased selection:bg-gold selection:text-black">
+    <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-white font-sans antialiased selection:bg-gold selection:text-black">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -286,7 +287,7 @@ export default function FilmProductionSubWebsite({
       )}
 
       {/* Sub-Website Top Bar / Header Branding */}
-      <header className="sticky top-0 z-40 bg-[#0B0B0E]/95 backdrop-blur-lg border-b border-white/10 px-3 sm:px-6 py-2.5 sm:py-3">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0B0B0E]/95 backdrop-blur-lg border-b border-gray-200 dark:border-white/10 px-3 sm:px-6 py-2.5 sm:py-3">
         <div className="max-w-7xl mx-auto flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
           
           <div 
@@ -300,23 +301,23 @@ export default function FilmProductionSubWebsite({
               </div>
             </div>
             <div>
-              <h1 className="text-xs sm:text-sm font-extrabold tracking-wider font-serif uppercase text-white flex items-center gap-1.5 group-hover:text-gold transition-colors">
+              <h1 className="text-xs sm:text-sm font-extrabold tracking-wider font-serif uppercase text-slate-950 dark:text-white flex items-center gap-1.5 group-hover:text-gold transition-colors">
                 CINEVENUE <span className="text-gold">PRODUCTIONS</span>
               </h1>
-              <p className="text-[9px] text-white/50 tracking-widest uppercase hidden sm:block">
+              <p className="text-[9px] text-slate-500 dark:text-white/50 tracking-widest uppercase hidden sm:block">
                 Creating Stories • Producing Experiences • Building Entertainment
               </p>
             </div>
           </div>
 
           {/* Sub-Website Section Switcher */}
-          <div className="flex items-center gap-1 sm:gap-1.5 bg-black/60 p-1 rounded-xl border border-white/10 overflow-x-auto scrollbar-none max-w-full">
+          <div className="flex items-center gap-1 sm:gap-1.5 bg-gray-100 dark:bg-black/60 p-1 rounded-xl border border-gray-300 dark:border-white/10 overflow-x-auto scrollbar-none max-w-full">
             <button
               onClick={() => setActiveModule("film" as any)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 (activeModule as string) === "film"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
-                  : "text-white/60 hover:text-white"
+                  : "text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <Film className="w-3.5 h-3.5" />
@@ -328,7 +329,7 @@ export default function FilmProductionSubWebsite({
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeModule === "events"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
-                  : "text-white/60 hover:text-white"
+                  : "text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -340,7 +341,7 @@ export default function FilmProductionSubWebsite({
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeModule === "media"
                   ? "bg-gradient-to-r from-amber-500 to-gold text-black shadow-md"
-                  : "text-white/60 hover:text-white"
+                  : "text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <Megaphone className="w-3.5 h-3.5" />
@@ -350,9 +351,10 @@ export default function FilmProductionSubWebsite({
 
           {/* Header Action Buttons (Events & Media) */}
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap shrink-0">
+              <ThemeToggle variant="dropdown" />
               <button
                 onClick={() => setIsAppHubModalOpen(true)}
-                className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-300 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
+                className="px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-gold/20 hover:bg-gold/30 text-amber-900 dark:text-amber-300 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all border border-amber-500/40 cursor-pointer flex items-center gap-1.5 shadow-sm"
               >
                 <FileText className="w-3.5 h-3.5 text-gold" />
                 <span>APPLICATION FORMS</span>
@@ -360,7 +362,7 @@ export default function FilmProductionSubWebsite({
 
               <button
                 onClick={() => setIsDashboardModalOpen(true)}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all border border-white/15 cursor-pointer"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-slate-800 dark:text-white text-[11px] font-bold uppercase tracking-wider transition-all border border-gray-300 dark:border-white/15 cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5 text-gold" />
                 <span>My Applications</span>

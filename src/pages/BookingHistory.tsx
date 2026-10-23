@@ -11,6 +11,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import ThemeToggle from "../components/ThemeToggle";
 
 interface BookingItem {
   movie: string;
@@ -76,7 +77,7 @@ export default function BookingHistory() {
 
   return (
     <Container sx={{ mt: 12, mb: 4 }}>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-start" }}>
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate(-1)}
@@ -92,6 +93,7 @@ export default function BookingHistory() {
         >
           Back
         </Button>
+        <ThemeToggle variant="dropdown" />
       </Box>
       <Typography variant="h4" sx={{ fontWeight: "bold", mb: 4 }}>
         Booking History

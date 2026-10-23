@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { Film, Shield, Lock, Mail, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import CineVenueLogo from "../../components/CineVenueLogo";
+import ThemeToggle from "../../components/ThemeToggle";
 import apiClient from "../../services/apiClient";
 import { AuthContext } from "../../context/AuthContext";
 
@@ -73,12 +74,17 @@ export default function Login({ onLoginSuccess, theatreAdmins = [] }: LoginProps
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center p-6 text-left select-none relative overflow-hidden">
+    <div className="min-h-screen bg-white dark:bg-[#0A0A0B] text-slate-950 dark:text-text-primary flex items-center justify-center p-6 text-left select-none relative overflow-hidden">
+      {/* Theme Toggle Top Right */}
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeToggle variant="segmented" />
+      </div>
+
       {/* Background Glow */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-80 h-80 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-[#121215] border border-white/5 rounded-2xl p-8 space-y-6 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-white dark:bg-[#121215] border border-gray-200 dark:border-white/5 rounded-2xl p-8 space-y-6 shadow-2xl relative z-10">
         <div className="text-center space-y-2">
           <CineVenueLogo size="lg" subText="Partner Portal" />
           <p className="text-xs text-text-secondary pt-1">

@@ -30,6 +30,7 @@ import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAv
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
 import { deduplicateMovies } from "../utils/movieDeduplication";
 import YouTubePlayerModal from "../components/video/YouTubePlayerModal";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function MovieDetails() {
   const { id } = useParams();
@@ -327,7 +328,7 @@ export default function MovieDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-white pt-20 pb-20 font-sans selection:bg-[#eb4e62] selection:text-white">
+    <div className="min-h-screen bg-white dark:bg-[#0A0A0B] text-slate-950 dark:text-white pt-20 pb-20 font-sans selection:bg-[#eb4e62] selection:text-white">
       {/* Toast Notification */}
       {showShareNotification && (
         <div className="fixed top-24 right-6 z-50 bg-[#1e1e24] border border-white/20 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-3">
@@ -337,19 +338,20 @@ export default function MovieDetails() {
       )}
 
       {/* TOP NAVIGATION BAR */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 mb-4 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all text-xs font-semibold cursor-pointer border border-white/10"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-slate-700 dark:text-white/70 hover:text-slate-950 dark:hover:text-white transition-all text-xs font-semibold cursor-pointer border border-gray-300 dark:border-white/10"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Movies</span>
         </button>
+        <ThemeToggle variant="dropdown" />
       </div>
 
       {/* 1. HERO BANNER SECTION (MATCHING SCREENSHOT 1) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12">
-        <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-[#121214] shadow-2xl">
+        <div className="relative rounded-3xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] shadow-2xl">
           {/* Backdrop Image & Ambient Darkness */}
           <div className="absolute inset-0 z-0">
             <img

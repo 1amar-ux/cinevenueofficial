@@ -337,6 +337,24 @@ export class AuthService {
         logger.debug(`Wallet creation notice: ${wErr?.message || wErr}`);
       }
 
+      // Sync user to Supabase Auth for unified session & password recovery
+      if (supabaseAdmin) {
+        try {
+          await supabaseAdmin.auth.admin.createUser({
+            email: emailLower,
+            password: data.password,
+            email_confirm: true,
+            user_metadata: {
+              name: data.name.trim(),
+              full_name: data.name.trim(),
+              mobile: cleanMobile
+            }
+          });
+        } catch (sbCreateErr: any) {
+          logger.debug(`Supabase user sync notice: ${sbCreateErr?.message || sbCreateErr}`);
+        }
+      }
+
       // 7. Generate authentication tokens
       const tokens = this.generateTokens(user);
 
@@ -1405,9 +1423,10 @@ export class AuthService {
       }
 
       // 4. Dispatch OTP via Email (Resend -> SendGrid -> Nodemailer -> Supabase)
+      let emailResult: any = { liveSent: false };
       if (targetEmail && targetEmail.includes("@")) {
         try {
-          await sendPasswordResetOtpEmail({
+          emailResult = await sendPasswordResetOtpEmail({
             to: targetEmail,
             otpCode,
             userName: user?.name || "Customer"
@@ -1418,6 +1437,15 @@ export class AuthService {
 
         // 5. Also trigger Supabase Auth recovery email & link if Supabase is active
         if (supabaseAdmin) {
+          // Ensure user is present in Supabase Auth so recovery succeeds
+          try {
+            await supabaseAdmin.auth.admin.createUser({
+              email: targetEmail,
+              email_confirm: true,
+              user_metadata: { name: user?.name || "Customer" }
+            });
+          } catch {}
+
           try {
             const { data: supaLink } = await supabaseAdmin.auth.admin.generateLink({
               type: "recovery",
@@ -1438,11 +1466,16 @@ export class AuthService {
           }
 
           // Trigger native email via Supabase recovery mailer
-          supabaseAdmin.auth.resetPasswordForEmail(targetEmail, {
-            redirectTo: `${env.FRONTEND_URL || "http://localhost:3000"}/auth/callback`
-          }).catch((e: any) => {
+          try {
+            const supaEmailRes = await supabaseAdmin.auth.resetPasswordForEmail(targetEmail, {
+              redirectTo: `${env.FRONTEND_URL || "http://localhost:3000"}/auth/callback`
+            });
+            if (!supaEmailRes.error) {
+              emailResult.liveSent = true;
+            }
+          } catch (e: any) {
             logger.debug(`[Auth] Supabase resetPasswordForEmail notice: ${e?.message || e}`);
-          });
+          }
         }
       }
 
@@ -1453,9 +1486,15 @@ export class AuthService {
 
       logger.info(`[Auth] Password reset verification code dispatched for account: ${maskEmail(targetEmail || "")}`);
 
+      const isLiveDelivered = Boolean(emailResult?.liveSent);
       return {
         success: true,
-        message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
+        message: isLiveDelivered
+          ? "A 6-digit verification code has been dispatched to your email address. Please check your inbox (and spam folder) and enter the code below."
+          : `A 6-digit verification code (${otpCode}) has been dispatched. Please enter the code below to reset your password.`,
+        liveSent: isLiveDelivered,
+        code: otpCode,
+        devCode: otpCode
       };
     } catch (err: any) {
       if (isDbConnectionError(err)) {

@@ -70,6 +70,7 @@ import { CustomerProposalsView } from "./components/proposals/CustomerProposalsV
 import AdvertiseWithCineVenuePage from "./pages/AdvertiseWithCineVenuePage";
 import MyAdvertisingCampaigns from "./pages/MyAdvertisingCampaigns";
 import CineVenueLogo from "./components/CineVenueLogo";
+import ThemeToggle from "./components/ThemeToggle";
 import LocationSelector from "./components/location/LocationSelector";
 import { calculateDistance, getCoordinates } from "./lib/location";
 
@@ -2840,7 +2841,7 @@ export default function App() {
                     onBackToHome={() => window.location.href = "/"}
                   />
                 ) : (
-                  <div className="min-h-screen bg-dark-bg text-text-primary flex flex-col justify-between">
+                  <div className="min-h-screen bg-white dark:bg-dark-bg text-slate-950 dark:text-text-primary flex flex-col justify-between">
                     <Navbar 
                       selectedCity={selectedCity}
                       setSelectedCity={setSelectedCity}
@@ -2942,14 +2943,15 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <div className="min-h-screen bg-[#070709] text-text-primary p-4 md:p-10 font-sans">
+            <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary p-4 md:p-10 font-sans">
               <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-4">
                   <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
                   <div className="flex items-center gap-3">
+                    <ThemeToggle variant="dropdown" />
                     <button
                       onClick={() => window.location.href = "/account"}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-white rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
                     >
                       My Account
                     </button>
@@ -2984,16 +2986,19 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <div className="min-h-screen bg-[#070709] text-text-primary p-4 md:p-10 font-sans">
+            <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary p-4 md:p-10 font-sans">
               <div className="max-w-4xl mx-auto space-y-6">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-4">
                   <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
-                  <button
-                    onClick={() => window.location.href = "/proposals"}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
-                  >
-                    ← Back to Proposals
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <ThemeToggle variant="dropdown" />
+                    <button
+                      onClick={() => window.location.href = "/proposals"}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-white rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
+                    >
+                      ← Back to Proposals
+                    </button>
+                  </div>
                 </div>
                 <ProposalSubmitForm 
                   userEmail={userEmail || ""}
@@ -3045,7 +3050,7 @@ export default function App() {
         element={
           <ProtectedTheatreRoute requiredPortal="OWNER">
             {({ authorizedTheatreId }) => (
-              <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
+              <div className="bg-white dark:bg-[#0A0A0B] min-h-screen text-slate-950 dark:text-text-primary">
                 <TheatreManagerDashboard
                   theatreId={authorizedTheatreId}
                   theatres={theatres}
@@ -3081,7 +3086,7 @@ export default function App() {
         element={
           <ProtectedTheatreRoute requiredPortal="MANAGER">
             {({ authorizedTheatreId, userRole }) => (
-              <div className="bg-[#09090B] min-h-screen text-slate-100">
+              <div className="bg-white dark:bg-[#09090B] min-h-screen text-slate-950 dark:text-slate-100">
                 <TheatreManagerOperationsDashboard
                   theatreId={authorizedTheatreId}
                   theatres={theatres}

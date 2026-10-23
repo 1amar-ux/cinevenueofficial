@@ -7,6 +7,7 @@ import {
   Layers, Zap, Shield, Film, Ticket, Music, Target,
 } from 'lucide-react';
 import CineVenueLogo from '../components/CineVenueLogo';
+import ThemeToggle from '../components/ThemeToggle';
 import { DEFAULT_PLACEMENTS, submitInquiry } from '../services/advertisingService';
 import type { AdPlacementId } from '../types/advertising';
 import LiveBannerBookingWizard from '../components/advertising/LiveBannerBookingWizard';
@@ -344,11 +345,12 @@ export default function AdvertiseWithCineVenuePage() {
   const [activeTab, setActiveTab] = useState<'24h-banner' | 'inquiry'>('24h-banner');
 
   return (
-    <div className="min-h-screen bg-[#070709] text-text-primary font-sans">
+    <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary font-sans">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#070709]/95 backdrop-blur-xl border-b border-white/[0.06] px-4 md:px-8 py-3.5 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 bg-white/95 dark:bg-[#070709]/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/[0.06] px-4 md:px-8 py-3.5 flex items-center justify-between">
         <CineVenueLogo size="md" onClick={() => window.location.href = '/'} />
         <div className="flex items-center gap-3">
+          <ThemeToggle variant="dropdown" />
           <button
             onClick={() => window.location.href = '/advertising/my-campaigns'}
             className="px-3.5 py-1.5 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-semibold rounded-lg border border-gold/30 cursor-pointer transition-all flex items-center gap-1.5"
@@ -362,7 +364,7 @@ export default function AdvertiseWithCineVenuePage() {
           </a>
           <button
             onClick={() => window.location.href = '/'}
-            className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.08] text-text-secondary text-xs font-semibold rounded-lg border border-white/10 cursor-pointer transition-all"
+            className="px-3 py-1.5 bg-gray-100 dark:bg-white/[0.05] hover:bg-gray-200 dark:hover:bg-white/[0.08] text-slate-700 dark:text-text-secondary text-xs font-semibold rounded-lg border border-gray-300 dark:border-white/10 cursor-pointer transition-all"
           >
             ← Back to CineVenue
           </button>

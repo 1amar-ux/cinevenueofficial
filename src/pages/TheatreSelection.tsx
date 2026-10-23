@@ -12,7 +12,9 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import { BookingContext } from "../context/BookingContext";
-import { INITIAL_MOVIES, Movie } from "../data";
+import { INITIAL_MOVIES } from "../data";
+import { Movie } from "../types";
+import ThemeToggle from "../components/ThemeToggle";
 
 const theatres = [
   {
@@ -29,7 +31,7 @@ export default function TheatreSelection() {
   const navigate = useNavigate();
   const { booking, setBooking } = useContext(BookingContext);
 
-  const currentMovie: Movie = booking.movie || INITIAL_MOVIES[0];
+  const currentMovie: Movie = booking.movie || (INITIAL_MOVIES[0] as any);
   const [showFullDesc, setShowFullDesc] = useState<boolean>(false);
 
   const handleSelectShow = (theatre: any, show: string) => {
@@ -60,11 +62,7 @@ export default function TheatreSelection() {
           Back
         </Button>
 
-        {saveSuccess && (
-          <Alert severity="success" sx={{ py: 0, px: 2 }}>
-            Movie info updated successfully!
-          </Alert>
-        )}
+        <ThemeToggle variant="dropdown" />
       </Box>
 
       {/* Movie Details Header Card with Description and Casting */}
@@ -73,9 +71,9 @@ export default function TheatreSelection() {
           sx={{
             mb: 4,
             borderRadius: 3,
-            backgroundColor: "#11141A",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            color: "#FFFFFF",
+            backgroundColor: "var(--cv-card)",
+            border: "1px solid var(--cv-border)",
+            color: "var(--cv-text-primary)",
             boxShadow: 3,
           }}
         >
@@ -99,21 +97,21 @@ export default function TheatreSelection() {
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 1 }}>
                   <Box>
-                    <Typography variant="h5" sx={{ fontWeight: "bold", color: "#FFFFFF" }}>
+                    <Typography variant="h5" sx={{ fontWeight: "bold", color: "var(--cv-text-primary)" }}>
                       {currentMovie.title}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.6)", mt: 0.5 }}>
+                    <Typography variant="body2" sx={{ color: "var(--cv-text-secondary)", mt: 0.5 }}>
                       {currentMovie.lang || currentMovie.language || "Telugu"} • {currentMovie.genre || "Action / Drama"} • {currentMovie.duration || "2h 30m"} • {currentMovie.certification || currentMovie.certificate || "UA"}
                     </Typography>
                   </Box>
                 </Box>
 
-                <Divider sx={{ my: 1.5, borderColor: "rgba(255, 255, 255, 0.08)" }} />
+                <Divider sx={{ my: 1.5, borderColor: "var(--cv-border)" }} />
 
                 {/* Director */}
                 {currentMovie.director && (
                   <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.5)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold" }}>
+                    <Typography variant="caption" sx={{ color: "var(--cv-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold" }}>
                       Directed by:{" "}
                     </Typography>
                     <Typography variant="body2" component="span" sx={{ color: "#D4AF37", fontWeight: 600 }}>
@@ -124,7 +122,7 @@ export default function TheatreSelection() {
 
                 {/* Description / Synopsis */}
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.5)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold", display: "block", mb: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: "var(--cv-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold", display: "block", mb: 0.5 }}>
                     Synopsis
                   </Typography>
                   {currentMovie.description ? (
@@ -132,7 +130,7 @@ export default function TheatreSelection() {
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "rgba(255, 255, 255, 0.8)",
+                          color: "var(--cv-text-secondary)",
                           lineHeight: 1.6,
                           ...(showFullDesc ? {} : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }),
                         }}
@@ -150,7 +148,7 @@ export default function TheatreSelection() {
                       )}
                     </Box>
                   ) : (
-                    <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.4)", fontStyle: "italic" }}>
+                    <Typography variant="body2" sx={{ color: "var(--cv-text-muted)", fontStyle: "italic" }}>
                       No description available for this movie.
                     </Typography>
                   )}
@@ -158,7 +156,7 @@ export default function TheatreSelection() {
 
                 {/* Casting Chips */}
                 <Box>
-                  <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.5)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold", display: "block", mb: 0.8 }}>
+                  <Typography variant="caption" sx={{ color: "var(--cv-text-muted)", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: "bold", display: "block", mb: 0.8 }}>
                     Starring Cast
                   </Typography>
                   {(currentMovie.cast || currentMovie.actors) && (currentMovie.cast || currentMovie.actors)!.length > 0 ? (
@@ -169,9 +167,9 @@ export default function TheatreSelection() {
                           label={actor}
                           size="small"
                           sx={{
-                            backgroundColor: "rgba(255, 255, 255, 0.08)",
-                            color: "#FFFFFF",
-                            border: "1px solid rgba(255, 255, 255, 0.15)",
+                            backgroundColor: "var(--cv-input-bg)",
+                            color: "var(--cv-text-primary)",
+                            border: "1px solid var(--cv-border)",
                             fontSize: "0.75rem",
                             "&:hover": {
                               borderColor: "#D4AF37",
@@ -182,7 +180,7 @@ export default function TheatreSelection() {
                       ))}
                     </Box>
                   ) : (
-                    <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.4)", fontStyle: "italic" }}>
+                    <Typography variant="body2" sx={{ color: "var(--cv-text-muted)", fontStyle: "italic" }}>
                       No cast members listed for this movie.
                     </Typography>
                   )}

@@ -7,6 +7,7 @@ import {
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CineVenueLogo from "../components/CineVenueLogo";
+import ThemeToggle from "../components/ThemeToggle";
 import { LiveBannerCampaign } from "../types/advertising";
 import { fetchMyLiveCampaigns } from "../services/advertisingService";
 
@@ -63,11 +64,12 @@ export const MyAdvertisingCampaigns: React.FC = () => {
   const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
 
   return (
-    <div className="min-h-screen bg-[#070709] text-text-primary flex flex-col justify-between font-sans">
-      <div className="border-b border-white/10 bg-[#0B0C10]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
+    <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary flex flex-col justify-between font-sans">
+      <div className="border-b border-gray-200 dark:border-white/10 bg-white/95 dark:bg-[#0B0C10]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
           <div className="flex items-center gap-3">
+            <ThemeToggle variant="dropdown" />
             <button
               onClick={() => window.location.href = "/advertise-with-cinevenue"}
               className="px-4 py-2 bg-gold hover:bg-gold-light text-black font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shadow-lg shadow-gold/20"
@@ -77,7 +79,7 @@ export const MyAdvertisingCampaigns: React.FC = () => {
             </button>
             <button
               onClick={() => window.location.href = "/"}
-              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+              className="px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-slate-800 dark:text-white rounded-xl text-xs font-semibold border border-gray-300 dark:border-white/10 transition-all cursor-pointer"
             >
               Home
             </button>

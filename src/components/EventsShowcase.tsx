@@ -23,6 +23,7 @@ import {
   getTrendingExperiences,
   getBrowseLiveCategories,
 } from "../services/eventHighlightsService";
+import { generateAndDownloadEventPassPdf, sendEventPassToEmail } from "../utils/eventPassPdf";
 
 interface EventsShowcaseProps {
   events: Event[];

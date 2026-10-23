@@ -4,6 +4,7 @@ import {
   Printer, CheckCircle, Mail, Phone, MapPin, ExternalLink, ChevronRight, Copy, Check
 } from "lucide-react";
 import CineVenueLogo from "../components/CineVenueLogo";
+import ThemeToggle from "../components/ThemeToggle";
 import { ALL_LEGAL_POLICIES, LegalPolicyDocument } from "../data/legalPolicies";
 
 interface LegalPoliciesProps {
@@ -69,26 +70,27 @@ export default function LegalPolicies({
   };
 
   return (
-    <div className="min-h-screen bg-[#070709] text-text-primary font-sans selection:bg-gold/20 selection:text-gold print:bg-white print:text-black">
+    <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary font-sans selection:bg-gold/20 selection:text-gold print:bg-white print:text-black">
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-[#0A0A0D]/90 backdrop-blur-md border-b border-white/10 px-4 md:px-8 py-3.5 print:hidden">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0A0A0D]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-3.5 print:hidden">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={onNavigateHome}
-              className="flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-gold transition-colors px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 cursor-pointer"
+              className="flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-gold transition-colors px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/[0.03] border border-gray-300 dark:border-white/10 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to CineVenue</span>
             </button>
-            <div className="hidden sm:block h-4 w-px bg-white/10" />
+            <div className="hidden sm:block h-4 w-px bg-gray-300 dark:bg-white/10" />
             <CineVenueLogo size="sm" onClick={onNavigateHome} />
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
+            <ThemeToggle variant="dropdown" />
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-xs font-medium transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-gray-300 dark:border-white/10 text-slate-900 dark:text-white rounded-lg text-xs font-medium transition-all cursor-pointer"
               title="Print official policy document"
             >
               <Printer className="w-3.5 h-3.5 text-gold" />

@@ -6,7 +6,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function Register() {
-  const { signInWithGoogle } = useContext(AuthContext);
+  const { signInWithGoogle, login } = useContext(AuthContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
@@ -18,7 +18,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const validatePassword = (pass: string) => {
-    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pass);
+    return pass && pass.length >= 6;
   };
 
   const handleRegister = async () => {
@@ -34,13 +34,13 @@ export default function Register() {
         setError("Please provide a valid email address.");
         return;
       }
-      const cleanMobile = mobile.replace(/\s+/g, "");
-      if (!/^\+?[1-9]\d{7,14}$/.test(cleanMobile)) {
-        setError("Please provide a valid mobile number (e.g. +919876543210 or 9876543210).");
+      const cleanMobile = mobile.replace(/[\s\-()]/g, "");
+      if (cleanMobile && !/^\+?[0-9]{10,15}$/.test(cleanMobile)) {
+        setError("Please provide a valid 10-digit mobile number (e.g. 9876543210 or +919876543210).");
         return;
       }
       if (!validatePassword(password)) {
-        setError("Password must be at least 8 characters long and include uppercase, lowercase, a number, and a symbol.");
+        setError("Password must be at least 6 characters long.");
         return;
       }
       if (password !== confirmPassword) {
@@ -49,18 +49,27 @@ export default function Register() {
       }
 
       setLoading(true);
-      await api.post("/auth/register", {
+      const res = await api.post("/auth/register", {
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        mobile: cleanMobile,
+        mobile: cleanMobile || undefined,
         password,
         confirmPassword
       });
 
-      setSuccess("Account created successfully! Redirecting to login...");
+      const token = res.data?.token || res.data?.data?.tokens?.accessToken;
+      if (token) {
+        localStorage.setItem("cine_access_token", token);
+        localStorage.setItem("cine_auth_token", token);
+      }
+      if (res.data?.data?.user && login) {
+        login(res.data.data.user, token);
+      }
+
+      setSuccess("Account created successfully! Redirecting...");
       setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+        navigate("/");
+      }, 1000);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.error?.message || err.response?.data?.message || "Registration failed or server error");
@@ -170,8 +179,8 @@ export default function Register() {
           }}
           sx={{
             mt: 2,
-            borderColor: "rgba(255,255,255,0.2)",
-            color: "#fff",
+            borderColor: "var(--cv-border)",
+            color: "var(--cv-text-primary)",
             "&:hover": { borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)" }
           }}
         >

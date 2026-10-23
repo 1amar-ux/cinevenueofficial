@@ -349,7 +349,7 @@ export async function runPhase1SecurityTests() {
         const loginRes = await authService.login({ email: "pvr.admin@cinevenue.com", password: "PvrAdmin123" });
         const hasToken = !!(loginRes.tokens?.accessToken);
         const isRoleCorrect = loginRes.user.role === "THEATRE_ADMIN";
-        const hasTheatreId = loginRes.user.theatreId === "1";
+        const hasTheatreId = (loginRes.user as any).theatreId === "1";
         record("5.2 Valid Theatre Admin login yields valid JWT with THEATRE_ADMIN role and theatreId", hasToken && isRoleCorrect && hasTheatreId);
       } catch (err: any) {
         record("5.2 Valid Theatre Admin login", false, err.message);
@@ -360,7 +360,7 @@ export async function runPhase1SecurityTests() {
         const mgrLoginRes = await authService.login({ email: "manager@cinevenue.com", password: "Manager@2026" });
         const hasToken = !!(mgrLoginRes.tokens?.accessToken);
         const isManagerRole = mgrLoginRes.user.role === "THEATRE_MANAGER";
-        const hasMgrTheatreId = mgrLoginRes.user.theatreId === "1";
+        const hasMgrTheatreId = (mgrLoginRes.user as any).theatreId === "1";
         record("5.3 Valid Theatre Manager login yields THEATRE_MANAGER role and theatreId", hasToken && isManagerRole && hasMgrTheatreId);
       } catch (err: any) {
         record("5.3 Valid Theatre Manager login", false, err.message);

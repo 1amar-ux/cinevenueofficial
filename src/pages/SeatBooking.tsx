@@ -4,6 +4,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SeatLayout from "../components/SeatLayout";
 import { useNavigate } from "react-router-dom";
 import { BookingContext } from "../context/BookingContext";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function SeatBooking() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function SeatBooking() {
 
   return (
     <Container sx={{ mt: 12, mb: 4, display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <Box sx={{ width: "100%", maxWidth: 600, mb: 2, display: "flex", justifyContent: "flex-start" }}>
+      <Box sx={{ width: "100%", maxWidth: 600, mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate(-1)}
@@ -35,6 +36,7 @@ export default function SeatBooking() {
         >
           Back
         </Button>
+        <ThemeToggle variant="dropdown" />
       </Box>
       <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom>
         Select Seats

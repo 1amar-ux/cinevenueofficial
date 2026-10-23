@@ -3973,7 +3973,7 @@ export default function AdminPanel({
                                   <td className="p-3 border-0">
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-mono text-amber-400 font-bold text-xs">
-                                        🪙 {(user.cineCoins ?? 500).toLocaleString()} CC
+                                        🪙 {((user as any).cineCoins ?? 500).toLocaleString()} CC
                                       </span>
                                       <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 tracking-wider">
                                         PAUSED
@@ -5943,12 +5943,12 @@ export default function AdminPanel({
               <EventsAdminModule initialTab="dashboard" />
             </div>
           )}
-          {activeTab === "events_proposals" && (
+          {(activeTab as any) === "events_proposals" && (
             <div className="space-y-8 animate-fade-in" id="tab-events-proposals">
               <EventsAdminModule initialTab="proposals" />
             </div>
           )}
-          {activeTab === "events_create" && (
+          {(activeTab as any) === "events_create" && (
             <div className="space-y-8 animate-fade-in" id="tab-events-create">
               <EventsAdminModule initialTab="create" />
             </div>

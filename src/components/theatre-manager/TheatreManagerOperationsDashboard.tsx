@@ -60,6 +60,7 @@ import {
   LiveOperationsStatus,
   DCRData
 } from "../../services/theatreOperationsService";
+import ThemeToggle from "../ThemeToggle";
 
 interface TheatreManagerOperationsDashboardProps {
   theatreId: number | string;
@@ -551,6 +552,7 @@ export default function TheatreManagerOperationsDashboard({
           </div>
 
           <div className="flex items-center gap-2.5">
+            <ThemeToggle variant="dropdown" />
             <button
               onClick={() => setIsNewTaskOpen(true)}
               className="px-3 py-1.5 rounded-lg bg-gold hover:bg-yellow-400 text-black text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"

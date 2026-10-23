@@ -129,8 +129,8 @@ export default function Login() {
           }}
           sx={{
             mt: 2,
-            borderColor: "rgba(255,255,255,0.2)",
-            color: "#fff",
+            borderColor: "var(--cv-border)",
+            color: "var(--cv-text-primary)",
             "&:hover": { borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)" }
           }}
         >
