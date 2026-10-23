@@ -1001,23 +1001,35 @@ export interface ProposalAuditLog {
 }
 
 export interface Proposal {
-  proposalId: string; // e.g. CV-PROP-2026-000001
+  proposalId: string; // e.g. CV-PROP-2026-000001 or CV-FILM-2026-000101
   customerId: string; // userEmail or user ID
   customerType: ProposalCustomerType;
   fullName: string;
+  roleDesignation?: string;
   companyName?: string;
   phone: string;
+  whatsappNumber?: string;
   email: string;
   city: string;
+  state?: string;
+  websiteUrl?: string;
   contactMethod: ProposalContactMethod;
   serviceType: ProposalServiceType;
+  category?: 'EVENT' | 'MOVIE_PRODUCTION';
   projectName: string;
+  genre?: string;
+  productionType?: string;
+  language?: string;
+  projectStage?: string;
+  expectedStartDate?: string;
+  expectedReleaseDate?: string;
   location: string;
   preferredDate?: string;
   expectedAttendees?: number;
   estimatedBudget?: number;
   servicesRequired: string[];
   description: string;
+  additionalRequirements?: string;
   attachments?: ProposalAttachment[];
   status: ProposalStatus;
   assignedTo?: string;

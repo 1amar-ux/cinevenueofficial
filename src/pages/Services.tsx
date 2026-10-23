@@ -6,8 +6,8 @@ import CineVenueLogo from "../components/CineVenueLogo";
 const services = [
   {
     title: "Movie Production",
-    description: "Build your film with the right talent and crew.",
-    path: "/film-production",
+    description: "Submit movie production proposals, partner with CineVenue, and build your film.",
+    path: "/movie-production",
     icon: Clapperboard,
     accent: "text-amber-300",
   },

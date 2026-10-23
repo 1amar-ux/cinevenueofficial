@@ -30,7 +30,9 @@ import {
   Check, 
   Layers,
   ChevronRight,
-  Printer
+  Printer,
+  Clapperboard,
+  Film
 } from 'lucide-react';
 import { 
   Proposal, 
@@ -80,6 +82,7 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   
   // Filter & Search State
+  const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'MOVIE_PRODUCTION' | 'EVENT'>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedService, setSelectedService] = useState<string>('ALL');
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
@@ -558,8 +561,24 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
     }
   };
 
+  const isMovieProposal = (p: Proposal) => {
+    return (
+      p.category === 'MOVIE_PRODUCTION' || 
+      p.serviceType === 'Film Production' || 
+      p.proposalId.startsWith('CV-FILM-') || 
+      p.proposalId.startsWith('FILM-') ||
+      Boolean((p as any).genre) ||
+      Boolean((p as any).productionType)
+    );
+  };
+
+  const movieProposalsCount = proposals.filter(isMovieProposal).length;
+  const eventProposalsCount = proposals.filter(p => !isMovieProposal(p)).length;
+
   // Filter & Search Logic
   const filteredProposals = proposals.filter((p) => {
+    if (selectedCategory === 'MOVIE_PRODUCTION' && !isMovieProposal(p)) return false;
+    if (selectedCategory === 'EVENT' && isMovieProposal(p)) return false;
     if (selectedStatus !== 'ALL' && p.status !== selectedStatus) return false;
     if (selectedService !== 'ALL' && p.serviceType !== selectedService) return false;
     if (selectedCity !== 'ALL' && p.city.toLowerCase() !== selectedCity.toLowerCase()) return false;
@@ -570,7 +589,11 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
       const matchProject = p.projectName.toLowerCase().includes(q);
       const matchCompany = (p.companyName || '').toLowerCase().includes(q);
       const matchCity = p.city.toLowerCase().includes(q);
-      if (!matchId && !matchName && !matchProject && !matchCompany && !matchCity) return false;
+      const matchGenre = ((p as any).genre || '').toLowerCase().includes(q);
+      const matchProdType = ((p as any).productionType || '').toLowerCase().includes(q);
+      const matchRole = ((p as any).roleDesignation || '').toLowerCase().includes(q);
+      const matchLang = ((p as any).language || '').toLowerCase().includes(q);
+      if (!matchId && !matchName && !matchProject && !matchCompany && !matchCity && !matchGenre && !matchProdType && !matchRole && !matchLang) return false;
     }
     return true;
   }).sort((a, b) => {
@@ -679,6 +702,54 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
           </span>
           <span className="text-[10px] text-text-secondary mt-1 block">Estimated total</span>
         </div>
+      </div>
+
+      {/* CATEGORY SELECTOR TABS (MOVIE PRODUCTION vs EVENT MANAGEMENT) */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+        <button
+          onClick={() => setSelectedCategory('ALL')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+            selectedCategory === 'ALL'
+              ? 'bg-white/15 border-white/40 text-white shadow-md'
+              : 'bg-[#0e0f14] border-white/10 text-white/50 hover:text-white'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>All Proposals</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/10 font-mono font-bold">
+            {totalProposals}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setSelectedCategory('MOVIE_PRODUCTION')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+            selectedCategory === 'MOVIE_PRODUCTION'
+              ? 'bg-gradient-to-r from-amber-500/20 to-gold/20 border-gold text-gold shadow-md shadow-gold/10'
+              : 'bg-[#0e0f14] border-white/10 text-white/50 hover:text-amber-300'
+          }`}
+        >
+          <Clapperboard className="w-4 h-4 text-gold" />
+          <span>Movie Production</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-gold/20 text-gold font-mono font-bold border border-gold/30">
+            {movieProposalsCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setSelectedCategory('EVENT')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+            selectedCategory === 'EVENT'
+              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-500/10'
+              : 'bg-[#0e0f14] border-white/10 text-white/50 hover:text-cyan-300'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-cyan-400" />
+          <span>Event Management</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 font-mono font-bold border border-cyan-500/30">
+            {eventProposalsCount}
+          </span>
+        </button>
       </div>
 
       {/* STATUS CHIPS CARDS */}
@@ -813,6 +884,7 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                 filteredProposals.map((proposal) => {
                   const badge = getStatusBadge(proposal.status);
                   const hasQuote = Boolean(proposal.quotation);
+                  const isMovie = isMovieProposal(proposal);
 
                   return (
                     <tr 
@@ -821,8 +893,9 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                     >
                       {/* ID & Date */}
                       <td className="py-3.5 px-4">
-                        <span className="font-mono font-bold text-gold block">
-                          {proposal.proposalId}
+                        <span className="font-mono font-bold text-gold flex items-center gap-1.5">
+                          {isMovie && <Clapperboard className="w-3.5 h-3.5 text-gold shrink-0" />}
+                          <span>{proposal.proposalId}</span>
                         </span>
                         <span className="text-[10px] text-text-muted block mt-0.5">
                           {new Date(proposal.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
@@ -834,9 +907,9 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                         <span className="font-semibold text-white block truncate max-w-[150px]">
                           {proposal.fullName}
                         </span>
-                        {proposal.companyName && (
+                        {((proposal as any).roleDesignation || proposal.companyName) && (
                           <span className="text-[11px] text-text-secondary block truncate max-w-[150px]">
-                            {proposal.companyName}
+                            {[(proposal as any).roleDesignation, proposal.companyName].filter(Boolean).join(' • ')}
                           </span>
                         )}
                         <span className="text-[10px] text-text-muted block">
@@ -846,9 +919,18 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
 
                       {/* Service & Project */}
                       <td className="py-3.5 px-4 max-w-xs">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 border border-white/10 text-gold inline-block mb-1">
-                          {proposal.serviceType}
-                        </span>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border inline-block ${
+                            isMovie ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
+                          }`}>
+                            {isMovie ? 'Movie Production' : proposal.serviceType}
+                          </span>
+                          {isMovie && (proposal as any).genre && (
+                            <span className="text-[10px] text-text-muted font-medium">
+                              • {(proposal as any).genre}
+                            </span>
+                          )}
+                        </div>
                         <span className="font-semibold text-white block truncate">
                           {proposal.projectName}
                         </span>
@@ -921,11 +1003,16 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
             <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/20">
-                    {activeProposal.proposalId}
+                  <span className="font-mono text-xs font-bold text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/20 flex items-center gap-1">
+                    {isMovieProposal(activeProposal) && <Clapperboard className="w-3 h-3 text-gold" />}
+                    <span>{activeProposal.proposalId}</span>
                   </span>
-                  <span className="text-xs text-text-muted font-bold uppercase tracking-wider">
-                    {activeProposal.serviceType}
+                  <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                    isMovieProposal(activeProposal)
+                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono'
+                      : 'bg-white/5 text-text-muted border border-white/10'
+                  }`}>
+                    {isMovieProposal(activeProposal) ? 'Movie Production Proposal' : activeProposal.serviceType}
                   </span>
                   <span className="text-xs text-text-muted">•</span>
                   <span className="text-xs text-text-muted">
@@ -1004,16 +1091,22 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
               <div className="bg-[#101118] border border-white/10 rounded-xl p-4 space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  <span>Customer Contact Profile</span>
+                  <span>{isMovieProposal(activeProposal) ? 'Filmmaker Contact Profile' : 'Customer Contact Profile'}</span>
                 </h4>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-text-muted">Full Name:</span>
                     <span className="font-semibold text-white">{activeProposal.fullName}</span>
                   </div>
+                  {activeProposal.roleDesignation && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Role / Designation:</span>
+                      <span className="text-amber-300 font-semibold">{activeProposal.roleDesignation}</span>
+                    </div>
+                  )}
                   {activeProposal.companyName && (
                     <div className="flex justify-between">
-                      <span className="text-text-muted">Company / Banner:</span>
+                      <span className="text-text-muted">{isMovieProposal(activeProposal) ? 'Production House:' : 'Company / Banner:'}</span>
                       <span className="text-white">{activeProposal.companyName}</span>
                     </div>
                   )}
@@ -1021,16 +1114,32 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                     <span className="text-text-muted">Phone:</span>
                     <span className="text-white font-mono">{activeProposal.phone}</span>
                   </div>
+                  {activeProposal.whatsappNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">WhatsApp:</span>
+                      <span className="text-emerald-400 font-mono">{activeProposal.whatsappNumber}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-text-muted">Email:</span>
                     <span className="text-white">{activeProposal.email}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">City / Region:</span>
-                    <span className="text-white">{activeProposal.city}</span>
+                    <span className="text-text-muted">Location:</span>
+                    <span className="text-white">
+                      {activeProposal.city}{activeProposal.state ? `, ${activeProposal.state}` : ''}
+                    </span>
                   </div>
+                  {activeProposal.websiteUrl && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-muted">Website / Portfolio:</span>
+                      <a href={activeProposal.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-gold underline truncate max-w-[180px]">
+                        {activeProposal.websiteUrl}
+                      </a>
+                    </div>
+                  )}
                   <div className="flex justify-between">
-                    <span className="text-text-muted">Contact Channel:</span>
+                    <span className="text-text-muted">Preferred Contact:</span>
                     <span className="text-gold font-semibold">{activeProposal.contactMethod}</span>
                   </div>
                 </div>
@@ -1038,7 +1147,7 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                 {/* Direct Contact Triggers */}
                 <div className="pt-2 border-t border-white/5 flex gap-2">
                   <a
-                    href={`https://wa.me/${activeProposal.phone.replace(/[^0-9]/g, '')}`}
+                    href={`https://wa.me/${(activeProposal.whatsappNumber || activeProposal.phone).replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 text-center py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold"
@@ -1052,7 +1161,7 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                     Call
                   </a>
                   <a
-                    href={`mailto:${activeProposal.email}?subject=CineVenue Proposal - ${activeProposal.proposalId}`}
+                    href={`mailto:${activeProposal.email}?subject=CineVenue Movie Production - ${activeProposal.proposalId}`}
                     className="flex-1 text-center py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-semibold"
                   >
                     Email
@@ -1060,31 +1169,69 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
                 </div>
               </div>
 
-              {/* Project Logistics Card */}
+              {/* Project Logistics / Movie Card */}
               <div className="bg-[#101118] border border-white/10 rounded-xl p-4 space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
-                  <span>Logistical Specifications</span>
+                  {isMovieProposal(activeProposal) ? <Film className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                  <span>{isMovieProposal(activeProposal) ? 'Film Production Details' : 'Logistical Specifications'}</span>
                 </h4>
                 <div className="space-y-2 text-xs">
+                  {activeProposal.genre && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Genre:</span>
+                      <span className="font-semibold text-white">{activeProposal.genre}</span>
+                    </div>
+                  )}
+                  {activeProposal.productionType && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Production Type:</span>
+                      <span className="font-semibold text-white">{activeProposal.productionType}</span>
+                    </div>
+                  )}
+                  {activeProposal.language && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Primary Language:</span>
+                      <span className="font-semibold text-white">{activeProposal.language}</span>
+                    </div>
+                  )}
+                  {activeProposal.projectStage && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Project Stage:</span>
+                      <span className="text-amber-300 font-semibold">{activeProposal.projectStage}</span>
+                    </div>
+                  )}
+                  {activeProposal.expectedStartDate && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Production Start:</span>
+                      <span className="text-white font-mono">{activeProposal.expectedStartDate}</span>
+                    </div>
+                  )}
+                  {activeProposal.expectedReleaseDate && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Expected Release:</span>
+                      <span className="text-white font-mono">{activeProposal.expectedReleaseDate}</span>
+                    </div>
+                  )}
+                  {!isMovieProposal(activeProposal) && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">Target Event Date:</span>
+                        <span className="text-white font-mono">{activeProposal.preferredDate || 'Flexible / TBD'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">Expected Footfall:</span>
+                        <span className="text-white font-mono">
+                          {activeProposal.expectedAttendees ? `${activeProposal.expectedAttendees.toLocaleString()} Attendees` : 'Not specified'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
-                    <span className="text-text-muted">Venue / Location:</span>
+                    <span className="text-text-muted">Target Location:</span>
                     <span className="font-semibold text-white">{activeProposal.location}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">Target Event Date:</span>
-                    <span className="text-white font-mono">
-                      {activeProposal.preferredDate || 'Flexible / TBD'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Expected Footfall:</span>
-                    <span className="text-white font-mono">
-                      {activeProposal.expectedAttendees ? `${activeProposal.expectedAttendees.toLocaleString()} Attendees` : 'Not specified'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Customer Budget:</span>
+                    <span className="text-text-muted">Estimated Budget:</span>
                     <span className="text-gold font-mono font-bold">
                       ₹{activeProposal.estimatedBudget ? activeProposal.estimatedBudget.toLocaleString('en-IN') : 'Custom on quote'}
                     </span>
@@ -1093,7 +1240,9 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
 
                 {activeProposal.servicesRequired && activeProposal.servicesRequired.length > 0 && (
                   <div className="pt-2 border-t border-white/5">
-                    <span className="text-[10px] text-text-muted block mb-1.5 uppercase font-bold">Requested Setup:</span>
+                    <span className="text-[10px] text-text-muted block mb-1.5 uppercase font-bold">
+                      {isMovieProposal(activeProposal) ? 'Required Production Services:' : 'Requested Setup:'}
+                    </span>
                     <div className="flex flex-wrap gap-1">
                       {activeProposal.servicesRequired.map(s => (
                         <span key={s} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] text-text-secondary">
@@ -1109,12 +1258,24 @@ export const ProposalAdminModule: React.FC<ProposalAdminModuleProps> = ({
             {/* Description Card */}
             <div className="bg-[#101118] border border-white/10 rounded-xl p-4 space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-gold">
-                Detailed Brief & Client Objectives
+                {isMovieProposal(activeProposal) ? 'Story Concept & Project Description' : 'Detailed Brief & Client Objectives'}
               </h4>
               <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
                 {activeProposal.description}
               </p>
             </div>
+
+            {/* Additional Requirements Card if present */}
+            {activeProposal.additionalRequirements && (
+              <div className="bg-[#101118] border border-white/10 rounded-xl p-4 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gold">
+                  Additional Requirements & Instructions
+                </h4>
+                <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
+                  {activeProposal.additionalRequirements}
+                </p>
+              </div>
+            )}
 
             {/* Attachments */}
             {activeProposal.attachments && activeProposal.attachments.length > 0 && (

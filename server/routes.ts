@@ -22,6 +22,7 @@ import { redis } from "./config/redis";
 import { razorpayService } from "./modules/payments/razorpay.service";
 import { authenticate, isValidAdminPasscode } from "./middleware/auth";
 import { authorize } from "./middleware/authorize";
+import proposalsRouter from "./modules/proposals/proposals.routes";
 
 const router = Router();
 
@@ -91,6 +92,7 @@ router.use("/admin/advertising", adminAdvertisingRouter);
 router.use("/admin", adminRoutes);
 router.use("/", employeeRouter);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
+router.use("/", proposalsRouter); // Mounts /proposals and /admin/proposals
 
 // ==========================================
 // 2A. RAZORPAY STANDARD WEB CHECKOUT ENDPOINTS

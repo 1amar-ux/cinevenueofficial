@@ -63,6 +63,7 @@ import MyAccountModule from "./components/account/MyAccountModule";
 import FilmProductionSubWebsite from "./components/productions/FilmProductionSubWebsite";
 import CineCoinsAdminControl from "./components/admin/CineCoinsAdminControl";
 import EventManagementHub from "./components/events/EventManagementHub";
+import MovieProductionHub from "./components/productions/MovieProductionHub";
 import CreateEvent from "./pages/CreateEvent";
 import { ProposalSubmitForm } from "./components/proposals/ProposalSubmitForm";
 import { CustomerProposalsView } from "./components/proposals/CustomerProposalsView";
@@ -2756,8 +2757,33 @@ export default function App() {
           );
         };
 
+        const renderMovieProduction = () => {
+          if (serviceControl?.filmProduction?.status === false) {
+            return (
+              <MaintenancePage
+                serviceName="Film Production"
+                title={serviceControl?.filmProduction?.title || "Film Production Division Under Maintenance"}
+                message={serviceControl?.filmProduction?.message || "We're updating our production portfolio and services.\n\nFor urgent enquiries contact info.cinevenue@gmail.com"}
+                expectedTime={serviceControl?.filmProduction?.expectedTime || "30 July 2026, 12:00 PM"}
+                icon="🎥"
+                onBackToHome={() => window.location.href = "/"}
+              />
+            );
+          }
+          return (
+            <MovieProductionHub 
+              userEmail={userEmail}
+              onOpenAuth={() => setAuthOpen(true)}
+              onNavigateHome={() => window.location.href = "/"}
+            />
+          );
+        };
+
         return (
           <>
+            <Route path="/movie-production" element={renderMovieProduction()} />
+            <Route path="/movie-production-proposal" element={renderMovieProduction()} />
+            <Route path="/film-production/proposal-form" element={renderMovieProduction()} />
             <Route path="/productions" element={renderFilmProduction()} />
             <Route path="/media-promotions" element={renderFilmProduction("media")} />
             <Route path="/film-production" element={renderFilmProduction("film", "overview")} />

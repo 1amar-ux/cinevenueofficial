@@ -3346,11 +3346,11 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
 
   let proposalIdSequence = 100;
 
-  const generateProposalReferenceId = () => {
+  const generateProposalReferenceId = (isMovieProduction: boolean = false) => {
     proposalIdSequence += 1;
     const year = new Date().getFullYear();
     const padded = String(proposalIdSequence).padStart(6, "0");
-    return `CV-PROP-${year}-${padded}`;
+    return isMovieProduction ? `CV-FILM-${year}-${padded}` : `CV-PROP-${year}-${padded}`;
   };
 
   let inMemoryProposals: any[] = [];
@@ -3371,16 +3371,31 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
     try {
       const body = req.body || {};
 
+      const isMovieProduction = 
+        body.category === "MOVIE_PRODUCTION" || 
+        body.proposalType === "MOVIE_PRODUCTION" ||
+        body.serviceType === "Film Production" ||
+        Boolean(body.genre) || 
+        Boolean(body.productionType);
+
+      const category = isMovieProduction ? "MOVIE_PRODUCTION" : "EVENT";
+
       // Required Field Validations
       const fullName = (body.fullName || "").trim();
       const email = (body.email || body.userEmail || "").trim().toLowerCase();
       const phone = (body.phone || body.mobile || "").trim();
       const city = (body.city || "").trim();
-      const customerType = (body.customerType || "Individual").trim();
-      const serviceType = (body.serviceType || "Movie Promotion").trim();
-      const projectName = (body.projectName || "").trim();
-      const location = (body.location || city || "").trim();
-      const description = (body.description || "").trim();
+      const state = (body.state || "").trim();
+      const customerType = (body.customerType || (isMovieProduction ? "Film Production" : "Individual")).trim();
+      const serviceType = (body.serviceType || (isMovieProduction ? "Film Production" : "Movie Promotion")).trim();
+      const projectName = (body.projectName || body.projectTitle || "").trim();
+      const location = (body.location || (state ? `${city}, ${state}` : city) || "").trim();
+      const description = (body.description || body.storyConcept || "").trim();
+      const roleDesignation = (body.roleDesignation || body.role || (isMovieProduction ? "Filmmaker" : "")).trim();
+      const genre = (body.genre || "").trim();
+      const productionType = (body.productionType || "").trim();
+      const language = (body.language || body.primaryLanguage || "").trim();
+      const projectStage = (body.projectStage || "").trim();
 
       if (!fullName) {
         return res.status(400).json({ success: false, message: "Full Name is required." });
@@ -3395,10 +3410,27 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
         return res.status(400).json({ success: false, message: "City is required." });
       }
       if (!projectName) {
-        return res.status(400).json({ success: false, message: "Project / Event Name is required." });
+        return res.status(400).json({ 
+          success: false, 
+          message: isMovieProduction ? "Project Title is required." : "Project / Event Name is required." 
+        });
       }
-      if (!location) {
-        return res.status(400).json({ success: false, message: "Event Location is required." });
+      if (isMovieProduction) {
+        if (!genre) {
+          return res.status(400).json({ success: false, message: "Genre is required." });
+        }
+        if (!productionType) {
+          return res.status(400).json({ success: false, message: "Production Type is required." });
+        }
+        if (!language) {
+          return res.status(400).json({ success: false, message: "Primary Language is required." });
+        }
+        if (!roleDesignation) {
+          return res.status(400).json({ success: false, message: "Role / Designation is required." });
+        }
+        if (!state) {
+          return res.status(400).json({ success: false, message: "State is required." });
+        }
       }
       if (!description || description.length < 10) {
         return res.status(400).json({ success: false, message: "Project Description must be at least 10 characters." });
@@ -3437,27 +3469,39 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
           }))
         : [];
 
-      const proposalId = generateProposalReferenceId();
+      const proposalId = generateProposalReferenceId(isMovieProduction);
       const nowIso = new Date().toISOString();
 
       const newProposal = {
         proposalId,
         customerId: email,
         customerType,
+        category,
         fullName,
-        companyName: (body.companyName || body.company || "").trim(),
+        roleDesignation,
+        companyName: (body.companyName || body.productionHouse || body.company || "").trim(),
         phone,
+        whatsappNumber: (body.whatsappNumber || "").trim(),
         email,
         city,
-        contactMethod: body.contactMethod || "WhatsApp",
+        state,
+        websiteUrl: (body.websiteUrl || body.portfolioUrl || "").trim(),
+        contactMethod: body.contactMethod || body.preferredContactMethod || "Email",
         serviceType,
         projectName,
+        genre,
+        productionType,
+        language,
+        projectStage,
+        expectedStartDate: body.expectedStartDate || body.startDate || "",
+        expectedReleaseDate: body.expectedReleaseDate || body.releaseDate || "",
         location,
-        preferredDate: body.preferredDate || "",
+        preferredDate: body.preferredDate || body.expectedStartDate || "",
         expectedAttendees,
         estimatedBudget,
         servicesRequired,
         description,
+        additionalRequirements: (body.additionalRequirements || "").trim(),
         attachments,
         status: "NEW",
         assignedTo: null,
@@ -3465,7 +3509,7 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
         auditLogs: [
           {
             id: `LOG-${Date.now().toString().slice(-4)}`,
-            action: "Proposal Submitted",
+            action: isMovieProduction ? "Movie Production Proposal Submitted" : "Event Proposal Submitted",
             performedBy: email,
             timestamp: nowIso,
             newStatus: "NEW"
@@ -3481,7 +3525,7 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
         success: true,
         referenceId: proposalId,
         proposalId,
-        title: "Proposal Received!",
+        title: isMovieProduction ? "Movie Production Proposal Received!" : "Proposal Received!",
         message: "Thank you for contacting CineVenue. Our team will review your proposal and contact you shortly.",
         proposal: sanitizeProposalForCustomer(newProposal)
       });
@@ -3540,11 +3584,14 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
   // 4. Admin: Get All Proposals (GET /api/admin/proposals)
   app.get("/api/admin/proposals", (req, res) => {
     try {
-      const { status, service, city, search, sortBy = "createdAt", sortOrder = "desc", page = "1", limit = "50" } = req.query;
+      const { status, service, category, city, search, sortBy = "createdAt", sortOrder = "desc", page = "1", limit = "100" } = req.query;
 
       let filtered = [...inMemoryProposals];
 
       // Filters
+      if (category && category !== "ALL") {
+        filtered = filtered.filter(p => (p.category || (p.serviceType === "Film Production" ? "MOVIE_PRODUCTION" : "EVENT")) === category);
+      }
       if (status && status !== "ALL") {
         filtered = filtered.filter(p => p.status === status);
       }
@@ -3562,7 +3609,10 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
           p.projectName.toLowerCase().includes(q) ||
           (p.companyName && p.companyName.toLowerCase().includes(q)) ||
           p.email.toLowerCase().includes(q) ||
-          p.city.toLowerCase().includes(q)
+          p.city.toLowerCase().includes(q) ||
+          (p.genre && p.genre.toLowerCase().includes(q)) ||
+          (p.roleDesignation && p.roleDesignation.toLowerCase().includes(q)) ||
+          (p.language && p.language.toLowerCase().includes(q))
         );
       }
 
@@ -3583,7 +3633,7 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
 
       // Pagination
       const pageNum = parseInt(page as string, 10) || 1;
-      const limitNum = parseInt(limit as string, 10) || 50;
+      const limitNum = parseInt(limit as string, 10) || 100;
       const total = filtered.length;
       const startIndex = (pageNum - 1) * limitNum;
       const paginated = filtered.slice(startIndex, startIndex + limitNum);
@@ -3591,6 +3641,8 @@ Keep responses conversational, helpful, sophisticated, and under 200 words. Alwa
       // Status Counts
       const counts: { [key: string]: number } = {
         ALL: inMemoryProposals.length,
+        MOVIE_PRODUCTION: inMemoryProposals.filter(p => (p.category || (p.serviceType === "Film Production" ? "MOVIE_PRODUCTION" : "EVENT")) === "MOVIE_PRODUCTION").length,
+        EVENT: inMemoryProposals.filter(p => (p.category || (p.serviceType === "Film Production" ? "MOVIE_PRODUCTION" : "EVENT")) === "EVENT").length,
         NEW: inMemoryProposals.filter(p => p.status === "NEW").length,
         "UNDER REVIEW": inMemoryProposals.filter(p => p.status === "UNDER REVIEW").length,
         CONTACTED: inMemoryProposals.filter(p => p.status === "CONTACTED").length,
