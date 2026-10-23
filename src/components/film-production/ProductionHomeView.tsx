@@ -1,6 +1,6 @@
 import React from "react";
 import { 
-  Film, FileText, PlusCircle, ArrowRight, Sparkles, 
+  Film, FileText, PlusCircle, ArrowRight, Sparkles, Clapperboard,
   Send, Inbox, Edit3, Clock, MessageSquare, CheckCircle2, 
   XCircle, Layers, Users, Bell, ChevronRight, Calendar, MapPin
 } from "lucide-react";
@@ -171,11 +171,19 @@ export default function ProductionHomeView({
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap gap-2.5 shrink-0">
             <button
-              onClick={onCreateProposal}
-              className="px-5 py-3 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-gold/20 flex items-center gap-2 cursor-pointer border-0"
+              onClick={() => onNavigateTab("proposal-form")}
+              className="px-5 py-3 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-gold/25 flex items-center gap-2 cursor-pointer border-0"
             >
-              <PlusCircle className="w-4 h-4 text-black stroke-[2.5]" />
-              <span>+ Create Proposal</span>
+              <Clapperboard className="w-4 h-4 text-black stroke-[2.5]" />
+              <span>+ Submit Movie Proposal</span>
+            </button>
+
+            <button
+              onClick={onCreateProposal}
+              className="px-4 py-3 bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all border border-white/15 flex items-center gap-2 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4 text-gold stroke-[2]" />
+              <span>Craft Proposal</span>
             </button>
 
             <button
@@ -194,6 +202,41 @@ export default function ProductionHomeView({
               <span>View Proposals</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* 2. OFFICIAL MOVIE PRODUCTION PROPOSAL SPOTLIGHT CARD */}
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#171309] via-[#0E0F17] to-black border-2 border-gold/40 p-6 sm:p-7 shadow-2xl shadow-gold/5">
+        <div className="absolute right-0 top-0 w-80 h-80 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-400 p-0.5 flex items-center justify-center shrink-0 shadow-lg shadow-gold/20">
+              <div className="w-full h-full bg-black rounded-[14px] flex items-center justify-center">
+                <Clapperboard className="w-7 h-7 text-gold" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold text-[10px] font-black uppercase tracking-widest border border-gold/40">
+                <Sparkles className="w-3 h-3 fill-gold" />
+                <span>Official CineVenue Proposal Form</span>
+              </div>
+              <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+                Submit Movie Production Proposal
+              </h2>
+              <p className="text-xs sm:text-sm text-white/70 max-w-2xl leading-relaxed">
+                Share your film production requirements with CineVenue Entertainments Pvt Ltd. We provide end-to-end film production support, shooting location scouting & permissions, camera/lighting equipment rentals, studio floors, line production, and theatrical distribution tie-ups.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onNavigateTab("proposal-form")}
+            className="px-6 py-3.5 bg-gradient-to-r from-amber-500 via-gold to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-gold/25 flex items-center gap-2 cursor-pointer shrink-0 border-0 group"
+          >
+            <FileText className="w-4 h-4 text-black stroke-[2.5]" />
+            <span>Open Proposal Form</span>
+            <ChevronRight className="w-4 h-4 text-black group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </div>
 

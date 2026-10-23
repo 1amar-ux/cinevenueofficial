@@ -10,7 +10,7 @@ import {
   Clock, DollarSign, Building2, User, CheckCircle2, 
   RotateCcw, ShieldCheck, ArrowRight, Eye, ChevronRight,
   Send, AlertCircle, X, Check, ArrowDownLeft, ArrowUpRight,
-  MessageSquare, Trash2, Ban, Edit, Info
+  MessageSquare, Trash2, Ban, Edit, Info, Clapperboard, Sparkles
 } from "lucide-react";
 import { 
   updateProposalStatus, 
@@ -23,6 +23,7 @@ interface ProposalsViewProps {
   projects: FilmProject[];
   userEmail?: string | null;
   onOpenCreateProposal: () => void;
+  onOpenProposalForm?: () => void;
   onSelectProposal: (proposal: Proposal) => void;
   onRefreshProposals?: () => void;
 }
@@ -239,16 +240,49 @@ export default function ProposalsView({
             </p>
           </div>
 
-          <div className="shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              onClick={() => onOpenProposalForm ? onOpenProposalForm() : window.location.href = "/movie-production"}
+              className="px-5 py-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 hover:from-amber-400 hover:to-yellow-200 text-black font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 cursor-pointer border-0"
+            >
+              <Clapperboard className="w-4 h-4 text-black stroke-[2.5]" />
+              <span>+ Official Proposal Form</span>
+            </button>
+
             <button
               onClick={onOpenCreateProposal}
-              className="px-6 py-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 hover:from-amber-400 hover:to-yellow-200 text-black font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              className="px-5 py-3.5 bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider rounded-2xl transition-all border border-white/15 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4 text-black" />
-              <span>+ Create Proposal</span>
+              <PlusCircle className="w-4 h-4 text-amber-400" />
+              <span>Craft Proposal</span>
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Official CineVenue Proposal Banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 via-[#0E0F18] to-black border border-amber-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+            <Clapperboard className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-xs font-black text-white flex items-center gap-2">
+              <span>Have a Film Project or Movie Requirement?</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">CineVenue Direct</span>
+            </div>
+            <p className="text-[11px] text-white/60 mt-0.5">
+              Submit your project title, script concept, budget, and services required to CineVenue Entertainments Pvt Ltd.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => onOpenProposalForm ? onOpenProposalForm() : window.location.href = "/movie-production"}
+          className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs transition-all shrink-0 flex items-center gap-1.5 cursor-pointer border-0 shadow-md"
+        >
+          <span>Open Proposal Form</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* 8 CANONICAL PROPOSALS TABS (Section 5) */}

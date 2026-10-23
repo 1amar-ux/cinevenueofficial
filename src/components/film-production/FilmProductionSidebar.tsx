@@ -43,6 +43,13 @@ export default function FilmProductionSidebar({
           desc: "Proposal Overview & Stats" 
         },
         { 
+          id: "proposal-form", 
+          label: "Proposal Form", 
+          icon: Clapperboard, 
+          badge: "Official",
+          desc: "Submit Movie Proposal" 
+        },
+        { 
           id: "crafts", 
           label: "24 Production Crafts", 
           icon: Layers, 
@@ -106,13 +113,13 @@ export default function FilmProductionSidebar({
       </div>
 
       {/* Main Action in Sidebar */}
-      <div className="p-4 pb-2">
+      <div className="p-3 pb-1 space-y-2">
         <button
-          onClick={() => handleNavClick("proposals")}
-          className="w-full py-2.5 px-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 hover:from-amber-400 hover:to-yellow-200 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer group"
+          onClick={() => handleNavClick("proposal-form")}
+          className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 cursor-pointer border-0"
         >
-          <PlusCircle className="w-4 h-4 text-black group-hover:rotate-90 transition-transform" />
-          <span>+ Create Proposal</span>
+          <Clapperboard className="w-4 h-4 text-black stroke-[2.5]" />
+          <span>+ Submit Movie Proposal</span>
         </button>
       </div>
 

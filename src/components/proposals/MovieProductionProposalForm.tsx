@@ -1200,3 +1200,5 @@ export const MovieProductionProposalForm: React.FC<MovieProductionProposalFormPr
     </form>
   );
 };
+
+export default MovieProductionProposalForm;

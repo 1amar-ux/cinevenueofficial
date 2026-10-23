@@ -2783,7 +2783,7 @@ export default function App() {
           <>
             <Route path="/movie-production" element={renderMovieProduction()} />
             <Route path="/movie-production-proposal" element={renderMovieProduction()} />
-            <Route path="/film-production/proposal-form" element={renderMovieProduction()} />
+            <Route path="/film-production/proposal-form" element={renderFilmProduction("film", "proposal-form")} />
             <Route path="/productions" element={renderFilmProduction()} />
             <Route path="/media-promotions" element={renderFilmProduction("media")} />
             <Route path="/film-production" element={renderFilmProduction("film", "overview")} />
@@ -2791,7 +2791,7 @@ export default function App() {
             <Route path="/film-production/casting-calls" element={renderFilmProduction("film", "casting")} />
             <Route path="/film-production/my-auditions" element={renderFilmProduction("film", "auditions")} />
             <Route path="/film-production/proposals" element={renderFilmProduction("film", "proposals")} />
-            <Route path="/film-production/proposals/create" element={renderFilmProduction("film", "proposals")} />
+            <Route path="/film-production/proposals/create" element={renderFilmProduction("film", "proposal-form")} />
             <Route path="/film-production/my-profile" element={renderFilmProduction("film", "my-profile")} />
             <Route path="/film-production/professionals" element={renderFilmProduction("film", "professionals")} />
             <Route path="/film-production/professionals/:username" element={renderFilmProduction("film", "professionals")} />

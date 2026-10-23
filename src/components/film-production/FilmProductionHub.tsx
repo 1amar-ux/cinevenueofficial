@@ -36,9 +36,10 @@ import ExploreCraftsSection from "./ExploreCraftsSection";
 import ProposalsView from "./ProposalsView";
 import CreateProposalModal from "./CreateProposalModal";
 import ProposalDetailsModal from "./ProposalDetailsModal";
+import MovieProductionProposalForm from "../proposals/MovieProductionProposalForm";
 
 import { 
-  PlusCircle, Menu, Layers, FileText, Clapperboard
+  PlusCircle, Menu, Layers, FileText, Clapperboard, ArrowLeft
 } from "lucide-react";
 
 interface FilmProductionHubProps {
@@ -56,6 +57,12 @@ export default function FilmProductionHub({
 }: FilmProductionHubProps) {
   const [activeTab, setActiveTab] = useState<string>(initialTab || "overview");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   
   // Data state
   const [crafts, setCrafts] = useState<FilmCraft[]>(() => getCrafts());
@@ -83,6 +90,7 @@ export default function FilmProductionHub({
   const getTabTitle = () => {
     switch (activeTab) {
       case "overview": return "Dashboard";
+      case "proposal-form": return "Movie Production Proposal";
       case "crafts": return "24 Production Crafts";
       case "proposals": return "Proposals";
       default: return "Film Production";
@@ -139,14 +147,23 @@ export default function FilmProductionHub({
           {/* Quick Actions in Header */}
           <div className="flex items-center gap-2 sm:gap-3">
             <button
+              onClick={() => setActiveTab("proposal-form")}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black transition-all shadow-md shadow-amber-500/20 cursor-pointer border-0"
+            >
+              <Clapperboard className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+              <span className="hidden sm:inline">Submit Movie Proposal</span>
+              <span className="sm:hidden">Proposal</span>
+            </button>
+
+            <button
               onClick={() => {
                 setSelectedCraftForProposal(null);
                 setIsCreateProposalModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all border border-white/15 cursor-pointer"
             >
-              <PlusCircle className="w-3.5 h-3.5 text-black" />
-              <span>+ Create Proposal</span>
+              <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Craft Proposal</span>
             </button>
 
             {userEmail ? (
@@ -221,11 +238,42 @@ export default function FilmProductionHub({
                   setSelectedCraftForProposal(null);
                   setIsCreateProposalModalOpen(true);
                 }}
+                onOpenProposalForm={() => setActiveTab("proposal-form")}
                 onSelectProposal={(prop) => {
                   setSelectedProposal(prop);
                   setIsProposalDetailsModalOpen(true);
                 }}
                 onRefreshProposals={refreshAllData}
+              />
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* 4. OFFICIAL MOVIE PRODUCTION PROPOSAL FORM */}
+          {/* ======================================================== */}
+          {activeTab === "proposal-form" && (
+            <div className="max-w-5xl mx-auto space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <button
+                  onClick={() => setActiveTab("overview")}
+                  className="flex items-center gap-2 text-xs font-bold text-white/70 hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back to Dashboard</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-400/20">
+                    Official CineVenue Submission
+                  </span>
+                </div>
+              </div>
+
+              <MovieProductionProposalForm 
+                userEmail={userEmail}
+                onProposalSubmitted={() => {
+                  refreshAllData();
+                  setActiveTab("proposals");
+                }}
               />
             </div>
           )}
