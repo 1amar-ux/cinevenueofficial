@@ -2742,19 +2742,16 @@ export default function App() {
               />
             );
           }
-          return (
-            <FilmProductionSubWebsite 
-              userEmail={userEmail}
-              initialModule={initialMod}
-              initialTab={initialTab}
-              onOpenAuth={() => setAuthOpen(true)}
-              onBookTickets={(title) => {
-                setBookingMovieTitle(title);
-              }}
-              castingApplications={castingApplications}
-              onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-            />
-          );
+          if (initialMod === "media") {
+            return (
+              <FilmProductionSubWebsite 
+                userEmail={userEmail}
+                initialModule="media"
+                onOpenAuth={() => setAuthOpen(true)}
+              />
+            );
+          }
+          return renderMovieProduction();
         };
 
         const renderMovieProduction = () => {
@@ -2783,21 +2780,22 @@ export default function App() {
           <>
             <Route path="/movie-production" element={renderMovieProduction()} />
             <Route path="/movie-production-proposal" element={renderMovieProduction()} />
-            <Route path="/film-production/proposal-form" element={renderFilmProduction("film", "proposal-form")} />
-            <Route path="/productions" element={renderFilmProduction()} />
+            <Route path="/film-production" element={renderMovieProduction()} />
+            <Route path="/film-production/proposal-form" element={renderMovieProduction()} />
+            <Route path="/film-production/proposals" element={renderMovieProduction()} />
+            <Route path="/film-production/proposals/create" element={renderMovieProduction()} />
+            <Route path="/film-production/my-projects" element={renderMovieProduction()} />
+            <Route path="/film-production/casting-calls" element={renderMovieProduction()} />
+            <Route path="/film-production/my-auditions" element={renderMovieProduction()} />
+            <Route path="/film-production/my-profile" element={renderMovieProduction()} />
+            <Route path="/film-production/professionals" element={renderMovieProduction()} />
+            <Route path="/film-production/professionals/:username" element={renderMovieProduction()} />
+            <Route path="/film-production/*" element={renderMovieProduction()} />
+            <Route path="/productions" element={renderMovieProduction()} />
+            <Route path="/filmproduction" element={renderMovieProduction()} />
+            <Route path="/24crafts" element={renderMovieProduction()} />
+            <Route path="/crafts" element={renderMovieProduction()} />
             <Route path="/media-promotions" element={renderFilmProduction("media")} />
-            <Route path="/film-production" element={renderFilmProduction("film", "overview")} />
-            <Route path="/film-production/my-projects" element={renderFilmProduction("film", "my-projects")} />
-            <Route path="/film-production/casting-calls" element={renderFilmProduction("film", "casting")} />
-            <Route path="/film-production/my-auditions" element={renderFilmProduction("film", "auditions")} />
-            <Route path="/film-production/proposals" element={renderFilmProduction("film", "proposals")} />
-            <Route path="/film-production/proposals/create" element={renderFilmProduction("film", "proposal-form")} />
-            <Route path="/film-production/my-profile" element={renderFilmProduction("film", "my-profile")} />
-            <Route path="/film-production/professionals" element={renderFilmProduction("film", "professionals")} />
-            <Route path="/film-production/professionals/:username" element={renderFilmProduction("film", "professionals")} />
-            <Route path="/filmproduction" element={renderFilmProduction()} />
-            <Route path="/24crafts" element={renderFilmProduction()} />
-            <Route path="/crafts" element={renderFilmProduction()} />
           </>
         );
       })()}
