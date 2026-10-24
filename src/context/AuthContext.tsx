@@ -218,13 +218,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const forgotPassword = async (email: string) => {
-    const res = await apiClient.post("/auth/forgot-password", { email });
+  const forgotPassword = async (identifierOrEmail: string) => {
+    const isEmail = identifierOrEmail.includes("@");
+    const res = await apiClient.post("/auth/forgot-password", {
+      identifier: identifierOrEmail,
+      email: isEmail ? identifierOrEmail : undefined,
+      mobile: !isEmail ? identifierOrEmail : undefined
+    });
     return res.data;
   };
 
-  const resetPassword = async (token: string, newPassword: string) => {
-    await apiClient.post("/auth/reset-password", { token, newPassword });
+  const resetPassword = async (token: string, newPassword: string, identifier?: string) => {
+    await apiClient.post("/auth/reset-password", { token, newPassword, identifier });
   };
 
   const verifyEmail = async (token: string) => {

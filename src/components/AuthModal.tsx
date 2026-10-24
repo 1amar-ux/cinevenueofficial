@@ -41,6 +41,20 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [otpDestination, setOtpDestination] = useState("");
+  const [otpDeliveredCode, setOtpDeliveredCode] = useState("");
+  const [otpChannel, setOtpChannel] = useState<"SMS" | "EMAIL">("EMAIL");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  React.useEffect(() => {
+    let timer: any;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   React.useEffect(() => {
     if (initialMode) {
@@ -196,16 +210,16 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         }
 
         const deliveredOtp = resData?.code || resData?.devCode || resData?.devOtpCode || "";
-        if (deliveredOtp) {
-          setResetCode(deliveredOtp);
-        } else {
-          setResetCode("");
-        }
+        setOtpDeliveredCode(deliveredOtp);
+        setOtpDestination(resData?.destination || identifier);
+        setOtpChannel(resData?.channel || (identifier.includes("@") ? "EMAIL" : "SMS"));
+        setResetCode(deliveredOtp);
         setNewPassword("");
         setConfirmNewPassword("");
+        setResendCooldown(30);
         setSuccessMessage(
           resData?.message ||
-          "A 6-digit verification code has been dispatched to your registered email / mobile. Please check your inbox and enter the code below."
+          `A 6-digit verification code has been dispatched to ${resData?.destination || identifier}. Please enter the code below to reset your password.`
         );
         setMode("reset");
       } catch (err: any) {
@@ -351,17 +365,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
             <h2 className="mt-2 text-2xl font-black text-white">
               {mode === "signin" && "Welcome back"}
               {mode === "signup" && "Create your account"}
-              {mode === "forgot" && "Reset your password"}
-              {mode === "reset" && "Set new password"}
+              {mode === "forgot" && "Forgot Password"}
+              {mode === "reset" && "Verify OTP & Reset Password"}
             </h2>
             {mode === "forgot" && (
               <p className="mt-1 text-xs text-white/60">
-                Enter your registered mobile number or email to receive a reset code.
+                Enter your registered mobile number or email. A 6-digit OTP will be dispatched for verification.
               </p>
             )}
             {mode === "reset" && (
               <p className="mt-1 text-xs text-white/60">
-                Enter the verification code and set your new password.
+                Enter the 6-digit OTP code sent to <span className="text-gold font-semibold">{otpDestination || forgotIdentifier}</span> and set your new password.
               </p>
             )}
           </div>
@@ -514,82 +528,173 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
 
             {/* FORGOT PASSWORD FIELDS */}
             {mode === "forgot" && (
-              <>
-                <div className="relative">
-                  {isNumericPhone(forgotIdentifier) ? (
-                    <Phone className="absolute left-3 top-3.5 h-4 w-4 text-gold/70" />
-                  ) : (
-                    <Mail className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
-                  )}
-                  <input
-                    type="text"
-                    value={forgotIdentifier}
-                    onChange={(e) => {
-                      setForgotIdentifier(e.target.value);
-                      setErrorMessage("");
-                    }}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
-                    placeholder="Mobile Number or Email Address"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {/* RESET PASSWORD FIELDS */}
-            {mode === "reset" && (
-              <>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-3.5 h-4 w-4 text-gold/70" />
-                  <input
-                    type="text"
-                    value={resetCode}
-                    onChange={(e) => {
-                      setResetCode(e.target.value);
-                      setErrorMessage("");
-                    }}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60 font-mono tracking-wider"
-                    placeholder="Enter 6-digit verification code"
-                    maxLength={10}
-                    required
-                  />
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary flex items-center justify-between">
+                    <span>Registered Mobile or Email</span>
+                    {forgotIdentifier && (
+                      <span className="text-[10px] font-mono text-gold lowercase">
+                        {isNumericPhone(forgotIdentifier) ? "Phone Verification (SMS)" : "Email Verification"}
+                      </span>
+                    )}
+                  </label>
+                  <div className="relative">
+                    {isNumericPhone(forgotIdentifier) ? (
+                      <Phone className="absolute left-3 top-3.5 h-4 w-4 text-gold" />
+                    ) : (
+                      <Mail className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                    )}
+                    <input
+                      type="text"
+                      value={forgotIdentifier}
+                      onChange={(e) => {
+                        setForgotIdentifier(e.target.value);
+                        setErrorMessage("");
+                      }}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold"
+                      placeholder="e.g. 9876543210 or user@cinevenue.com"
+                      required
+                    />
+                  </div>
+                  <p className="text-[11px] text-white/40 leading-relaxed">
+                    A 6-digit one-time password (OTP) will be dispatched instantly to your registered mobile number or email address for verification.
+                  </p>
                 </div>
 
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
-                  <input
-                    type={showResetPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
-                    placeholder="New Password (min 6 chars)"
-                    required
-                  />
+                <div className="flex justify-between items-center pt-1 text-xs">
                   <button
                     type="button"
-                    onClick={() => setShowResetPassword((prev) => !prev)}
-                    className="absolute right-3 top-3.5 text-[10px] uppercase tracking-wide text-white/60 hover:text-gold cursor-pointer"
+                    onClick={() => {
+                      setMode("signin");
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-white/60 hover:text-white transition cursor-pointer flex items-center gap-1.5"
                   >
-                    {showResetPassword ? "Hide" : "Show"}
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back to Sign In
                   </button>
                 </div>
+              </div>
+            )}
 
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
-                  <input
-                    type={showResetPassword ? "text" : "password"}
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold/60"
-                    placeholder="Confirm New Password"
-                    required
-                  />
+            {/* RESET PASSWORD / OTP VERIFICATION FIELDS */}
+            {mode === "reset" && (
+              <div className="space-y-3.5">
+                {/* OTP Delivery Alert Banner */}
+                {otpDeliveredCode && (
+                  <div className="p-3.5 rounded-xl bg-gold/10 border border-gold/40 flex items-center justify-between gap-3 animate-fade-in">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-gold flex items-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5" />
+                        Verification Code (OTP) Sent
+                      </span>
+                      <p className="text-xs text-white/90">
+                        OTP for <strong className="text-gold font-mono">{otpDestination || forgotIdentifier}</strong>:
+                        <span className="ml-2 font-mono text-base font-black tracking-widest text-gold bg-black/60 px-2 py-0.5 rounded border border-gold/40">
+                          {otpDeliveredCode}
+                        </span>
+                      </p>
+                    </div>
+                    {resetCode !== otpDeliveredCode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetCode(otpDeliveredCode);
+                          setErrorMessage("");
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-gold text-black text-xs font-bold shrink-0 hover:bg-gold-light cursor-pointer shadow"
+                      >
+                        Auto-Fill OTP
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* 6-Digit OTP Field */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary flex items-center justify-between">
+                    <span>Enter 6-Digit Verification OTP</span>
+                    <span className="text-[10px] font-mono text-gold">Valid for 15 mins</span>
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-3.5 h-4 w-4 text-gold" />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={resetCode}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setResetCode(val);
+                        setErrorMessage("");
+                      }}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-base text-white placeholder:text-white/40 outline-none transition focus:border-gold font-mono tracking-[0.25em] font-bold"
+                      placeholder="• • • • • •"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-end">
+                {/* New Password */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                    <input
+                      type={showResetPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-10 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold"
+                      placeholder="Minimum 6 characters"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword((prev) => !prev)}
+                      className="absolute right-3 top-3.5 text-[10px] uppercase tracking-wide text-white/60 hover:text-gold cursor-pointer"
+                    >
+                      {showResetPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                    <input
+                      type={showResetPassword ? "text" : "password"}
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold"
+                      placeholder="Re-enter new password"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1">
                   <button
                     type="button"
-                    disabled={isLoading}
+                    onClick={() => {
+                      setMode("forgot");
+                      setResetCode("");
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-white/60 hover:text-white transition cursor-pointer flex items-center gap-1"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Change Mobile/Email
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isLoading || resendCooldown > 0}
                     onClick={async () => {
                       const identifier = forgotIdentifier.trim() || form.email.trim();
                       if (!identifier) {
@@ -600,26 +705,33 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                       setErrorMessage("");
                       try {
                         const response = await apiClient.post("/auth/forgot-password", { identifier });
-                        setSuccessMessage(response.data?.message || "A new 6-digit verification code has been dispatched.");
+                        const resData = response.data;
+                        const code = resData?.code || resData?.devCode || "";
+                        if (code) {
+                          setOtpDeliveredCode(code);
+                        }
+                        setOtpDestination(resData?.destination || identifier);
+                        setSuccessMessage(resData?.message || "A new 6-digit verification code has been dispatched.");
+                        setResendCooldown(30);
                       } catch (err: any) {
                         setErrorMessage(err.response?.data?.message || "Failed to resend verification code.");
                       } finally {
                         setIsLoading(false);
                       }
                     }}
-                    className="text-[11px] text-gold/80 hover:text-gold transition cursor-pointer"
+                    className="text-gold hover:text-gold-light transition cursor-pointer disabled:opacity-50"
                   >
-                    Didn't receive code? Resend OTP
+                    {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Didn't receive code? Resend OTP"}
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
             {/* ACTION BUTTON */}
             <button
               type="submit"
               disabled={isLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-gold-light disabled:opacity-60 cursor-pointer"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-gold-light disabled:opacity-60 cursor-pointer shadow-lg shadow-gold/20"
             >
               {isLoading ? (
                 "Please wait..."
@@ -628,9 +740,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               ) : mode === "signup" ? (
                 <>Create Account <ArrowRight className="h-4 w-4" /></>
               ) : mode === "forgot" ? (
-                <>Get Reset Code <ArrowRight className="h-4 w-4" /></>
+                <>Send Verification OTP <ArrowRight className="h-4 w-4" /></>
               ) : (
-                <>Update Password <CheckCircle2 className="h-4 w-4" /></>
+                <>Verify OTP & Reset Password <CheckCircle2 className="h-4 w-4" /></>
               )}
             </button>
 

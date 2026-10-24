@@ -1328,11 +1328,19 @@ export class AuthService {
     const cleanEmail = rawInput.toLowerCase();
     const digitsOnly = rawInput.replace(/\D/g, "");
     const phone10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+    const isMobile = digitsOnly.length >= 10 && !cleanEmail.includes("@");
+
+    if (!rawInput) {
+      throw new ValidationError("Please provide your registered mobile number or email address.");
+    }
 
     // 1. Enforce Rate Limiting (max 4 requests per 5 minutes per identifier)
     checkResetRequestRateLimit(rawInput);
 
-    const orConditions: any[] = [{ email: cleanEmail }];
+    const orConditions: any[] = [];
+    if (cleanEmail.includes("@")) {
+      orConditions.push({ email: cleanEmail });
+    }
     if (phone10.length >= 10) {
       orConditions.push(
         { mobile: rawInput },
@@ -1341,39 +1349,42 @@ export class AuthService {
         { mobile: `91${phone10}` },
         { mobile: `0${phone10}` }
       );
-    } else if (rawInput.length > 0) {
+    } else if (rawInput.length > 0 && !cleanEmail.includes("@")) {
       orConditions.push({ mobile: rawInput });
     }
 
     try {
       let user: any = null;
-      try {
-        user = await prisma.user.findFirst({
-          where: { OR: orConditions }
-        });
-      } catch (dbErr: any) {
-        logger.warn(`[Auth] Database query notice during password reset: ${dbErr.message}`);
+      if (orConditions.length > 0) {
+        try {
+          user = await prisma.user.findFirst({
+            where: { OR: orConditions }
+          });
+        } catch (dbErr: any) {
+          logger.warn(`[Auth] Database query notice during password reset: ${dbErr.message}`);
+        }
       }
 
       // Check resilient fallback memory users
-      if (!user && cleanEmail.includes("@")) {
+      if (!user) {
         for (const rUser of resilientUsers.values()) {
-          if (rUser.email?.toLowerCase() === cleanEmail) {
+          if (cleanEmail.includes("@") && rUser.email?.toLowerCase() === cleanEmail) {
             user = rUser;
             break;
+          }
+          if (phone10.length >= 10 && rUser.mobile) {
+            const rDigits = rUser.mobile.replace(/\D/g, "");
+            if (rDigits.endsWith(phone10)) {
+              user = rUser;
+              break;
+            }
           }
         }
       }
 
-      // If user provided a valid email format, guarantee email dispatch
+      // Determine target email and mobile
       const targetEmail = user?.email || (cleanEmail.includes("@") ? cleanEmail : null);
-
-      if (!user && !targetEmail) {
-        return {
-          success: true,
-          message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
-        };
-      }
+      const targetMobile = user?.mobile || (isMobile ? (phone10.length === 10 ? `+91${phone10}` : rawInput) : null);
 
       // 3. Cryptographically secure short-lived OTP code
       const rawToken = randomBytes(32).toString("hex");
@@ -1392,6 +1403,8 @@ export class AuthService {
         tokenHash: otpHash,
         userId: user?.id,
         email: targetEmail || undefined,
+        mobile: targetMobile || undefined,
+        identifier: rawInput,
         expiresAt: expiresAtIso
       });
       resilientResetTokens.set(tokenHash, {
@@ -1399,6 +1412,8 @@ export class AuthService {
         tokenHash,
         userId: user?.id,
         email: targetEmail || undefined,
+        mobile: targetMobile || undefined,
+        identifier: rawInput,
         expiresAt: expiresAtIso
       });
 
@@ -1435,9 +1450,8 @@ export class AuthService {
           logger.warn(`[Auth] Outbound OTP dispatch notice: ${mailErr.message}`);
         }
 
-        // 5. Also trigger Supabase Auth recovery email & link if Supabase is active
+        // Also trigger Supabase Auth recovery email & link if Supabase is active
         if (supabaseAdmin) {
-          // Ensure user is present in Supabase Auth so recovery succeeds
           try {
             await supabaseAdmin.auth.admin.createUser({
               email: targetEmail,
@@ -1458,6 +1472,7 @@ export class AuthService {
                 tokenHash: supaOtpHash,
                 userId: user?.id,
                 email: targetEmail,
+                mobile: targetMobile || undefined,
                 expiresAt: expiresAtIso
               });
             }
@@ -1465,7 +1480,6 @@ export class AuthService {
             logger.debug(`[Auth] Supabase recovery link notice: ${supaErr?.message || supaErr}`);
           }
 
-          // Trigger native email via Supabase recovery mailer
           try {
             const supaEmailRes = await supabaseAdmin.auth.resetPasswordForEmail(targetEmail, {
               redirectTo: `${env.FRONTEND_URL || "http://localhost:3000"}/auth/callback`
@@ -1479,28 +1493,59 @@ export class AuthService {
         }
       }
 
-      // 6. Dispatch OTP via SMS if user has mobile
-      if (user?.mobile) {
-        logger.info(`[NotificationService:SMS] Password reset verification code dispatched to registered mobile: ${maskMobile(user.mobile)}`);
+      // 5. Dispatch OTP via SMS if user provided or has mobile
+      let smsResult: any = { liveSent: false };
+      if (targetMobile || isMobile) {
+        const destPhone = targetMobile || rawInput;
+        logger.info(`[NotificationService:SMS] Password reset verification code [${otpCode}] dispatched to registered mobile: ${maskMobile(destPhone)}`);
+        
+        // Fast2SMS gateway if configured
+        const fast2SmsKey = process.env.FAST2SMS_API_KEY || (process.env as any).FAST2SMS_KEY;
+        if (fast2SmsKey && phone10.length === 10) {
+          try {
+            const fRes = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+              method: "POST",
+              headers: {
+                "authorization": fast2SmsKey,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                route: "otp",
+                variables_values: otpCode,
+                numbers: phone10
+              })
+            });
+            if (fRes.ok) {
+              smsResult.liveSent = true;
+              logger.info(`[SMS] Fast2SMS OTP successfully dispatched to ${maskMobile(destPhone)}`);
+            }
+          } catch (smsErr: any) {
+            logger.warn(`[SMS] Fast2SMS API notice: ${smsErr.message}`);
+          }
+        }
       }
 
-      logger.info(`[Auth] Password reset verification code dispatched for account: ${maskEmail(targetEmail || "")}`);
+      const destinationMasked = isMobile 
+        ? maskMobile(targetMobile || rawInput)
+        : maskEmail(targetEmail || cleanEmail);
+      const isLiveDelivered = Boolean(emailResult?.liveSent || smsResult?.liveSent);
 
-      const isLiveDelivered = Boolean(emailResult?.liveSent);
       return {
         success: true,
-        message: isLiveDelivered
-          ? "A 6-digit verification code has been dispatched to your email address. Please check your inbox (and spam folder) and enter the code below."
-          : `A 6-digit verification code (${otpCode}) has been dispatched. Please enter the code below to reset your password.`,
+        message: isMobile
+          ? `A 6-digit verification code has been dispatched to your mobile number (${destinationMasked}). Please enter the code below to reset your password.`
+          : `A 6-digit verification code has been dispatched to your email (${destinationMasked}). Please check your inbox and enter the code below.`,
         liveSent: isLiveDelivered,
         code: otpCode,
-        devCode: otpCode
+        devCode: otpCode,
+        destination: destinationMasked,
+        channel: isMobile ? "SMS" : "EMAIL"
       };
     } catch (err: any) {
       if (isDbConnectionError(err)) {
         return {
           success: true,
-          message: "If an account matches that email address or phone number, a 6-digit verification code has been dispatched. Please check your messages and enter the code below."
+          message: "A 6-digit verification code has been dispatched to your registered address. Please enter the code below."
         };
       }
       throw err;
@@ -1576,10 +1621,29 @@ export class AuthService {
       } catch (uErr: any) {
         logger.warn(`[Auth] Database password update notice: ${uErr.message}`);
       }
-    } else if (userEmail) {
+    } else if (userEmail && userEmail.includes("@")) {
       try {
         await prisma.user.updateMany({
           where: { email: { equals: userEmail, mode: "insensitive" } },
+          data: { passwordHash, isVerified: true }
+        });
+      } catch {}
+    }
+
+    const userMobile = resetRecord.mobile || (!identifier?.includes("@") ? identifier : null);
+    if (userMobile) {
+      const mobDigits = userMobile.replace(/\D/g, "");
+      const mob10 = mobDigits.length >= 10 ? mobDigits.slice(-10) : mobDigits;
+      try {
+        await prisma.user.updateMany({
+          where: {
+            OR: [
+              { mobile: userMobile },
+              { mobile: mob10 },
+              { mobile: `+91${mob10}` },
+              { mobile: `91${mob10}` }
+            ]
+          },
           data: { passwordHash, isVerified: true }
         });
       } catch {}
@@ -1590,6 +1654,21 @@ export class AuthService {
       const rUser = resilientUsers.get(resetRecord.userId)!;
       rUser.passwordHash = passwordHash;
       rUser.isVerified = true;
+    } else {
+      for (const rUser of resilientUsers.values()) {
+        if (userEmail && userEmail.includes("@") && rUser.email?.toLowerCase() === userEmail.toLowerCase()) {
+          rUser.passwordHash = passwordHash;
+          rUser.isVerified = true;
+        }
+        if (userMobile && rUser.mobile) {
+          const rDigits = rUser.mobile.replace(/\D/g, "");
+          const mDigits = userMobile.replace(/\D/g, "");
+          if (mDigits.length >= 10 && rDigits.endsWith(mDigits.slice(-10))) {
+            rUser.passwordHash = passwordHash;
+            rUser.isVerified = true;
+          }
+        }
+      }
     }
 
     // 12. Invalidate reset tokens (Single-Use Guarantee)

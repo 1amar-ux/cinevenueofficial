@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppSettings } from "./context/AppSettingsContext";
 import Navbar from "./components/Navbar";
 import Featured from "./components/Featured";
@@ -648,9 +648,11 @@ export default function App() {
     setAuthOpen(true);
   };
 
+  const location = useLocation();
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(location.search || window.location.search);
       const authParam = params.get("auth");
       if (authParam === "signin" || authParam === "login" || authParam === "signup" || authParam === "forgot") {
         setAuthMode(authParam === "signup" ? "signup" : authParam === "forgot" ? "forgot" : "signin");
@@ -666,7 +668,7 @@ export default function App() {
         localStorage.setItem("cine_selected_city", cityParam);
       }
     }
-  }, []);
+  }, [location.search]);
   const [locationOpen, setLocationOpen] = useState(false);
   const [bookingMovieTitle, setBookingMovieTitle] = useState("");
   const [bookingTimeSlot, setBookingTimeSlot] = useState("7:30 PM");
