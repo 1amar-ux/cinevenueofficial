@@ -44,9 +44,24 @@ function generateProposalReferenceId(isMovieProduction: boolean = false): string
 
 function sanitizeProposalForCustomer(proposal: any) {
   if (!proposal) return null;
-  const { internalNotes, assignedTo, auditLogs, ...rest } = proposal;
+  const { assignedTo, ...rest } = proposal;
+  const reviewNotes = (proposal.internalNotes || []).map((n: any) => ({
+    id: n.id,
+    author: n.author || "Directorate Reviewer",
+    authorRole: n.authorRole || "CineVenue Directorate",
+    note: n.note,
+    createdAt: n.createdAt
+  }));
+  const reviewHistory = (proposal.auditLogs || []).map((l: any) => ({
+    id: l.id,
+    action: l.action,
+    timestamp: l.timestamp,
+    details: l.details
+  }));
   return {
     ...rest,
+    reviewNotes,
+    reviewHistory,
     hasQuotation: Boolean(proposal.quotation),
     quoteStatus: proposal.quotation ? proposal.quotation.status : "Pending Quote"
   };
@@ -228,14 +243,13 @@ router.post("/proposals", (req: Request, res: Response) => {
 router.get("/proposals/my", (req: Request, res: Response) => {
   try {
     const { email } = req.query;
-    if (!email || typeof email !== "string") {
-      return res.status(400).json({ success: false, message: "Email query parameter is required." });
+    let list = inMemoryProposals;
+    if (email && typeof email === "string" && email.trim()) {
+      const emailLower = email.toLowerCase().trim();
+      list = inMemoryProposals.filter(p => p.customerId?.toLowerCase() === emailLower || p.email?.toLowerCase() === emailLower);
     }
 
-    const emailLower = email.toLowerCase().trim();
-    const myProposals = inMemoryProposals
-      .filter(p => p.customerId?.toLowerCase() === emailLower || p.email?.toLowerCase() === emailLower)
-      .map(sanitizeProposalForCustomer);
+    const myProposals = list.map(sanitizeProposalForCustomer);
 
     return res.json({
       success: true,

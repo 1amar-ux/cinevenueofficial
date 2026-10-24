@@ -32,7 +32,14 @@ import {
   Headphones,
   FileText,
   ShieldCheck,
-  Crosshair
+  Crosshair,
+  Clapperboard,
+  Search,
+  RefreshCw,
+  Clock,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import CineVenueLogo from "../components/CineVenueLogo";
 import { useTheme, ThemeMode } from "../context/ThemeContext";
@@ -84,19 +91,71 @@ export default function SettingsPage({
     | "privacy"
     | "support"
     | "terms"
-    | "about";
+    | "about"
+    | "proposals";
 
   // Active Section / Tab (null displays the master settings menu matching the user's reference format)
   const [activeSection, setActiveSection] = useState<SettingsSectionId | null>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const sec = params.get("section") || params.get("tab");
-      if (sec && ["account", "notifications", "location", "appearance", "privacy", "support", "terms", "about"].includes(sec)) {
+      if (sec && ["account", "notifications", "location", "appearance", "privacy", "support", "terms", "about", "proposals"].includes(sec)) {
         return sec as SettingsSectionId;
       }
     } catch {}
     return null;
   });
+
+  // Submitted Proposals & Directorate Reviews State
+  const [submittedProposals, setSubmittedProposals] = useState<any[]>([]);
+  const [isLoadingProposals, setIsLoadingProposals] = useState<boolean>(false);
+  const [proposalCategoryFilter, setProposalCategoryFilter] = useState<"ALL" | "MOVIE_PRODUCTION" | "EVENT">("ALL");
+  const [proposalStatusFilter, setProposalStatusFilter] = useState<string>("ALL");
+  const [proposalSearchQuery, setProposalSearchQuery] = useState<string>("");
+  const [expandedProposalId, setExpandedProposalId] = useState<string | null>(null);
+  const [copiedProposalId, setCopiedProposalId] = useState<string | null>(null);
+
+  const fetchCustomerProposals = async () => {
+    setIsLoadingProposals(true);
+    let combined: any[] = [];
+    try {
+      const stored = localStorage.getItem("cinevenue_submitted_proposals");
+      if (stored) {
+        combined = JSON.parse(stored);
+      }
+    } catch {}
+
+    try {
+      const currentEmail = user?.email || localStorage.getItem("cine_user_email") || "";
+      const url = currentEmail ? `/api/proposals/my?email=${encodeURIComponent(currentEmail)}` : `/api/proposals/my`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.proposals)) {
+          const apiIds = new Set(data.proposals.map((p: any) => p.proposalId));
+          const list = [...data.proposals];
+          combined.forEach((cp: any) => {
+            if (!apiIds.has(cp.proposalId)) {
+              list.push(cp);
+            }
+          });
+          combined = list;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch customer proposals:", err);
+    }
+
+    setSubmittedProposals(combined);
+    setIsLoadingProposals(false);
+  };
+
+  useEffect(() => {
+    fetchCustomerProposals();
+    const handleSync = () => fetchCustomerProposals();
+    window.addEventListener("cinevenue-proposals-updated", handleSync);
+    return () => window.removeEventListener("cinevenue-proposals-updated", handleSync);
+  }, [user]);
 
   // City state
   const [currentCity, setCurrentCity] = useState<string>(() => {
@@ -506,6 +565,46 @@ export default function SettingsPage({
                 </button>
               </div>
 
+              <div className="border-t border-white/5" />
+
+              {/* GROUP 4: PROPOSALS & FILM PROJECTS */}
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#D4AF37] block px-1 mb-1">
+                  Proposals & Film Projects
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveSection("proposals")}
+                  className="w-full text-left p-3 -mx-1 sm:mx-0 rounded-2xl hover:bg-white/[0.04] active:bg-white/[0.07] transition-all flex items-center justify-between gap-3 group cursor-pointer border border-[#D4AF37]/30 bg-[#D4AF37]/[0.03]"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="relative">
+                      <Clapperboard className="w-5 h-5 text-[#D4AF37] shrink-0" />
+                      {submittedProposals.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-black" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#D4AF37] transition-colors truncate">
+                          Submitted Proposals & Reviews
+                        </h3>
+                        {submittedProposals.length > 0 && (
+                          <span className="text-[10px] font-mono font-bold bg-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded-full border border-[#D4AF37]/30">
+                            {submittedProposals.length}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-text-secondary truncate">
+                        Track review status, Directorate feedback & decisions
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/30 group-hover:text-[#D4AF37] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+              </div>
+
             </div>
           </div>
         ) : (
@@ -529,7 +628,8 @@ export default function SettingsPage({
                  activeSection === "appearance" ? "Appearance" :
                  activeSection === "privacy" ? "Privacy & Security" :
                  activeSection === "support" ? "Help & Support" :
-                 activeSection === "terms" ? "Terms & Policies" : "About CineVenue"}
+                 activeSection === "terms" ? "Terms & Policies" :
+                 activeSection === "proposals" ? "Submitted Proposals & Directorate Reviews" : "About CineVenue"}
               </span>
             </div>
 
@@ -1254,6 +1354,406 @@ export default function SettingsPage({
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 10. SUBMITTED PROPOSALS & DIRECTORATE REVIEWS */}
+          {activeSection === "proposals" && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37]">
+                      <Clapperboard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        Submitted Proposals & Reviews
+                      </h2>
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        Track evaluation status, Directorate board notes, and review timeline in real-time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={fetchCustomerProposals}
+                    disabled={isLoadingProposals}
+                    title="Refresh proposals list"
+                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isLoadingProposals ? "animate-spin text-[#D4AF37]" : ""}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/movie-production")}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black text-xs font-bold shadow-lg shadow-[#D4AF37]/20 hover:opacity-95 transition-all cursor-pointer"
+                  >
+                    <span>+ Submit New Proposal</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Notice Banner */}
+              <div className="p-3.5 rounded-2xl bg-[#D4AF37]/5 border border-[#D4AF37]/20 flex items-start gap-3">
+                <Info className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
+                <div className="text-xs text-text-secondary leading-relaxed">
+                  <span className="text-white font-semibold">Directorate Evaluation Desk:</span> All movie productions and event proposals submitted on CineVenue are directly delivered to the executive administration panel. Any status change, review feedback notes, or decision will be instantly updated here.
+                </div>
+              </div>
+
+              {/* Filters & Search */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={proposalSearchQuery}
+                    onChange={(e) => setProposalSearchQuery(e.target.value)}
+                    placeholder="Search by Proposal ID (CV-FILM-...) or Project Title..."
+                    className="w-full bg-[#18181C] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-text-muted focus:outline-none focus:border-[#D4AF37]"
+                  />
+                  {proposalSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setProposalSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                  <div className="inline-flex rounded-xl bg-white/5 p-1 border border-white/10 shrink-0">
+                    {(["ALL", "MOVIE_PRODUCTION", "EVENT"] as const).map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setProposalCategoryFilter(cat)}
+                        className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          proposalCategoryFilter === cat
+                            ? "bg-[#D4AF37] text-black shadow"
+                            : "text-text-secondary hover:text-white"
+                        }`}
+                      >
+                        {cat === "ALL" ? "All" : cat === "MOVIE_PRODUCTION" ? "Film" : "Events"}
+                      </button>
+                    ))}
+                  </div>
+
+                  <select
+                    value={proposalStatusFilter}
+                    onChange={(e) => setProposalStatusFilter(e.target.value)}
+                    className="bg-[#18181C] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#D4AF37] cursor-pointer"
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="NEW">New / Submitted</option>
+                    <option value="UNDER REVIEW">Under Review</option>
+                    <option value="CONTACTED">Contacted</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Declined</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Proposals List */}
+              {isLoadingProposals ? (
+                <div className="space-y-3 py-6">
+                  {[1, 2].map((n) => (
+                    <div key={n} className="h-32 rounded-2xl bg-white/[0.02] border border-white/5 animate-pulse" />
+                  ))}
+                </div>
+              ) : (() => {
+                const filtered = submittedProposals.filter((p: any) => {
+                  if (proposalCategoryFilter !== "ALL" && p.category !== proposalCategoryFilter) {
+                    return false;
+                  }
+                  if (proposalStatusFilter !== "ALL") {
+                    const normStatus = (p.status || "NEW").toUpperCase().replace("_", " ");
+                    if (normStatus !== proposalStatusFilter) return false;
+                  }
+                  if (proposalSearchQuery.trim()) {
+                    const q = proposalSearchQuery.toLowerCase();
+                    const idMatch = (p.proposalId || "").toLowerCase().includes(q);
+                    const titleMatch = (p.projectTitle || p.eventTitle || "").toLowerCase().includes(q);
+                    const nameMatch = (p.leadProducer || p.directorName || p.contactName || "").toLowerCase().includes(q);
+                    if (!idMatch && !titleMatch && !nameMatch) return false;
+                  }
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-8 sm:p-12 text-center rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+                      <div className="w-14 h-14 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center mx-auto text-[#D4AF37]">
+                        <Clapperboard className="w-7 h-7" />
+                      </div>
+                      <div className="max-w-md mx-auto space-y-1">
+                        <h3 className="text-base font-bold text-white">
+                          {submittedProposals.length === 0 ? "No Proposals Submitted Yet" : "No Matching Proposals Found"}
+                        </h3>
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          {submittedProposals.length === 0
+                            ? "Pitch your film project, screenplay, or event to CineVenue's Directorate. Your submission will be delivered straight to our administration panel, and evaluation reviews will display here."
+                            : "Try adjusting your search query or category filters to find your submitted proposal."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/movie-production")}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#F3E5AB] text-black text-xs font-bold transition-all cursor-pointer shadow-lg shadow-[#D4AF37]/20"
+                      >
+                        <Clapperboard className="w-4 h-4" />
+                        <span>Launch Movie Proposal Form</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {filtered.map((p: any) => {
+                      const isExpanded = expandedProposalId === p.proposalId;
+                      const status = (p.status || "NEW").toUpperCase().replace("_", " ");
+                      
+                      const getStatusBadge = (st: string) => {
+                        switch (st) {
+                          case "APPROVED":
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                APPROVED
+                              </span>
+                            );
+                          case "UNDER REVIEW":
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                UNDER REVIEW
+                              </span>
+                            );
+                          case "CONTACTED":
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                                CONTACTED
+                              </span>
+                            );
+                          case "REJECTED":
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                DECLINED
+                              </span>
+                            );
+                          case "COMPLETED":
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                                COMPLETED
+                              </span>
+                            );
+                          default:
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                                SUBMITTED / NEW
+                              </span>
+                            );
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={p.proposalId || p.id}
+                          className="bg-[#18181C] border border-white/10 hover:border-[#D4AF37]/40 rounded-2xl p-4 sm:p-5 transition-all space-y-4"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-mono font-extrabold px-2 py-0.5 rounded bg-white/5 text-[#D4AF37] border border-white/10">
+                                  {p.category === "EVENT" ? "EVENT PROPOSAL" : "MOVIE PRODUCTION"}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-mono text-white/70">
+                                    Ref: <span className="text-white font-bold">{p.proposalId}</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard?.writeText(p.proposalId);
+                                      setCopiedProposalId(p.proposalId);
+                                      setTimeout(() => setCopiedProposalId(null), 2000);
+                                    }}
+                                    className="text-text-muted hover:text-[#D4AF37] transition-colors p-1 cursor-pointer"
+                                    title="Copy reference ID"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                  {copiedProposalId === p.proposalId && (
+                                    <span className="text-[10px] text-emerald-400 font-mono">Copied!</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <h3 className="text-base sm:text-lg font-bold text-white truncate">
+                                {p.projectTitle || p.eventTitle || "Untitled Proposal"}
+                              </h3>
+
+                              <div className="flex items-center gap-3 text-xs text-text-secondary flex-wrap">
+                                {p.genre && (
+                                  <span>Genre: <span className="text-white font-medium">{p.genre}</span></span>
+                                )}
+                                {p.estimatedBudget && (
+                                  <span>Budget: <span className="text-white font-medium">{p.estimatedBudget}</span></span>
+                                )}
+                                {p.submittedAt && (
+                                  <span className="flex items-center gap-1 text-text-muted">
+                                    <Clock className="w-3 h-3" />
+                                    {new Date(p.submittedAt).toLocaleDateString("en-IN", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric"
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 self-start sm:self-auto">
+                              {getStatusBadge(status)}
+                            </div>
+                          </div>
+
+                          {/* Directorate Review Feedback Box */}
+                          <div className={`p-4 rounded-xl border ${
+                            p.reviewNotes
+                              ? "bg-gradient-to-r from-[#D4AF37]/10 to-transparent border-[#D4AF37]/40"
+                              : "bg-white/[0.02] border-white/5"
+                          }`}>
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5">
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                Directorate Review Notes & Status
+                              </span>
+                              <span className="text-[10px] font-mono text-text-muted">
+                                {p.reviewNotes ? "Feedback Logged" : "Pending Review"}
+                              </span>
+                            </div>
+
+                            {p.reviewNotes ? (
+                              <div className="space-y-1">
+                                <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-sans italic bg-black/30 p-3 rounded-lg border border-white/5">
+                                  "{p.reviewNotes}"
+                                </p>
+                                <p className="text-[10px] text-text-muted text-right font-mono">
+                                  Updated by Directorate Board
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-text-secondary leading-relaxed">
+                                Your proposal has been dispatched to the CineVenue Executive Panel. Once our creative director and executive producer review the synopsis, budget, and pitch deck, detailed feedback and next steps will be published here.
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Review Timeline History */}
+                          {p.reviewHistory && Array.isArray(p.reviewHistory) && p.reviewHistory.length > 0 && (
+                            <div className="space-y-2 pt-2 border-t border-white/5">
+                              <span className="text-[10px] font-mono uppercase font-bold text-text-muted block">
+                                Audit Timeline
+                              </span>
+                              <div className="space-y-1.5">
+                                {p.reviewHistory.map((item: any, idx: number) => (
+                                  <div key={idx} className="flex items-start gap-2.5 text-xs text-text-secondary">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] mt-1.5 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-white font-medium">{item.action || item.status}</span>
+                                      {item.note && <span className="text-text-muted"> — {item.note}</span>}
+                                      {item.timestamp && (
+                                        <span className="text-[10px] text-text-muted block font-mono">
+                                          {new Date(item.timestamp).toLocaleString("en-IN")}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Toggle Expanded Details */}
+                          <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedProposalId(isExpanded ? null : p.proposalId)}
+                              className="text-xs font-bold text-[#D4AF37] hover:text-[#F3E5AB] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <span>{isExpanded ? "Hide Details" : "View Full Proposal Summary"}</span>
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+
+                            <span className="text-[10px] font-mono text-text-muted">
+                              Deliverable: Directorate Executive Panel
+                            </span>
+                          </div>
+
+                          {/* Expanded Full Info */}
+                          {isExpanded && (
+                            <div className="pt-3 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs animate-fade-in bg-black/20 p-3 rounded-xl">
+                              {p.synopsis && (
+                                <div className="sm:col-span-2 space-y-1">
+                                  <span className="text-[10px] uppercase font-bold text-text-muted">Story Synopsis / Logline</span>
+                                  <p className="text-white/80 leading-relaxed bg-[#121215] p-2.5 rounded-lg border border-white/5">
+                                    {p.synopsis}
+                                  </p>
+                                </div>
+                              )}
+                              {p.leadProducer && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-text-muted block">Lead Producer</span>
+                                  <span className="text-white font-medium">{p.leadProducer}</span>
+                                </div>
+                              )}
+                              {p.directorName && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-text-muted block">Director</span>
+                                  <span className="text-white font-medium">{p.directorName}</span>
+                                </div>
+                              )}
+                              {p.contactEmail && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-text-muted block">Contact Email</span>
+                                  <span className="text-white font-medium">{p.contactEmail}</span>
+                                </div>
+                              )}
+                              {p.contactPhone && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-text-muted block">Contact Phone</span>
+                                  <span className="text-white font-medium">{p.contactPhone}</span>
+                                </div>
+                              )}
+                              {p.technicalRequirements && (
+                                <div className="sm:col-span-2 space-y-1">
+                                  <span className="text-[10px] uppercase font-bold text-text-muted">Technical / Craft Requirements</span>
+                                  <p className="text-white/80 leading-relaxed bg-[#121215] p-2.5 rounded-lg border border-white/5">
+                                    {p.technicalRequirements}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -378,9 +378,17 @@ export const MovieProductionProposalForm: React.FC<MovieProductionProposalFormPr
 
       setSubmittedProposal(confirmedProposal);
 
-      // Trigger update event for listeners
+      // Save to local user proposals registry for Settings and live side preview
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('cinevenue-proposals-updated'));
+        try {
+          const stored = localStorage.getItem('cinevenue_submitted_proposals');
+          const list: Proposal[] = stored ? JSON.parse(stored) : [];
+          const updated = [confirmedProposal, ...list.filter(p => p.proposalId !== confirmedProposal.proposalId)];
+          localStorage.setItem('cinevenue_submitted_proposals', JSON.stringify(updated));
+        } catch (e) {
+          console.warn("Could not save to localStorage:", e);
+        }
+        window.dispatchEvent(new CustomEvent('cinevenue-proposals-updated', { detail: confirmedProposal }));
       }
 
       if (onSuccess) {
@@ -482,21 +490,29 @@ export const MovieProductionProposalForm: React.FC<MovieProductionProposalFormPr
           </div>
         </div>
 
-        {/* Next Steps Advice */}
-        <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 max-w-xl mx-auto text-left text-xs text-white/70 space-y-2 mb-8">
-          <div className="font-bold text-gold flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Next Steps in Production Evaluation</span>
+        {/* Notice: Review status in Settings */}
+        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 sm:p-5 max-w-xl mx-auto text-left text-xs space-y-2 mb-8">
+          <div className="font-bold text-amber-300 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>-- Your submitted proposal forms reviews status will be displayed in settings</span>
           </div>
-          <ul className="list-disc list-inside space-y-1 text-white/60">
-            <li>Our Directorate will review your story concept and requirements within 24-48 business hours.</li>
-            <li>We will connect with you via {submittedProposal.contactMethod || 'WhatsApp / Email'} to discuss execution feasibility.</li>
-            <li>Keep your reference ID handy for all future inquiries.</li>
-          </ul>
+          <p className="text-white/70 text-[11px] leading-relaxed">
+            You can monitor real-time review progress, Directorate feedback notes, and status changes anytime from your CineVenue Account Settings.
+          </p>
         </div>
 
         {/* Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = '/settings?section=proposals';
+            }}
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold text-xs uppercase tracking-wider shadow-lg hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2 border-0"
+          >
+            <span>Track Review in Settings</span>
+            <ChevronRight className="w-4 h-4 text-black" />
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -507,7 +523,7 @@ export const MovieProductionProposalForm: React.FC<MovieProductionProposalFormPr
               setAttachments([]);
               setConsentAgreed(false);
             }}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider border border-white/15 transition-all cursor-pointer"
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider border border-white/15 transition-all cursor-pointer"
           >
             Submit Another Proposal
           </button>
@@ -516,10 +532,9 @@ export const MovieProductionProposalForm: React.FC<MovieProductionProposalFormPr
             onClick={() => {
               window.location.href = '/';
             }}
-            className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] text-black font-extrabold text-xs uppercase tracking-wider shadow-lg hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold text-xs uppercase tracking-wider border border-white/10 transition-all cursor-pointer"
           >
-            <span>Return to CineVenue Home</span>
-            <ChevronRight className="w-4 h-4" />
+            Return to Home
           </button>
         </div>
       </div>
