@@ -2454,7 +2454,7 @@ export default function AdminPanel({
 
         {/* SIDEBAR NAVIGATION PANEL */}
         <div className={`
-          w-64 bg-white dark:bg-[#0F0F11] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between z-40 transition-all duration-300
+          w-72 lg:w-80 bg-white dark:bg-[#0F0F11] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between z-40 transition-all duration-300
           absolute inset-y-0 left-0 transform md:relative md:translate-x-0 md:flex h-full shrink-0
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `} id="admin-sidebar">
@@ -2542,18 +2542,18 @@ export default function AdminPanel({
                             : "text-text-secondary hover:text-text-primary hover:bg-white/[0.03] bg-transparent"
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-1 text-left">
                           <GroupIcon
                             className={`w-3.5 h-3.5 shrink-0 ${
                               hasActiveChild ? "text-gold" : "text-text-muted"
                             }`}
                           />
-                          <span className="truncate text-[10.5px] font-bold uppercase tracking-wider">
+                          <span className="text-[11px] font-bold uppercase tracking-wider leading-snug break-words">
                             <span className="text-text-muted/60 font-mono mr-1">{group.letter}.</span>
                             {group.title}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                        <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
                           <span className="text-[9px] font-mono text-text-muted/70 px-1 py-0.2 rounded bg-white/5">
                             {matchingItems.length}
                           </span>
@@ -2585,13 +2585,13 @@ export default function AdminPanel({
                                     : "text-text-secondary hover:text-text-primary hover:bg-white/[0.03] bg-transparent"
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5 truncate">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
                                   <ItemIcon
                                     className={`w-3.5 h-3.5 shrink-0 ${
                                       isActive ? "text-gold" : "text-text-muted"
                                     }`}
                                   />
-                                  <span className="truncate">{item.label}</span>
+                                  <span className="text-xs leading-snug break-words">{item.label}</span>
                                 </div>
                                 {item.badge && (
                                   <div className="shrink-0 ml-2">{item.badge}</div>
@@ -2632,9 +2632,9 @@ export default function AdminPanel({
             {/* User Logged in Profile footer */}
             <div className="p-4 border-t border-white/10 bg-black/20 shrink-0">
               <div className="flex items-center justify-between gap-3 text-xs">
-                <div className="truncate text-left">
+                <div className="text-left min-w-0 flex-1">
                   <span className="text-[9px] text-text-muted font-bold block uppercase tracking-wider">SECURITY CLEARANCE</span>
-                  <span className="text-text-primary font-bold truncate block max-w-[150px]">
+                  <span className="text-text-primary font-bold block break-words">
                     {isTheatreAdmin && assignedTheatre ? assignedTheatre.name : "Authorized Administrator"}
                   </span>
                 </div>
