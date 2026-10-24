@@ -1450,7 +1450,7 @@ export class AuthService {
           logger.warn(`[Auth] Outbound OTP dispatch notice: ${mailErr.message}`);
         }
 
-        // Also trigger Supabase Auth recovery email & link if Supabase is active
+        // Register token with Supabase Auth recovery if Supabase is active (silent link generation without Supabase email)
         if (supabaseAdmin) {
           try {
             await supabaseAdmin.auth.admin.createUser({
@@ -1479,17 +1479,6 @@ export class AuthService {
           } catch (supaErr: any) {
             logger.debug(`[Auth] Supabase recovery link notice: ${supaErr?.message || supaErr}`);
           }
-
-          try {
-            const supaEmailRes = await supabaseAdmin.auth.resetPasswordForEmail(targetEmail, {
-              redirectTo: `${env.FRONTEND_URL || "http://localhost:3000"}/auth/callback`
-            });
-            if (!supaEmailRes.error) {
-              emailResult.liveSent = true;
-            }
-          } catch (e: any) {
-            logger.debug(`[Auth] Supabase resetPasswordForEmail notice: ${e?.message || e}`);
-          }
         }
       }
 
@@ -1497,7 +1486,7 @@ export class AuthService {
       let smsResult: any = { liveSent: false };
       if (targetMobile || isMobile) {
         const destPhone = targetMobile || rawInput;
-        logger.info(`[NotificationService:SMS] Password reset verification code [${otpCode}] dispatched to registered mobile: ${maskMobile(destPhone)}`);
+        logger.info(`[CineVenue:SMS] Password reset verification code [${otpCode}] dispatched to registered mobile: ${maskMobile(destPhone)}`);
         
         // Fast2SMS gateway if configured
         const fast2SmsKey = process.env.FAST2SMS_API_KEY || (process.env as any).FAST2SMS_KEY;
@@ -1510,17 +1499,17 @@ export class AuthService {
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                route: "otp",
-                variables_values: otpCode,
+                route: "q",
+                message: `CineVenue: Your verification OTP is ${otpCode}. Valid for 15 minutes. Do not share with anyone.`,
                 numbers: phone10
               })
             });
             if (fRes.ok) {
               smsResult.liveSent = true;
-              logger.info(`[SMS] Fast2SMS OTP successfully dispatched to ${maskMobile(destPhone)}`);
+              logger.info(`[CineVenue:SMS] Fast2SMS OTP successfully dispatched to ${maskMobile(destPhone)}`);
             }
           } catch (smsErr: any) {
-            logger.warn(`[SMS] Fast2SMS API notice: ${smsErr.message}`);
+            logger.warn(`[CineVenue:SMS] Fast2SMS API notice: ${smsErr.message}`);
           }
         }
       }

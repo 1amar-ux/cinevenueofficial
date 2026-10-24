@@ -314,7 +314,7 @@ export async function sendPasswordResetOtpEmail(params: {
 
   const transporter = getMailTransporter();
   const fromAddress = process.env.SMTP_FROM || env.SMTP_FROM || process.env.EMAIL_USER || env.EMAIL_USER || "noreply@cinevenue.com";
-  const fromHeader = `"CineVenue Security" <${fromAddress}>`;
+  const fromHeader = `"CineVenue" <${fromAddress}>`;
 
   const subject = `🔐 CineVenue Verification Code: ${otpCode}`;
 
@@ -377,7 +377,7 @@ export async function sendPasswordResetOtpEmail(params: {
   const resendKey = process.env.RESEND_API_KEY || env.RESEND_API_KEY;
   if (resendKey) {
     try {
-      const resendFrom = process.env.RESEND_FROM || env.RESEND_FROM || "CineVenue Security <onboarding@resend.dev>";
+      const resendFrom = process.env.RESEND_FROM || env.RESEND_FROM || "CineVenue <onboarding@resend.dev>";
       const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -416,7 +416,7 @@ export async function sendPasswordResetOtpEmail(params: {
         },
         body: JSON.stringify({
           personalizations: [{ to: [{ email: to }] }],
-          from: { email: fromAddress, name: "CineVenue Security" },
+          from: { email: fromAddress, name: "CineVenue" },
           subject,
           content: [
             { type: "text/plain", value: text },

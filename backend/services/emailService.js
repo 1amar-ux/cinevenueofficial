@@ -17,7 +17,7 @@ exports.sendTicketEmail = async (email, booking) => {
     : (booking?.seats ? String(booking.seats) : "Reserved");
 
   const mailOptions = {
-    from: process.env.EMAIL_USER || "noreply@cinevenue.com",
+    from: `"CineVenue" <${process.env.EMAIL_USER || "noreply@cinevenue.com"}>`,
     to: email,
     subject: "Your CineVenue Ticket Confirmation",
     html: `
