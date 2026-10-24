@@ -155,16 +155,6 @@ export default function NowShowing({
     return matchesTab && matchesSearch;
   });
 
-  // Split into "This Week's Releases" and "Only in Theatres"
-  const thisWeeksReleases = filteredMovies.filter((m) => {
-    const status = deriveMovieReleaseStatus(m);
-    return status === "NOW_SHOWING" && (Number(m.rating) || 0) >= 8.5;
-  });
-
-  const nowShowingInTheatres = filteredMovies.filter((m) => {
-    return !thisWeeksReleases.some((tw) => tw.title === m.title);
-  });
-
   const renderMovieCard = (movie: Movie, idx: number) => {
     const isMovieActive = movie.isActive !== false && isMovieBookingSystemActive;
     const releaseStatus = deriveMovieReleaseStatus(movie);
@@ -423,43 +413,23 @@ export default function NowShowing({
           }}
         />
       ) : (
-        <div className="space-y-8 sm:space-y-12">
-          {/* SECTION 1: This Week's Releases */}
-          {thisWeeksReleases.length > 0 && (
-            <div className="space-y-3.5 sm:space-y-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base sm:text-xl font-bold text-gray-950 dark:text-white tracking-tight">
-                  This Week's Releases
-                </h2>
-                <span className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 font-medium">
-                  {thisWeeksReleases.length} {thisWeeksReleases.length === 1 ? "movie" : "movies"}
-                </span>
-              </div>
+        <div className="space-y-6 sm:space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base sm:text-xl font-bold text-gray-950 dark:text-white tracking-tight">
+              {activeCategory === "COMING_SOON"
+                ? "Coming Soon to Theatres"
+                : activeCategory === "NOW_SHOWING"
+                ? "Now Showing in Theatres"
+                : "All Scheduled Films"}
+            </h2>
+            <span className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 font-medium">
+              {filteredMovies.length} {filteredMovies.length === 1 ? "movie" : "movies"}
+            </span>
+          </div>
 
-              {/* 2-Column on Mobile, 3-6 Columns on Tablet/Desktop */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4.5">
-                {thisWeeksReleases.map((movie, idx) => renderMovieCard(movie, idx))}
-              </div>
-            </div>
-          )}
-
-          {/* SECTION 2: Only in Theatres / All Scheduled Films */}
-          <div className="space-y-3.5 sm:space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-xl font-bold text-gray-950 dark:text-white tracking-tight">
-                {thisWeeksReleases.length > 0 ? "Only in Theatres" : "Featured & Now Showing"}
-              </h2>
-              <span className="text-[11px] sm:text-xs text-gray-500 dark:text-white/50 font-medium">
-                {nowShowingInTheatres.length > 0 ? nowShowingInTheatres.length : filteredMovies.length} movies
-              </span>
-            </div>
-
-            {/* 2-Column on Mobile, 3-6 Columns on Tablet/Desktop */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4.5">
-              {(nowShowingInTheatres.length > 0 ? nowShowingInTheatres : filteredMovies).map((movie, idx) =>
-                renderMovieCard(movie, idx + 100)
-              )}
-            </div>
+          {/* 2-Column on Mobile, 3-6 Columns on Tablet/Desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4.5">
+            {filteredMovies.map((movie, idx) => renderMovieCard(movie, idx))}
           </div>
         </div>
       )}

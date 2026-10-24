@@ -196,20 +196,6 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseYear: 2026
   },
   {
-    id: "mov_doraemon_nobita",
-    title: "Doraemon the Movie: New Nobita and the...",
-    genre: "Animation / Adventure",
-    lang: "Telugu",
-    certification: "U",
-    rating: "8.8",
-    img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=vV_CqGfN5iI",
-    duration: "1h 44m",
-    releaseYear: 2026
-  },
-  {
     id: "mov_doraemon_devil",
     title: "Doraemon: Castle of the Undersea Devil",
     genre: "Animation / Adventure",

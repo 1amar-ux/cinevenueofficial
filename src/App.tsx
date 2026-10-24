@@ -695,8 +695,11 @@ export default function App() {
 
   // Real-time synchronization for events & movies created or modified anywhere in the app
   useEffect(() => {
-    // Scrub duplicate movies immediately on startup
-    scrubStoredMovies();
+    // Scrub duplicate movies immediately on startup and synchronize state
+    const cleanedMovies = scrubStoredMovies();
+    if (cleanedMovies && cleanedMovies.length > 0) {
+      setMovies(cleanedMovies);
+    }
 
     // Purge legacy duplicate mock event IDs & mock titles from localStorage immediately on startup
     try {

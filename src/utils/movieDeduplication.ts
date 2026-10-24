@@ -27,7 +27,9 @@ export function isMockOrDuplicateMovie(movie?: Partial<Movie> | null): boolean {
     lower.startsWith("sample movie") ||
     lower === "dummy" ||
     lower === "movie title" ||
-    lower.includes("placeholder")
+    lower.includes("placeholder") ||
+    lower.endsWith("...") ||
+    lower.endsWith("…")
   ) {
     return true;
   }
