@@ -21,7 +21,7 @@ export default function MobileBottomNav() {
       {navigationItems.map(({ label, path, icon: Icon }) => {
         const isActive = path === "/"
           ? location.pathname === "/"
-          : location.pathname.startsWith(path);
+          : location.pathname.startsWith(path) || (path === "/movies" && (location.pathname === "/booking" || location.pathname.startsWith("/movie/")));
 
         return (
           <Link

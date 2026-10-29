@@ -28,8 +28,18 @@ export default function Hero({
       delay: Math.random() * 8,
       duration: 8 + Math.random() * 8,
     }));
-    setParticles(temp);
-  }, []);
+  // Safely record impression only once per ad when mounted
+  const recordedAdsRef = React.useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!onRecordAdImpression) return;
+    const activeHeroAds = advertisements.filter(a => a.type === "hero_slider" && a.status === "Active");
+    activeHeroAds.forEach(ad => {
+      if (!recordedAdsRef.current.has(ad.id)) {
+        recordedAdsRef.current.add(ad.id);
+        onRecordAdImpression(ad.id);
+      }
+    });
+  }, [advertisements, onRecordAdImpression]);
 
   return (
     <section id="home" className="relative min-h-[720px] md:min-h-screen flex items-center overflow-hidden bg-dark-bg text-text-primary pt-24 pb-12">
@@ -90,10 +100,6 @@ export default function Hero({
           return (
             <div className="w-full max-w-4xl mt-8">
               {activeHeroAds.map((ad) => {
-                // Record impression when ad is mounted
-                if (onRecordAdImpression) {
-                  setTimeout(() => onRecordAdImpression(ad.id), 100);
-                }
                 return (
                   <div
                     key={ad.id}

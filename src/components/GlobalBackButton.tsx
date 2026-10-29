@@ -31,7 +31,7 @@ export default function GlobalBackButton() {
   return (
     <aside
       aria-label="Global Navigation Controls"
-      className="fixed bottom-6 left-5 md:bottom-8 md:left-8 z-[9999] pointer-events-auto print:hidden animate-fade-in"
+      className="fixed bottom-[calc(78px+env(safe-area-inset-bottom,0px))] md:bottom-8 left-5 md:left-8 z-[9999] pointer-events-auto print:hidden animate-fade-in"
     >
       <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/95 dark:bg-[#0A0D14]/90 border border-gray-300 dark:border-gold/40 hover:border-gray-400 dark:hover:border-gold shadow-md dark:shadow-2xl dark:shadow-black/90 backdrop-blur-xl transition-all duration-200">
         <button

@@ -6,6 +6,7 @@ import path from "path";
 import { prisma } from "../../config/database";
 import { authenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { env } from "../../config/env";
+import { auditEntryLogService } from "../../services/auditEntryLogService";
 
 export const employeeRouter = Router();
 
@@ -477,7 +478,17 @@ employeeRouter.post("/auth/employee-login", async (req: Request, res: Response) 
         ipAddress: req.ip || "127.0.0.1",
         createdAt: new Date().toISOString()
       });
-      saveFallbackStore(store);
+      auditEntryLogService.recordAuthEvent({
+        activity: "EMPLOYEE_LOGIN_FAILED",
+        status: "FAILED",
+        severity: "WARNING",
+        actorId: employee.id,
+        actorName: employee.fullName,
+        actorEmail: employee.email,
+        actorRole: employee.roleId || "STAFF",
+        details: `Employee login failed (bad password) for ${employee.username} (${employee.employeeId})`,
+        req
+      });
 
       return res.status(401).json({
         success: false,
@@ -507,6 +518,17 @@ employeeRouter.post("/auth/employee-login", async (req: Request, res: Response) 
       createdAt: nowIso
     });
     saveFallbackStore(store);
+
+    auditEntryLogService.recordAuthEvent({
+      activity: "EMPLOYEE_LOGIN_SUCCESS",
+      status: "SUCCESS",
+      actorId: employee.id,
+      actorName: employee.fullName,
+      actorEmail: employee.email,
+      actorRole: employee.roleId || "STAFF",
+      details: `Employee ${employee.fullName} (${employee.employeeId}) authenticated successfully`,
+      req
+    });
 
     // Identify role & calculate permissions
     const role = INITIAL_ROLES.find(r => r.id === employee.roleId || r.name === employee.roleId) || INITIAL_ROLES[1];

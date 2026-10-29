@@ -35,13 +35,17 @@ export default function Featured({ onBookMovie, spotlight, isMovieBookingSystemA
             <img
               src={spotlight.image}
               alt={`Spotlight Movie: ${spotlight.title}`}
+              loading="eager"
+              decoding="async"
+              // @ts-expect-error React 19 / HTML standard fetchpriority attribute
+              fetchpriority="high"
               className="w-full h-full object-cover brightness-95 group-hover:scale-101 transition-transform duration-500"
             />
             {/* Ambient gold glow card borders */}
             <div className="absolute inset-0 border border-black/10 dark:border-white/10 rounded-xl pointer-events-none" />
             
             {/* Diagonal shimmer shine effect */}
-            <div className="absolute top-0 -left-full w-3/5 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 animate-[shimmer_5s_infinite_linear]" 
+            <div className="absolute top-0 -left-full w-3/5 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 pointer-events-none" 
               style={{
                 animation: "shine 4s ease-in-out infinite"
               }}

@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import MaintenancePage from "../components/MaintenancePage";
 import CineVenueLogo from "../components/CineVenueLogo";
-import EventManagementHub from "../components/events/EventManagementHub";
-import FilmProductionHub from "../components/film-production/FilmProductionHub";
 import CineVenueLiveBanner from "../components/advertising/CineVenueLiveBanner";
 import ThemeToggle from "../components/ThemeToggle";
-import { ProposalSubmitForm } from "../components/proposals/ProposalSubmitForm";
+
+const FilmProductionHub = lazy(() => import("../components/film-production/FilmProductionHub"));
+const ProposalSubmitForm = lazy(() => import("../components/proposals/ProposalSubmitForm").then(m => ({ default: m.ProposalSubmitForm })));
 import { 
   Film, Sparkles, Megaphone, Ticket, Shield, Mail, Phone, Users, 
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
@@ -750,7 +750,7 @@ export default function Home({
       </section>
 
       {/* THE SIX PILLARS SERVICES GRID */}
-      <section id="services" className="py-14 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 max-w-[90rem] mx-auto border-t border-gray-200 dark:border-white/5 relative">
+      <section id="services" className="cv-content-visibility py-14 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 max-w-[90rem] mx-auto border-t border-gray-200 dark:border-white/5 relative">
         <div className="text-center space-y-3 mb-10">
           <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.4em] uppercase block">Our Corporate Framework</span>
           <h2 className="font-display text-3xl md:text-4xl font-light italic text-gray-950 dark:text-white">
@@ -1443,10 +1443,12 @@ export default function Home({
                 {/* TAB 0: 24 CRAFTS FILM PRODUCTION MARKETPLACE */}
                 {filmStudioTab === "marketplace" && (
                   <div className="animate-fade-in -mx-4 sm:-mx-6">
-                    <FilmProductionHub
-                      userEmail={userEmail}
-                      onOpenAuth={onOpenAuth}
-                    />
+                    <Suspense fallback={<div className="p-8 text-center"><div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto" /></div>}>
+                      <FilmProductionHub
+                        userEmail={userEmail}
+                        onOpenAuth={onOpenAuth}
+                      />
+                    </Suspense>
                   </div>
                 )}
 
@@ -2171,12 +2173,14 @@ export default function Home({
 
                 {/* The Proposal Form Only */}
                 <div className="bg-[#0D0D12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl">
-                  <ProposalSubmitForm
-                    userEmail={userEmail || ""}
-                    userName={userEmail ? userEmail.split("@")[0] : ""}
-                    initialCustomerType="Event Organizer"
-                    initialServiceType="Pre-Release Event"
-                  />
+                  <Suspense fallback={<div className="p-8 text-center"><div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto" /></div>}>
+                    <ProposalSubmitForm
+                      userEmail={userEmail || ""}
+                      userName={userEmail ? userEmail.split("@")[0] : ""}
+                      initialCustomerType="Event Organizer"
+                      initialServiceType="Pre-Release Event"
+                    />
+                  </Suspense>
                 </div>
               </div>
             )}
@@ -2410,7 +2414,7 @@ export default function Home({
 
 
       {/* CONTACT US & CONCIERGE MESSAGE SECTIONS */}
-      <section id="contact-concierge" className="py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5">
+      <section id="contact-concierge" className="cv-content-visibility py-24 px-6 md:px-12 max-w-7xl mx-auto border-t border-gray-200 dark:border-white/5">
         <div className="text-center space-y-4 mb-16">
           <span className="text-[10px] font-bold text-gray-500 dark:text-[#D4AF37] tracking-[0.4em] uppercase block">GET IN TOUCH</span>
           <h2 className="font-display text-4xl font-light italic text-gray-950 dark:text-white leading-tight">

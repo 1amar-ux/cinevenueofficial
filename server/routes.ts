@@ -17,6 +17,7 @@ import ticketRoutes from "./modules/tickets/ticket.routes";
 import notificationRoutes from "./modules/notifications/notification.routes";
 import { advertisingPublicRouter, adminAdvertisingRouter } from "./modules/advertising/advertising.routes";
 import employeeRouter from "./modules/admin/employee.routes";
+import { entryLogsRouter } from "./modules/admin/entryLogs.routes";
 import { checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
 import { razorpayService } from "./modules/payments/razorpay.service";
@@ -90,6 +91,7 @@ router.use("/marketplace", filmProductionRoutes);
 router.use("/advertising", advertisingPublicRouter);
 router.use("/admin/advertising", adminAdvertisingRouter);
 router.use("/admin", adminRoutes);
+router.use("/admin", entryLogsRouter);
 router.use("/", employeeRouter);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 router.use("/", proposalsRouter); // Mounts /proposals and /admin/proposals

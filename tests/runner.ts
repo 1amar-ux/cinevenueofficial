@@ -5,6 +5,7 @@ import { runCashfreeTests } from "./unit/cashfree.test";
 
 import { runEventConvenienceFeeTests } from "./unit/eventConvenienceFee.test";
 import { runMovieConvenienceFeeTests } from "./unit/movieConvenienceFee.test";
+import { runEntryLogsTests } from "./unit/entryLogs.test";
 
 async function main() {
   console.log("==========================================");
@@ -77,6 +78,18 @@ async function main() {
   console.log("\n--- 6. Movie Booking Convenience Fee Management & Final Payment Tests ---");
   const movieFeeResults = await runMovieConvenienceFeeTests();
   for (const r of movieFeeResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 7. Entry Logs, Access Monitoring & Audit Trail Tests ---");
+  const entryLogResults = await runEntryLogsTests();
+  for (const r of entryLogResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;

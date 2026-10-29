@@ -16,8 +16,10 @@ import {
   Filter,
   FileSpreadsheet,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  ShieldCheck
 } from "lucide-react";
+import EntryLogsModule from "./EntryLogsModule";
 import {
   systemMonitoringService,
   TheatreHealthStatus,
@@ -27,7 +29,7 @@ import {
 } from "../../../modules/monitoring/systemMonitoringService";
 
 export default function SystemMonitoringModule() {
-  const [activeSubTab, setActiveSubTab] = useState<"overview" | "pos_health" | "incidents" | "reconciliation" | "audit_logs">("overview");
+  const [activeSubTab, setActiveSubTab] = useState<"overview" | "pos_health" | "incidents" | "reconciliation" | "audit_logs" | "entry_logs">("overview");
   const [metrics, setMetrics] = useState(systemMonitoringService.getOverviewMetrics());
   const [theatreHealth, setTheatreHealth] = useState<TheatreHealthStatus[]>(systemMonitoringService.getTheatreHealthList());
   const [incidents, setIncidents] = useState<IncidentRecord[]>(systemMonitoringService.getIncidents());
@@ -98,6 +100,7 @@ export default function SystemMonitoringModule() {
       <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto">
         {[
           { id: "overview", label: "Overview Metrics", icon: TrendingUp },
+          { id: "entry_logs", label: "Entry Logs & Audit Trail", icon: ShieldCheck },
           { id: "pos_health", label: "POS Health Matrix", icon: Server },
           { id: "incidents", label: "Incidents & Alerts", icon: ShieldAlert, badge: incidents.filter(i => i.status === "OPEN").length },
           { id: "reconciliation", label: "Booking Reconciliation", icon: Layers },
@@ -386,6 +389,11 @@ export default function SystemMonitoringModule() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ================= TAB 6: CENTRALIZED ENTRY LOGS & ACTIVITY AUDIT TRAIL ================= */}
+      {activeSubTab === "entry_logs" && (
+        <EntryLogsModule />
       )}
     </div>
   );

@@ -60,14 +60,6 @@ export default function UpcomingBookingCard({
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [calendarAdded, setCalendarAdded] = useState(false);
 
-  // Tick every second to update countdown dynamically
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   // Normalize and merge movie and event bookings strictly belonging to the authenticated customer
   const upcomingList: UnifiedUpcomingBooking[] = React.useMemo(() => {
     // If visitor is not logged in or has no email, strictly do not show any upcoming card
@@ -179,11 +171,12 @@ export default function UpcomingBookingCard({
 
     // 3. Filter out past expired bookings:
     // Retain upcoming bookings until show end time (show start + 3 hours)
+    const now = Date.now();
     const validUpcoming = list.filter((item) => {
       try {
         const start = parseBookingDateTime(item.dateStr, item.timeStr).getTime();
         const expiry = start + 3.5 * 60 * 60 * 1000; // 3.5 hours grace period
-        return expiry > currentTime;
+        return expiry > now;
       } catch {
         return true;
       }
@@ -197,7 +190,16 @@ export default function UpcomingBookingCard({
     });
 
     return validUpcoming;
-  }, [bookings, eventBookings, theatres, currentTime, userEmail]);
+  }, [bookings, eventBookings, theatres, userEmail]);
+
+  // Tick countdown timer only when active upcoming bookings exist for display
+  useEffect(() => {
+    if (upcomingList.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [upcomingList.length]);
 
   if (!userEmail || upcomingList.length === 0) {
     return null; // Gracefully collapse if visitor is not logged in or has no confirmed upcoming bookings

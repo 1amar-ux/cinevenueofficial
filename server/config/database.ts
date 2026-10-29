@@ -108,6 +108,11 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
   EmployeeActivityLog: new Set([
     'id', 'employeeId', 'employeeName', 'username', 'employeeCode', 'action', 'module', 'result',
     'ipAddress', 'userAgent', 'metadata', 'createdAt'
+  ]),
+  AuditEntryLog: new Set([
+    'id', 'timestamp', 'logType', 'actorId', 'actorName', 'actorEmail', 'actorRole',
+    'activity', 'module', 'resourceId', 'resourceType', 'status', 'severity', 'details',
+    'ipAddress', 'userAgent', 'device', 'beforeValue', 'afterValue', 'metadata', 'createdAt'
   ])
 };
 
@@ -708,7 +713,11 @@ const TABLE_MAP: { [key: string]: string } = {
   moviefee: "MovieConvenienceFee",
   movieFee: "MovieConvenienceFee",
   moviefeeauditlog: "MovieFeeAuditLog",
-  movieFeeAuditLog: "MovieFeeAuditLog"
+  movieFeeAuditLog: "MovieFeeAuditLog",
+  employeeactivitylog: "EmployeeActivityLog",
+  employeeActivityLog: "EmployeeActivityLog",
+  auditentrylog: "AuditEntryLog",
+  auditEntryLog: "AuditEntryLog"
 };
 
 function initPrismaClient(): PrismaClient {

@@ -117,43 +117,45 @@ export default function NowShowing({
     )
   );
 
-  // Filter movies logic
-  const filteredMovies = uniqueMovies.filter((movie) => {
-    const isMovieActive = movie.isActive !== false && isMovieBookingSystemActive;
-    if (!isMovieActive) {
-      return false;
-    }
+  // Memoized filter movies logic to prevent redundant filtering during scroll/render
+  const filteredMovies = React.useMemo(() => {
+    return uniqueMovies.filter((movie) => {
+      const isMovieActive = movie.isActive !== false && isMovieBookingSystemActive;
+      if (!isMovieActive) {
+        return false;
+      }
 
-    const releaseStatus = deriveMovieReleaseStatus(movie);
+      const releaseStatus = deriveMovieReleaseStatus(movie);
 
-    // Category filter
-    if (activeCategory === "NOW_SHOWING" && releaseStatus !== "NOW_SHOWING") {
-      return false;
-    }
-    if (activeCategory === "COMING_SOON" && releaseStatus !== "UPCOMING" && releaseStatus !== "COMING_SOON") {
-      return false;
-    }
+      // Category filter
+      if (activeCategory === "NOW_SHOWING" && releaseStatus !== "NOW_SHOWING") {
+        return false;
+      }
+      if (activeCategory === "COMING_SOON" && releaseStatus !== "UPCOMING" && releaseStatus !== "COMING_SOON") {
+        return false;
+      }
 
-    // Genre filter
-    if (selectedGenre !== "ALL" && !movie.genre?.toLowerCase().includes(selectedGenre.toLowerCase())) {
-      return false;
-    }
+      // Genre filter
+      if (selectedGenre !== "ALL" && !movie.genre?.toLowerCase().includes(selectedGenre.toLowerCase())) {
+        return false;
+      }
 
-    // Language Tab Filter
-    const matchesTab =
-      activeTab === "all" ||
-      movie.langKey === activeTab ||
-      (movie.lang || "").toLowerCase() === activeTab.toLowerCase() ||
-      movie.additionalLanguages?.some((l) => l.toLowerCase() === activeTab.toLowerCase());
+      // Language Tab Filter
+      const matchesTab =
+        activeTab === "all" ||
+        movie.langKey === activeTab ||
+        (movie.lang || "").toLowerCase() === activeTab.toLowerCase() ||
+        movie.additionalLanguages?.some((l) => l.toLowerCase() === activeTab.toLowerCase());
 
-    // Search Text Filter
-    const matchesSearch =
-      (movie.title || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
-      (movie.genre || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
-      (movie.lang || "").toLowerCase().includes((searchQuery || "").toLowerCase());
+      // Search Text Filter
+      const matchesSearch =
+        (movie.title || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+        (movie.genre || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+        (movie.lang || "").toLowerCase().includes((searchQuery || "").toLowerCase());
 
-    return matchesTab && matchesSearch;
-  });
+      return matchesTab && matchesSearch;
+    });
+  }, [uniqueMovies, isMovieBookingSystemActive, activeCategory, selectedGenre, activeTab, searchQuery]);
 
   const renderMovieCard = (movie: Movie, idx: number) => {
     const isMovieActive = movie.isActive !== false && isMovieBookingSystemActive;
@@ -181,6 +183,7 @@ export default function NowShowing({
             src={movie.poster || movie.img}
             alt={movie.title}
             loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
 

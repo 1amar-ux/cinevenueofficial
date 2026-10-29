@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useCallback } from "react";
 import Seat from "./Seat";
 import { BookingContext } from "../context/BookingContext";
 
@@ -30,7 +30,7 @@ export default function SeatLayout() {
 
   const [seats, setSeats] = useState<SeatState[]>(() => createSeats());
 
-  const toggleSeat = (id: string) => {
+  const toggleSeat = useCallback((id: string) => {
     setSeats((prev) => {
       const updated = prev.map((seat) =>
         seat.id === id ? { ...seat, selected: !seat.selected } : seat
@@ -45,7 +45,7 @@ export default function SeatLayout() {
 
       return updated;
     });
-  };
+  }, [setBooking]);
 
   return (
     <div style={{ textAlign: "center", margin: "20px 0", maxWidth: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "12px" }}>

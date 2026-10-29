@@ -3,6 +3,7 @@ import { prisma } from "../../config/database";
 import { authenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
 import { movieFeeService } from "../bookings/movieFee.service";
+import { auditEntryLogService } from "../../services/auditEntryLogService";
 
 const router = Router();
 
@@ -109,10 +110,31 @@ router.patch("/users/:id/role", authorize("SUPER_ADMIN"), async (req: Request, r
     const { id } = req.params;
     const { role } = req.body;
 
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true, role: true }
+    });
+
     const user = await prisma.user.update({
       where: { id },
       data: { role },
       select: { id: true, email: true, role: true }
+    });
+
+    await auditEntryLogService.recordAdminActivity({
+      actorId: req.user?.userId,
+      actorName: req.user?.name || "Super Admin",
+      actorEmail: req.user?.email || "superadmin@cinevenue.com",
+      actorRole: req.user?.role || "SUPER_ADMIN",
+      activity: "ROLE_CHANGE",
+      module: "USERS",
+      resourceId: id,
+      resourceType: "User",
+      details: `Super Admin modified role for user ${user.email} from ${existingUser?.role || 'UNKNOWN'} to ${role}`,
+      beforeValue: { role: existingUser?.role },
+      afterValue: { role },
+      severity: "WARNING",
+      req
     });
 
     return res.json({
@@ -687,6 +709,28 @@ const handleGlobalSettingsUpdate = async (req: Request, res: Response, next: Nex
     } catch (sbSyncErr: any) {
       console.warn("[AdminSettings] Supabase sync notice:", sbSyncErr?.message || sbSyncErr);
     }
+
+    await auditEntryLogService.recordAdminActivity({
+      actorId: req.user?.userId,
+      actorName: req.user?.name || "Administrator",
+      actorEmail: req.user?.email || "superadmin@cinevenue.com",
+      actorRole: req.user?.role || "SUPER_ADMIN",
+      activity: "UPDATE_PLATFORM_SETTINGS",
+      module: "SETTINGS",
+      resourceId: "global_default",
+      resourceType: "AppSettings",
+      details: `Administrator updated platform configuration. Maintenance mode set to ${updated.maintenanceMode ? "ENABLED" : "DISABLED"}`,
+      beforeValue: {
+        maintenanceMode: existing?.maintenanceMode,
+        globalSubwebsiteEnabled: existing?.globalSubwebsiteEnabled
+      },
+      afterValue: {
+        maintenanceMode: updated.maintenanceMode,
+        globalSubwebsiteEnabled: updated.globalSubwebsiteEnabled
+      },
+      severity: updated.maintenanceMode !== existing?.maintenanceMode ? "WARNING" : "INFO",
+      req
+    });
 
     return res.json({
       success: true,

@@ -171,30 +171,48 @@ html {
   min-height: 100%;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
 
+/* Smooth scrolling scoped to desktop fine pointers; touch devices (mobile Chrome) use native hardware-accelerated momentum flings */
+@media (prefers-reduced-motion: no-preference) and (pointer: fine) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100%;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
   margin: 0;
   display: flex;
   flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
 }
 
 #root {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100%;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   flex: 1 0 auto;
+}
+
+/* Chromium / Mobile Chrome off-screen DOM rendering optimization */
+@supports (content-visibility: auto) {
+  .cv-content-visibility {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 600px;
+  }
+}
+
+/* Prevent double-tap zoom delay on mobile interactive elements */
+a, button, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
 }
 
 /* =========================================================
@@ -283,8 +301,16 @@ svg {
     min-height: 68px;
     padding: 8px 8px max(env(safe-area-inset-bottom, 0px), 8px);
     border-top: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(10, 10, 11, 0.96);
-    backdrop-filter: blur(18px);
+    background: #0A0A0B;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Prevent GPU blur re-rendering on fixed bars during mobile scroll */
+  header.fixed,
+  nav.fixed {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   .mobile-bottom-nav__item {

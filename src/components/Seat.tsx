@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Button } from "@mui/material";
 
 interface SeatType {
@@ -12,7 +12,7 @@ interface SeatProps {
   onSelect: (id: string) => void;
 }
 
-export default function Seat({ seat, onSelect }: SeatProps) {
+function Seat({ seat, onSelect }: SeatProps) {
   return (
     <Button
       variant={seat.selected ? "contained" : "outlined"}
@@ -25,3 +25,12 @@ export default function Seat({ seat, onSelect }: SeatProps) {
     </Button>
   );
 }
+
+export default memo(Seat, (prev, next) => {
+  return (
+    prev.seat.id === next.seat.id &&
+    prev.seat.selected === next.seat.selected &&
+    prev.seat.booked === next.seat.booked &&
+    prev.onSelect === next.onSelect
+  );
+});

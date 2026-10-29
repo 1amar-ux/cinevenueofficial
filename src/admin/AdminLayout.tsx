@@ -45,6 +45,7 @@ import {
   FileSpreadsheet,
   FileCode,
   Shield,
+  ShieldCheck,
   HelpCircle,
   Award,
   Menu,
@@ -59,6 +60,7 @@ import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
+import EntryLogsModule from "../components/admin/monitoring/EntryLogsModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
 import MovieCastCrewEditorModal from "../components/admin/movies/MovieCastCrewEditorModal";
 import MovieDashboardModal from "../components/admin/movies/MovieDashboardModal";
@@ -221,6 +223,7 @@ export default function AdminLayout() {
       items: [
         { id: "dashboard", label: "Dashboard Overview", icon: LayoutDashboard },
         { id: "system_monitoring", label: "System Monitoring", icon: Activity },
+        { id: "entry_logs", label: "Entry Logs & Audit Trail", icon: ShieldCheck },
         { id: "analytics", label: "Advanced Analytics", icon: TrendingUp },
         { id: "reports", label: "Platform Reports", icon: FileSpreadsheet }
       ]
@@ -280,8 +283,8 @@ export default function AdminLayout() {
     if (!currentEmployee) return true;
 
     // Strict Super Admin protection:
-    // Only Super Admin can access: Employee Management, Admin Management, Security & Backups, Platform Settings, System Monitoring
-    if (["employees", "admins", "security", "settings", "system_monitoring"].includes(tabId)) {
+    // Only Super Admin can access: Employee Management, Admin Management, Security & Backups, Platform Settings, System Monitoring, Entry Logs
+    if (["employees", "admins", "security", "settings", "system_monitoring", "entry_logs"].includes(tabId)) {
       return false;
     }
 
@@ -1291,6 +1294,13 @@ export default function AdminLayout() {
             {activeTab === "system_monitoring" && (
               <div className="space-y-6">
                 <SystemMonitoringModule />
+              </div>
+            )}
+
+            {/* CENTRALIZED ENTRY LOGS & ADMIN ACTIVITY AUDIT TRAIL */}
+            {activeTab === "entry_logs" && (
+              <div className="space-y-6">
+                <EntryLogsModule />
               </div>
             )}
 

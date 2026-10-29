@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { authService } from "./auth.service";
 import { UnauthorizedError } from "../../shared/errors";
+import { auditEntryLogService } from "../../services/auditEntryLogService";
 
 export class AuthController {
   private setSessionCookies = (res: Response, tokens: { accessToken: string; refreshToken: string }) => {
@@ -14,29 +15,67 @@ export class AuthController {
     try {
       const result = await authService.register(req.body);
       this.setSessionCookies(res, result.tokens);
+      auditEntryLogService.recordAuthEvent({
+        activity: "USER_REGISTER",
+        status: "SUCCESS",
+        actorId: result.user?.id,
+        actorName: result.user?.name,
+        actorEmail: result.user?.email,
+        actorRole: result.user?.role || "CUSTOMER",
+        details: `New account registered for ${result.user?.email}`,
+        req
+      });
       return res.status(201).json({
         success: true,
         message: "Your account has been created. Please verify your email address to continue.",
         token: result.tokens.accessToken,
         data: { user: result.user, tokens: result.tokens, verificationToken: result.verificationToken }
       });
-    } catch (error) {
+    } catch (error: any) {
+      auditEntryLogService.recordAuthEvent({
+        activity: "USER_REGISTER",
+        status: "FAILED",
+        severity: "WARNING",
+        actorEmail: req.body?.email,
+        actorRole: "CUSTOMER",
+        details: `Registration failed for ${req.body?.email || "unknown"}: ${error.message}`,
+        req
+      });
       next(error);
     }
   };
 
   public login = async (req: Request, res: Response, next: NextFunction) => {
+    const identifier = req.body?.identifier || req.body?.email || req.body?.mobile;
     try {
-      const identifier = req.body?.identifier || req.body?.email || req.body?.mobile;
       const result = await authService.login({ ...req.body, identifier });
       this.setSessionCookies(res, result.tokens);
+      auditEntryLogService.recordAuthEvent({
+        activity: "LOGIN_SUCCESS",
+        status: "SUCCESS",
+        actorId: result.user?.id,
+        actorName: result.user?.name,
+        actorEmail: result.user?.email,
+        actorRole: result.user?.role || "CUSTOMER",
+        details: `User logged in successfully via identifier: ${identifier}`,
+        req
+      });
       return res.json({
         success: true,
         message: "Login successful",
         token: result.tokens.accessToken,
         data: { user: result.user, tokens: result.tokens }
       });
-    } catch (error) {
+    } catch (error: any) {
+      auditEntryLogService.recordAuthEvent({
+        activity: "LOGIN_FAILED",
+        status: "FAILED",
+        severity: "WARNING",
+        actorEmail: typeof identifier === "string" ? identifier : undefined,
+        actorRole: "ANONYMOUS",
+        details: `Login failed for identifier: ${identifier} - ${error.message}`,
+        req
+      });
       next(error);
     }
   };
@@ -117,6 +156,16 @@ export class AuthController {
         mobile
       });
       this.setSessionCookies(res, result.tokens);
+      auditEntryLogService.recordAuthEvent({
+        activity: "LOGIN_GOOGLE",
+        status: "SUCCESS",
+        actorId: result.user?.id,
+        actorName: result.user?.name,
+        actorEmail: result.user?.email,
+        actorRole: result.user?.role || "CUSTOMER",
+        details: `Google authentication successful for ${result.user?.email}`,
+        req
+      });
       return res.json({
         success: true,
         message: "Google authentication successful",
@@ -138,6 +187,12 @@ export class AuthController {
       }
       const tokens = await authService.refreshToken(refreshToken);
       this.setSessionCookies(res, tokens);
+      auditEntryLogService.recordAuthEvent({
+        activity: "TOKEN_REFRESH",
+        status: "SUCCESS",
+        details: "User refreshed access token session",
+        req
+      });
       return res.json({
         success: true,
         message: "Session refreshed successfully",
@@ -154,6 +209,16 @@ export class AuthController {
       const result = await authService.logout(refreshToken);
       res.clearCookie("cine_access_token", { path: "/" });
       res.clearCookie("cine_refresh_token", { path: "/" });
+      auditEntryLogService.recordAuthEvent({
+        activity: "LOGOUT",
+        status: "SUCCESS",
+        actorId: req.user?.userId,
+        actorName: req.user?.name,
+        actorEmail: req.user?.email,
+        actorRole: req.user?.role || "CUSTOMER",
+        details: "User logged out successfully and revoked tokens",
+        req
+      });
       return res.json(result);
     } catch (error) {
       next(error);
@@ -176,6 +241,13 @@ export class AuthController {
     try {
       const identifier = String(req.body.identifier || req.body.email || req.body.mobile || "");
       const result = await authService.requestPasswordReset(identifier);
+      auditEntryLogService.recordAuthEvent({
+        activity: "PASSWORD_RESET_REQUEST",
+        status: "SUCCESS",
+        actorEmail: identifier,
+        details: `Password reset requested for identifier: ${identifier}`,
+        req
+      });
       return res.json(result);
     } catch (error) {
       next(error);
@@ -186,6 +258,13 @@ export class AuthController {
     try {
       const { token, newPassword, confirmPassword, identifier } = req.body;
       const result = await authService.resetPassword(token, newPassword, identifier, confirmPassword);
+      auditEntryLogService.recordAuthEvent({
+        activity: "PASSWORD_RESET_SUCCESS",
+        status: "SUCCESS",
+        actorEmail: identifier,
+        details: `Password reset completed successfully for identifier: ${identifier || "token-holder"}`,
+        req
+      });
       return res.json(result);
     } catch (error) {
       next(error);

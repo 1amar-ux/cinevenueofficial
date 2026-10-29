@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppSettings } from "./context/AppSettingsContext";
 import Navbar from "./components/Navbar";
@@ -8,20 +8,12 @@ import EventsShowcase from "./components/EventsShowcase";
 import ContactForm from "./components/ContactForm";
 import Footer from "./components/Footer";
 
-// Modals
+// Critical Modals & UI Components (kept sync for instant layout)
 import AuthModal from "./components/AuthModal";
-import BookingModal from "./components/BookingModal";
-import RentalModal from "./components/RentalModal";
-import AdminPanel from "./components/AdminPanel";
-import TheatreManagerDashboard from "./components/TheatreManagerDashboard";
-import TheatreManagerOperationsDashboard from "./components/theatre-manager/TheatreManagerOperationsDashboard";
-import EventManagerDashboard from "./components/EventManagerDashboard";
-import OrdersModal from "./components/OrdersModal";
-import UserDashboardModal from "./components/UserDashboardModal";
-import InfoModal from "./components/InfoModal";
 import GlobalBackButton from "./components/GlobalBackButton";
+import MobileBottomNav from "./components/MobileBottomNav";
 
-// Sub-Pages
+// Core Booking Flow Pages (kept sync for instant transitions)
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MovieDetails from "./pages/MovieDetails";
@@ -29,50 +21,70 @@ import TheatreSelection from "./pages/TheatreSelection";
 import SeatBooking from "./pages/SeatBooking";
 import Payment from "./pages/Payment";
 import Ticket from "./pages/Ticket";
-import BookingHistory from "./pages/BookingHistory";
 import Home from "./pages/Home";
 import MaintenancePage from "./components/MaintenancePage";
-import EventsApp from "./pages/events/EventsApp";
-import LegalPolicies from "./pages/LegalPolicies";
-import Services from "./pages/Services";
 import AuthCallback from "./pages/AuthCallback";
-import VerifyTicket from "./pages/VerifyTicket";
-import MobileBottomNav from "./components/MobileBottomNav";
-import SettingsPage from "./pages/SettingsPage";
 import { bookingReminderScheduler } from "./services/bookingReminderScheduler";
-
-// Admin Sub-Pages
-import AdminLayout from "./admin/AdminLayout";
-import AdminLogin from "./admin/AdminLogin";
-import Dashboard from "./admin/Dashboard";
-import Movies from "./admin/Movies";
-import EditMovie from "./admin/EditMovie";
-import Shows from "./admin/Shows";
-import TheatresAdmin from "./admin/Theatres";
-import SeatLayoutGenerator from "./admin/SeatLayoutGenerator";
-import EventsAdminModule from "./components/admin/events/EventsAdminModule";
 
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedTheatreRoute from "./components/theatre-admin/ProtectedTheatreRoute";
-import TheatreAdminLogin from "./pages/theatre-admin/Login";
 
-import CineCoinsComingSoon from "./components/cinecoins/CineCoinsComingSoon";
-import CineCoinsModule from "./components/cinecoins/CineCoinsModule";
-import MyAccountModule from "./components/account/MyAccountModule";
-import FilmProductionSubWebsite from "./components/productions/FilmProductionSubWebsite";
-import CineCoinsAdminControl from "./components/admin/CineCoinsAdminControl";
-import EventManagementHub from "./components/events/EventManagementHub";
-import MovieProductionHub from "./components/productions/MovieProductionHub";
-import CreateEvent from "./pages/CreateEvent";
-import { ProposalSubmitForm } from "./components/proposals/ProposalSubmitForm";
-import { CustomerProposalsView } from "./components/proposals/CustomerProposalsView";
-import AdvertiseWithCineVenuePage from "./pages/AdvertiseWithCineVenuePage";
-import MyAdvertisingCampaigns from "./pages/MyAdvertisingCampaigns";
 import CineVenueLogo from "./components/CineVenueLogo";
 import ThemeToggle from "./components/ThemeToggle";
 import LocationSelector from "./components/location/LocationSelector";
 import { calculateDistance, getCoordinates } from "./lib/location";
+import CineCoinsComingSoon from "./components/cinecoins/CineCoinsComingSoon";
+
+// Lazy-loaded heavy Modals
+const BookingModal = lazy(() => import("./components/BookingModal"));
+const RentalModal = lazy(() => import("./components/RentalModal"));
+const AdminPanel = lazy(() => import("./components/AdminPanel"));
+const OrdersModal = lazy(() => import("./components/OrdersModal"));
+const UserDashboardModal = lazy(() => import("./components/UserDashboardModal"));
+const InfoModal = lazy(() => import("./components/InfoModal"));
+
+// Lazy-loaded Managers & Partner Dashboards
+const TheatreManagerDashboard = lazy(() => import("./components/TheatreManagerDashboard"));
+const TheatreManagerOperationsDashboard = lazy(() => import("./components/theatre-manager/TheatreManagerOperationsDashboard"));
+const EventManagerDashboard = lazy(() => import("./components/EventManagerDashboard"));
+
+// Lazy-loaded Sub-Pages & Sub-Websites
+const BookingHistory = lazy(() => import("./pages/BookingHistory"));
+const VerifyTicket = lazy(() => import("./pages/VerifyTicket"));
+const EventsApp = lazy(() => import("./pages/events/EventsApp"));
+const LegalPolicies = lazy(() => import("./pages/LegalPolicies"));
+const Services = lazy(() => import("./pages/Services"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const CineCoinsModule = lazy(() => import("./components/cinecoins/CineCoinsModule"));
+const MyAccountModule = lazy(() => import("./components/account/MyAccountModule"));
+const FilmProductionSubWebsite = lazy(() => import("./components/productions/FilmProductionSubWebsite"));
+const MovieProductionHub = lazy(() => import("./components/productions/MovieProductionHub"));
+const EventManagementHub = lazy(() => import("./components/events/EventManagementHub"));
+const CreateEvent = lazy(() => import("./pages/CreateEvent"));
+const AdvertiseWithCineVenuePage = lazy(() => import("./pages/AdvertiseWithCineVenuePage"));
+const MyAdvertisingCampaigns = lazy(() => import("./pages/MyAdvertisingCampaigns"));
+const ProposalSubmitForm = lazy(() => import("./components/proposals/ProposalSubmitForm").then(m => ({ default: m.ProposalSubmitForm })));
+const CustomerProposalsView = lazy(() => import("./components/proposals/CustomerProposalsView").then(m => ({ default: m.CustomerProposalsView })));
+
+// Lazy-loaded Admin Sub-Pages
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const AdminLogin = lazy(() => import("./admin/AdminLogin"));
+const Dashboard = lazy(() => import("./admin/Dashboard"));
+const Movies = lazy(() => import("./admin/Movies"));
+const EditMovie = lazy(() => import("./admin/EditMovie"));
+const Shows = lazy(() => import("./admin/Shows"));
+const TheatresAdmin = lazy(() => import("./admin/Theatres"));
+const SeatLayoutGenerator = lazy(() => import("./admin/SeatLayoutGenerator"));
+const EventsAdminModule = lazy(() => import("./components/admin/events/EventsAdminModule"));
+const TheatreAdminLogin = lazy(() => import("./pages/theatre-admin/Login"));
+
+// Lightweight Suspense Fallback
+const LazyFallback: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[50vh] p-8 text-center" aria-busy="true">
+    <div className="w-8 h-8 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
+  </div>
+);
 
 // Default Data & Types
 import { INITIAL_MOVIES, INITIAL_THEATRES, INITIAL_EVENTS, DEFAULT_SPOTLIGHT, CITIES, DEFAULT_CINECOINS_SETTINGS, DEFAULT_CINECOINS_REWARDS, DEFAULT_CINECOINS_CHALLENGES, DEFAULT_CINECOINS_TRANSACTIONS, DEFAULT_CINECOINS_USER_WALLET } from "./data";
@@ -855,8 +867,18 @@ export default function App() {
         });
         const uniqueApiMovies = deduplicateMovies(apiMovies);
         const fullMerged = deduplicateMovies([...uniqueApiMovies, ...INITIAL_MOVIES]);
-        setMovies(fullMerged);
-        localStorage.setItem("cine_movies", JSON.stringify(fullMerged));
+        setMovies((prev) => {
+          if (
+            prev.length === fullMerged.length &&
+            prev.every((m, idx) => m.id === fullMerged[idx]?.id && m.title === fullMerged[idx]?.title && m.rating === fullMerged[idx]?.rating && m.status === fullMerged[idx]?.status)
+          ) {
+            return prev;
+          }
+          try {
+            localStorage.setItem("cine_movies", JSON.stringify(fullMerged));
+          } catch {}
+          return fullMerged;
+        });
       }
 
       // 2. Authoritative Theatres Sync from Database (API + Supabase Cloud Fallback)
@@ -891,7 +913,15 @@ export default function App() {
           image: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
           rating: t.rating || 4.6,
         }));
-        setTheatres(apiTheatres);
+        setTheatres((prev) => {
+          if (
+            prev.length === apiTheatres.length &&
+            prev.every((t, idx) => t.id === apiTheatres[idx]?.id && t.name === apiTheatres[idx]?.name)
+          ) {
+            return prev;
+          }
+          return apiTheatres;
+        });
       }
 
       // 3. Authoritative Show Schedules Sync from Database (API + Supabase Cloud Fallback)
@@ -933,7 +963,15 @@ export default function App() {
             isDeployed: s.status === 'ACTIVE' || s.isActive !== false,
           };
         });
-        setSchedules(apiShows);
+        setSchedules((prev) => {
+          if (
+            prev.length === apiShows.length &&
+            prev.every((s, idx) => s.id === apiShows[idx]?.id && s.timeSlot === apiShows[idx]?.timeSlot && s.pricePerSeat === apiShows[idx]?.pricePerSeat)
+          ) {
+            return prev;
+          }
+          return apiShows;
+        });
       }
 
       // 4. Authoritative Events Sync from Database
@@ -965,8 +1003,18 @@ export default function App() {
         const parsedLocal = localSaved ? JSON.parse(localSaved) : [];
         const ticketed = getTicketedEvents();
         const merged = mergeCineEvents(parsedLocal, ticketed, apiEvents);
-        setEvents(merged);
-        localStorage.setItem("cine_events", JSON.stringify(merged));
+        setEvents((prev) => {
+          if (
+            prev.length === merged.length &&
+            prev.every((e, idx) => e.id === merged[idx]?.id && e.title === merged[idx]?.title && e.date === merged[idx]?.date)
+          ) {
+            return prev;
+          }
+          try {
+            localStorage.setItem("cine_events", JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
       }
 
       // 5. Authoritative Bookings Sync from Database
@@ -991,7 +1039,15 @@ export default function App() {
           ticketId: b.ticket?.id,
           showId: b.showId
         }));
-        setBookings(apiBookings);
+        setBookings((prev) => {
+          if (
+            prev.length === apiBookings.length &&
+            prev.every((b, idx) => b.id === apiBookings[idx]?.id && b.paymentStatus === apiBookings[idx]?.paymentStatus)
+          ) {
+            return prev;
+          }
+          return apiBookings;
+        });
       }
     } catch (err) {
       console.warn('Live master data synchronization notice:', err);
@@ -1970,7 +2026,9 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <EventsApp />
+            <Suspense fallback={<LazyFallback />}>
+              <EventsApp />
+            </Suspense>
           )
         } 
       />
@@ -1988,7 +2046,9 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <Services />
+            <Suspense fallback={<LazyFallback />}>
+              <Services />
+            </Suspense>
           )
         } 
       />
@@ -2012,9 +2072,11 @@ export default function App() {
               theatres={theatres}
               eventRegistrations={eventRegistrations}
             />
-            <AdminPanel
-              isOpen={adminOpen}
-              onClose={() => setAdminOpen(false)}
+            {adminOpen && (
+              <Suspense fallback={null}>
+                <AdminPanel
+                  isOpen={adminOpen}
+                  onClose={() => setAdminOpen(false)}
               serviceControl={serviceControl}
               setServiceControl={setServiceControl}
               serviceControlLogs={serviceControlLogs}
@@ -2131,7 +2193,9 @@ export default function App() {
               onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
               userWallets={effectiveUserWallets}
               onUpdateWallet={handleUpdateUserWallet}
-            />
+                />
+              </Suspense>
+            )}
           </div>
         }
       />
@@ -2265,175 +2329,195 @@ export default function App() {
               cities={cities} 
             />
             
-            <BookingModal
-              isOpen={bookingMovieTitle !== ""}
-              onClose={() => setBookingMovieTitle("")}
-              movieTitle={bookingMovieTitle}
-              selectedCity={selectedCity}
-              userEmail={userEmail}
-              onOpenAuth={() => setAuthOpen(true)}
-              globalBookings={getGlobalBookings()}
-              onConfirmBooking={handleConfirmMovieBooking}
-              selectedTimeSlot={bookingTimeSlot}
-              schedules={schedules}
-              theatres={theatres}
-              registeredUsers={registeredUsers}
-              isMovieBookingSystemActive={isMovieBookingSystemActive}
-              movies={movies}
-              onUpdateMovie={handleUpdateMovie}
-            />
+            {bookingMovieTitle !== "" && (
+              <Suspense fallback={null}>
+                <BookingModal
+                  isOpen={bookingMovieTitle !== ""}
+                  onClose={() => setBookingMovieTitle("")}
+                  movieTitle={bookingMovieTitle}
+                  selectedCity={selectedCity}
+                  userEmail={userEmail}
+                  onOpenAuth={() => setAuthOpen(true)}
+                  globalBookings={getGlobalBookings()}
+                  onConfirmBooking={handleConfirmMovieBooking}
+                  selectedTimeSlot={bookingTimeSlot}
+                  schedules={schedules}
+                  theatres={theatres}
+                  registeredUsers={registeredUsers}
+                  isMovieBookingSystemActive={isMovieBookingSystemActive}
+                  movies={movies}
+                  onUpdateMovie={handleUpdateMovie}
+                />
+              </Suspense>
+            )}
 
-            <UserDashboardModal
-              isOpen={isUserDashboardOpen}
-              onClose={() => setIsUserDashboardOpen(false)}
-              userEmail={userEmail}
-              bookings={bookings}
-              eventRegistrations={eventRegistrations}
-              onOpenAuth={() => setAuthOpen(true)}
-              onUpdateBookingUtr={handleUpdateBookingUtr}
-              onUpdateRegistrationUtr={handleUpdateRegistrationUtr}
-            />
+            {isUserDashboardOpen && (
+              <Suspense fallback={null}>
+                <UserDashboardModal
+                  isOpen={isUserDashboardOpen}
+                  onClose={() => setIsUserDashboardOpen(false)}
+                  userEmail={userEmail}
+                  bookings={bookings}
+                  eventRegistrations={eventRegistrations}
+                  onOpenAuth={() => setAuthOpen(true)}
+                  onUpdateBookingUtr={handleUpdateBookingUtr}
+                  onUpdateRegistrationUtr={handleUpdateRegistrationUtr}
+                />
+              </Suspense>
+            )}
 
-            <OrdersModal
-              isOpen={ordersOpen}
-              onClose={() => setOrdersOpen(false)}
-              userEmail={userEmail}
-              bookings={bookings}
-              eventRegistrations={eventRegistrations}
-              onOpenAuth={() => setAuthOpen(true)}
-            />
+            {ordersOpen && (
+              <Suspense fallback={null}>
+                <OrdersModal
+                  isOpen={ordersOpen}
+                  onClose={() => setOrdersOpen(false)}
+                  userEmail={userEmail}
+                  bookings={bookings}
+                  eventRegistrations={eventRegistrations}
+                  onOpenAuth={() => setAuthOpen(true)}
+                />
+              </Suspense>
+            )}
 
-            <RentalModal
-              isOpen={rentalOpen}
-              onClose={() => setRentalOpen(false)}
-              userEmail={userEmail}
-              onOpenAuth={() => setAuthOpen(true)}
-              theatres={theatres}
-              onSubmitRental={handleAddRental}
-            />
+            {rentalOpen && (
+              <Suspense fallback={null}>
+                <RentalModal
+                  isOpen={rentalOpen}
+                  onClose={() => setRentalOpen(false)}
+                  userEmail={userEmail}
+                  onOpenAuth={() => setAuthOpen(true)}
+                  theatres={theatres}
+                  onSubmitRental={handleAddRental}
+                />
+              </Suspense>
+            )}
 
-            <AdminPanel
-              isOpen={adminOpen}
-              onClose={() => setAdminOpen(false)}
-              serviceControl={serviceControl}
-              setServiceControl={setServiceControl}
-              serviceControlLogs={serviceControlLogs}
-              setServiceControlLogs={setServiceControlLogs}
-              movies={movies}
-              theatres={theatres}
-              rentalRequests={rentalRequests}
-              contactMessages={contactMessages}
-              bookings={bookings}
-              schedules={schedules}
-              events={events}
-              eventRegistrations={eventRegistrations}
-              onAddEvent={handleAddEvent}
-              onDeleteEvent={handleDeleteEvent}
-              onUpdateEventRegistrationStatus={(regId, status) => {
-                const updated = eventRegistrations.map(r => {
-                  if (r.id === regId) {
-                    const mapStatus = status.startsWith("Approved") ? "Confirmed" as const : "Cancelled" as const;
-                    return {
-                      ...r,
-                      status: mapStatus,
-                      superadminApproved: status.startsWith("Approved")
+            {adminOpen && (
+              <Suspense fallback={null}>
+                <AdminPanel
+                  isOpen={adminOpen}
+                  onClose={() => setAdminOpen(false)}
+                  serviceControl={serviceControl}
+                  setServiceControl={setServiceControl}
+                  serviceControlLogs={serviceControlLogs}
+                  setServiceControlLogs={setServiceControlLogs}
+                  movies={movies}
+                  theatres={theatres}
+                  rentalRequests={rentalRequests}
+                  contactMessages={contactMessages}
+                  bookings={bookings}
+                  schedules={schedules}
+                  events={events}
+                  eventRegistrations={eventRegistrations}
+                  onAddEvent={handleAddEvent}
+                  onDeleteEvent={handleDeleteEvent}
+                  onUpdateEventRegistrationStatus={(regId, status) => {
+                    const updated = eventRegistrations.map(r => {
+                      if (r.id === regId) {
+                        const mapStatus = status.startsWith("Approved") ? "Confirmed" as const : "Cancelled" as const;
+                        return {
+                          ...r,
+                          status: mapStatus,
+                          superadminApproved: status.startsWith("Approved")
+                        };
+                      }
+                      return r;
+                    });
+                    setEventRegistrations(updated);
+                  }}
+                  notifyMeRequests={notifyMeRequests}
+                  onUpdateNotifyMeRequestStatus={(id, status) => {
+                    setNotifyMeRequests(notifyMeRequests.map(r => r.id === id ? { ...r, status, notifiedAt: new Date().toLocaleString() } : r));
+                  }}
+                  onAddMovie={handleAddMovie}
+                  onAddTheatre={handleAddTheatre}
+                  onDeleteMovie={handleDeleteMovie}
+                  onDeleteTheatre={handleDeleteTheatre}
+                  onUpdateTheatre={handleUpdateTheatre}
+                  onUpdateRentalStatus={(id, status) => {
+                    setRentalRequests(rentalRequests.map(r => r.id === id ? { ...r, status } : r));
+                  }}
+                  onScheduleShow={handleScheduleShow}
+                  onDeleteSchedule={handleDeleteSchedule}
+                  onDeploySchedule={(id) => setSchedules(schedules.map(s => s.id === id ? { ...s, isDeployed: true } : s))}
+                  onSettleVenueBookings={(name) => {
+                    setBookings(bookings.map(b => b.theatreName === name ? { ...b, status: "Settled" as const } : b));
+                  }}
+                  onAddRentalRequest={(req) => {
+                    const newRental: RentalRequest = {
+                      id: "RENT-" + Math.floor(1000 + Math.random() * 9000),
+                      user: req.userEmail || "member@cinevenue.com",
+                      eventName: req.eventName,
+                      guests: req.guests,
+                      duration: req.duration,
+                      eventType: req.eventType,
+                      requirements: req.requirements,
+                      price: req.price,
+                      date: new Date().toLocaleDateString(),
+                      status: "Pending",
+                      theatreName: req.theatreName,
+                      city: req.city
                     };
-                  }
-                  return r;
-                });
-                setEventRegistrations(updated);
-              }}
-              notifyMeRequests={notifyMeRequests}
-              onUpdateNotifyMeRequestStatus={(id, status) => {
-                setNotifyMeRequests(notifyMeRequests.map(r => r.id === id ? { ...r, status, notifiedAt: new Date().toLocaleString() } : r));
-              }}
-              onAddMovie={handleAddMovie}
-              onAddTheatre={handleAddTheatre}
-              onDeleteMovie={handleDeleteMovie}
-              onDeleteTheatre={handleDeleteTheatre}
-              onUpdateTheatre={handleUpdateTheatre}
-              onUpdateRentalStatus={(id, status) => {
-                setRentalRequests(rentalRequests.map(r => r.id === id ? { ...r, status } : r));
-              }}
-              onScheduleShow={handleScheduleShow}
-              onDeleteSchedule={handleDeleteSchedule}
-              onDeploySchedule={(id) => setSchedules(schedules.map(s => s.id === id ? { ...s, isDeployed: true } : s))}
-              onSettleVenueBookings={(name) => {
-                setBookings(bookings.map(b => b.theatreName === name ? { ...b, status: "Settled" as const } : b));
-              }}
-              onAddRentalRequest={(req) => {
-                const newRental: RentalRequest = {
-                  id: "RENT-" + Math.floor(1000 + Math.random() * 9000),
-                  user: req.userEmail || "member@cinevenue.com",
-                  eventName: req.eventName,
-                  guests: req.guests,
-                  duration: req.duration,
-                  eventType: req.eventType,
-                  requirements: req.requirements,
-                  price: req.price,
-                  date: new Date().toLocaleDateString(),
-                  status: "Pending",
-                  theatreName: req.theatreName,
-                  city: req.city
-                };
-                setRentalRequests([newRental, ...rentalRequests]);
-              }}
-              onOpenManagerDashboard={handleOpenManagerDashboard}
-              onUpdateMovie={handleUpdateMovie}
-              onUpdateSchedule={handleUpdateSchedule}
-              onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
-              onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
-              
-              isSuperAdmin={Boolean(userEmail?.toLowerCase() === superAdminEmail.toLowerCase() || (!userEmail && localStorage.getItem("cine_user_email")?.toLowerCase() === superAdminEmail.toLowerCase()))}
-              isTheatreAdmin={theatreAdmins.some(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
-              activeTheatreAdmin={theatreAdmins.find(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
-              theatreAdmins={theatreAdmins}
-              onUpdateTheatreAdmins={(admins) => setTheatreAdmins(admins)}
-              eventOrganizers={eventOrganizers}
-              onUpdateEventOrganizers={(orgs) => setEventOrganizers(orgs)}
-              onOpenEventDashboard={handleOpenEventDashboard}
-              superAdminEmail={superAdminEmail}
-              superAdminPassword={superAdminPassword}
-              onUpdateSuperAdminCredentials={(email, pass) => {
-                setSuperAdminEmail(email);
-                setSuperAdminPassword(pass);
-              }}
-              onAuthSuccess={handleLoginSuccess}
-              registeredUsers={registeredUsers}
-              onUpdateRegisteredUsers={(users) => setRegisteredUsers(users)}
-              cities={cities}
-              onUpdateCities={(c) => setCities(c)}
-              spotlight={spotlight}
-              onUpdateSpotlight={(s) => setSpotlight(s)}
+                    setRentalRequests([newRental, ...rentalRequests]);
+                  }}
+                  onOpenManagerDashboard={handleOpenManagerDashboard}
+                  onUpdateMovie={handleUpdateMovie}
+                  onUpdateSchedule={handleUpdateSchedule}
+                  onUpdateBooking={(id, b) => setBookings(bookings.map(item => item.id === id ? b : item))}
+                  onDeleteBooking={(id) => setBookings(bookings.filter(b => b.id !== id))}
+                  
+                  isSuperAdmin={Boolean(userEmail?.toLowerCase() === superAdminEmail.toLowerCase() || (!userEmail && localStorage.getItem("cine_user_email")?.toLowerCase() === superAdminEmail.toLowerCase()))}
+                  isTheatreAdmin={theatreAdmins.some(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
+                  activeTheatreAdmin={theatreAdmins.find(a => a.email.toLowerCase() === userEmail?.toLowerCase())}
+                  theatreAdmins={theatreAdmins}
+                  onUpdateTheatreAdmins={(admins) => setTheatreAdmins(admins)}
+                  eventOrganizers={eventOrganizers}
+                  onUpdateEventOrganizers={(orgs) => setEventOrganizers(orgs)}
+                  onOpenEventDashboard={handleOpenEventDashboard}
+                  superAdminEmail={superAdminEmail}
+                  superAdminPassword={superAdminPassword}
+                  onUpdateSuperAdminCredentials={(email, pass) => {
+                    setSuperAdminEmail(email);
+                    setSuperAdminPassword(pass);
+                  }}
+                  onAuthSuccess={handleLoginSuccess}
+                  registeredUsers={registeredUsers}
+                  onUpdateRegisteredUsers={(users) => setRegisteredUsers(users)}
+                  cities={cities}
+                  onUpdateCities={(c) => setCities(c)}
+                  spotlight={spotlight}
+                  onUpdateSpotlight={(s) => setSpotlight(s)}
 
-              isMovieBookingSystemActive={isMovieBookingSystemActive}
-              onToggleMovieBookingSystemActive={(active) => setIsMovieBookingSystemActive(active)}
-              isEventBookingSystemActive={isEventBookingSystemActive}
-              onToggleEventSystemActive={(active) => setIsEventBookingSystemActive(active)}
-              onToggleMovieActive={handleToggleMovieActive}
-              onToggleEventActive={handleToggleEventActive}
-              onToggleScheduleActive={handleToggleScheduleActive}
-              upiGatewaySettings={upiGatewaySettings}
-              onUpdateUpiSettings={(settings) => setUpiGatewaySettings(settings)}
-              advertisements={advertisements}
-              onCreateAd={(ad) => setAdvertisements([ad, ...advertisements])}
-              onToggleAdStatus={(id) => setAdvertisements(advertisements.map(a => a.id === id ? { ...a, status: a.status === "Active" ? "Paused" as const : "Active" as const } : a))}
-              onDeleteAd={(id) => setAdvertisements(advertisements.filter(a => a.id !== id))}
-              onVerifyBookingPayment={handleVerifyBookingPayment}
-              onVerifyRegistrationPayment={handleVerifyRegistrationPayment}
-              footerPagesData={footerPagesData}
-              onUpdateFooterPagesData={(newData) => setFooterPagesData(newData)}
-              cineCoinsSettings={cineCoinsSettings}
-              onUpdateCineCoinsSettings={(s) => setCineCoinsSettings(s)}
-              cineCoinsRewards={cineCoinsRewards}
-              onUpdateCineCoinsRewards={(r) => setCineCoinsRewards(r)}
-              cineCoinsChallenges={cineCoinsChallenges}
-              onUpdateCineCoinsChallenges={(c) => setCineCoinsChallenges(c)}
-              cineCoinsTransactions={cineCoinsTransactions}
-              onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
-              userWallets={effectiveUserWallets}
-              onUpdateWallet={handleUpdateUserWallet}
-            />
+                  isMovieBookingSystemActive={isMovieBookingSystemActive}
+                  onToggleMovieBookingSystemActive={(active) => setIsMovieBookingSystemActive(active)}
+                  isEventBookingSystemActive={isEventBookingSystemActive}
+                  onToggleEventSystemActive={(active) => setIsEventBookingSystemActive(active)}
+                  onToggleMovieActive={handleToggleMovieActive}
+                  onToggleEventActive={handleToggleEventActive}
+                  onToggleScheduleActive={handleToggleScheduleActive}
+                  upiGatewaySettings={upiGatewaySettings}
+                  onUpdateUpiSettings={(settings) => setUpiGatewaySettings(settings)}
+                  advertisements={advertisements}
+                  onCreateAd={(ad) => setAdvertisements([ad, ...advertisements])}
+                  onToggleAdStatus={(id) => setAdvertisements(advertisements.map(a => a.id === id ? { ...a, status: a.status === "Active" ? "Paused" as const : "Active" as const } : a))}
+                  onDeleteAd={(id) => setAdvertisements(advertisements.filter(a => a.id !== id))}
+                  onVerifyBookingPayment={handleVerifyBookingPayment}
+                  onVerifyRegistrationPayment={handleVerifyRegistrationPayment}
+                  footerPagesData={footerPagesData}
+                  onUpdateFooterPagesData={(newData) => setFooterPagesData(newData)}
+                  cineCoinsSettings={cineCoinsSettings}
+                  onUpdateCineCoinsSettings={(s) => setCineCoinsSettings(s)}
+                  cineCoinsRewards={cineCoinsRewards}
+                  onUpdateCineCoinsRewards={(r) => setCineCoinsRewards(r)}
+                  cineCoinsChallenges={cineCoinsChallenges}
+                  onUpdateCineCoinsChallenges={(c) => setCineCoinsChallenges(c)}
+                  cineCoinsTransactions={cineCoinsTransactions}
+                  onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
+                  userWallets={effectiveUserWallets}
+                  onUpdateWallet={handleUpdateUserWallet}
+                />
+              </Suspense>
+            )}
           </div>
           )
         }
@@ -2445,8 +2529,9 @@ export default function App() {
         path="/authpanel"
         element={
           <div className="bg-[#0A0A0B] min-h-screen text-text-primary">
-            <AdminPanel
-              isOpen={true}
+            <Suspense fallback={<LazyFallback />}>
+              <AdminPanel
+                isOpen={true}
               onClose={() => window.location.href = "/"}
               serviceControl={serviceControl}
               setServiceControl={setServiceControl}
@@ -2566,7 +2651,8 @@ export default function App() {
               onUpdateCineCoinsTransactions={(t) => setCineCoinsTransactions(t)}
               userWallets={effectiveUserWallets}
               onUpdateWallet={handleUpdateUserWallet}
-            />
+              />
+            </Suspense>
           </div>
         }
       />
@@ -2654,7 +2740,7 @@ export default function App() {
           )
         }
       />
-      <Route path="/verify-ticket" element={<VerifyTicket />} />
+      <Route path="/verify-ticket" element={<Suspense fallback={<LazyFallback />}><VerifyTicket /></Suspense>} />
       <Route
         path="/booking-history"
         element={
@@ -2667,31 +2753,35 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <BookingHistory />
+            <Suspense fallback={<LazyFallback />}>
+              <BookingHistory />
+            </Suspense>
           )
         }
       />
-      <Route path="/admin-login" element={<AdminLogin />} />
-      <Route path="/staff-login" element={<AdminLogin defaultMode="employee" />} />
-      <Route path="/employee-login" element={<AdminLogin defaultMode="employee" />} />
+      <Route path="/admin-login" element={<Suspense fallback={<LazyFallback />}><AdminLogin /></Suspense>} />
+      <Route path="/staff-login" element={<Suspense fallback={<LazyFallback />}><AdminLogin defaultMode="employee" /></Suspense>} />
+      <Route path="/employee-login" element={<Suspense fallback={<LazyFallback />}><AdminLogin defaultMode="employee" /></Suspense>} />
 
       {/* JWT-Protected Material UI Admin Routes */}
       <Route
         path="/admin"
         element={
           <ProtectedRoute requireAdmin={true}>
-            <AdminLayout />
+            <Suspense fallback={<LazyFallback />}>
+              <AdminLayout />
+            </Suspense>
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
-        <Route path="movies" element={<Movies />} />
-        <Route path="edit-movie/:id" element={<EditMovie />} />
-        <Route path="shows" element={<Shows />} />
-        <Route path="theatres" element={<TheatresAdmin />} />
-        <Route path="seat-layout-generator" element={<SeatLayoutGenerator />} />
-        <Route path="events" element={<EventsAdminModule />} />
-        <Route path="events/proposals" element={<EventsAdminModule initialTab="proposals" />} />
+        <Route index element={<Suspense fallback={<LazyFallback />}><Dashboard /></Suspense>} />
+        <Route path="movies" element={<Suspense fallback={<LazyFallback />}><Movies /></Suspense>} />
+        <Route path="edit-movie/:id" element={<Suspense fallback={<LazyFallback />}><EditMovie /></Suspense>} />
+        <Route path="shows" element={<Suspense fallback={<LazyFallback />}><Shows /></Suspense>} />
+        <Route path="theatres" element={<Suspense fallback={<LazyFallback />}><TheatresAdmin /></Suspense>} />
+        <Route path="seat-layout-generator" element={<Suspense fallback={<LazyFallback />}><SeatLayoutGenerator /></Suspense>} />
+        <Route path="events" element={<Suspense fallback={<LazyFallback />}><EventsAdminModule /></Suspense>} />
+        <Route path="events/proposals" element={<Suspense fallback={<LazyFallback />}><EventsAdminModule initialTab="proposals" /></Suspense>} />
       </Route>
 
 
@@ -2750,11 +2840,13 @@ export default function App() {
           }
           if (initialMod === "media") {
             return (
-              <FilmProductionSubWebsite 
-                userEmail={userEmail}
-                initialModule="media"
-                onOpenAuth={() => setAuthOpen(true)}
-              />
+              <Suspense fallback={<LazyFallback />}>
+                <FilmProductionSubWebsite 
+                  userEmail={userEmail}
+                  initialModule="media"
+                  onOpenAuth={() => setAuthOpen(true)}
+                />
+              </Suspense>
             );
           }
           return renderMovieProduction();
@@ -2774,11 +2866,13 @@ export default function App() {
             );
           }
           return (
-            <MovieProductionHub 
-              userEmail={userEmail}
-              onOpenAuth={() => setAuthOpen(true)}
-              onNavigateHome={() => window.location.href = "/"}
-            />
+            <Suspense fallback={<LazyFallback />}>
+              <MovieProductionHub 
+                userEmail={userEmail}
+                onOpenAuth={() => setAuthOpen(true)}
+                onNavigateHome={() => window.location.href = "/"}
+              />
+            </Suspense>
           );
         };
 
@@ -2821,13 +2915,19 @@ export default function App() {
               />
             );
           }
-          if (isCreate) return <CreateEvent />;
+          if (isCreate) return (
+            <Suspense fallback={<LazyFallback />}>
+              <CreateEvent />
+            </Suspense>
+          );
           return (
-            <EventManagementHub 
-              userEmail={userEmail}
-              onOpenAuth={() => setAuthOpen(true)}
-              onNavigateHome={() => window.location.href = "/"}
-            />
+            <Suspense fallback={<LazyFallback />}>
+              <EventManagementHub 
+                userEmail={userEmail}
+                onOpenAuth={() => setAuthOpen(true)}
+                onNavigateHome={() => window.location.href = "/"}
+              />
+            </Suspense>
           );
         };
 
@@ -2907,18 +3007,20 @@ export default function App() {
       <Route 
         path="/account" 
         element={
-          <MyAccountModule 
-            userEmail={userEmail}
-            onLogout={handleLogout}
-            onOpenAuth={() => setAuthOpen(true)}
-            bookings={bookings}
-            eventRegistrations={eventRegistrations}
-            castingApplications={castingApplications}
-            onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
-            userWallet={cineCoinsUserWallet}
-            transactions={cineCoinsTransactions}
-            onOpenCineCoins={() => window.location.href = "/cinecoins"}
-          />
+          <Suspense fallback={<LazyFallback />}>
+            <MyAccountModule 
+              userEmail={userEmail}
+              onLogout={handleLogout}
+              onOpenAuth={() => setAuthOpen(true)}
+              bookings={bookings}
+              eventRegistrations={eventRegistrations}
+              castingApplications={castingApplications}
+              onAddCastingApplication={(app) => setCastingApplications([app, ...castingApplications])}
+              userWallet={cineCoinsUserWallet}
+              transactions={cineCoinsTransactions}
+              onOpenCineCoins={() => window.location.href = "/cinecoins"}
+            />
+          </Suspense>
         } 
       />
 
@@ -2926,11 +3028,13 @@ export default function App() {
       <Route 
         path="/settings" 
         element={
-          <SettingsPage 
-            selectedCity={selectedCity}
-            setSelectedCity={setSelectedCity}
-            onOpenAuth={handleOpenAuth}
-          />
+          <Suspense fallback={<LazyFallback />}>
+            <SettingsPage 
+              selectedCity={selectedCity}
+              setSelectedCity={setSelectedCity}
+              onOpenAuth={handleOpenAuth}
+            />
+          </Suspense>
         } 
       />
 
@@ -2968,10 +3072,12 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <CustomerProposalsView 
-                  userEmail={userEmail || ""}
-                  userName={userEmail ? userEmail.split("@")[0] : ""}
-                />
+                <Suspense fallback={<LazyFallback />}>
+                  <CustomerProposalsView 
+                    userEmail={userEmail || ""}
+                    userName={userEmail ? userEmail.split("@")[0] : ""}
+                  />
+                </Suspense>
               </div>
             </div>
           )
@@ -3005,13 +3111,15 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <ProposalSubmitForm 
-                  userEmail={userEmail || ""}
-                  userName={userEmail ? userEmail.split("@")[0] : ""}
-                  onSuccess={() => {
-                    window.location.href = "/proposals";
-                  }}
-                />
+                <Suspense fallback={<LazyFallback />}>
+                  <ProposalSubmitForm 
+                    userEmail={userEmail || ""}
+                    userName={userEmail ? userEmail.split("@")[0] : ""}
+                    onSuccess={() => {
+                      window.location.href = "/proposals";
+                    }}
+                  />
+                </Suspense>
               </div>
             </div>
           )
@@ -3019,33 +3127,35 @@ export default function App() {
       />
 
       {/* Advertising & Monetization Routes */}
-      <Route path="/advertise" element={<AdvertiseWithCineVenuePage />} />
-      <Route path="/advertise-with-cinevenue" element={<AdvertiseWithCineVenuePage />} />
-      <Route path="/advertising/my-campaigns" element={<MyAdvertisingCampaigns />} />
+      <Route path="/advertise" element={<Suspense fallback={<LazyFallback />}><AdvertiseWithCineVenuePage /></Suspense>} />
+      <Route path="/advertise-with-cinevenue" element={<Suspense fallback={<LazyFallback />}><AdvertiseWithCineVenuePage /></Suspense>} />
+      <Route path="/advertising/my-campaigns" element={<Suspense fallback={<LazyFallback />}><MyAdvertisingCampaigns /></Suspense>} />
 
       {/* Official Legal & Compliance Routes */}
-      <Route path="/legal" element={<LegalPolicies />} />
-      <Route path="/policies" element={<LegalPolicies />} />
-      <Route path="/privacy" element={<LegalPolicies initialPolicy="privacy" />} />
-      <Route path="/privacy-statement" element={<LegalPolicies initialPolicy="privacy" />} />
-      <Route path="/terms" element={<LegalPolicies initialPolicy="terms" />} />
-      <Route path="/terms-and-conditions" element={<LegalPolicies initialPolicy="terms" />} />
-      <Route path="/refund-policy" element={<LegalPolicies initialPolicy="refund" />} />
-      <Route path="/refunds" element={<LegalPolicies initialPolicy="refund" />} />
-      <Route path="/cookie-policy" element={<LegalPolicies initialPolicy="cookie" />} />
-      <Route path="/cookies" element={<LegalPolicies initialPolicy="cookie" />} />
-      <Route path="/user-agreement" element={<LegalPolicies initialPolicy="user-agreement" />} />
+      <Route path="/legal" element={<Suspense fallback={<LazyFallback />}><LegalPolicies /></Suspense>} />
+      <Route path="/policies" element={<Suspense fallback={<LazyFallback />}><LegalPolicies /></Suspense>} />
+      <Route path="/privacy" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="privacy" /></Suspense>} />
+      <Route path="/privacy-statement" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="privacy" /></Suspense>} />
+      <Route path="/terms" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="terms" /></Suspense>} />
+      <Route path="/terms-and-conditions" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="terms" /></Suspense>} />
+      <Route path="/refund-policy" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="refund" /></Suspense>} />
+      <Route path="/refunds" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="refund" /></Suspense>} />
+      <Route path="/cookie-policy" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="cookie" /></Suspense>} />
+      <Route path="/cookies" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="cookie" /></Suspense>} />
+      <Route path="/user-agreement" element={<Suspense fallback={<LazyFallback />}><LegalPolicies initialPolicy="user-agreement" /></Suspense>} />
 
       {/* Dedicated Theatre Partner / Admin Login Route */}
       <Route
         path="/theatre-admin/login"
         element={
-          <TheatreAdminLogin
-            onLoginSuccess={(email) => {
-              handleLoginSuccess(email);
-            }}
-            theatreAdmins={theatreAdmins}
-          />
+          <Suspense fallback={<LazyFallback />}>
+            <TheatreAdminLogin
+              onLoginSuccess={(email) => {
+                handleLoginSuccess(email);
+              }}
+              theatreAdmins={theatreAdmins}
+            />
+          </Suspense>
         }
       />
 
@@ -3056,29 +3166,31 @@ export default function App() {
           <ProtectedTheatreRoute requiredPortal="OWNER">
             {({ authorizedTheatreId }) => (
               <div className="bg-white dark:bg-[#0A0A0B] min-h-screen text-slate-950 dark:text-text-primary">
-                <TheatreManagerDashboard
-                  theatreId={authorizedTheatreId}
-                  theatres={theatres}
-                  bookings={bookings}
-                  schedules={schedules}
-                  movies={movies}
-                  onClose={() => {
-                    handleCloseManagerDashboard();
-                    window.location.href = "/";
-                  }}
-                  onScheduleShow={(sch) => setSchedules([...schedules, sch])}
-                  onDeleteSchedule={(id) => setSchedules(schedules.filter((s) => s.id !== id))}
-                  onSettleVenueBookings={(name) => {
-                    const updated = bookings.map((b) =>
-                      b.theatreName === name ? { ...b, status: "Settled" as const } : b
-                    );
-                    setBookings(updated);
-                  }}
-                  onUpdateTheatre={(t) => setTheatres(theatres.map((item) => (item.id === t.id ? t : item)))}
-                  onOpenManagerOperations={() => {
-                    window.location.href = `/theatre-manager?theatreId=${authorizedTheatreId}`;
-                  }}
-                />
+                <Suspense fallback={<LazyFallback />}>
+                  <TheatreManagerDashboard
+                    theatreId={authorizedTheatreId}
+                    theatres={theatres}
+                    bookings={bookings}
+                    schedules={schedules}
+                    movies={movies}
+                    onClose={() => {
+                      handleCloseManagerDashboard();
+                      window.location.href = "/";
+                    }}
+                    onScheduleShow={(sch) => setSchedules([...schedules, sch])}
+                    onDeleteSchedule={(id) => setSchedules(schedules.filter((s) => s.id !== id))}
+                    onSettleVenueBookings={(name) => {
+                      const updated = bookings.map((b) =>
+                        b.theatreName === name ? { ...b, status: "Settled" as const } : b
+                      );
+                      setBookings(updated);
+                    }}
+                    onUpdateTheatre={(t) => setTheatres(theatres.map((item) => (item.id === t.id ? t : item)))}
+                    onOpenManagerOperations={() => {
+                      window.location.href = `/theatre-manager?theatreId=${authorizedTheatreId}`;
+                    }}
+                  />
+                </Suspense>
               </div>
             )}
           </ProtectedTheatreRoute>
@@ -3092,21 +3204,23 @@ export default function App() {
           <ProtectedTheatreRoute requiredPortal="MANAGER">
             {({ authorizedTheatreId, userRole }) => (
               <div className="bg-white dark:bg-[#09090B] min-h-screen text-slate-950 dark:text-slate-100">
-                <TheatreManagerOperationsDashboard
-                  theatreId={authorizedTheatreId}
-                  theatres={theatres}
-                  bookings={bookings}
-                  schedules={schedules}
-                  movies={movies}
-                  userRole={userRole}
-                  onClose={() => {
-                    handleCloseManagerDashboard();
-                    window.location.href = "/";
-                  }}
-                  onOpenOwnerPortal={() => {
-                    window.location.href = `/theatre-admin?theatreId=${authorizedTheatreId}`;
-                  }}
-                />
+                <Suspense fallback={<LazyFallback />}>
+                  <TheatreManagerOperationsDashboard
+                    theatreId={authorizedTheatreId}
+                    theatres={theatres}
+                    bookings={bookings}
+                    schedules={schedules}
+                    movies={movies}
+                    userRole={userRole}
+                    onClose={() => {
+                      handleCloseManagerDashboard();
+                      window.location.href = "/";
+                    }}
+                    onOpenOwnerPortal={() => {
+                      window.location.href = `/theatre-admin?theatreId=${authorizedTheatreId}`;
+                    }}
+                  />
+                </Suspense>
               </div>
             )}
           </ProtectedTheatreRoute>
@@ -3136,64 +3250,72 @@ export default function App() {
     />
 
     {/* Global Info Modal */}
-    <InfoModal
-      isOpen={infoModalType !== null}
-      onClose={() => setInfoModalType(null)}
-      type={infoModalType}
-      footerPagesData={footerPagesData}
-    />
+    {infoModalType !== null && (
+      <Suspense fallback={null}>
+        <InfoModal
+          isOpen={infoModalType !== null}
+          onClose={() => setInfoModalType(null)}
+          type={infoModalType}
+          footerPagesData={footerPagesData}
+        />
+      </Suspense>
+    )}
 
     {/* Global Theatre Manager / Admin Workspace Modal Overlay */}
     {activeTheatreId !== null && (
-      <TheatreManagerDashboard
-        theatreId={activeTheatreId}
-        theatres={theatres}
-        bookings={bookings}
-        schedules={schedules}
-        movies={movies}
-        onClose={handleCloseManagerDashboard}
-        onScheduleShow={(sch) => setSchedules([...schedules, sch])}
-        onDeleteSchedule={(id) => setSchedules(schedules.filter((s) => s.id !== id))}
-        onSettleVenueBookings={(name) => {
-          const updated = bookings.map((b) =>
-            b.theatreName === name ? { ...b, status: "Settled" as const } : b
-          );
-          setBookings(updated);
-        }}
-        onUpdateTheatre={(t) => setTheatres(theatres.map((item) => (item.id === t.id ? t : item)))}
-      />
+      <Suspense fallback={null}>
+        <TheatreManagerDashboard
+          theatreId={activeTheatreId}
+          theatres={theatres}
+          bookings={bookings}
+          schedules={schedules}
+          movies={movies}
+          onClose={handleCloseManagerDashboard}
+          onScheduleShow={(sch) => setSchedules([...schedules, sch])}
+          onDeleteSchedule={(id) => setSchedules(schedules.filter((s) => s.id !== id))}
+          onSettleVenueBookings={(name) => {
+            const updated = bookings.map((b) =>
+              b.theatreName === name ? { ...b, status: "Settled" as const } : b
+            );
+            setBookings(updated);
+          }}
+          onUpdateTheatre={(t) => setTheatres(theatres.map((item) => (item.id === t.id ? t : item)))}
+        />
+      </Suspense>
     )}
 
     {/* Global Event Manager Workspace Modal Overlay */}
     {activeOrganizerId !== null && (
-      <EventManagerDashboard
-        organizerId={activeOrganizerId}
-        eventOrganizers={eventOrganizers}
-        events={events}
-        eventRegistrations={eventRegistrations}
-        onClose={handleCloseEventDashboard}
-        onAddEvent={(e) => setEvents([...events, e])}
-        onDeleteEvent={(id) => setEvents(events.filter((e) => e.id !== id))}
-        onUpdateEventOrganizer={(eo) =>
-          setEventOrganizers(eventOrganizers.map((item) => (item.id === eo.id ? eo : item)))
-        }
-        onUpdateEventRegistrationStatus={(regId, status) => {
-          const updated = eventRegistrations.map((r) => {
-            if (r.id === regId) {
-              const mapStatus = status.startsWith("Approved")
-                ? ("Confirmed" as const)
-                : ("Cancelled" as const);
-              return {
-                ...r,
-                status: mapStatus,
-                superadminApproved: status.startsWith("Approved"),
-              };
-            }
-            return r;
-          });
-          setEventRegistrations(updated);
-        }}
-      />
+      <Suspense fallback={null}>
+        <EventManagerDashboard
+          organizerId={activeOrganizerId}
+          eventOrganizers={eventOrganizers}
+          events={events}
+          eventRegistrations={eventRegistrations}
+          onClose={handleCloseEventDashboard}
+          onAddEvent={(e) => setEvents([...events, e])}
+          onDeleteEvent={(id) => setEvents(events.filter((e) => e.id !== id))}
+          onUpdateEventOrganizer={(eo) =>
+            setEventOrganizers(eventOrganizers.map((item) => (item.id === eo.id ? eo : item)))
+          }
+          onUpdateEventRegistrationStatus={(regId, status) => {
+            const updated = eventRegistrations.map((r) => {
+              if (r.id === regId) {
+                const mapStatus = status.startsWith("Approved")
+                  ? ("Confirmed" as const)
+                  : ("Cancelled" as const);
+                return {
+                  ...r,
+                  status: mapStatus,
+                  superadminApproved: status.startsWith("Approved"),
+                };
+              }
+              return r;
+            });
+            setEventRegistrations(updated);
+          }}
+        />
+      </Suspense>
     )}
   </>
 );

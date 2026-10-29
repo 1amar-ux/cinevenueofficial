@@ -1026,5 +1026,41 @@ model MovieFeeAuditLog {
   @@index([createdAt])
 }
 
+// ==========================================
+// 16. CENTRALIZED ENTRY LOGS & ADMIN AUDIT TRAIL
+// ==========================================
 
+model AuditEntryLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  logType     String   @default("AUTH") // "AUTH", "ADMIN_ACTIVITY", "SECURITY_ALERT", "PAGE_ACCESS"
+  actorId     String?
+  actorName   String?
+  actorEmail  String?
+  actorRole   String   @default("CUSTOMER")
+  activity    String   // e.g. "LOGIN_SUCCESS", "LOGIN_FAILED", "UPDATE", "REFUND_INITIATED"
+  module      String   @default("AUTH") // "AUTH", "USERS", "THEATRES", "MOVIES", "EVENTS", "BOOKINGS", "SETTINGS"
+  resourceId  String?
+  resourceType String?
+  status      String   @default("SUCCESS") // "SUCCESS", "FAILED", "BLOCKED"
+  severity    String   @default("INFO") // "INFO", "WARNING", "CRITICAL"
+  details     String
+  ipAddress   String?
+  userAgent   String?
+  device      String?
+  beforeValue Json?
+  afterValue  Json?
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now())
 
+  @@index([timestamp(sort: Desc)])
+  @@index([logType])
+  @@index([actorId])
+  @@index([actorEmail])
+  @@index([actorRole])
+  @@index([activity])
+  @@index([module])
+  @@index([status])
+  @@index([severity])
+  @@index([resourceId])
+}
