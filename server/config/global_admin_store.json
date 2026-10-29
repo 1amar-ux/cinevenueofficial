@@ -1,0 +1,195 @@
+{
+  "syncVersion": 1036,
+  "lastSyncedAt": "2026-10-29T19:53:37.739Z",
+  "banners": [
+    {
+      "id": "b1",
+      "title": "Malicious Stale Overwrite",
+      "active": true,
+      "clicks": 14950,
+      "type": "Hero Slider",
+      "imageUrl": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1200",
+      "linkUrl": "/movies/pushpa-2",
+      "targetAudience": "All Users",
+      "updatedAt": "2026-10-29T19:50:28.497Z",
+      "version": 3,
+      "clientVersion": 1007
+    },
+    {
+      "id": "b2",
+      "title": "IMAX Laser 3D Premium Cinema Experience Lounge",
+      "active": true,
+      "clicks": 9482,
+      "type": "Popup Modal",
+      "imageUrl": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=1200",
+      "linkUrl": "/theatres/prasads-imax",
+      "targetAudience": "Metro Cities",
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    },
+    {
+      "id": "b3",
+      "title": "Midweek Magic Flat 15% OFF popcorn combi",
+      "active": false,
+      "clicks": 2311,
+      "type": "Footer Banner",
+      "imageUrl": "https://images.unsplash.com/photo-1585647347483-22b66260dfff?auto=format&fit=crop&q=80&w=1200",
+      "linkUrl": "/offers/popcorn-combi",
+      "targetAudience": "All Users",
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    }
+  ],
+  "coupons": [
+    {
+      "id": "coup-1",
+      "code": "CINESUPER50",
+      "discount": 50,
+      "minAmount": 1000,
+      "expires": "2026-12-31",
+      "active": true,
+      "claims": 245,
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    },
+    {
+      "id": "coup-2",
+      "code": "PLATINUMPAY",
+      "discount": 20,
+      "minAmount": 500,
+      "expires": "2026-08-15",
+      "active": true,
+      "claims": 1098,
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    },
+    {
+      "id": "coup-3",
+      "code": "FESTIVE80",
+      "discount": 80,
+      "minAmount": 1500,
+      "expires": "2026-07-05",
+      "active": false,
+      "claims": 341,
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-1",
+      "user": "sarah@gmail.com",
+      "movie": "Kalki 2898 AD",
+      "rating": 5,
+      "comment": "Breathtaking visual effects! Truly world-class cinema output.",
+      "status": "Approved",
+      "updatedAt": "2026-10-29T19:53:17.360Z",
+      "version": 7
+    },
+    {
+      "id": "rev-2",
+      "user": "kiran_dev@gmail.com",
+      "movie": "Salaar",
+      "rating": 4,
+      "comment": "Action sequences are majestic. Prabhas delivers an absolute feast.",
+      "status": "Approved",
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    },
+    {
+      "id": "rev-3",
+      "user": "spammer_99@yahoo.com",
+      "movie": "Pushpa 2",
+      "rating": 1,
+      "comment": "BUY CHEAP TICKETS LINK WWW.SPAMMERSITE.COM FREE OFFER",
+      "status": "Flagged",
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    }
+  ],
+  "supportTickets": [
+    {
+      "id": "TKT-4109",
+      "customer": "sarah@gmail.com",
+      "title": "Double Charge during seat selection",
+      "status": "Resolved",
+      "priority": "High",
+      "date": "Today",
+      "updatedAt": "2026-10-29T19:53:21.442Z",
+      "version": 4,
+      "responseMessage": "Issue resolved by Global Admin across all active consoles."
+    },
+    {
+      "id": "TKT-4102",
+      "customer": "amit.s@theatre.com",
+      "title": "IMAX Projection screen brightness settings sync fail",
+      "status": "In-Progress",
+      "priority": "Medium",
+      "date": "Yesterday",
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    },
+    {
+      "id": "TKT-3948",
+      "customer": "kiran_dev@gmail.com",
+      "title": "Refund status for cancelled Devara show",
+      "status": "Resolved",
+      "priority": "High",
+      "date": "3 days ago",
+      "updatedAt": "2026-10-30T00:00:00.000Z",
+      "version": 1
+    }
+  ],
+  "cities": [
+    "Hyderabad",
+    "Bengaluru",
+    "Mumbai",
+    "Chennai",
+    "Delhi NCR"
+  ],
+  "spotlight": {
+    "title": "Kalki 2898 AD",
+    "rating": 9.2,
+    "votes": "184.2K",
+    "genre": "Sci-Fi / Epic / Mythological",
+    "duration": "3h 01m",
+    "language": "Telugu, Hindi, Tamil",
+    "description": "Set in a post-apocalyptic world in the year 2898 AD, a modern avatar of Vishnu is believed to have descended to the earth to protect the world from evil forces.",
+    "image": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1200",
+    "badge": "BLOCKBUSTER OF THE YEAR",
+    "releaseDate": "Now Showing Worldwide",
+    "formats": [
+      "IMAX 3D",
+      "4DX",
+      "Dolby Cinema",
+      "2D"
+    ],
+    "showtimes": [
+      "10:30 AM",
+      "1:45 PM",
+      "4:00 PM",
+      "7:30 PM",
+      "10:15 PM"
+    ]
+  },
+  "featureToggles": {
+    "isMovieBookingSystemActive": true,
+    "isEventBookingSystemActive": true,
+    "isCineCoinsActive": true,
+    "isRentalSystemActive": true,
+    "isFoodOrderingActive": true,
+    "version": 7,
+    "updatedAt": "2026-10-29T19:53:37.739Z"
+  },
+  "recentBroadcasts": [
+    {
+      "id": "BC-101",
+      "title": "Pushpa 2 Advance Bookings Opened",
+      "message": "Advance ticket sales have commenced across all IMAX and Dolby Atmos multiplexes in Hyderabad and Bangalore.",
+      "type": "Push",
+      "target": "1,250 devices",
+      "date": "2 hours ago"
+    }
+  ],
+  "changelog": []
+}

@@ -113,6 +113,26 @@ const TABLE_COLUMNS: Record<string, Set<string>> = {
     'id', 'timestamp', 'logType', 'actorId', 'actorName', 'actorEmail', 'actorRole',
     'activity', 'module', 'resourceId', 'resourceType', 'status', 'severity', 'details',
     'ipAddress', 'userAgent', 'device', 'beforeValue', 'afterValue', 'metadata', 'createdAt'
+  ]),
+  FraudAlert: new Set([
+    'id', 'category', 'severity', 'title', 'description', 'detectionRule', 'relatedEntityType',
+    'relatedEntityId', 'relatedEntityTitle', 'riskScore', 'evidenceSummary', 'evidenceData',
+    'investigationStatus', 'assignedTo', 'internalNotes', 'resolutionReason', 'actionHistory',
+    'isRestricted', 'createdAt', 'updatedAt'
+  ]),
+  UserReport: new Set([
+    'id', 'category', 'reporterEmail', 'reporterName', 'targetType', 'targetId',
+    'targetTitle', 'reason', 'evidenceText', 'status', 'linkedAlertId', 'createdAt', 'updatedAt'
+  ]),
+  FraudRuleConfig: new Set([
+    'id', 'maxBookingAttemptsPerWindow', 'bookingAttemptWindowMinutes', 'failedBookingThreshold',
+    'seatHoldReleaseThreshold', 'listingSimilarityThreshold', 'priceChangePercentThreshold',
+    'duplicateScanWindowMinutes', 'riskScoreWeights', 'autoEscalateThreshold', 'alertRetentionDays',
+    'updatedBy', 'updatedAt', 'metadata'
+  ]),
+  AnalyticsEngagementEvent: new Set([
+    'id', 'eventType', 'entityType', 'entityId', 'entityTitle', 'category', 'city',
+    'sessionId', 'userId', 'device', 'metadata', 'createdAt'
   ])
 };
 

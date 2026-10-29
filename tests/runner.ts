@@ -6,6 +6,9 @@ import { runCashfreeTests } from "./unit/cashfree.test";
 import { runEventConvenienceFeeTests } from "./unit/eventConvenienceFee.test";
 import { runMovieConvenienceFeeTests } from "./unit/movieConvenienceFee.test";
 import { runEntryLogsTests } from "./unit/entryLogs.test";
+import { runFraudTrustTests } from "./unit/fraudTrust.test";
+import { runEntertainmentAnalyticsTests } from "./unit/entertainmentAnalytics.test";
+import { runGlobalSyncTests } from "./unit/globalSync.test";
 
 async function main() {
   console.log("==========================================");
@@ -90,6 +93,42 @@ async function main() {
   console.log("\n--- 7. Entry Logs, Access Monitoring & Audit Trail Tests ---");
   const entryLogResults = await runEntryLogsTests();
   for (const r of entryLogResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 8. Fraud & Trust Centre, Security Anomaly & Risk Detection Tests ---");
+  const fraudResults = await runFraudTrustTests();
+  for (const r of fraudResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 9. Entertainment Analytics, Revenue Reconciliation & Audience Telemetry Tests ---");
+  const analyticsResults = await runEntertainmentAnalyticsTests();
+  for (const r of analyticsResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 10. Centralized Global Admin Panel & Cross-Device Synchronization Tests ---");
+  const syncResults = await runGlobalSyncTests();
+  for (const r of syncResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;

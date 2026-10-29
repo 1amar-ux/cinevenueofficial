@@ -4,10 +4,14 @@ import { createApp } from "./app";
 import { env } from "./config/env";
 import { prisma, checkDatabaseConnection } from "./config/database";
 import { logger } from "./shared/logger";
+import { realtimeHub } from "./services/realtimeHub";
 
 async function bootstrap() {
   const app = createApp();
   const server = http.createServer(app);
+
+  // Attach authoritative real-time WebSocket server (/ws/sync)
+  realtimeHub.attachServer(server);
 
   // In development, attach Vite middleware cleanly
   if (process.env.NODE_ENV !== "production") {

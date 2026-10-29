@@ -18,6 +18,9 @@ import notificationRoutes from "./modules/notifications/notification.routes";
 import { advertisingPublicRouter, adminAdvertisingRouter } from "./modules/advertising/advertising.routes";
 import employeeRouter from "./modules/admin/employee.routes";
 import { entryLogsRouter } from "./modules/admin/entryLogs.routes";
+import { fraudTrustRouter } from "./modules/admin/fraudTrust.routes";
+import { analyticsRouter } from "./modules/admin/analytics.routes";
+import { syncPublicRouter, syncAdminRouter } from "./modules/admin/sync.routes";
 import { checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
 import { razorpayService } from "./modules/payments/razorpay.service";
@@ -92,6 +95,10 @@ router.use("/advertising", advertisingPublicRouter);
 router.use("/admin/advertising", adminAdvertisingRouter);
 router.use("/admin", adminRoutes);
 router.use("/admin", entryLogsRouter);
+router.use("/admin/fraud-trust", fraudTrustRouter);
+router.use("/admin/analytics", analyticsRouter);
+router.use("/admin/sync", syncAdminRouter);
+router.use("/sync", syncPublicRouter);
 router.use("/", employeeRouter);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 router.use("/", proposalsRouter); // Mounts /proposals and /admin/proposals

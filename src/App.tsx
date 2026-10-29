@@ -25,6 +25,8 @@ import Home from "./pages/Home";
 import MaintenancePage from "./components/MaintenancePage";
 import AuthCallback from "./pages/AuthCallback";
 import { bookingReminderScheduler } from "./services/bookingReminderScheduler";
+import { globalSyncClient } from "./services/globalSyncClient";
+import CmsPromoBannerSlider from "./components/home/CmsPromoBannerSlider";
 
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -249,9 +251,36 @@ export default function App() {
   }, []);
 
   const [spotlight, setSpotlight] = useState<SpotlightMovie>(() => {
-    const saved = localStorage.getItem("cine_spotlight");
-    return saved ? JSON.parse(saved) : DEFAULT_SPOTLIGHT;
+    const syncState = globalSyncClient.getState();
+    return (syncState.spotlight as any) || DEFAULT_SPOTLIGHT;
   });
+
+  // Global Real-Time Sync Subscription across all devices
+  useEffect(() => {
+    const unsub = globalSyncClient.subscribe((syncState) => {
+      if (syncState.spotlight) {
+        setSpotlight(syncState.spotlight as any);
+      }
+      if (syncState.cities && syncState.cities.length > 0) {
+        setCities(syncState.cities);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleUpdateSpotlight = useCallback(async (newSpotlight: SpotlightMovie) => {
+    setSpotlight(newSpotlight);
+    try {
+      await globalSyncClient.updateSpotlight(newSpotlight);
+    } catch (e) {}
+  }, []);
+
+  const handleUpdateCities = useCallback(async (newCities: string[]) => {
+    setCities(newCities);
+    try {
+      await globalSyncClient.updateCities(newCities);
+    } catch (e) {}
+  }, []);
 
   const [schedules, setSchedules] = useState<MovieSchedule[]>(() => {
     const saved = localStorage.getItem("cine_schedules");
@@ -2164,9 +2193,9 @@ export default function App() {
               registeredUsers={registeredUsers}
               onUpdateRegisteredUsers={(users) => setRegisteredUsers(users)}
               cities={cities}
-              onUpdateCities={(c) => setCities(c)}
+              onUpdateCities={handleUpdateCities}
               spotlight={spotlight}
-              onUpdateSpotlight={(s) => setSpotlight(s)}
+              onUpdateSpotlight={handleUpdateSpotlight}
 
               isMovieBookingSystemActive={isMovieBookingSystemActive}
               onToggleMovieBookingSystemActive={(active) => setIsMovieBookingSystemActive(active)}
@@ -2282,6 +2311,7 @@ export default function App() {
             ) : (
               /* Normal Customer Immersive Single Page Website */
               <div className="animate-fade-in">
+                <CmsPromoBannerSlider />
                 <Featured
                   spotlight={spotlight}
                   onBookMovie={handleBookMovie}
@@ -2484,9 +2514,9 @@ export default function App() {
                   registeredUsers={registeredUsers}
                   onUpdateRegisteredUsers={(users) => setRegisteredUsers(users)}
                   cities={cities}
-                  onUpdateCities={(c) => setCities(c)}
+                  onUpdateCities={handleUpdateCities}
                   spotlight={spotlight}
-                  onUpdateSpotlight={(s) => setSpotlight(s)}
+                  onUpdateSpotlight={handleUpdateSpotlight}
 
                   isMovieBookingSystemActive={isMovieBookingSystemActive}
                   onToggleMovieBookingSystemActive={(active) => setIsMovieBookingSystemActive(active)}
@@ -2620,9 +2650,9 @@ export default function App() {
               registeredUsers={registeredUsers}
               onUpdateRegisteredUsers={(users) => setRegisteredUsers(users)}
               cities={cities}
-              onUpdateCities={(c) => setCities(c)}
+              onUpdateCities={handleUpdateCities}
               spotlight={spotlight}
-              onUpdateSpotlight={(s) => setSpotlight(s)}
+              onUpdateSpotlight={handleUpdateSpotlight}
 
               isMovieBookingSystemActive={isMovieBookingSystemActive}
               onToggleMovieBookingSystemActive={(active) => setIsMovieBookingSystemActive(active)}

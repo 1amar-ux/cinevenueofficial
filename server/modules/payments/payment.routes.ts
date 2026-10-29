@@ -10,6 +10,7 @@ import { authenticate, optionalAuthenticate } from "../../middleware/auth";
 import { checkMovieBookingMaintenance } from "../../middleware/maintenance";
 import { cashfreeService } from "./cashfree.service";
 import { razorpayService } from "./razorpay.service";
+import { fraudTrustService } from "../../services/fraudTrustService";
 
 const router = Router();
 
@@ -142,6 +143,14 @@ router.post("/razorpay/verify-payment", optionalAuthenticate, async (req: Reques
     });
 
     if (!result.verified) {
+      fraudTrustService.recordPaymentIrregularity({
+        bookingId: req.body.bookingId,
+        orderId: rzpOrderId,
+        expectedAmountPaise: 0,
+        receivedAmountPaise: 0,
+        errorType: "RAZORPAY_SIGNATURE_INVALID",
+        provider: "RAZORPAY"
+      }).catch(() => {});
       throw new PaymentError(result.message, "RAZORPAY_SIGNATURE_INVALID");
     }
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../../config/database";
 import { logger } from "../../shared/logger";
+import { fraudTrustService } from "../../services/fraudTrustService";
 
 const router = Router();
 
@@ -54,6 +55,16 @@ router.all("/verify", async (req: Request, res: Response, next: NextFunction) =>
     if (movieTicket) {
       const booking = movieTicket.booking;
       if (booking?.status === "CANCELLED" || booking?.status === "REFUNDED") {
+        fraudTrustService.recordTicketScanAnomaly({
+          ticketCode: movieTicket.ticketCode,
+          bookingNumber: booking.bookingNumber,
+          title: booking.show?.movie?.title,
+          venueName: booking.theatre?.name,
+          scanType: "CANCELLED",
+          operator: operatorName,
+          previousScannedAt: null
+        }).catch(() => {});
+
         return res.json({
           success: true,
           status: "CANCELLED",
@@ -69,6 +80,16 @@ router.all("/verify", async (req: Request, res: Response, next: NextFunction) =>
       }
 
       if (movieTicket.isUsed) {
+        fraudTrustService.recordTicketScanAnomaly({
+          ticketCode: movieTicket.ticketCode,
+          bookingNumber: booking?.bookingNumber,
+          title: booking?.show?.movie?.title,
+          venueName: booking?.theatre?.name,
+          scanType: "DUPLICATE",
+          operator: operatorName,
+          previousScannedAt: movieTicket.usedAt ? movieTicket.usedAt.toISOString() : null
+        }).catch(() => {});
+
         return res.json({
           success: true,
           status: "ALREADY_USED",

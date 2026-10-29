@@ -1064,3 +1064,98 @@ model AuditEntryLog {
   @@index([severity])
   @@index([resourceId])
 }
+
+// ==========================================
+// 17. FRAUD & TRUST CENTRE MODELS
+// ==========================================
+
+model FraudAlert {
+  id                  String   @id @default(cuid())
+  category            String   // "LISTING", "BOOKING", "PAYMENT", "TICKET", "ORGANIZER"
+  severity            String   @default("MEDIUM") // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  title               String
+  description         String
+  detectionRule       String   // e.g. "DUPLICATE_EVENT_LISTING", "DUPLICATE_TICKET_SCAN", "PAYMENT_AMOUNT_MISMATCH"
+  relatedEntityType   String   // "EVENT", "MOVIE", "BOOKING", "PAYMENT", "TICKET", "ORGANIZER", "USER"
+  relatedEntityId     String
+  relatedEntityTitle  String?
+  riskScore           Int      @default(50) // 0 - 100
+  evidenceSummary     String
+  evidenceData        Json?    @default("{}")
+  investigationStatus String   @default("NEW") // "NEW", "UNDER_REVIEW", "ESCALATED", "RESOLVED", "FALSE_POSITIVE"
+  assignedTo          String?  // Investigator email or name
+  internalNotes       Json?    @default("[]")
+  resolutionReason    String?
+  actionHistory       Json?    @default("[]")
+  isRestricted        Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([category])
+  @@index([severity])
+  @@index([investigationStatus])
+  @@index([relatedEntityType])
+  @@index([relatedEntityId])
+  @@index([riskScore])
+  @@index([createdAt])
+}
+
+model UserReport {
+  id             String   @id @default(cuid())
+  category       String   // "FAKE_EVENT", "MISLEADING_LISTING", "SUSPICIOUS_ORGANIZER", "TICKET_PROBLEM", "PAYMENT_ISSUE", "REFUND_CONCERN"
+  reporterEmail  String
+  reporterName   String?
+  targetType     String   // "EVENT", "MOVIE", "ORGANIZER", "BOOKING", "TICKET"
+  targetId       String
+  targetTitle    String
+  reason         String
+  evidenceText   String?
+  status         String   @default("PENDING") // "PENDING", "INVESTIGATING", "DISMISSED", "ACTIONED"
+  linkedAlertId  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([category])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model FraudRuleConfig {
+  id                          String   @id @default("default_fraud_config")
+  maxBookingAttemptsPerWindow Int      @default(5)
+  bookingAttemptWindowMinutes Int      @default(10)
+  failedBookingThreshold      Int      @default(3)
+  seatHoldReleaseThreshold    Int      @default(4)
+  listingSimilarityThreshold  Int      @default(80)
+  priceChangePercentThreshold Int      @default(50)
+  duplicateScanWindowMinutes  Int      @default(15)
+  riskScoreWeights            Json?    @default("{\"listing\":25,\"booking\":25,\"payment\":30,\"ticket\":20}")
+  autoEscalateThreshold       Int      @default(75)
+  alertRetentionDays          Int      @default(90)
+  updatedBy                   String?
+  updatedAt                   DateTime @updatedAt
+  metadata                    Json?    @default("{}")
+}
+
+model AnalyticsEngagementEvent {
+  id          String   @id @default(cuid())
+  eventType   String   // "PAGE_VIEW", "SEARCH", "LISTING_SELECT", "SHOWTIME_SELECT", "CHECKOUT_INIT", "PAYMENT_SUCCESS", "CHECKOUT_ABANDON"
+  entityType  String   // "MOVIE", "EVENT", "THEATRE"
+  entityId    String?
+  entityTitle String?
+  category    String?
+  city        String?
+  sessionId   String
+  userId      String?
+  device      String?
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([sessionId])
+  @@index([createdAt])
+}

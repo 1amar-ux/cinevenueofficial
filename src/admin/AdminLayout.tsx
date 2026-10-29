@@ -61,6 +61,8 @@ import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import EntryLogsModule from "../components/admin/monitoring/EntryLogsModule";
+import FraudTrustCentreModule from "../components/admin/fraud/FraudTrustCentreModule";
+import EntertainmentAnalyticsModule from "../components/admin/analytics/EntertainmentAnalyticsModule";
 import MovieVideoManagerModal from "../components/admin/movies/MovieVideoManagerModal";
 import MovieCastCrewEditorModal from "../components/admin/movies/MovieCastCrewEditorModal";
 import MovieDashboardModal from "../components/admin/movies/MovieDashboardModal";
@@ -74,12 +76,13 @@ import { parseAndValidateYouTubeUrl } from "../utils/youtube";
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
 import { Server, Cpu, Cloud, UploadCloud } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
-
+import { globalSyncClient, BannerRecord, CouponRecord, ReviewRecord, SupportTicketRecord } from "../services/globalSyncClient";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(() => employeeService.getCurrentEmployee());
+  const [globalSyncStatus, setGlobalSyncStatus] = useState(() => globalSyncClient.getConnectionStatus());
 
   // -------------------------------------------------------------
   // Load and sync all global persistent states from localStorage
@@ -175,33 +178,42 @@ export default function AdminLayout() {
     ];
   });
 
-  const [supportTickets, setSupportTickets] = useState(() => {
-    const cached = localStorage.getItem("sa_support_tickets");
-    if (cached) return JSON.parse(cached);
-    return [
-      { id: "TKT-4109", customer: "sarah@gmail.com", title: "Double Charge during seat selection", status: "Open", priority: "High", date: "Today" },
-      { id: "TKT-4102", customer: "amit.s@theatre.com", title: "IMAX Projection screen brightness settings sync fail", status: "In-Progress", priority: "Medium", date: "Yesterday" },
-      { id: "TKT-3948", customer: "kiran_dev@gmail.com", title: "Refund status for cancelled Devara show", status: "Resolved", priority: "High", date: "3 days ago" }
-    ];
+  const [supportTickets, setSupportTickets] = useState<SupportTicketRecord[]>(() => {
+    return globalSyncClient.getState().supportTickets || [];
   });
 
-  const [homepageBanners, setHomepageBanners] = useState([
-    { id: "b1", title: "Pushpa 2 Double-Dhamaka Booking Promo", active: true, clicks: 14950, type: "Wide Slider" },
-    { id: "b2", title: "IMAX Laser 3D Premium Cinema Experience Lounge", active: true, clicks: 9482, type: "Popup Modal" },
-    { id: "b3", title: "Midweek Magic Flat 15% OFF popcorn combi", active: false, clicks: 2311, type: "Footer Banner" }
-  ]);
+  const [homepageBanners, setHomepageBanners] = useState<BannerRecord[]>(() => {
+    return globalSyncClient.getState().banners || [];
+  });
 
-  const [platformCoupons, setPlatformCoupons] = useState([
-    { code: "CINESUPER50", discount: 50, minAmount: 1000, expires: "2026-12-31", active: true, claims: 245 },
-    { code: "PLATINUMPAY", discount: 20, minAmount: 500, expires: "2026-08-15", active: true, claims: 1098 },
-    { code: "FESTIVE80", discount: 80, minAmount: 1500, expires: "2026-07-05", active: false, claims: 341 }
-  ]);
+  const [platformCoupons, setPlatformCoupons] = useState<CouponRecord[]>(() => {
+    return globalSyncClient.getState().coupons || [];
+  });
 
-  const [userReviews, setUserReviews] = useState([
-    { id: "rev-1", user: "sarah@gmail.com", movie: "Kalki 2898 AD", rating: 5, comment: "Breathtaking visual effects! Truly world-class cinema output.", status: "Approved" },
-    { id: "rev-2", user: "kiran_dev@gmail.com", movie: "Salaar", rating: 4, comment: "Action sequences are majestic. Prabhas delivers an absolute feast.", status: "Approved" },
-    { id: "rev-3", user: "spammer_99@yahoo.com", movie: "Pushpa 2", rating: 1, comment: "BUY CHEAP TICKETS LINK WWW.SPAMMERSITE.COM FREE OFFER", status: "Flagged" }
-  ]);
+  const [userReviews, setUserReviews] = useState<ReviewRecord[]>(() => {
+    return globalSyncClient.getState().reviews || [];
+  });
+
+  // Authoritative real-time cross-device synchronization subscription
+  useEffect(() => {
+    const unsub = globalSyncClient.subscribe((syncState) => {
+      if (syncState.banners) setHomepageBanners(syncState.banners);
+      if (syncState.coupons) setPlatformCoupons(syncState.coupons);
+      if (syncState.reviews) setUserReviews(syncState.reviews);
+      if (syncState.supportTickets) setSupportTickets(syncState.supportTickets);
+      if (syncState.recentBroadcasts) setRecentBroadcasts(syncState.recentBroadcasts);
+      setGlobalSyncStatus(globalSyncClient.getConnectionStatus());
+    });
+
+    const statusInterval = setInterval(() => {
+      setGlobalSyncStatus(globalSyncClient.getConnectionStatus());
+    }, 5000);
+
+    return () => {
+      unsub();
+      clearInterval(statusInterval);
+    };
+  }, []);
 
   // Sync state helpers
   useEffect(() => {
@@ -212,19 +224,16 @@ export default function AdminLayout() {
     saveState("sa_audit_logs", auditLogs);
   }, [auditLogs]);
 
-  useEffect(() => {
-    saveState("sa_support_tickets", supportTickets);
-  }, [supportTickets]);
-
   // Sidebar sections configuration
   const sidebarGroups = [
     {
       title: "CORE CONTROL",
       items: [
         { id: "dashboard", label: "Dashboard Overview", icon: LayoutDashboard },
+        { id: "fraud_trust", label: "Fraud & Trust Centre", icon: ShieldAlert },
         { id: "system_monitoring", label: "System Monitoring", icon: Activity },
         { id: "entry_logs", label: "Entry Logs & Audit Trail", icon: ShieldCheck },
-        { id: "analytics", label: "Advanced Analytics", icon: TrendingUp },
+        { id: "analytics", label: "Entertainment Analytics", icon: TrendingUp },
         { id: "reports", label: "Platform Reports", icon: FileSpreadsheet }
       ]
     },
@@ -286,6 +295,10 @@ export default function AdminLayout() {
     // Only Super Admin can access: Employee Management, Admin Management, Security & Backups, Platform Settings, System Monitoring, Entry Logs
     if (["employees", "admins", "security", "settings", "system_monitoring", "entry_logs"].includes(tabId)) {
       return false;
+    }
+
+    if (tabId === "fraud_trust") {
+      return roleName === "ADMIN" || roleName === "SUPER_ADMIN";
     }
 
     const perms = currentEmployee.permissions || {};
@@ -825,31 +838,65 @@ export default function AdminLayout() {
     handleVoidBookingWithRefund(bookingId);
   };
 
-  const handleCreateCoupon = (e: React.FormEvent) => {
+  const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCouponCode.trim() || !newCouponDiscount) return;
-    const added = {
-      code: newCouponCode.trim().toUpperCase(),
-      discount: Number(newCouponDiscount),
-      minAmount: Number(newCouponMin) || 500,
-      expires: "2026-12-31",
-      active: true,
-      claims: 0
-    };
-    setPlatformCoupons([...platformCoupons, added]);
-    setNewCouponCode("");
-    setNewCouponDiscount("");
-    setNewCouponMin("");
-    showToast(`Promo voucher code ${added.code} compiled!`);
-    setAuditLogs([
-      { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Compiled discount coupon: ${added.code}` },
-      ...auditLogs
-    ]);
+    try {
+      const added = await globalSyncClient.updateCoupon({
+        code: newCouponCode.trim().toUpperCase(),
+        discount: Number(newCouponDiscount),
+        minAmount: Number(newCouponMin) || 500,
+        expires: "2026-12-31",
+        active: true,
+        claims: 0
+      });
+      setNewCouponCode("");
+      setNewCouponDiscount("");
+      setNewCouponMin("");
+      showToast(`Promo voucher code ${added.code} saved and synchronized across all devices!`);
+      setAuditLogs([
+        { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Compiled discount coupon: ${added.code}` },
+        ...auditLogs
+      ]);
+    } catch (err: any) {
+      showToast(err.message || "Failed to save coupon");
+    }
   };
 
-  const handleToggleCoupon = (code: string) => {
-    setPlatformCoupons(platformCoupons.map((c) => c.code === code ? { ...c, active: !c.active } : c));
-    showToast("Voucher code state updated.");
+  const handleToggleCoupon = async (code: string) => {
+    try {
+      const updated = await globalSyncClient.toggleCoupon(code);
+      showToast(`Voucher ${updated.code} is now ${updated.active ? "Active" : "Disabled"} across all devices.`);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update voucher");
+    }
+  };
+
+  const handleToggleBanner = async (bannerId: string) => {
+    try {
+      const updated = await globalSyncClient.toggleBanner(bannerId);
+      showToast(`Banner campaign ${updated.active ? "activated" : "deactivated"} across all devices.`);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update banner");
+    }
+  };
+
+  const handleDeleteBanner = async (bannerId: string) => {
+    try {
+      await globalSyncClient.deleteBanner(bannerId);
+      showToast("Banner campaign deleted across all devices.");
+    } catch (err: any) {
+      showToast(err.message || "Failed to delete banner");
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await globalSyncClient.deleteReview(reviewId);
+      showToast("Inappropriate review flagged and deleted across all devices.");
+    } catch (err: any) {
+      showToast(err.message || "Failed to delete review");
+    }
   };
 
   const handleBroadcastAlert = (e: React.FormEvent) => {
@@ -878,29 +925,27 @@ export default function AdminLayout() {
       setCampaignProgress("Dispatching secure digital campaign payload package...");
     }, 800);
 
-    setTimeout(() => {
-      const addedBc = {
-        id: "BC-" + Math.floor(100 + Math.random() * 900),
-        title: broadcastTitle,
-        message: broadcastMessage,
-        type: broadcastType,
-        target: broadcastType === "Push" ? "1,250 devices" : broadcastType === "Email" ? "4,821 mailboxes" : "2,190 endpoints",
-        date: "Just Now"
-      };
-      
-      const updatedBc = [addedBc, ...recentBroadcasts];
-      setRecentBroadcasts(updatedBc);
-      localStorage.setItem("sa_recent_broadcasts", JSON.stringify(updatedBc));
-      
-      setCampaignProgress(null);
-      setCampaignProgressPercentage(0);
-      setBroadcastTitle("");
-      setBroadcastMessage("");
-      showToast(`Campaign broadcasted successfully!`);
-      setAuditLogs([
-        { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Dispatched multi-channel broadcast campaign: "${addedBc.title}"` },
-        ...auditLogs
-      ]);
+    setTimeout(async () => {
+      try {
+        const addedBc = await globalSyncClient.dispatchBroadcast({
+          title: broadcastTitle,
+          message: broadcastMessage,
+          type: broadcastType,
+          target: broadcastType === "Push" ? "1,250 devices" : broadcastType === "Email" ? "4,821 mailboxes" : "2,190 endpoints"
+        });
+        
+        setCampaignProgress(null);
+        setCampaignProgressPercentage(0);
+        setBroadcastTitle("");
+        setBroadcastMessage("");
+        showToast(`Campaign broadcasted and synchronized across all devices!`);
+        setAuditLogs([
+          { timestamp: "Just Now", actor: "superadmin@cinevenue.com", ip: "103.22.41.8", action: `Dispatched multi-channel broadcast campaign: "${addedBc.title}"` },
+          ...auditLogs
+        ]);
+      } catch (err: any) {
+        showToast(err.message || "Failed to broadcast alert");
+      }
     }, 1500);
   };
 
@@ -1163,11 +1208,10 @@ export default function AdminLayout() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 text-xs shrink-0">
-          <div className="hidden md:flex items-center gap-2 text-[10px] font-mono text-text-muted">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>NODE ACTIVE</span>
-            <span>|</span>
-            <span>2026-07-08 02:05 AM UTC</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold">
+            <span className={`w-2 h-2 rounded-full ${globalSyncStatus.isConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+            <span className="hidden sm:inline">GLOBAL SYNC:</span>
+            <span>{globalSyncStatus.isConnected ? `LIVE (v${globalSyncStatus.syncVersion})` : "RECONNECTING"}</span>
           </div>
 
           <div className="flex items-center">
@@ -1290,6 +1334,13 @@ export default function AdminLayout() {
         <main className="flex-1 min-w-0 overflow-y-auto bg-[#0A0A0B] p-4 sm:p-6 md:p-8">
           <div className="max-w-6xl mx-auto space-y-6 text-left">
             
+            {/* FRAUD & TRUST CENTRE MODULE */}
+            {activeTab === "fraud_trust" && (
+              <div className="space-y-6">
+                <FraudTrustCentreModule />
+              </div>
+            )}
+
             {/* SYSTEM OPERATIONAL MONITORING MODULE */}
             {activeTab === "system_monitoring" && (
               <div className="space-y-6">
@@ -2968,155 +3019,10 @@ export default function AdminLayout() {
               </div>
             )}
 
-            {/* 11. ADVANCED ANALYTICS */}
+            {/* 11. ENTERTAINMENT ANALYTICS MODULE */}
             {activeTab === "analytics" && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-                    Advanced Occupancy & Traffic Metrics
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Analyze seat reservation density, evaluate regional city ticket sales, and track peak traffic booking hours
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                  {/* Occupancy Analytics */}
-                  <div className="bg-[#121213] border border-white/5 p-5 rounded-2xl space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white flex justify-between items-center">
-                      <span>Seat Occupancy Densitometer</span>
-                      <span className="text-[9px] text-gold font-mono uppercase font-bold tracking-wider">Multiplex Density Meters</span>
-                    </h3>
-                    <div className="space-y-4 font-mono">
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px]">
-                          <span>Prasads IMAX (Screen 1 & 2)</span>
-                          <span className="text-gold font-bold">88% Capacity</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="bg-gradient-to-r from-amber-500 to-gold h-full rounded-full" style={{ width: "88%" }} />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px]">
-                          <span>PVR GVK One (Screen 1-5)</span>
-                          <span className="text-gold font-bold">75% Capacity</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="bg-gradient-to-r from-amber-500 to-gold h-full rounded-full" style={{ width: "75%" }} />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px]">
-                          <span>Cinepolis VIP Lounge (Screen 1)</span>
-                          <span className="text-gold font-bold">92% Capacity</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="bg-gradient-to-r from-amber-500 to-gold h-full rounded-full" style={{ width: "92%" }} />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px]">
-                          <span>Asian Cinemas multiplexes</span>
-                          <span className="text-gold font-bold">61% Capacity</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="bg-gradient-to-r from-amber-500 to-gold h-full rounded-full" style={{ width: "61%" }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hourly traffic analysis */}
-                  <div className="bg-[#121213] border border-white/5 p-5 rounded-2xl space-y-4 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-white mb-3">Traffic Activity Heatmap</h3>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono text-center text-[10px]">
-                        {[
-                          { name: "Morning", style: "bg-gold/10 text-gold border border-gold/15 hover:bg-gold/15" },
-                          { name: "Noon", style: "bg-gold/20 text-gold border border-gold/20 hover:bg-gold/25" },
-                          { name: "Matinee", style: "bg-gold text-black font-bold hover:bg-gold-light" },
-                          { name: "Evening", style: "bg-gold/60 text-black font-bold hover:bg-gold/70" },
-                          { name: "Late Show", style: "bg-gold/30 text-gold border border-gold/30 hover:bg-gold/45" },
-                          { name: "Midnight", style: "bg-gold/5 text-text-secondary hover:bg-gold/10" }
-                        ].map((item) => (
-                          <button
-                            key={item.name}
-                            type="button"
-                            onClick={() => setActiveHeatmapPeriod(item.name)}
-                            className={`p-2 rounded flex flex-col justify-center items-center transition-all cursor-pointer ${item.style} ${
-                              activeHeatmapPeriod === item.name ? "ring-2 ring-white ring-offset-2 ring-offset-black" : ""
-                            }`}
-                          >
-                            <span className="text-[9px] block uppercase tracking-wider font-bold">{item.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Dynamic Heatmap Period details */}
-                    <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2 mt-4">
-                      <div className="flex justify-between items-center border-b border-white/5 pb-1.5">
-                        <span className="font-bold text-white uppercase tracking-wider text-[10px]">{activeHeatmapPeriod} Shift Analytics</span>
-                        <span className="text-[9px] text-gold font-mono font-bold uppercase">Live Sensor Tracking</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-[10px] font-mono">
-                        <div>
-                          <span className="text-text-secondary block">Peak Booking Speed:</span>
-                          <span className="text-white font-bold">
-                            {activeHeatmapPeriod === "Morning" && "25 tickets/min"}
-                            {activeHeatmapPeriod === "Noon" && "52 tickets/min"}
-                            {activeHeatmapPeriod === "Matinee" && "120 tickets/min"}
-                            {activeHeatmapPeriod === "Evening" && "95 tickets/min"}
-                            {activeHeatmapPeriod === "Late Show" && "60 tickets/min"}
-                            {activeHeatmapPeriod === "Midnight" && "10 tickets/min"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-text-secondary block">Active Screens:</span>
-                          <span className="text-white font-bold">
-                            {activeHeatmapPeriod === "Morning" && "8 Screens active"}
-                            {activeHeatmapPeriod === "Noon" && "12 Screens active"}
-                            {activeHeatmapPeriod === "Matinee" && "24 Screens active"}
-                            {activeHeatmapPeriod === "Evening" && "20 Screens active"}
-                            {activeHeatmapPeriod === "Late Show" && "15 Screens active"}
-                            {activeHeatmapPeriod === "Midnight" && "4 Screens active"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-text-secondary block">Best Selling Snack:</span>
-                          <span className="text-white font-bold">
-                            {activeHeatmapPeriod === "Morning" && "Filter Coffee & Idli"}
-                            {activeHeatmapPeriod === "Noon" && "Samosa & Soda Duo"}
-                            {activeHeatmapPeriod === "Matinee" && "Caramel Tub & Coke"}
-                            {activeHeatmapPeriod === "Evening" && "Cheese Popcorn & Pizza"}
-                            {activeHeatmapPeriod === "Late Show" && "Nachos with Extra Cheese"}
-                            {activeHeatmapPeriod === "Midnight" && "Salted Tub & Red Bull"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-text-secondary block">Dominant Age Group:</span>
-                          <span className="text-white font-bold">
-                            {activeHeatmapPeriod === "Morning" && "18-25 years (Students)"}
-                            {activeHeatmapPeriod === "Noon" && "25-40 years (Corporate)"}
-                            {activeHeatmapPeriod === "Matinee" && "12-60 years (Families)"}
-                            {activeHeatmapPeriod === "Evening" && "20-45 years (Friends)"}
-                            {activeHeatmapPeriod === "Late Show" && "18-35 years (Young Adults)"}
-                            {activeHeatmapPeriod === "Midnight" && "18-28 years (Die-hard Fans)"}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-text-secondary italic pt-1.5 border-t border-white/5">
-                        {activeHeatmapPeriod === "Morning" && "Student-heavy crowds taking advantage of early bird discount schemes."}
-                        {activeHeatmapPeriod === "Noon" && "Corporate team lunch breaks and casual afternoon viewers filling multiplex seats."}
-                        {activeHeatmapPeriod === "Matinee" && "Peak weekend family cluster. Screens running at maximum cooling and audio capacity."}
-                        {activeHeatmapPeriod === "Evening" && "High volume of working professionals and couples. Premium snack sales at absolute highest."}
-                        {activeHeatmapPeriod === "Late Show" && "Excellent stable crowd density. Popular for action releases and blockbuster genres."}
-                        {activeHeatmapPeriod === "Midnight" && "Limited midnight screenings. Primarily die-hard fans attending premiere shows."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <EntertainmentAnalyticsModule />
               </div>
             )}
 
@@ -3246,19 +3152,25 @@ export default function AdminLayout() {
                           <span className="font-bold text-white block">{b.title}</span>
                           <span className="text-[10px] text-text-secondary block">Layout Type: {b.type} | Total interactions clicks: {b.clicks}</span>
                         </div>
-                        <button
-                          onClick={() => {
-                            setHomepageBanners(homepageBanners.map((item) => item.id === b.id ? { ...item, active: !item.active } : item));
-                            showToast("Slider active state updated.");
-                          }}
-                          className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded border ${
-                            b.active
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-red-500/10 text-red-400 border-red-500/20"
-                          }`}
-                        >
-                          {b.active ? "Live Campaign" : "Offline"}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggleBanner(b.id)}
+                            className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider rounded border transition-colors ${
+                              b.active
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
+                            }`}
+                          >
+                            {b.active ? "Live Campaign" : "Offline"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBanner(b.id)}
+                            className="p-1 bg-red-500/10 hover:bg-red-500 hover:text-black border border-red-500/10 text-red-400 rounded transition-colors"
+                            title="Delete banner"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -3302,11 +3214,9 @@ export default function AdminLayout() {
                             {rev.status}
                           </span>
                           <button
-                            onClick={() => {
-                              setUserReviews(userReviews.filter((item) => item.id !== rev.id));
-                              showToast("Inappropriate review flagged and deleted.");
-                            }}
+                            onClick={() => handleDeleteReview(rev.id)}
                             className="p-1 bg-red-500/10 hover:bg-red-500 hover:text-black border border-red-500/10 text-red-400 rounded transition-colors"
+                            title="Delete review"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

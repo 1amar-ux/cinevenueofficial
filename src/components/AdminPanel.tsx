@@ -9,7 +9,8 @@ import {
   Sparkles, Clock, DollarSign, CalendarRange, Wallet, CheckCircle, Ticket, 
   Layers, Users, LayoutDashboard, Bell, LogOut, Search, Menu, Monitor, QrCode, 
   Play, Pause, RotateCcw, Thermometer, Volume2, ArrowLeft, Edit, Shield, Lock, 
-  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck, Star, Edit2, BarChart3
+  Settings, Sliders, CheckSquare, Square, FileText, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Power, Activity, Coins, UserCheck, Star, Edit2, BarChart3,
+  ShieldAlert, TrendingUp
 } from "lucide-react";
 import EmployeeManagementModule from "./admin/employees/EmployeeManagementModule";
 import CloudinaryPhotoUploader from "./admin/common/CloudinaryPhotoUploader";
@@ -24,6 +25,8 @@ import ThemeToggle from "./ThemeToggle";
 import SubWebsiteCMSManager from "./cms/SubWebsiteCMSManager";
 import IntegrationTestingModule from "./admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "./admin/monitoring/SystemMonitoringModule";
+import FraudTrustCentreModule from "./admin/fraud/FraudTrustCentreModule";
+import EntertainmentAnalyticsModule from "./admin/analytics/EntertainmentAnalyticsModule";
 import FinanceModule from "./admin/finance/FinanceModule";
 import { PillarKey } from "./cms/types";
 import CineCoinsAdminControl from "./admin/CineCoinsAdminControl";
@@ -147,7 +150,7 @@ interface AdminPanelProps {
   onUpdateWallet?: (wallet: CineCoinsUserWallet) => void;
 }
 
-type TabType = "integration_testing" | "system_monitoring" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management" | "movie_fees" | "booking_reminders";
+type TabType = "integration_testing" | "system_monitoring" | "fraud_trust" | "analytics" | "overview" | "employees" | "access" | "movies" | "scheduler" | "seat_layout" | "bookings" | "qr_scanner" | "rentals_messages" | "events" | "events_create" | "events_highlights" | "event_requests" | "film_production" | "settings" | "theatre_creator" | "event_creator" | "locations" | "theatre_banks" | "verification_queue" | "ads_console" | "upi_settings" | "service_control" | "sub_websites" | "footer_pages" | "cinecoins_admin" | "proposals" | "fee_management" | "movie_fees" | "booking_reminders";
 
 export default function AdminPanel({
   isOpen,
@@ -748,7 +751,7 @@ export default function AdminPanel({
     try {
       const saved = localStorage.getItem("cine_admin_active_tab");
       if (saved && [
-        "overview", "system_monitoring", "integration_testing",
+        "overview", "fraud_trust", "analytics", "system_monitoring", "integration_testing",
         "movies", "scheduler", "seat_layout", "bookings", "qr_scanner",
         "events", "events_create", "event_requests", "proposals", "event_creator",
         "locations", "theatre_creator", "access", "rentals_messages",
@@ -2018,6 +2021,28 @@ export default function AdminPanel({
           domId: "tab-btn-overview",
         },
         {
+          id: "analytics",
+          label: "Entertainment Analytics",
+          icon: TrendingUp,
+          superAdminOnly: true,
+          badge: (
+            <span className="text-[9px] font-mono font-bold bg-[#EAB308]/20 text-[#FACC15] px-1.5 py-0.5 rounded">
+              BI
+            </span>
+          ),
+        },
+        {
+          id: "fraud_trust",
+          label: "Fraud & Trust Centre",
+          icon: ShieldAlert,
+          superAdminOnly: true,
+          badge: (
+            <span className="text-[9px] font-mono font-bold bg-[#EF4444]/20 text-[#F87171] px-1.5 py-0.5 rounded">
+              SECURITY
+            </span>
+          ),
+        },
+        {
           id: "system_monitoring",
           label: "System Monitoring & Health",
           icon: Activity,
@@ -2667,10 +2692,28 @@ export default function AdminPanel({
           </div>
 
                     {/* ========================================================= */}
+          {/* TAB: ENTERTAINMENT ANALYTICS */}
+          {/* ========================================================= */}
+          {activeTab === "analytics" && (
+            <div className="space-y-6 animate-fade-in" id="tab-analytics">
+              <EntertainmentAnalyticsModule />
+            </div>
+          )}
+
+          {/* ========================================================= */}
           {/* TAB: INTEGRATION & TESTING MODULE */}
           {/* ========================================================= */}
           {activeTab === "integration_testing" && (
             <IntegrationTestingModule isSuperAdmin={effectiveSuperAdmin} />
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB: FRAUD & TRUST CENTRE MODULE */}
+          {/* ========================================================= */}
+          {activeTab === "fraud_trust" && (
+            <div className="space-y-6 animate-fade-in" id="tab-fraud-trust">
+              <FraudTrustCentreModule />
+            </div>
           )}
 
           {/* ========================================================= */}
