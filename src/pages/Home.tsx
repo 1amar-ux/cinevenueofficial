@@ -730,13 +730,20 @@ export default function Home({
             From premier live movie ticket engines with verified offline-first seat mappings, to major pan-Indian physical film production, celebrity launches, viral media campaigns, and CineCoins rewards.
           </p>
 
-          <div className="flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
+          <div className="flex w-full flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
             <button
               onClick={() => navigate("/booking")}
               className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-[#D4AF37]/30 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Ticket className="w-4 h-4 text-black" />
               Book Movie Tickets
+            </button>
+            <button
+              onClick={() => navigate("/events")}
+              className="w-full sm:w-auto min-h-12 px-6 sm:px-8 py-4 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-[#D4AF37]/30 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Calendar className="w-4 h-4 text-black" />
+              Book Event Tickets
             </button>
             <a
               href="#services"
