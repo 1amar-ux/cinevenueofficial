@@ -238,8 +238,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
+      const storedRefreshToken = localStorage.getItem("cine_refresh_token");
       await Promise.allSettled([
-        apiClient.post("/auth/logout", {}),
+        apiClient.post("/auth/logout", storedRefreshToken ? { refreshToken: storedRefreshToken } : {}),
         supabase.auth.signOut()
       ]);
     } finally {

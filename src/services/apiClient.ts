@@ -57,7 +57,7 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response Interceptor: refreshes the HttpOnly cookie session once on 401.
+    // Response Interceptor: refreshes session once on 401 using stored refresh token and cookies
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
@@ -65,15 +65,35 @@ class ApiClient {
 
         if (error.response?.status === 401 && !originalRequest._retry && typeof window !== "undefined") {
           originalRequest._retry = true;
-          {
-            try {
-              const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-              if (res.data?.success) {
-                return this.client(originalRequest);
+          try {
+            const storedRefreshToken = localStorage.getItem("cine_refresh_token") || localStorage.getItem("refreshToken");
+            const res = await axios.post(
+              `${API_BASE_URL}/auth/refresh`,
+              storedRefreshToken ? { refreshToken: storedRefreshToken } : {},
+              { withCredentials: true }
+            );
+            if (res.data?.success) {
+              const tokens = res.data?.data?.tokens || res.data?.tokens;
+              const newAccessToken = tokens?.accessToken || res.data?.token;
+              const newRefreshToken = tokens?.refreshToken;
+              if (newAccessToken) {
+                localStorage.setItem("cine_access_token", newAccessToken);
+                localStorage.setItem("cine_auth_token", newAccessToken);
+                if (originalRequest.headers) {
+                  originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                }
               }
-            } catch {
-              // The server has rejected the session; the UI will resolve to signed out.
+              if (newRefreshToken) {
+                localStorage.setItem("cine_refresh_token", newRefreshToken);
+              }
+              return this.client(originalRequest);
             }
+          } catch {
+            // Clean up stale session if refresh token has expired or is revoked
+            localStorage.removeItem("cine_access_token");
+            localStorage.removeItem("cine_auth_token");
+            localStorage.removeItem("cine_refresh_token");
+            localStorage.removeItem("cine_user_email");
           }
         }
 

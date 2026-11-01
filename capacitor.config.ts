@@ -5,10 +5,9 @@ const config: CapacitorConfig = {
   appName: "CineVenue",
   webDir: "dist",
   server: {
-    url: process.env.CAPACITOR_SERVER_URL || "https://cinevenue.com",
-    cleartext: true,
     androidScheme: "https",
     iosScheme: "capacitor",
+    cleartext: true,
     allowNavigation: [
       "cinevenue.com",
       "*.cinevenue.com",
