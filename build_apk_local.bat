@@ -4,14 +4,14 @@ echo  CineVenue Android APK Builder (Local)
 echo ==============================================
 
 echo [1/3] Building Web Production Bundle...
-call npm run build
+call npm.cmd run build
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Web build failed.
     exit /b %ERRORLEVEL%
 )
 
 echo [2/3] Syncing Capacitor Android Project...
-call npx cap sync android
+call npx.cmd cap sync android
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Capacitor sync failed.
     exit /b %ERRORLEVEL%
