@@ -271,7 +271,10 @@ export default function App() {
   const handleUpdateSpotlight = useCallback(async (newSpotlight: SpotlightMovie) => {
     setSpotlight(newSpotlight);
     try {
-      await globalSyncClient.updateSpotlight(newSpotlight);
+      await globalSyncClient.updateSpotlight({
+        ...newSpotlight,
+        rating: Number(newSpotlight.rating) || 0
+      } as any);
     } catch (e) {}
   }, []);
 

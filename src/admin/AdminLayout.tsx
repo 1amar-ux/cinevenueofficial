@@ -297,12 +297,12 @@ export default function AdminLayout() {
       return false;
     }
 
+    const perms = currentEmployee.permissions || {};
+    const roleName = currentEmployee.role?.name;
+
     if (tabId === "fraud_trust") {
       return roleName === "ADMIN" || roleName === "SUPER_ADMIN";
     }
-
-    const perms = currentEmployee.permissions || {};
-    const roleName = currentEmployee.role?.name;
 
     switch (tabId) {
       case "dashboard":

@@ -28,6 +28,9 @@ export default function Hero({
       delay: Math.random() * 8,
       duration: 8 + Math.random() * 8,
     }));
+    setParticles(temp);
+  }, []);
+
   // Safely record impression only once per ad when mounted
   const recordedAdsRef = React.useRef<Set<string>>(new Set());
   useEffect(() => {

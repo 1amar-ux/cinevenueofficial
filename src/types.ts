@@ -267,6 +267,12 @@ export interface Booking {
   taxLines?: TaxLine[];
   feeSnapshot?: any;
   paymentMethod?: string;
+  paymentStatus?: string;
+  createdAt?: string;
+  bookingNumber?: string;
+  qrCode?: string;
+  ticketId?: string;
+  showId?: string;
 }
 
 export interface MovieSchedule {
@@ -278,6 +284,7 @@ export interface MovieSchedule {
   date: string;
   isDeployed?: boolean;
   isActive?: boolean;
+  screenName?: string;
   interval?: number; // interval in minutes, e.g. 15, 20
   bookingWindow?: string; // booking window description, e.g. "Starts 48h before", "Closes 1h before"
 }
@@ -779,6 +786,8 @@ export interface CineCoinsTransaction {
   status: 'Pending' | 'Processing' | 'Successful' | 'Completed' | 'Failed' | 'Cancelled' | 'Refunded' | 'Reversed' | 'Expired' | 'Under Review' | 'Rejected';
   date: string;
   time?: string;
+  title?: string;
+  description?: string;
   adminId?: string;
 }
 

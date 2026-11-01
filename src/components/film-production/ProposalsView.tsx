@@ -67,6 +67,7 @@ export default function ProposalsView({
   projects,
   userEmail,
   onOpenCreateProposal,
+  onOpenProposalForm,
   onSelectProposal,
   onRefreshProposals
 }: ProposalsViewProps) {

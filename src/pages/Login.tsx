@@ -409,7 +409,7 @@ export default function Login() {
                 setResetCode(val);
                 setError("");
               }}
-              inputProps={{ maxLength: 6, style: { letterSpacing: "4px", fontFamily: "monospace", fontWeight: "bold" } }}
+              slotProps={{ htmlInput: { maxLength: 6, style: { letterSpacing: "4px", fontFamily: "monospace", fontWeight: "bold" } } }}
               required
             />
 
