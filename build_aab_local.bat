@@ -17,28 +17,18 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
-echo [3/3] Checking Release Signing Configuration...
+echo [3/3] Checking Release Signing Configuration and Assembling AAB...
 cd android
-if not exist "keystore.properties" (
-    if "%KEYSTORE_FILE%"=="" (
-        echo.
-        echo ========================================================================
-        echo ERROR: 'android\keystore.properties' not found and KEYSTORE_FILE is not set.
-        echo Google Play Console requires a signed Android App Bundle (.aab).
-        echo Please copy 'android\keystore.properties.example' to 'android\keystore.properties'
-        echo and configure your release keystore before running bundleRelease.
-        echo ========================================================================
-        cd ..
-        exit /b 1
-    )
+if not exist "keystore.properties" if "%KEYSTORE_FILE%"=="" (
+    echo ERROR: 'android\keystore.properties' not found and KEYSTORE_FILE is not set.
+    cd ..
+    exit /b 1
 )
 
 echo Running Gradle bundleRelease...
 call gradlew.bat bundleRelease
 if %ERRORLEVEL% NEQ 0 (
-    echo.
     echo Error: Gradle bundleRelease failed.
-    echo Ensure Android SDK / Java JDK are installed and keystore credentials are valid.
     cd ..
     exit /b %ERRORLEVEL%
 )
