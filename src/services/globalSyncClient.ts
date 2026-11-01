@@ -168,49 +168,49 @@ class GlobalSyncClient {
     if (typeof window !== "undefined") {
       this.initConnection();
       this.startDeltaPolling();
+
+      // Refresh on window focus and visibility resume (re-opening mobile app or browser tab)
+      const handleResume = () => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          this.fetchFullState();
+        }
+      };
+      window.addEventListener("focus", handleResume);
+      document.addEventListener("visibilitychange", handleResume);
+      window.addEventListener("online", handleResume);
     }
   }
 
-  private hydrateFromCache() {
-    if (typeof window === "undefined") return;
-    try {
-      const cached = localStorage.getItem("cine_global_sync_state");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        this.state = {
-          ...DEFAULT_STATE,
-          ...parsed,
-          featureToggles: { ...DEFAULT_STATE.featureToggles, ...(parsed.featureToggles || {}) }
-        };
-      }
-    } catch (e) {}
-  }
+  private getSyncEndpoints() {
+    if (typeof window === "undefined") {
+      return { wsUrl: "ws://localhost:3000/ws/sync", sseUrl: "/api/v1/sync/events", httpBase: "" };
+    }
+    const isNative = (typeof (window as any).Capacitor !== "undefined" && (window as any).Capacitor?.isNativePlatform?.()) ||
+      window.location.origin.startsWith("capacitor://") ||
+      window.location.origin.startsWith("ionic://") ||
+      (window.location.hostname === "localhost" && window.location.port === "");
 
-  private saveToCache() {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem("cine_global_sync_state", JSON.stringify(this.state));
-    } catch (e) {}
-  }
-
-  private initBroadcastChannel() {
-    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
-    try {
-      this.broadcastChannel = new BroadcastChannel("cinevenue_global_sync_bus");
-      this.broadcastChannel.onmessage = (event) => {
-        if (event.data?.type === "SYNC_LOCAL_BROADCAST") {
-          this.applyState(event.data.payload, false);
-        }
+    if (isNative) {
+      return {
+        wsUrl: "wss://cinevenue.com/ws/sync",
+        sseUrl: "https://cinevenue.com/api/v1/sync/events",
+        httpBase: "https://cinevenue.com"
       };
-    } catch (e) {}
+    }
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    return {
+      wsUrl: `${protocol}//${host}/ws/sync`,
+      sseUrl: "/api/v1/sync/events",
+      httpBase: ""
+    };
   }
 
   private initConnection() {
     if (typeof window === "undefined") return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws/sync`;
+    const { wsUrl } = this.getSyncEndpoints();
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -257,7 +257,8 @@ class GlobalSyncClient {
   private initSseFallback() {
     if (typeof window === "undefined" || !("EventSource" in window)) return;
     try {
-      this.sse = new EventSource("/api/v1/sync/events");
+      const { sseUrl } = this.getSyncEndpoints();
+      this.sse = new EventSource(sseUrl);
       this.sse.onopen = () => {
         this.isConnected = true;
         this.connectionMode = "SSE";
@@ -294,7 +295,8 @@ class GlobalSyncClient {
   private startDeltaPolling() {
     this.pollInterval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/v1/sync/delta?version=${this.state.syncVersion}`);
+        const { httpBase } = this.getSyncEndpoints();
+        const res = await fetch(`${httpBase}/api/v1/sync/delta?version=${this.state.syncVersion}`);
         if (res.ok) {
           const json = await res.json();
           if (json.data?.isStale && json.data?.state) {
@@ -307,8 +309,9 @@ class GlobalSyncClient {
 
   public async fetchFullState(): Promise<GlobalSyncState> {
     try {
+      const { httpBase } = this.getSyncEndpoints();
       const adminPasscode = typeof window !== "undefined" ? (localStorage.getItem("cine_admin_passcode") || "999999") : "";
-      const res = await fetch("/api/v1/sync/state", {
+      const res = await fetch(`${httpBase}/api/v1/sync/state`, {
         headers: adminPasscode ? { "x-admin-passcode": adminPasscode } : {}
       });
 
