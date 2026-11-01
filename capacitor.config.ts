@@ -5,13 +5,23 @@ const config: CapacitorConfig = {
   appName: "CineVenue",
   webDir: "dist",
   server: {
+    url: process.env.CAPACITOR_SERVER_URL || "https://cinevenue.com",
+    cleartext: true,
     androidScheme: "https",
     iosScheme: "capacitor",
-    cleartext: true
+    allowNavigation: [
+      "cinevenue.com",
+      "*.cinevenue.com",
+      "*.vercel.app",
+      "*.supabase.co",
+      "checkout.razorpay.com",
+      "api.razorpay.com",
+      "*.cashfree.com"
+    ]
   },
   android: {
     allowMixedContent: true,
-    backgroundColor: "#0b0e14"
+    backgroundColor: "#0A0A0B"
   },
   ios: {
     contentInset: "always",
