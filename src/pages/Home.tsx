@@ -13,7 +13,7 @@ import {
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
   TrendingUp, BarChart2, Briefcase, Camera, Video, Compass, HelpCircle,
   Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send, Menu,
-  User, Coins
+  User, Coins, Settings
 } from "lucide-react";
 import {
   TrendingExperienceItem,
@@ -539,6 +539,18 @@ export default function Home({
           <div className="flex xl:hidden items-center">
             <ThemeToggle variant="dropdown" />
           </div>
+
+          {/* Desktop Settings Button */}
+          <button
+            type="button"
+            onClick={() => navigate("/settings")}
+            className="hidden md:inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold dark:hover:border-gold/40 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            title="Application Settings"
+            id="btn-desktop-settings"
+          >
+            <Settings className="w-3.5 h-3.5 text-gold" />
+            <span>Settings</span>
+          </button>
 
           {/* Desktop Menu Button */}
           <button

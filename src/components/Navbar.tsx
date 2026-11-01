@@ -206,11 +206,13 @@ export default function Navbar({
           <button
             type="button"
             onClick={() => window.location.href = "/settings"}
-            className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-gray-700 hover:text-gold dark:text-white/80 dark:hover:text-gold transition-all cursor-pointer shadow-xs dark:shadow-none"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-gray-800 hover:text-black dark:text-white/90 dark:hover:text-gold dark:hover:border-gold/40 transition-all cursor-pointer shadow-xs dark:shadow-none text-xs font-extrabold uppercase tracking-wider"
             title="Application Settings"
             aria-label="Settings"
+            id="navbar-btn-settings"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5 text-gold" />
+            <span className="hidden md:inline">Settings</span>
           </button>
 
           {/* User Member Actions */}
