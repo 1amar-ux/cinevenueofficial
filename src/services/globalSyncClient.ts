@@ -181,6 +181,40 @@ class GlobalSyncClient {
     }
   }
 
+  private hydrateFromCache() {
+    if (typeof window === "undefined") return;
+    try {
+      const cached = localStorage.getItem("cine_global_sync_state");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        this.state = {
+          ...DEFAULT_STATE,
+          ...parsed,
+          featureToggles: { ...DEFAULT_STATE.featureToggles, ...(parsed.featureToggles || {}) }
+        };
+      }
+    } catch (e) {}
+  }
+
+  private saveToCache() {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem("cine_global_sync_state", JSON.stringify(this.state));
+    } catch (e) {}
+  }
+
+  private initBroadcastChannel() {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+    try {
+      this.broadcastChannel = new BroadcastChannel("cinevenue_global_sync_bus");
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data?.type === "SYNC_LOCAL_BROADCAST") {
+          this.applyState(event.data.payload, false);
+        }
+      };
+    } catch (e) {}
+  }
+
   private getSyncEndpoints() {
     if (typeof window === "undefined") {
       return { wsUrl: "ws://localhost:3000/ws/sync", sseUrl: "/api/v1/sync/events", httpBase: "" };
