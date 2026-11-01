@@ -13,8 +13,7 @@ import {
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
   TrendingUp, BarChart2, Briefcase, Camera, Video, Compass, HelpCircle,
   Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send, Menu,
-  Target, FileText, Tv, X, UserCheck, Coins, ExternalLink, Clapperboard,
-  User, LogOut
+  User
 } from "lucide-react";
 import {
   TrendingExperienceItem,
@@ -530,16 +529,6 @@ export default function Home({
           </button>
 
 
-          <button 
-            onClick={() => navigate("/cinecoins")} 
-            className="hidden xl:flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-slate-950 dark:text-white font-extrabold hover:bg-yellow-100/70 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-yellow-300/60 dark:hover:border-gold/30 cursor-pointer"
-          >
-            <span>🪙 CineCoins</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-amber-950 dark:text-amber-300 bg-[#FEF08A] dark:bg-amber-400/15 px-1.5 py-0.5 rounded-full border border-[#FACC15] dark:border-amber-400/30 font-mono shadow-xs">
-              <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
-              SOON
-            </span>
-          </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -550,50 +539,6 @@ export default function Home({
           <div className="flex xl:hidden items-center">
             <ThemeToggle variant="dropdown" />
           </div>
-
-          {/* User Profile or Sign In / Sign Up CTAs */}
-          {userEmail ? (
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-200/70 dark:bg-white/[0.03] border border-gray-400 dark:border-gold/40 px-2.5 sm:px-3 py-1.5 rounded-full shadow-xs dark:shadow-none shrink-0">
-              <button
-                onClick={() => navigate("/account")}
-                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-[13px] text-gray-950 dark:text-white/90 hover:text-gold transition-colors bg-transparent border-none cursor-pointer p-0"
-                title={userEmail.toLowerCase().includes("superadmin") ? "Logged in as Administrator" : `Logged in as ${userEmail}`}
-              >
-                <div className="w-5 h-5 rounded-full bg-gold/20 border border-gold/40 text-gold flex items-center justify-center text-[10px] font-bold">
-                  <User className="w-3 h-3 text-gold" />
-                </div>
-                <span className="hidden sm:inline max-w-[120px] truncate font-extrabold text-gray-950 dark:text-text-primary">
-                  {userEmail.toLowerCase().includes("superadmin") ? "Admin" : userEmail.split("@")[0]}
-                </span>
-              </button>
-              {onLogout && (
-                <button
-                  onClick={onLogout}
-                  className="text-gray-600 hover:text-red-500 dark:text-text-muted dark:hover:text-red-400 p-0.5 ml-1 transition-colors cursor-pointer border-none bg-transparent flex items-center"
-                  title="Logout"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => onOpenAuth?.("signin")}
-                className="inline-flex rounded-full border border-slate-300 dark:border-white/20 bg-transparent px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-slate-900 dark:text-white/95 hover:border-yellow-400 hover:text-black dark:hover:border-gold dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenAuth?.("signup")}
-                className="hidden sm:inline-flex rounded-full bg-[#FDE047] hover:bg-[#FEF08A] px-3.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider text-black font-black border border-yellow-400/80 shadow-md shadow-yellow-400/25 transition-all cursor-pointer whitespace-nowrap shrink-0"
-              >
-                Sign Up
-              </button>
-            </div>
-          )}
 
           {/* Desktop Menu Button */}
           <button

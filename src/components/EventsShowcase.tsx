@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Calendar, MapPin, Clock, Ticket, Star, Plus, ChevronRight, Info, Sparkles, 
   Share2, Award, CheckCircle2, MessageSquare, PlusCircle, X, FileText, Printer, Shield, ArrowLeft,
   Download, Mail, Power, ToggleLeft, ToggleRight, Send, Activity, ArrowRight, Sparkle, UserCheck, Lock,
-  QrCode
+  QrCode, SlidersHorizontal, Filter
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest } from "../types";
@@ -16,6 +16,15 @@ import LiveEventPassCard from "./events/LiveEventPassCard";
 import OrganizerEventHub from "./events/OrganizerEventHub";
 import CineVenueLiveBanner from "./advertising/CineVenueLiveBanner";
 import EventShareModal from "./events/EventShareModal";
+import EventFilterDrawer, { 
+  EventFiltersState, 
+  INITIAL_EVENT_FILTERS, 
+  countActiveFilters,
+  FILTER_CATEGORIES,
+  FILTER_VENUE_TYPES,
+  FILTER_AVAILABILITY,
+  FILTER_POPULARITY
+} from "./events/EventFilterDrawer";
 import { copyEventShareLink, getEventShareUrl } from "../utils/eventSharing";
 import {
   TrendingExperienceItem,
@@ -67,9 +76,45 @@ export default function EventsShowcase({
   const [bookingModalEvent, setBookingModalEvent] = useState<EventItem | null>(null);
   const [viewingPass, setViewingPass] = useState<EventBookingRecord | null>(null);
   const [showOrganizerHub, setShowOrganizerHub] = useState<boolean>(false);
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All Categories");
-  const [selectedEventTypeFilter, setSelectedEventTypeFilter] = useState<'ALL' | 'FREE' | 'PAID' | 'HYBRID'>('ALL');
+  const [eventFilters, setEventFilters] = useState<EventFiltersState>(INITIAL_EVENT_FILTERS);
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState<boolean>(false);
   const [shareModalEvent, setShareModalEvent] = useState<any | null>(null);
+
+  // Backwards compatibility bindings for child/regional components
+  const selectedCategoryFilter = eventFilters.categories.length === 1 
+    ? eventFilters.categories[0] 
+    : (eventFilters.categories.length === 0 ? "All Categories" : eventFilters.categories[0]);
+  const setSelectedCategoryFilter = (catId: string) => {
+    if (catId === "All Categories" || catId === "All") {
+      setEventFilters(prev => ({ ...prev, categories: [] }));
+    } else {
+      setEventFilters(prev => ({ ...prev, categories: [catId] }));
+    }
+  };
+
+  const selectedEventTypeFilter = eventFilters.ticketAvailability.includes('FREE_PASSES') 
+    ? 'FREE' 
+    : eventFilters.ticketAvailability.includes('PAID_PASSES') 
+    ? 'PAID' 
+    : 'ALL';
+  const setSelectedEventTypeFilter = (type: 'ALL' | 'FREE' | 'PAID' | 'HYBRID') => {
+    if (type === 'ALL') {
+      setEventFilters(prev => ({ 
+        ...prev, 
+        ticketAvailability: prev.ticketAvailability.filter(a => a !== 'FREE_PASSES' && a !== 'PAID_PASSES') 
+      }));
+    } else if (type === 'FREE') {
+      setEventFilters(prev => ({ 
+        ...prev, 
+        ticketAvailability: [...prev.ticketAvailability.filter(a => a !== 'PAID_PASSES'), 'FREE_PASSES'] 
+      }));
+    } else if (type === 'PAID') {
+      setEventFilters(prev => ({ 
+        ...prev, 
+        ticketAvailability: [...prev.ticketAvailability.filter(a => a !== 'FREE_PASSES'), 'PAID_PASSES'] 
+      }));
+    }
+  };
 
   useEffect(() => {
     setTicketedEventsList(getTicketedEvents());
@@ -301,7 +346,16 @@ export default function EventsShowcase({
   };
 
   // Curated Genres & Dynamic Portal Feeds State
-  const [selectedGenreFilter, setSelectedGenreFilter] = useState("All Genres");
+  const selectedGenreFilter = eventFilters.genres.length === 1 
+    ? eventFilters.genres[0] 
+    : (eventFilters.genres.length === 0 ? "All Genres" : eventFilters.genres[0]);
+  const setSelectedGenreFilter = (genre: string) => {
+    if (genre === "All Genres") {
+      setEventFilters(prev => ({ ...prev, genres: [] }));
+    } else {
+      setEventFilters(prev => ({ ...prev, genres: [genre] }));
+    }
+  };
   const [trendingExperiences, setTrendingExperiences] = useState<TrendingExperienceItem[]>(() => getTrendingExperiences());
   const [browseCategories, setBrowseCategories] = useState<BrowseLiveCategoryItem[]>(() => getBrowseLiveCategories());
 
@@ -441,46 +495,290 @@ export default function EventsShowcase({
     setNotifyMobile("");
   };
 
-  // Filter events based on selected city and search query
-  const filteredEvents = safeEvents.filter((evt) => {
-    // Hide cancelled/draft events or if master event system is off
-    const isEventActive = 
-      evt.isActive !== false && 
-      isEventBookingSystemActive && 
-      String((evt as any).status || "").toUpperCase() !== "CANCELLED" && 
-      String((evt as any).status || "").toUpperCase() !== "DRAFT";
-    if (!isEventActive) {
-      return false; // Inactive events should be hidden from customers
-    }
+  // Distinct cities extracted from actual database events + major metro hubs
+  const availableCitiesList = useMemo(() => {
+    const citySet = new Set<string>();
+    safeEvents.forEach(e => {
+      if (e.city && e.city.trim() && e.city.toLowerCase() !== 'all cities' && e.city.toLowerCase() !== 'all') {
+        citySet.add(e.city.trim());
+      }
+    });
+    ["Hyderabad", "Vijayawada", "Guntur", "Bengaluru", "Mumbai", "Delhi-NCR", "Chennai", "Visakhapatnam", "Tirupati"].forEach(c => citySet.add(c));
+    return Array.from(citySet);
+  }, [safeEvents]);
 
-    const matchesCity = 
-      selectedCity === "All Cities" ||
-      selectedCity === "All" ||
-      !evt.city ||
-      (evt.city || "").toLowerCase() === "all cities" ||
-      (evt.city || "").toLowerCase() === "all" ||
-      (evt.city || "").toLowerCase() === (selectedCity || "").toLowerCase();
+  const activeFilterCount = useMemo(() => {
+    return countActiveFilters(eventFilters);
+  }, [eventFilters]);
 
-    const matchesCategory = selectedCategoryFilter === "All Categories" ||
-      (evt.categories || []).some(c => c.name.toLowerCase().includes(selectedCategoryFilter.toLowerCase())) ||
-      (evt.title || "").toLowerCase().includes(selectedCategoryFilter.toLowerCase()) ||
-      (evt.description || "").toLowerCase().includes(selectedCategoryFilter.toLowerCase());
-    const matchesGenre = selectedGenreFilter === "All Genres" ||
-      (evt.title || "").toLowerCase().includes(selectedGenreFilter.toLowerCase()) ||
-      (evt.description || "").toLowerCase().includes(selectedGenreFilter.toLowerCase());
-    const matchesSearch = !searchQuery ||
-      (evt.title || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
-      (evt.description || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
-      (evt.venueName || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
-      (evt.city || "").toLowerCase().includes((searchQuery || "").toLowerCase());
+  // Comprehensive 10-dimensional filter & sorting engine
+  const filteredEvents = useMemo(() => {
+    let list = safeEvents.filter((evt) => {
+      // Hide cancelled/draft events or if master event system is off
+      const isEventActive = 
+        evt.isActive !== false && 
+        isEventBookingSystemActive && 
+        String((evt as any).status || "").toUpperCase() !== "CANCELLED" && 
+        String((evt as any).status || "").toUpperCase() !== "DRAFT";
+      if (!isEventActive) {
+        return false; // Inactive events should be hidden from customers
+      }
 
-    const ticketedMatch = ticketedEventsList.find(te => te.id === evt.id || te.title.toLowerCase() === evt.title.toLowerCase());
-    const minPrice = evt.categories && evt.categories.length > 0 ? Math.min(...evt.categories.map(c => c.price)) : 0;
-    const effectiveType = ticketedMatch?.eventType || (minPrice === 0 || evt.isPaid === false ? 'FREE' : 'PAID');
-    const matchesEventType = selectedEventTypeFilter === 'ALL' || effectiveType === selectedEventTypeFilter;
+      // 0. Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch = 
+          (evt.title || "").toLowerCase().includes(q) ||
+          (evt.description || "").toLowerCase().includes(q) ||
+          (evt.venueName || "").toLowerCase().includes(q) ||
+          (evt.venueAddress || "").toLowerCase().includes(q) ||
+          (evt.city || "").toLowerCase().includes(q) ||
+          (evt.category || "").toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
 
-    return matchesCity && matchesCategory && matchesGenre && matchesSearch && matchesEventType;
-  });
+      // Prop selectedCity Filter
+      if (selectedCity && selectedCity !== "All Cities" && selectedCity !== "All") {
+        const cLower = selectedCity.toLowerCase().trim();
+        const evtCity = (evt.city || "").toLowerCase().trim();
+        const evtVenueAddress = (evt.venueAddress || "").toLowerCase();
+        if (evtCity !== "all cities" && evtCity !== "all" && !evtCity.includes(cLower) && !evtVenueAddress.includes(cLower)) {
+          return false;
+        }
+      }
+
+      // 1. Categories Filter (Multi-select)
+      if (eventFilters.categories.length > 0) {
+        const matchesCategory = eventFilters.categories.some(catId => {
+          const catLower = catId.toLowerCase();
+          const evtCat = (evt.category || "").toLowerCase();
+          const inCategories = (evt.categories || []).some(c => c.name.toLowerCase().includes(catLower));
+          const inTitle = (evt.title || "").toLowerCase().includes(catLower);
+          const inDesc = (evt.description || "").toLowerCase().includes(catLower);
+          
+          if (catId === "Film Events" || catId === "Film Galas") {
+            return evtCat.includes("film") || inCategories || inTitle || inDesc;
+          }
+          if (catId === "Cultural Events" || catId === "Cultural") {
+            return evtCat.includes("cultural") || inCategories || inTitle || inDesc;
+          }
+          if (catId === "Sports Events" || catId === "Sports") {
+            return evtCat.includes("sport") || inCategories || inTitle || inDesc;
+          }
+          return evtCat.includes(catLower) || inCategories || inTitle || inDesc;
+        });
+        if (!matchesCategory) return false;
+      }
+
+      // 2. Curated Genres Filter (Multi-select)
+      if (eventFilters.genres.length > 0) {
+        const matchesGenre = eventFilters.genres.some(genre => {
+          const gLower = genre.toLowerCase();
+          const inTitle = (evt.title || "").toLowerCase().includes(gLower);
+          const inDesc = (evt.description || "").toLowerCase().includes(gLower);
+          const inVenue = (evt.venueName || "").toLowerCase().includes(gLower);
+          
+          if (genre === "EDM Arenas") {
+            return inTitle || inDesc || (evt.title || "").toLowerCase().includes("edm") || (evt.title || "").toLowerCase().includes("alan walker") || (evt.description || "").toLowerCase().includes("electronic");
+          }
+          if (genre === "Standup Comedy") {
+            return inTitle || inDesc || (evt.category || "").toLowerCase().includes("comedy");
+          }
+          if (genre === "Symphony Tours") {
+            return inTitle || inDesc || (evt.description || "").toLowerCase().includes("symphony") || (evt.description || "").toLowerCase().includes("orchestra");
+          }
+          if (genre === "Sufi Nights") {
+            return inTitle || inDesc || (evt.description || "").toLowerCase().includes("sufi") || (evt.title || "").toLowerCase().includes("sufi");
+          }
+          if (genre === "Celebrity Shows") {
+            return inTitle || inDesc || (evt.description || "").toLowerCase().includes("celebrity") || (evt.title || "").toLowerCase().includes("celebrity") || (evt.title || "").toLowerCase().includes("gala") || (evt.title || "").toLowerCase().includes("launch");
+          }
+          return inTitle || inDesc || inVenue;
+        });
+        if (!matchesGenre) return false;
+      }
+
+      // 3. Centralized Cities Filter (Multi-select)
+      if (eventFilters.cities.length > 0) {
+        const matchesDrawerCity = eventFilters.cities.some(city => {
+          const cLower = city.toLowerCase();
+          const evtCity = (evt.city || "").toLowerCase();
+          const evtVenueAddress = (evt.venueAddress || "").toLowerCase();
+          return evtCity.includes(cLower) || evtVenueAddress.includes(cLower);
+        });
+        if (!matchesDrawerCity) return false;
+      }
+
+      // 4. Event Date & Date Range Filter
+      if (eventFilters.datePreset !== 'ALL') {
+        const evtDateStr = evt.date; // YYYY-MM-DD
+        const evtDate = new Date(evtDateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (eventFilters.datePreset === 'TODAY') {
+          const todayStr = today.toISOString().split("T")[0];
+          if (evtDateStr !== todayStr) return false;
+        } else if (eventFilters.datePreset === 'TOMORROW') {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = tomorrow.toISOString().split("T")[0];
+          if (evtDateStr !== tomorrowStr) return false;
+        } else if (eventFilters.datePreset === 'WEEKEND') {
+          const dayOfWeek = today.getDay();
+          const diffToSat = (6 - dayOfWeek + 7) % 7;
+          const sat = new Date(today);
+          sat.setDate(sat.getDate() + diffToSat);
+          const sun = new Date(sat);
+          sun.setDate(sun.getDate() + 1);
+          const satStr = sat.toISOString().split("T")[0];
+          const sunStr = sun.toISOString().split("T")[0];
+          if (evtDateStr !== satStr && evtDateStr !== sunStr && (evtDate < sat || evtDate > sun)) return false;
+        } else if (eventFilters.datePreset === 'NEXT_7_DAYS') {
+          const in7 = new Date(today);
+          in7.setDate(in7.getDate() + 7);
+          if (isNaN(evtDate.getTime()) || evtDate < today || evtDate > in7) return false;
+        } else if (eventFilters.datePreset === 'THIS_MONTH') {
+          const currentMonth = today.getMonth();
+          const currentYear = today.getFullYear();
+          if (isNaN(evtDate.getTime()) || evtDate.getMonth() !== currentMonth || evtDate.getFullYear() !== currentYear) return false;
+        } else if (eventFilters.datePreset === 'CUSTOM') {
+          if (eventFilters.customDateStart && evtDateStr < eventFilters.customDateStart) return false;
+          if (eventFilters.customDateEnd && evtDateStr > eventFilters.customDateEnd) return false;
+        }
+      }
+
+      // 5. Ticket Price & Price Range Filter
+      const ticketedMatch = ticketedEventsList.find(te => te.id === evt.id || (te.title && evt.title && te.title.toLowerCase() === evt.title.toLowerCase()));
+      const minPrice = evt.categories && evt.categories.length > 0 
+        ? Math.min(...evt.categories.map(c => Number(c.price) || 0)) 
+        : (ticketedMatch?.price ? Number(ticketedMatch.price) : 0);
+      const isFree = evt.isPaid === false || minPrice === 0 || (ticketedMatch as any)?.eventType === 'FREE';
+
+      if (eventFilters.pricePreset !== 'ALL') {
+        if (eventFilters.pricePreset === 'FREE') {
+          if (!isFree) return false;
+        } else if (eventFilters.pricePreset === 'UNDER_500') {
+          if (isFree || minPrice >= 500) return false;
+        } else if (eventFilters.pricePreset === '500_1500') {
+          if (minPrice < 500 || minPrice > 1500) return false;
+        } else if (eventFilters.pricePreset === '1500_3000') {
+          if (minPrice < 1500 || minPrice > 3000) return false;
+        } else if (eventFilters.pricePreset === 'ABOVE_3000') {
+          if (minPrice <= 3000) return false;
+        } else if (eventFilters.pricePreset === 'CUSTOM') {
+          if (eventFilters.customPriceMin !== null && minPrice < eventFilters.customPriceMin) return false;
+          if (eventFilters.customPriceMax !== null && minPrice > eventFilters.customPriceMax) return false;
+        }
+      }
+
+      // 6. Venue Type Filter (Multi-select)
+      if (eventFilters.venueTypes.length > 0) {
+        const venueText = `${evt.venueName || ''} ${evt.venueAddress || ''}`.toLowerCase();
+        const matchesVenue = eventFilters.venueTypes.some(vt => {
+          if (vt === 'STADIUM') return venueText.includes('stadium') || venueText.includes('arena') || venueText.includes('ground');
+          if (vt === 'CONVENTION') return venueText.includes('convention') || venueText.includes('auditorium') || venueText.includes('hall');
+          if (vt === 'CINEMA') return venueText.includes('imax') || venueText.includes('cinema') || venueText.includes('theatre') || venueText.includes('screen');
+          if (vt === 'AMPHITHEATRE') return venueText.includes('amphitheatre') || venueText.includes('open air') || venueText.includes('garden');
+          if (vt === 'CLUB') return venueText.includes('club') || venueText.includes('lounge') || venueText.includes('pub');
+          return false;
+        });
+        if (!matchesVenue) return false;
+      }
+
+      // 7. Language Filter (Multi-select)
+      if (eventFilters.languages.length > 0) {
+        const langText = `${(evt as any).language || ''} ${evt.title || ''} ${evt.description || ''}`.toLowerCase();
+        const matchesLang = eventFilters.languages.some(l => {
+          const lLower = l.toLowerCase();
+          if (lLower === 'multilingual') {
+            return langText.includes('multi') || langText.includes('/') || langText.includes(',');
+          }
+          return langText.includes(lLower);
+        });
+        if (!matchesLang) return false;
+      }
+
+      // 8. Ticket Availability Filter (Multi-select)
+      if (eventFilters.ticketAvailability.length > 0) {
+        const matchesAvail = eventFilters.ticketAvailability.some(av => {
+          if (av === 'FREE_PASSES') return isFree;
+          if (av === 'PAID_PASSES') return !isFree;
+          if (av === 'FAST_FILLING') {
+            const cap = (ticketedMatch as any)?.totalCapacity || 1000;
+            const sold = (ticketedMatch as any)?.soldCount || 500;
+            return (sold / cap) >= 0.5 || (ticketedMatch as any)?.isSellingFast;
+          }
+          if (av === 'VIP_PASSES') {
+            const hasVip = (evt.categories || []).some(c => c.name.toUpperCase().includes('VIP') || c.name.toUpperCase().includes('PREMIUM'));
+            const ticketTypesVip = (ticketedMatch?.ticketTypes || []).some(t => t.tier === 'VIP' || t.tier === 'VVIP' || t.tier === 'Premium');
+            return hasVip || ticketTypesVip;
+          }
+          if (av === 'GA_PASSES') {
+            const hasGa = (evt.categories || []).some(c => c.name.toUpperCase().includes('GENERAL') || c.name.toUpperCase().includes('STANDARD'));
+            const ticketTypesGa = (ticketedMatch?.ticketTypes || []).some(t => t.tier === 'General');
+            return hasGa || ticketTypesGa || evt.categories.length === 0;
+          }
+          return true;
+        });
+        if (!matchesAvail) return false;
+      }
+
+      // 9. Event Popularity Filter (Multi-select)
+      if (eventFilters.popularity.length > 0) {
+        const matchesPop = eventFilters.popularity.some(pop => {
+          if (pop === 'FEATURED') return evt.featured === true || (ticketedMatch as any)?.isFeatured === true;
+          if (pop === 'TOP_RATED') {
+            const rating = (ticketedMatch as any)?.rating || (evt.reviews && evt.reviews.length > 0 ? (evt.reviews.reduce((a, b) => a + b.rating, 0) / evt.reviews.length) : 4.8);
+            return rating >= 4.5;
+          }
+          if (pop === 'TRENDING') {
+            const sold = (ticketedMatch as any)?.soldCount || 200;
+            return sold > 200 || (ticketedMatch as any)?.isSellingFast;
+          }
+          return true;
+        });
+        if (!matchesPop) return false;
+      }
+
+      return true;
+    });
+
+    // 10. Sort By
+    list = [...list].sort((a, b) => {
+      if (eventFilters.sortBy === 'DATE_ASC') {
+        return (a.date || '').localeCompare(b.date || '');
+      }
+      if (eventFilters.sortBy === 'DATE_DESC') {
+        return (b.date || '').localeCompare(a.date || '');
+      }
+      if (eventFilters.sortBy === 'PRICE_ASC') {
+        const minA = a.categories && a.categories.length > 0 ? Math.min(...a.categories.map(c => Number(c.price) || 0)) : 0;
+        const minB = b.categories && b.categories.length > 0 ? Math.min(...b.categories.map(c => Number(c.price) || 0)) : 0;
+        return minA - minB;
+      }
+      if (eventFilters.sortBy === 'PRICE_DESC') {
+        const minA = a.categories && a.categories.length > 0 ? Math.min(...a.categories.map(c => Number(c.price) || 0)) : 0;
+        const minB = b.categories && b.categories.length > 0 ? Math.min(...b.categories.map(c => Number(c.price) || 0)) : 0;
+        return minB - minA;
+      }
+      if (eventFilters.sortBy === 'RATING_DESC') {
+        const ratingA = (a.reviews && a.reviews.length > 0) ? (a.reviews.reduce((acc, r) => acc + r.rating, 0) / a.reviews.length) : 4.8;
+        const ratingB = (b.reviews && b.reviews.length > 0) ? (b.reviews.reduce((acc, r) => acc + r.rating, 0) / b.reviews.length) : 4.8;
+        return ratingB - ratingA;
+      }
+      if (eventFilters.sortBy === 'POPULARITY_DESC') {
+        const tA = ticketedEventsList.find(t => t.id === a.id);
+        const tB = ticketedEventsList.find(t => t.id === b.id);
+        const soldA = tA?.soldCount || 100;
+        const soldB = tB?.soldCount || 100;
+        return soldB - soldA;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [safeEvents, ticketedEventsList, isEventBookingSystemActive, searchQuery, selectedCity, eventFilters]);
 
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -626,9 +924,9 @@ export default function EventsShowcase({
         </div>
       )}
 
-      {/* SECTION HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div className="text-left">
+      {/* SECTION HEADER & UNIFIED CONTROLS */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 text-left">
+        <div>
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <span className="text-[10px] uppercase tracking-[0.4em] text-gold font-semibold flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-gold animate-pulse" />
@@ -644,124 +942,282 @@ export default function EventsShowcase({
           </p>
         </div>
 
-        {/* Search Input Filter for Events */}
-        <div className="relative w-full lg:max-w-xs">
-          <input
-            type="text"
-            placeholder="Search events, venues..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white dark:bg-white/[0.02] border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/20 focus:border-gold dark:focus:border-gold/50 rounded-lg pl-4 pr-10 py-2.5 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none transition-all duration-200 shadow-xs"
-            id="event-search-input"
-          />
-          <Plus className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-text-muted w-4 h-4 rotate-45 pointer-events-none" />
+        {/* CONTROLS: SEARCH + PROMINENT CENTRALIZED FILTER BUTTON + ORGANIZER HUB */}
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          {/* Search Input Filter for Events */}
+          <div className="relative flex-1 sm:w-64 lg:w-72">
+            <input
+              type="text"
+              placeholder="Search events, venues..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white dark:bg-white/[0.03] border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/20 focus:border-gold dark:focus:border-gold/50 rounded-xl pl-4 pr-10 py-2.5 text-xs text-gray-900 dark:text-text-primary placeholder:text-gray-400 dark:placeholder:text-text-muted focus:outline-none transition-all duration-200 shadow-xs"
+              id="event-search-input"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <Plus className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-text-muted w-4 h-4 rotate-45 pointer-events-none" />
+            )}
+          </div>
+
+          {/* PROMINENT CENTRALIZED FILTER BUTTON WITH PREMIUM GOLD ICON & ACTIVE BADGE */}
+          <button
+            type="button"
+            onClick={() => setIsFilterDrawerOpen(true)}
+            id="event-filter-button"
+            className="px-4.5 py-2.5 rounded-xl bg-[#0F1015] hover:bg-[#161720] border-2 border-gold/70 hover:border-gold text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all shadow-md shadow-gold/10 hover:shadow-gold/25 cursor-pointer active:scale-95 group shrink-0"
+            title="Open comprehensive event filters"
+          >
+            <SlidersHorizontal className="w-4 h-4 text-gold group-hover:rotate-90 transition-transform duration-300 stroke-[2.5]" />
+            <span className="font-extrabold text-white group-hover:text-gold transition-colors">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black bg-gold text-black font-mono shadow-xs animate-pulse">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          {/* Organizer Hub & Gate Terminal */}
+          <button
+            type="button"
+            onClick={() => setShowOrganizerHub(true)}
+            className="px-4 py-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/40 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-sm shrink-0"
+          >
+            <QrCode className="w-4 h-4 text-purple-400" />
+            <span className="hidden sm:inline">Organizer Hub & Gate Terminal</span>
+            <span className="sm:hidden">Organizer Hub</span>
+          </button>
         </div>
       </div>
 
       {/* LIVE BANNER ADVERTISEMENT PLACEMENT: EVENTS TOP */}
       <CineVenueLiveBanner
         placement="events_top"
-        containerClassName="w-full mb-6"
+        containerClassName="w-full"
       />
 
-       {/* EVENT BOOKING CATEGORIES & QUICK ACTIONS BAR (INTENTIONALLY DARK BRANDED IN BOTH THEMES) */}
-      <div className="bg-[#0B0C10] border border-white/15 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl text-left">
-        <div className="flex flex-wrap items-center gap-2">
-          {[
-            { id: "All Categories", label: "ALL EVENTS", icon: "🎟️" },
-            { id: "Concerts", label: "CONCERTS", icon: "⚡" },
-            { id: "Stand-up Comedy", label: "STAND-UP COMEDY", icon: "🎤" },
-            { id: "Film Events", label: "FILM GALAS", icon: "🎬" },
-            { id: "Workshops", label: "WORKSHOPS", icon: "📚" },
-            { id: "Cultural Events", label: "CULTURAL", icon: "🎻" },
-            { id: "Sports Events", label: "SPORTS", icon: "🏸" },
-          ].map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategoryFilter(cat.id)}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedCategoryFilter === cat.id
-                  ? "bg-gold text-black shadow-lg shadow-gold/20 font-black"
-                  : "bg-white/10 hover:bg-white/15 text-white/90 border border-white/15 hover:text-white"
-              }`}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
-        </div>
+      {/* ACTIVE FILTER CHIPS ROW (VISIBLE WHEN ANY FILTER IS APPLIED) */}
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 p-3.5 rounded-xl bg-[#0F1015] border border-white/10 text-left animate-fadeIn shadow-inner">
+          <span className="text-[11px] font-bold text-gold uppercase tracking-wider font-mono mr-1 flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-gold" /> Applied Filters ({activeFilterCount}):
+          </span>
 
-        <div className="flex items-center gap-2.5">
+          {/* Categories chips */}
+          {eventFilters.categories.map(catId => {
+            const label = FILTER_CATEGORIES.find(c => c.id === catId)?.label || catId;
+            return (
+              <span 
+                key={`chip-cat-${catId}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white/10 text-white border border-white/15 shadow-xs"
+              >
+                <span>Category: {label}</span>
+                <button 
+                  type="button" 
+                  onClick={() => setEventFilters(prev => ({ ...prev, categories: prev.categories.filter(c => c !== catId) }))}
+                  className="hover:text-rose-400 text-white/60 cursor-pointer p-0.5 rounded transition-colors"
+                  title={`Remove ${label}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })}
+
+          {/* Genres chips */}
+          {eventFilters.genres.map(genre => (
+            <span 
+              key={`chip-genre-${genre}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-gold/15 text-gold border border-gold/30 shadow-xs"
+            >
+              <span>Genre: {genre}</span>
+              <button 
+                type="button" 
+                onClick={() => setEventFilters(prev => ({ ...prev, genres: prev.genres.filter(g => g !== genre) }))}
+                className="hover:text-rose-400 text-gold/60 cursor-pointer p-0.5 rounded transition-colors"
+                title={`Remove ${genre}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+
+          {/* Cities chips */}
+          {eventFilters.cities.map(city => (
+            <span 
+              key={`chip-city-${city}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 shadow-xs"
+            >
+              <span>City: {city}</span>
+              <button 
+                type="button" 
+                onClick={() => setEventFilters(prev => ({ ...prev, cities: prev.cities.filter(c => c !== city) }))}
+                className="hover:text-rose-400 text-blue-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                title={`Remove ${city}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+
+          {/* Date chip */}
+          {eventFilters.datePreset !== 'ALL' && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-xs">
+              <span>Date: {eventFilters.datePreset === 'CUSTOM' ? `${eventFilters.customDateStart || 'Start'} to ${eventFilters.customDateEnd || 'End'}` : eventFilters.datePreset.replace(/_/g, ' ')}</span>
+              <button 
+                type="button" 
+                onClick={() => setEventFilters(prev => ({ ...prev, datePreset: 'ALL', customDateStart: '', customDateEnd: '' }))}
+                className="hover:text-rose-400 text-emerald-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                title="Remove date filter"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+
+          {/* Price chip */}
+          {eventFilters.pricePreset !== 'ALL' && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-xs">
+              <span>Price: {eventFilters.pricePreset === 'CUSTOM' ? `₹${eventFilters.customPriceMin ?? 0} - ₹${eventFilters.customPriceMax ?? 'Max'}` : eventFilters.pricePreset === 'FREE' ? 'Free Passes' : eventFilters.pricePreset.replace(/_/g, ' ')}</span>
+              <button 
+                type="button" 
+                onClick={() => setEventFilters(prev => ({ ...prev, pricePreset: 'ALL', customPriceMin: null, customPriceMax: null }))}
+                className="hover:text-rose-400 text-amber-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                title="Remove price filter"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+
+          {/* Venue types chips */}
+          {eventFilters.venueTypes.map(vt => {
+            const label = FILTER_VENUE_TYPES.find(v => v.id === vt)?.label || vt;
+            return (
+              <span 
+                key={`chip-vt-${vt}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30 shadow-xs"
+              >
+                <span>Venue: {label}</span>
+                <button 
+                  type="button" 
+                  onClick={() => setEventFilters(prev => ({ ...prev, venueTypes: prev.venueTypes.filter(v => v !== vt) }))}
+                  className="hover:text-rose-400 text-purple-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                  title={`Remove ${label}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })}
+
+          {/* Languages chips */}
+          {eventFilters.languages.map(l => (
+            <span 
+              key={`chip-lang-${l}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-xs"
+            >
+              <span>Language: {l}</span>
+              <button 
+                type="button" 
+                onClick={() => setEventFilters(prev => ({ ...prev, languages: prev.languages.filter(lang => lang !== l) }))}
+                className="hover:text-rose-400 text-cyan-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                title={`Remove ${l}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+
+          {/* Availability chips */}
+          {eventFilters.ticketAvailability.map(av => {
+            const label = FILTER_AVAILABILITY.find(a => a.id === av)?.label || av;
+            return (
+              <span 
+                key={`chip-avail-${av}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-xs"
+              >
+                <span>{label}</span>
+                <button 
+                  type="button" 
+                  onClick={() => setEventFilters(prev => ({ ...prev, ticketAvailability: prev.ticketAvailability.filter(a => a !== av) }))}
+                  className="hover:text-rose-400 text-indigo-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                  title={`Remove ${label}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })}
+
+          {/* Popularity chips */}
+          {eventFilters.popularity.map(p => {
+            const label = FILTER_POPULARITY.find(pop => pop.id === p)?.label || p;
+            return (
+              <span 
+                key={`chip-pop-${p}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-pink-500/15 text-pink-300 border border-pink-500/30 shadow-xs"
+              >
+                <span>{label}</span>
+                <button 
+                  type="button" 
+                  onClick={() => setEventFilters(prev => ({ ...prev, popularity: prev.popularity.filter(pop => pop !== p) }))}
+                  className="hover:text-rose-400 text-pink-300/60 cursor-pointer p-0.5 rounded transition-colors"
+                  title={`Remove ${label}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })}
+
+          {/* Clear All action */}
           <button
-            onClick={() => setShowOrganizerHub(true)}
-            className="px-4 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 border border-purple-500/40 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+            type="button"
+            onClick={() => setEventFilters(INITIAL_EVENT_FILTERS)}
+            className="text-[11px] font-extrabold text-rose-400 hover:text-rose-300 underline ml-2 cursor-pointer transition-colors"
           >
-            <QrCode className="w-4 h-4 text-purple-400" />
-            <span>Organizer Hub & Gate Terminal</span>
+            Clear All
           </button>
         </div>
-      </div>
+      )}
 
-
-      {/* CURATED GENRES & CATEGORIES FILTER BAR */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-gray-200 dark:border-white/5 text-left">
-        <div className="space-y-1">
-          <h4 className="font-display text-xl font-light text-gray-950 dark:text-white italic">
-            Curated <span className="text-[#D4AF37] not-italic font-normal">Genres</span>
-          </h4>
-          <p className="text-xs text-gray-600 dark:text-white/50 font-light">
-            Browse vetted VIP concerts, local celebrity galas, and live standup comedies across Andhra Pradesh and Telangana.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {["All Genres", "EDM Arenas", "Standup Comedy", "Symphony Tours", "Sufi Nights", "Celebrity Shows"].map((genre, i) => (
-            <button 
-              key={i}
-              onClick={() => setSelectedGenreFilter(genre)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border ${
-                selectedGenreFilter === genre
-                  ? "bg-[#D4AF37] text-black border-[#D4AF37] shadow-md font-extrabold" 
-                  : "bg-white dark:bg-white/5 text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 border-gray-200 dark:border-white/5 shadow-xs"
-              }`}
-            >
-              {genre}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* EVENT TICKET PASS TYPES FILTER & ACTIVE INVENTORY */}
+      {/* EVENT INVENTORY STATUS BAR */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 text-left shadow-xs">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 dark:text-white/60 uppercase font-mono tracking-wider flex items-center gap-1.5 mr-2">
-            <Ticket className="w-4 h-4 text-gold" /> Filter By Pass Type:
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-700 dark:text-white/60 uppercase font-mono tracking-wider flex items-center gap-1.5">
+            <Ticket className="w-4 h-4 text-gold" /> Filter Active Inventory:
           </span>
-          {(['ALL', 'FREE', 'PAID', 'HYBRID'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setSelectedEventTypeFilter(type)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
-                selectedEventTypeFilter === type
-                  ? type === 'FREE'
-                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
-                    : type === 'HYBRID'
-                    ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/40 shadow-sm'
-                    : type === 'PAID'
-                    ? 'bg-gold/20 text-gold-dim dark:text-gold border border-gold/40 shadow-sm'
-                    : 'bg-gray-950 text-white dark:bg-white/20 dark:text-white border border-gray-950 dark:border-white/30 shadow-sm'
-                  : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/50 hover:text-gray-950 dark:hover:text-white border border-gray-200 dark:border-white/5'
-              }`}
-            >
-              {type === 'ALL' ? 'All Tiers' : `${type} Passes`}
-            </button>
-          ))}
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+            {filteredEvents.length} {filteredEvents.length === 1 ? 'Event' : 'Events'} Showing
+          </span>
         </div>
 
-        <div className="text-right">
-          <span className="text-[10px] font-mono text-gray-500 dark:text-white/40 uppercase">
-            {filteredEvents.length} Active {filteredEvents.length === 1 ? 'Event' : 'Events'} Available
-          </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsFilterDrawerOpen(true)}
+            className="text-xs font-bold text-gold hover:text-gold-light flex items-center gap-1.5 cursor-pointer hover:underline"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Customize Filter Options</span>
+          </button>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setEventFilters(INITIAL_EVENT_FILTERS)}
+              className="text-xs text-rose-400 hover:text-rose-300 hover:underline cursor-pointer ml-2"
+            >
+              Reset
+            </button>
+          )}
         </div>
       </div>
 
@@ -1678,6 +2134,16 @@ export default function EventsShowcase({
           }}
         />
       )}
+
+      {/* COMPREHENSIVE FILTER DRAWER MODAL */}
+      <EventFilterDrawer
+        isOpen={isFilterDrawerOpen}
+        onClose={() => setIsFilterDrawerOpen(false)}
+        filters={eventFilters}
+        onApplyFilters={(newFilters) => setEventFilters(newFilters)}
+        availableCities={availableCitiesList}
+        totalMatchesCount={filteredEvents.length}
+      />
     </section>
   );
 }
