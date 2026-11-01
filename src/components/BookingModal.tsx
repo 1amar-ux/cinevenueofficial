@@ -1536,14 +1536,32 @@ export default function BookingModal({
                 </div>
               </div>
 
-              {/* District Branding Banner */}
-              <div className="bg-gradient-to-r from-[#9333EA] via-[#8527DE] to-[#7319CE] rounded-2xl p-4 text-center text-white shadow-md mb-4 flex flex-col items-center justify-center">
-                <span className="font-extrabold tracking-tight text-3xl font-sans leading-none select-none drop-shadow-xs">
-                  district
-                </span>
-                <span className="text-[10px] tracking-[0.25em] font-bold text-white/90 uppercase mt-0.5 select-none">
-                  BY ZOMATO
-                </span>
+              {/* CineVenue Official Branding Banner */}
+              <div className="bg-gradient-to-r from-[#0D0E15] via-[#1A1C26] to-[#0D0E15] border border-[#D4AF37]/40 rounded-2xl py-3.5 px-4 text-center shadow-lg shadow-black/20 mb-4 flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4AF37]/10 to-transparent pointer-events-none" />
+                <div className="flex items-center gap-3 relative z-10 select-none">
+                  <img
+                    src="/logo.jpg"
+                    alt="CineVenue Logo"
+                    className="w-10 h-10 rounded-xl object-cover border border-[#D4AF37]/60 shadow-md shadow-[#D4AF37]/25"
+                  />
+                  <div className="flex flex-col items-start leading-none text-left">
+                    <span
+                      className="font-serif text-2xl font-bold tracking-tight inline-flex items-center drop-shadow-sm"
+                      style={{ fontFamily: "'Playfair Display', 'Cinzel', 'Georgia', serif" }}
+                    >
+                      <span className="text-white">Cine</span>
+                      <span className="text-[#E2B13C] ml-0.5">Venue</span>
+                    </span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="h-[1px] w-4 bg-[#D4AF37]/60" />
+                      <span className="text-[9px] tracking-[0.25em] font-semibold text-[#D4AF37] uppercase">
+                        Verified Cinema Pass
+                      </span>
+                      <span className="h-[1px] w-4 bg-[#D4AF37]/60" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Actions: View Ticket, Get Directions, Add to Calendar, Done */}
