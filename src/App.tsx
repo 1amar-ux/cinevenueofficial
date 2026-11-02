@@ -201,7 +201,7 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
   return result;
 }
 
-const CINE_DATA_VERSION = "v_baththa_test_v2";
+const CINE_DATA_VERSION = "v_baththa_test_v3";
 if (typeof window !== "undefined") {
   try {
     if (localStorage.getItem("cine_data_version") !== CINE_DATA_VERSION) {
@@ -300,10 +300,10 @@ export default function App() {
   const [schedules, setSchedules] = useState<MovieSchedule[]>(() => {
     const saved = localStorage.getItem("cine_schedules");
     return saved ? JSON.parse(saved) : [
-      { id: "SCH-1", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "11:30 AM", pricePerSeat: 10, date: "daily", isDeployed: true },
-      { id: "SCH-2", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "2:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
-      { id: "SCH-3", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "6:30 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
-      { id: "SCH-4", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "9:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true }
+      { id: "SCH-1", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "11:30 AM", pricePerSeat: 10, date: "all", isDeployed: true },
+      { id: "SCH-2", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "2:45 PM", pricePerSeat: 10, date: "all", isDeployed: true },
+      { id: "SCH-3", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "6:30 PM", pricePerSeat: 10, date: "all", isDeployed: true },
+      { id: "SCH-4", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "9:45 PM", pricePerSeat: 10, date: "all", isDeployed: true }
     ];
   });
 
@@ -958,14 +958,18 @@ export default function App() {
           image: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
           rating: t.rating || 4.6,
         }));
+        const fullTheatres = [
+          ...INITIAL_THEATRES,
+          ...apiTheatres.filter(t => t.name.toLowerCase() !== INITIAL_THEATRES[0].name.toLowerCase())
+        ];
         setTheatres((prev) => {
           if (
-            prev.length === apiTheatres.length &&
-            prev.every((t, idx) => t.id === apiTheatres[idx]?.id && t.name === apiTheatres[idx]?.name)
+            prev.length === fullTheatres.length &&
+            prev.every((t, idx) => t.id === fullTheatres[idx]?.id && t.name === fullTheatres[idx]?.name)
           ) {
             return prev;
           }
-          return apiTheatres;
+          return fullTheatres;
         });
       }
 
