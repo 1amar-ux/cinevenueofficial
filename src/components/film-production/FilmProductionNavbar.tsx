@@ -1,8 +1,8 @@
 import React from "react";
-import { 
-  Film, Sparkles, PlusCircle, Search, MessageSquare, 
+import {
+  Film, Sparkles, PlusCircle, Search, MessageSquare,
   User, Building2, Briefcase, Users, Clapperboard, Award,
-  CheckCircle2, ArrowRight, ShieldCheck, ChevronRight
+  CheckCircle2, ArrowRight, ShieldCheck, ChevronRight, Settings
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
 
@@ -28,15 +28,15 @@ export default function FilmProductionNavbar({
   myProjectsCount = 0
 }: FilmProductionNavbarProps) {
   return (
-    <header className="sticky top-0 z-40 bg-[#090A0F]/95 backdrop-blur-md border-b border-white/10 px-4 md:px-8 py-3">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        
+    <header className="sticky top-0 z-40 bg-[#090A0F]/95 backdrop-blur-md border-b border-white/10 px-3 sm:px-6 md:px-8 py-2.5 sm:py-3 w-full">
+      <div className="w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 min-w-0">
+
         {/* Brand & Badge */}
-        <div className="flex items-center justify-between w-full md:w-auto gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between w-full md:w-auto gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
             <div className="h-5 w-px bg-white/20 hidden sm:block" />
-            <div 
+            <div
               onClick={() => setActiveTab("overview")}
               className="cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-extrabold uppercase tracking-widest"
             >
@@ -45,8 +45,16 @@ export default function FilmProductionNavbar({
             </div>
           </div>
 
-          {/* Mobile Profile / Login trigger */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile Profile / Settings / Login trigger */}
+          <div className="flex md:hidden items-center gap-2 shrink-0">
+            <button
+              onClick={() => window.location.href = "/settings"}
+              className="w-8 h-8 rounded-full border border-white/10 bg-white/5 text-white/80 hover:text-amber-400 flex items-center justify-center cursor-pointer"
+              title="Settings"
+              aria-label="Settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
             {userEmail ? (
               <button
                 onClick={onOpenMyProfile}
@@ -66,7 +74,7 @@ export default function FilmProductionNavbar({
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none text-xs font-semibold">
+        <nav className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none text-xs font-semibold shrink min-w-0">
           {[
             { id: "overview", label: "Production Home", icon: Clapperboard },
             { id: "my-projects", label: "My Film Projects", icon: Film, badge: myProjectsCount > 0 ? myProjectsCount : undefined },
@@ -81,11 +89,10 @@ export default function FilmProductionNavbar({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                  isActive 
-                    ? "bg-gradient-to-r from-amber-500/20 to-amber-600/10 text-amber-400 border border-amber-500/40 shadow-sm shadow-amber-500/10 font-bold" 
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${isActive
+                    ? "bg-gradient-to-r from-amber-500/20 to-amber-600/10 text-amber-400 border border-amber-500/40 shadow-sm shadow-amber-500/10 font-bold"
                     : "text-white/70 hover:text-white hover:bg-white/5 border border-transparent"
-                }`}
+                  }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? "text-amber-400" : "text-white/50"}`} />
                 <span>{tab.label}</span>
@@ -100,13 +107,24 @@ export default function FilmProductionNavbar({
         </nav>
 
         {/* Action Controls */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2.5 shrink-0">
           <button
             onClick={onCreateProject}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/20 cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>Create Project</span>
+          </button>
+
+          {/* Settings button */}
+          <button
+            type="button"
+            onClick={() => window.location.href = "/settings"}
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 hover:text-amber-400 transition-all cursor-pointer"
+            title="Settings"
+            aria-label="Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
           </button>
 
           {userEmail ? (
@@ -118,7 +136,7 @@ export default function FilmProductionNavbar({
               <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] font-extrabold flex items-center justify-center">
                 {userEmail.substring(0, 2).toUpperCase()}
               </div>
-              <span className="text-xs font-semibold max-w-[100px] truncate">
+              <span className="text-xs font-semibold max-w-[90px] truncate">
                 {userEmail.split("@")[0]}
               </span>
             </button>

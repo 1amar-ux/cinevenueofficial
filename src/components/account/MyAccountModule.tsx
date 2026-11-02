@@ -122,9 +122,9 @@ export default function MyAccountModule({
   return (
     <div className="min-h-screen bg-white dark:bg-[#070709] text-slate-950 dark:text-text-primary font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0B0B0E]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0B0B0E]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 px-3 sm:px-6 md:px-8 py-3 sm:py-4 w-full">
+        <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <CineVenueLogo size="md" onClick={() => window.location.href = "/"} />
             <div className="h-6 w-[1px] bg-gray-300 dark:bg-white/10 hidden sm:block" />
             <span className="text-xs font-bold text-slate-600 dark:text-text-muted uppercase tracking-widest hidden sm:block">
@@ -132,11 +132,20 @@ export default function MyAccountModule({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => window.location.href = "/settings"}
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-white/80 hover:text-gold transition-all cursor-pointer"
+              title="Application Settings"
+              aria-label="Settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
             <ThemeToggle variant="dropdown" />
             <button
               onClick={onOpenCineCoins}
-              className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-gold/20 border border-gold/40 px-3.5 py-1.5 rounded-full text-xs font-bold text-gold hover:bg-gold hover:text-black transition-all cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-gold/20 border border-gold/40 px-3 py-1.5 rounded-full text-xs font-bold text-gold hover:bg-gold hover:text-black transition-all cursor-pointer"
             >
               <span>🪙 {userWallet.balanceCoins} CC</span>
             </button>
@@ -150,7 +159,6 @@ export default function MyAccountModule({
             </button>
           </div>
         </div>
-
         {/* Account Nav Subtabs */}
         <div className="max-w-7xl mx-auto mt-4 pt-2 border-t border-white/5 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-bold uppercase tracking-wider text-text-secondary">
           {[

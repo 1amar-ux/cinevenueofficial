@@ -2228,6 +2228,18 @@ export default function App() {
                 />
               </Suspense>
             )}
+            {ordersOpen && (
+              <Suspense fallback={null}>
+                <OrdersModal
+                  isOpen={ordersOpen}
+                  onClose={() => setOrdersOpen(false)}
+                  userEmail={userEmail}
+                  bookings={bookings}
+                  eventRegistrations={eventRegistrations}
+                  onOpenAuth={() => setAuthOpen(true)}
+                />
+              </Suspense>
+            )}
           </div>
         }
       />
@@ -2313,7 +2325,7 @@ export default function App() {
               />
             ) : (
               /* Normal Customer Immersive Single Page Website */
-              <div className="animate-fade-in">
+              <div className="animate-fade-in pt-14 sm:pt-16">
                 <CmsPromoBannerSlider />
                 <Featured
                   spotlight={spotlight}
@@ -3001,7 +3013,7 @@ export default function App() {
                       eventOrganizers={eventOrganizers}
                       superAdminEmail={superAdminEmail}
                     />
-                    <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+                    <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8 w-full">
                       <EventsShowcase
                         events={events}
                         userEmail={userEmail}

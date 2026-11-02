@@ -5,6 +5,7 @@ import MaintenancePage from "../components/MaintenancePage";
 import CineVenueLogo from "../components/CineVenueLogo";
 import CineVenueLiveBanner from "../components/advertising/CineVenueLiveBanner";
 import ThemeToggle from "../components/ThemeToggle";
+import Navbar from "../components/Navbar";
 
 const FilmProductionHub = lazy(() => import("../components/film-production/FilmProductionHub"));
 const ProposalSubmitForm = lazy(() => import("../components/proposals/ProposalSubmitForm").then(m => ({ default: m.ProposalSubmitForm })));
@@ -13,7 +14,8 @@ import {
   MapPin, CheckCircle2, ChevronRight, DollarSign, Award, ArrowRight,
   TrendingUp, BarChart2, Briefcase, Camera, Video, Compass, HelpCircle,
   Share2, ShieldAlert, Sparkle, Calendar, Clock, Activity, MessageSquare, Send, Menu,
-  User, Coins, Settings
+  Target, FileText, Tv, X, UserCheck, Coins, ExternalLink, Clapperboard,
+  User, LogOut
 } from "lucide-react";
 import {
   TrendingExperienceItem,
@@ -58,7 +60,6 @@ export default function Home({
 }: HomeProps) {
   const navigate = useNavigate();
   const [activeDivision, setActiveDivision] = useState<DivisionType>("none");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Film Studio Sub-Website states
   const [filmStudioTab, setFilmStudioTab] = useState<'marketplace' | 'films' | 'casting' | 'investors' | 'portfolio' | 'contact'>('marketplace');
@@ -492,153 +493,27 @@ export default function Home({
   return (
     <div className="home-page bg-white dark:bg-[#09090A] min-h-screen text-slate-950 dark:text-[#F3F4F6] font-sans selection:bg-[#FDE047] selection:text-black antialiased">
       
-      {/* LUXURY FLOATING NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#09090A]/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 py-2.5 sm:py-3 px-3 sm:px-6 xl:px-10 2xl:px-12 flex items-center justify-between gap-2 shadow-xs dark:shadow-none">
-        <div 
-          onClick={() => {
-            setActiveDivision("none");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className="flex items-center gap-3 cursor-pointer shrink-0"
-        >
-          <CineVenueLogo size="md" />
-        </div>
+      {/* GLOBAL LUXURY RESPONSIVE NAVBAR */}
+      <Navbar
+        selectedCity="All Cities"
+        setSelectedCity={() => {}}
+        onOpenLocation={() => navigate("/booking")}
+        cities={[]}
+        userEmail={userEmail}
+        onLogout={onLogout || (() => {})}
+        onOpenAuth={onOpenAuth || (() => {})}
+        onOpenAdmin={onOpenAdmin || (() => {})}
+        onOpenTheatreDashboard={() => navigate("/booking")}
+        onOpenEventDashboard={() => navigate("/events")}
+        onOpenOrders={onOpenOrders || (() => navigate("/account"))}
+        onOpenCineCoins={() => navigate("/cinecoins")}
+        onOpenAccount={() => navigate("/account")}
+        onOpenProductions={() => navigate("/productions")}
+        theatreAdmins={[]}
+        eventOrganizers={[]}
+        superAdminEmail=""
+      />
 
-        {/* Sub-Website Navigation Links in Top Bar */}
-        <div className="hidden md:flex items-center gap-1 lg:gap-1.5 xl:gap-2 text-xs xl:text-[13px] font-extrabold uppercase tracking-wide text-gray-950 dark:text-white">
-          <button 
-            onClick={() => navigate("/booking")} 
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
-          >
-            <span>🎬 Movie Booking</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
-            </span>
-          </button>
-          
-          <button 
-            onClick={() => navigate("/events")} 
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 xl:px-3 py-1.5 transition text-gray-950 dark:text-white font-extrabold hover:bg-gray-300/60 dark:hover:bg-white/10 hover:text-black dark:hover:text-gold border border-transparent hover:border-gray-400/40 dark:hover:border-gold/30 cursor-pointer"
-          >
-            <span>🎟️ Event Booking</span>
-            <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
-            </span>
-          </button>
-
-
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {/* Theme switcher */}
-          <div className="hidden xl:flex items-center">
-            <ThemeToggle variant="segmented" />
-          </div>
-          <div className="flex xl:hidden items-center">
-            <ThemeToggle variant="dropdown" />
-          </div>
-
-          {/* Desktop Settings Button */}
-          <button
-            type="button"
-            onClick={() => navigate("/settings")}
-            className="hidden md:inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold dark:hover:border-gold/40 transition-all cursor-pointer whitespace-nowrap shrink-0"
-            title="Application Settings"
-            id="btn-desktop-settings"
-          >
-            <Settings className="w-3.5 h-3.5 text-gold" />
-            <span>Settings</span>
-          </button>
-
-          {/* Desktop Menu Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveDivision("none");
-              setTimeout(() => {
-                document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
-              }, 50);
-            }}
-            className="hidden md:inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-gray-400 dark:border-white/10 bg-gray-200/80 dark:bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] uppercase tracking-wider font-extrabold text-gray-950 dark:text-white/90 hover:border-gray-900 hover:text-black dark:hover:text-gold transition-all cursor-pointer whitespace-nowrap shrink-0"
-          >
-            <span>☰</span>
-            <span>Menu</span>
-          </button>
-
-          {/* Mobile Menu Hamburger */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-400 dark:border-white/15 text-gray-950 dark:text-white/80 transition hover:border-gray-900 hover:text-black md:hidden shrink-0"
-            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-      </header>
-
-      {mobileMenuOpen && (
-        <div className="fixed left-4 right-4 top-[76px] z-40 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B0B0D]/95 p-3 shadow-2xl backdrop-blur-xl md:hidden">
-          <div className="flex flex-col gap-1 text-sm text-gray-800 dark:text-white/80">
-            {[
-              ["Home", "/"],
-              ["Movie Booking", "/booking"],
-              ["Event Booking", "/events"],
-              ["Film Production", "/productions"],
-              ["Event Management", "/event-management"],
-              ["Brand Publicity", "/proposals"],
-              ["CineCoins Loyalty", "/cinecoins"],
-              ["About", "#contact"],
-              ["Settings", "/settings"],
-            ].map(([label, path]) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  if (path.startsWith("#")) {
-                    document.getElementById(path.slice(1))?.scrollIntoView({ behavior: "smooth" });
-                  } else {
-                    navigate(path);
-                  }
-                }}
-                className="min-h-11 rounded-xl px-4 flex items-center justify-between transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gold"
-              >
-                <span>{label}</span>
-                {path !== "/" && !path.startsWith("#") && (
-                  path === "/cinecoins" ? (
-                    <span className="inline-flex items-center gap-1 text-[8px] font-extrabold text-amber-950 dark:text-amber-300 bg-[#FEF08A] dark:bg-amber-400/15 px-2 py-0.5 rounded-full border border-[#FACC15] dark:border-amber-400/30 font-mono shadow-xs">
-                      <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 animate-pulse" />
-                      SOON
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                      LIVE
-                    </span>
-                  )
-                )}
-              </button>
-            ))}
-            <div className="flex items-center justify-between px-3 py-2 border-t border-gray-200 dark:border-white/10 mt-1">
-              <span className="text-[11px] uppercase tracking-wider font-bold text-gray-600 dark:text-text-secondary">App Theme</span>
-              <ThemeToggle variant="segmented" />
-            </div>
-            {!userEmail ? (
-              <button type="button" onClick={() => { setMobileMenuOpen(false); onOpenAuth?.(); }} className="min-h-11 rounded-xl bg-gold px-4 text-left font-bold text-black mt-1">
-                Sign In / Sign Up
-              </button>
-            ) : (
-              <button type="button" onClick={() => { setMobileMenuOpen(false); navigate("/account"); }} className="min-h-11 rounded-xl bg-gold px-4 text-left font-bold text-black mt-1">
-                Profile
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* LIVE BANNER ADVERTISEMENT PLACEMENT: HOMEPAGE TOP */}
       <CineVenueLiveBanner
