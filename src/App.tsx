@@ -25,7 +25,6 @@ import MaintenancePage from "./components/MaintenancePage";
 import AuthCallback from "./pages/AuthCallback";
 import { bookingReminderScheduler } from "./services/bookingReminderScheduler";
 import { globalSyncClient } from "./services/globalSyncClient";
-import CmsPromoBannerSlider from "./components/home/CmsPromoBannerSlider";
 
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -2349,7 +2348,6 @@ export default function App() {
             ) : (
               /* Normal Customer Immersive Single Page Website */
               <div className="animate-fade-in pt-14 sm:pt-16">
-                <CmsPromoBannerSlider />
 
                 <NowShowing
                   movies={movies}
