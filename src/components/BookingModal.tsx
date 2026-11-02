@@ -76,6 +76,7 @@ export default function BookingModal({
   // Step state: "theatres_showtimes" (District Showtimes View) -> "seat_selection" -> "confirm_booking" -> "confirmed"
   const [bookingStep, setBookingStep] = useState<"theatres_showtimes" | "seat_selection" | "confirm_booking" | "payment_qr" | "confirmed">("theatres_showtimes");
   const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
+  const [qrImgError, setQrImgError] = useState<boolean>(false);
 
   // Confirm Booking Review Step States
   const [isMusicianDonationAdded, setIsMusicianDonationAdded] = useState(false);
@@ -1474,33 +1475,49 @@ export default function BookingModal({
             </div>
 
             {/* Live Payment QR Card */}
-            <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
-              <div className="p-3 bg-white rounded-xl shadow-md border border-gray-100">
-                <QRCode
-                  value={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
-                  size={180}
-                  level="M"
-                />
+            <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-5 sm:p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
+              
+              {/* Official Verified UPI QR Code Image */}
+              <div className="relative p-2 bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden max-w-[220px]">
+                {!qrImgError ? (
+                  <img
+                    src="/payment-qr.jpg"
+                    alt="Gattem Amarnath UPI QR Code"
+                    onError={() => setQrImgError(true)}
+                    className="w-48 h-48 sm:w-52 sm:h-52 object-contain rounded-xl select-none"
+                  />
+                ) : (
+                  <div className="p-2 bg-white">
+                    <QRCode
+                      value="upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH"
+                      size={180}
+                      level="M"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="text-center space-y-1">
-                <span className="text-xs font-bold text-gray-700 block">
-                  Scan with GPay, PhonePe, Paytm, BHIM, or any UPI App
-                </span>
-                <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-500 font-mono">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-800">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <div className="text-center space-y-1.5">
+                <div className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Payee: <strong>Gattem Amarnath</strong></span>
-                  <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">Verified</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-full font-bold">Verified ✓</span>
                 </div>
-                <span>UPI ID: <strong className="font-mono text-gray-900">9491336996@ptsbi</strong></span>
+
+                <span className="text-xs font-bold text-gray-700 block">
+                  Scan with GPay, PhonePe, Paytm, BHIM, or any Banking App
+                </span>
+
+                <div className="flex items-center justify-center gap-2 pt-0.5 text-xs text-gray-600 font-mono">
+                  <span>UPI ID: <strong className="font-mono text-gray-900 font-bold">9491336996@ptsbi</strong></span>
                   <button
+                    type="button"
                     onClick={() => {
                       navigator.clipboard?.writeText("9491336996@ptsbi");
                       setCopiedUpi(true);
                       setTimeout(() => setCopiedUpi(false), 2000);
                     }}
-                    className="text-[#E11D48] hover:underline font-bold bg-transparent border-none cursor-pointer p-0"
+                    className="text-[#E11D48] hover:underline font-bold bg-transparent border-none cursor-pointer p-0 text-xs"
                   >
                     {copiedUpi ? "Copied!" : "Copy ID"}
                   </button>
@@ -1537,7 +1554,7 @@ export default function BookingModal({
 
               {/* Direct UPI Mobile Deep Link */}
               <a
-                href={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
+                href="upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH"
                 className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
               >
                 <Smartphone className="w-4 h-4" />

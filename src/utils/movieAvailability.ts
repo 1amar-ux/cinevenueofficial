@@ -36,6 +36,7 @@ export function filterTheatresByCity(theatres: Theatre[], targetCity: string): T
   }
   return theatres.filter((theatre) => {
     const theatreCity = normalizeCityName(theatre.city || theatre.location);
+    if (!theatreCity || theatreCity === 'all cities' || theatreCity === 'all') return true;
     return theatreCity.includes(normTarget) || normTarget.includes(theatreCity);
   });
 }
