@@ -253,7 +253,9 @@ export function getEligibleTheatresAndShows(
 
       // Date matching
       const sDate = (s.date || '').trim();
-      if (!sDate || sDate.toLowerCase() === 'today') {
+      if (sDate.toLowerCase() === 'all' || sDate.toLowerCase() === 'daily') {
+        // Test show available on all dates
+      } else if (!sDate || sDate.toLowerCase() === 'today') {
         if (!isToday) return false;
       } else if (sDate.toLowerCase() === 'tomorrow') {
         if (!isTomorrow) return false;

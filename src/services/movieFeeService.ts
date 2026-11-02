@@ -51,6 +51,7 @@ export interface MovieFeeBreakdown {
 
 // Canonical default table for client fallback
 export const FALLBACK_MOVIE_FEES: MovieFeeConfig[] = [
+  { id: "MFC-010", ticketPrice: 10, baseCharge: 2.00, category: "STANDARD", gstRate: 18.0, feeApplication: "PER_TICKET", enabled: true, description: "Test Tier (₹10 Ticket)" },
   { id: "MFC-101", ticketPrice: 50, baseCharge: 12.00, category: "STANDARD", gstRate: 18.0, feeApplication: "PER_TICKET", enabled: true, description: "Budget Tier" },
   { id: "MFC-102", ticketPrice: 84, baseCharge: 14.00, category: "STANDARD", gstRate: 18.0, feeApplication: "PER_TICKET", enabled: true, description: "Standard Matinee" },
   { id: "MFC-103", ticketPrice: 84, baseCharge: 14.00, category: "SPECIAL", gstRate: 18.0, feeApplication: "PER_TICKET", enabled: true, description: "Morning Show Special" },

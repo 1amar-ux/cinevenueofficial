@@ -227,16 +227,7 @@ export default function Home({
 
     // 2. Specific Movie matches
     const movieMatches = [
-      { key: "coolie", title: "Coolie", url: "/booking?search=Coolie", sub: "Action / Thriller • Telugu/Tamil (UA16+)" },
-      { key: "trouble", title: "Don't Trouble the Trouble", url: "/booking?search=Don%27t%20Trouble", sub: "Comedy / Drama • Telugu (UA13+)" },
-      { key: "sigma", title: "Sigma", url: "/booking?search=Sigma", sub: "Action / Thriller • Telugu (UA16+)" },
-      { key: "paradise", title: "The Paradise", url: "/booking?search=The%20Paradise", sub: "Action / Period Drama • Telugu" },
-      { key: "avengers", title: "Avengers Endgame: Encore", url: "/booking?search=Avengers", sub: "Sci-Fi / Action • Telugu & English" },
-      { key: "thellakaagitham", title: "Thellakaagitham", url: "/booking?search=Thellakaagitham", sub: "Romantic Drama • Telugu" },
-      { key: "baththa", title: "Baththa", url: "/booking?search=Baththa", sub: "Action / Crime • Tamil" },
-      { key: "kalki", title: "Kalki 2898 AD", url: "/booking?search=Kalki", sub: "Sci-Fi Epic • Prasads IMAX" },
-      { key: "devara", title: "Devara: Part 1", url: "/booking?search=Devara", sub: "Action Spectacle • Telugu" },
-      { key: "pushpa", title: "Pushpa 2: The Rule", url: "/booking?search=Pushpa", sub: "Mass Action • High Demand" },
+      { key: "baththa", title: "Baththa", url: "/booking?search=Baththa", sub: "Action / Crime • Tamil (₹10 Test Pass)" },
     ];
 
     for (const m of movieMatches) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   X, Calendar, MapPin, Armchair, CheckCircle, ShieldCheck, CreditCard, 
   AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info,
-  Download, Printer, Share2, Mail, Smartphone, Heart, SlidersHorizontal, ArrowLeft, Clock,
+  Download, Printer, Share2, Mail, Smartphone, Heart, SlidersHorizontal, ArrowLeft, ArrowRight, Clock,
   Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search, Users, Navigation, CalendarPlus, Ticket
 } from "lucide-react";
 import QRCode from "react-qr-code";
@@ -74,7 +74,8 @@ export default function BookingModal({
   onUpdateMovie,
 }: BookingModalProps) {
   // Step state: "theatres_showtimes" (District Showtimes View) -> "seat_selection" -> "confirm_booking" -> "confirmed"
-  const [bookingStep, setBookingStep] = useState<"theatres_showtimes" | "seat_selection" | "confirm_booking" | "confirmed">("theatres_showtimes");
+  const [bookingStep, setBookingStep] = useState<"theatres_showtimes" | "seat_selection" | "confirm_booking" | "payment_qr" | "confirmed">("theatres_showtimes");
+  const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
 
   // Confirm Booking Review Step States
   const [isMusicianDonationAdded, setIsMusicianDonationAdded] = useState(false);
@@ -272,7 +273,15 @@ export default function BookingModal({
 
   const displayTheatre = selectedTheatreName || currentTheatre?.name || "Theatre";
   const displayTimeSlot = selectedShowTime || "11:30 AM";
-  const pricePerSeat = 250;
+
+  const activeSchedule = schedules.find(
+    (s) =>
+      (s.movieTitle || "").toLowerCase() === movieTitle.toLowerCase() &&
+      (!selectedTheatreName || (s.theatreName || "").toLowerCase() === selectedTheatreName.toLowerCase()) &&
+      (!selectedShowTime || s.timeSlot === selectedShowTime)
+  ) || schedules.find((s) => (s.movieTitle || "").toLowerCase() === movieTitle.toLowerCase());
+
+  const pricePerSeat = Number(activeSchedule?.pricePerSeat ?? (movieObj as any)?.price ?? (currentTheatre as any)?.ticketPrice ?? 10) || 10;
 
   // Layout settings
   const rows = currentTheatre?.seatRows || ["A", "B", "C", "D", "E", "F"];
@@ -1396,14 +1405,144 @@ export default function BookingModal({
               </div>
               <button
                 disabled={isProcessingPayment}
+                onClick={() => setBookingStep("payment_qr")}
+                className="bg-[#E11D48] hover:bg-[#BE123C] text-white px-6 sm:px-8 py-3 rounded-xl font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center gap-2"
+              >
+                <span>Proceed to Pay (₹{orderTotalAmount.toFixed(2)})</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* STEP 2.75: UPI / PAYMENT QR CODE CHECKOUT SCREEN                          */}
+        {/* ========================================================================= */}
+        {bookingStep === "payment_qr" && (
+          <div className="bg-[#F8FAFC] text-gray-900 rounded-3xl p-5 sm:p-7 max-w-lg mx-auto space-y-5 animate-fade-in text-left">
+            {/* Top Navigation */}
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+              <button
+                onClick={() => setBookingStep("confirm_booking")}
+                className="flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-transparent border-none cursor-pointer p-0"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Order Summary</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 cursor-pointer border-none bg-transparent"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Header */}
+            <div className="text-center space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>UPI Payment Gateway (Live Test Mode)</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+                Scan & Pay ₹{orderTotalAmount.toFixed(2)}
+              </h2>
+              <p className="text-xs text-gray-500 font-medium">
+                {movieTitle} • {selectedSeats.length} Ticket{selectedSeats.length > 1 ? "s" : ""} ({selectedSeats.join(", ")}) • {displayTheatre}
+              </p>
+            </div>
+
+            {/* Live Payment QR Card */}
+            <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
+              <div className="p-3 bg-white rounded-xl shadow-md border border-gray-100">
+                <QRCode
+                  value={`upi://pay?pa=cinevenue@upi&pn=CineVenue&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
+                  size={180}
+                  level="M"
+                />
+              </div>
+
+              <div className="text-center space-y-1">
+                <span className="text-xs font-bold text-gray-700 block">
+                  Scan with GPay, PhonePe, Paytm, BHIM, or any UPI App
+                </span>
+                <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-500 font-mono">
+                  <span>UPI ID: <strong>cinevenue@upi</strong></span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText("cinevenue@upi");
+                      setCopiedUpi(true);
+                      setTimeout(() => setCopiedUpi(false), 2000);
+                    }}
+                    className="text-[#E11D48] hover:underline font-bold bg-transparent border-none cursor-pointer p-0"
+                  >
+                    {copiedUpi ? "Copied!" : "Copy ID"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Itemized calculation breakdown */}
+              <div className="w-full bg-gray-50 rounded-xl p-3 text-xs space-y-1 text-gray-600 border border-gray-100">
+                <div className="flex justify-between">
+                  <span>Ticket Subtotal ({selectedSeats.length} x ₹{pricePerSeat}):</span>
+                  <span className="font-mono font-semibold text-gray-800">₹{rawBaseTicketPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Convenience Fee & GST (18%):</span>
+                  <span className="font-mono font-semibold text-gray-800">₹{totalConvenienceFee.toFixed(2)}</span>
+                </div>
+                {musicianDonationAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Musician Donation:</span>
+                    <span className="font-mono font-semibold text-gray-800">₹{musicianDonationAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {couponDiscountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Discount ({appliedCoupon}):</span>
+                    <span className="font-mono font-semibold">-₹{couponDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="border-t border-gray-200 pt-1 flex justify-between font-bold text-gray-900">
+                  <span>Total Payable:</span>
+                  <span className="font-mono text-[#E11D48] text-sm font-extrabold">₹{orderTotalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Direct UPI Mobile Deep Link */}
+              <a
+                href={`upi://pay?pa=cinevenue@upi&pn=CineVenue&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
+                className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>Open in UPI Mobile App</span>
+              </a>
+            </div>
+
+            {/* Verification & Completion Actions */}
+            <div className="space-y-2 pt-1">
+              <button
+                disabled={isProcessingPayment}
                 onClick={handleCompleteBooking}
-                className="bg-[#E11D48] hover:bg-[#BE123C] text-white px-8 py-3 rounded-xl font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center gap-2"
+                className="w-full py-3.5 px-6 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 {isProcessingPayment ? (
-                  <span>Processing...</span>
+                  <span>Verifying UPI Payment...</span>
                 ) : (
-                  <span>Continue</span>
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Verify Payment & Generate Ticket</span>
+                  </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                disabled={isProcessingPayment}
+                onClick={handleCompleteBooking}
+                className="w-full py-2 px-4 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all cursor-pointer"
+              >
+                ⚡ Instant Test Payment (Pass & Complete)
               </button>
             </div>
           </div>

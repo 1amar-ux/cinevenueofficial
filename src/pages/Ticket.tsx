@@ -21,8 +21,8 @@ export default function Ticket() {
   const navigate = useNavigate();
   const { booking } = useContext(BookingContext);
 
-  const movieTitle = booking.movie ? booking.movie.title : "Pushpa 2";
-  const theatreName = booking.theatre ? booking.theatre : "PVR Cinemas";
+  const movieTitle = booking.movie ? booking.movie.title : "Baththa";
+  const theatreName = booking.theatre ? booking.theatre : "CineVenue Sandbox Multiplex";
   const seats = booking.seats.length > 0 ? booking.seats : ["A1", "A2"];
   const bookingId = booking.show && String(booking.show).startsWith("BMS") ? booking.show : "BMS12345678";
   const qrUrl = getTicketVerificationUrl(bookingId);

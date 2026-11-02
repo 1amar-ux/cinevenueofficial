@@ -2,384 +2,70 @@ import { Movie, Theatre, Testimonial, Event, CineCoinsUserWallet, CineCoinsSetti
 
 export const INITIAL_MOVIES: Movie[] = [
   {
-    id: "mov_comrade_kalyan",
-    title: "Comrade Kalyan",
-    genre: "Comedy, Period, Romantic",
-    lang: "Telugu",
-    additionalLanguages: ["Hindi", "Tamil"],
+    id: "mov_baththa",
+    title: "Baththa",
+    genre: "Action, Crime, Thriller",
+    lang: "Tamil",
+    additionalLanguages: ["Telugu", "Hindi"],
     certification: "UA16+",
-    rating: "9.4",
-    votes: "2.6K+ Votes",
-    duration: "2h 25m",
+    rating: "9.2",
+    votes: "4.8K+ Votes",
+    duration: "2h 28m",
     releaseYear: 2026,
-    releaseDate: "9 Oct, 2026",
-    formats: ["2D", "EPIQ"],
-    langKey: "telugu",
-    img: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80",
-    poster: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80",
+    releaseDate: "2026-10-09",
+    formats: ["2D", "4K Atmos"],
+    langKey: "tamil",
+    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
+    poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
     banner: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&q=85",
-    trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
-    description: "Set against the backdrop of the early '90s Andhra Pradesh, Kalyan, a sharp-witted theatre operator, falls for Sitara, a young woman from Odisha. What begins as a lighthearted pursuit of love soon spirals into a chaotic series of misunderstandings, comic mishaps, and unexpected danger.",
+    trailerUrl: "https://www.youtube.com/watch?v=qeVfT2i_2kM",
+    description: "An intense high-octane crime action thriller following Baththa's journey through the treacherous underworld. Special testing release at ₹10 per ticket.",
+    price: 10,
+    status: "Now Showing",
+    isActive: true,
+    director: "G. V. Kumar",
+    cast: ["Vikram Prabhu", "SJ Suryah", "Anurag Kashyap"],
     castMembers: [
       {
-        name: "Sree Vishnu",
+        name: "Vikram Prabhu",
         role: "Actor",
-        character: "Kalyan",
+        character: "Baththa",
         image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"
       },
       {
-        name: "Mahima Nambiar",
+        name: "SJ Suryah",
         role: "Actor",
-        character: "Sitara",
-        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80"
-      },
-      {
-        name: "Radhika Sarathkumar",
-        role: "Actor",
-        character: "Kalyan's Mother",
-        image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=80"
-      },
-      {
-        name: "Shine Tom Chacko",
-        role: "Actor",
-        character: "Antagonist",
+        character: "Commissioner",
         image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80"
       },
       {
-        name: "Upendra Limaye",
+        name: "Anurag Kashyap",
         role: "Actor",
-        character: "Inspector",
+        character: "Underworld Don",
         image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&q=80"
-      },
-      {
-        name: "Sathya",
-        role: "Actor",
-        character: "Friend / Projectionist",
-        image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&q=80"
       }
     ],
     crewMembers: [
       {
-        name: "Kishore Tirumala",
+        name: "G. V. Kumar",
         role: "Director",
         image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"
       },
       {
-        name: "TG Vishwa Prasad",
-        role: "Producer",
-        image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=300&q=80"
-      },
-      {
-        name: "Vivek Sagar",
+        name: "Anirudh Ravichander",
         role: "Musician",
         image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80"
-      },
-      {
-        name: "Venu Udugula",
-        role: "Cinematographer",
-        image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300&q=80"
-      },
-      {
-        name: "Sreekar Prasad",
-        role: "Editor",
-        image: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80"
       }
     ],
     offers: [
       {
-        id: "off-1",
-        title: "Enjoy B1G1 Ticket Free!* with Bandhan Bank Credit Cards",
-        subtitle: "Tap to view terms & eligibility details",
-        bankName: "Bandhan Bank",
-        discountBadge: "B1G1 FREE"
-      },
-      {
-        id: "off-2",
-        title: "Get up to ₹1000 off per calendar month with Axis Bank Delight Cards",
-        subtitle: "Applicable on 2D and EPIQ ticket bookings",
-        bankName: "Axis Bank",
-        discountBadge: "FLAT ₹1000"
-      },
-      {
-        id: "off-3",
-        title: "Pay via CineCoins & get 20% instant cashback to your wallet",
-        subtitle: "Redeem CineCoins on snacks and movie tickets",
-        bankName: "CineVenue Vault",
-        discountBadge: "20% CASHBACK"
-      }
-    ],
-    reviews: [
-      {
-        id: "rev-1",
-        userName: "User",
-        userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80",
-        isVerifiedBooking: true,
-        rating: 10,
-        tags: ["#GreatActing", "#AwesomeStory", "#Blockbuster"],
-        comment: "'కామ్రేడ్ కళ్యాణ్' అంటే ఎవరు? కామెడీతో అలరించే కళ్యాణ్ 💥 Superb storyline with vintage 90s atmosphere!",
-        likes: 67,
-        dislikes: 0,
-        timeAgo: "19 Hours ago"
-      },
-      {
-        id: "rev-2",
-        userName: "User",
-        userAvatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&q=80",
-        isVerifiedBooking: true,
-        rating: 10,
-        tags: ["#SuperDirection", "#GreatActing", "#AwesomeStory"],
-        comment: "Entertainer movie tho osthadu, blockbuster kodthadu... 😂🔥 Sree Vishnu nailed every scene with effortless comedy.",
-        likes: 42,
-        dislikes: 1,
-        timeAgo: "19 Hours ago"
-      },
-      {
-        id: "rev-3",
-        userName: "Praveen Kumar",
-        userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80",
-        isVerifiedBooking: true,
-        rating: 9,
-        tags: ["#Wellmade", "#Blockbuster", "#AwesomeMusic"],
-        comment: "Music by Vivek Sagar and the cinematography took me back to early 90s Godavari villages. Absolute family entertainer!",
-        likes: 29,
-        dislikes: 0,
-        timeAgo: "1 Day ago"
+        id: "off-test-1",
+        title: "Baththa Special Testing Pass (Flat ₹10 Tickets)",
+        subtitle: "GST and dynamic convenience fee applied at checkout",
+        bankName: "CineVenue Test",
+        discountBadge: "TEST MODE"
       }
     ]
-  },
-  {
-    id: "mov_coolie",
-    title: "Coolie",
-    genre: "Action / Thriller",
-    lang: "Telugu",
-    additionalLanguages: ["Tamil", "Hindi"],
-    certification: "UA16+",
-    rating: "9.1",
-    votes: "4.8K+ Votes",
-    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-    banner: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&q=80",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
-    duration: "2h 45m",
-    releaseYear: 2026,
-    releaseDate: "15 Aug, 2026",
-    formats: ["2D", "IMAX", "Dolby Atmos"],
-    description: "An explosive mass action entertainer starring Superstar Rajinikanth directed by Lokesh Kanagaraj, featuring high-octane sequences, pristine 4K laser projection, and earth-shattering Dolby Atmos surround sound.",
-    castMembers: [
-      { name: "Rajinikanth", role: "Actor", character: "Deva", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80" },
-      { name: "Nagarjuna Akkineni", role: "Actor", character: "Simon", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&q=80" },
-      { name: "Soubin Shahir", role: "Actor", character: "Dayal", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&q=80" },
-      { name: "Shruti Haasan", role: "Actor", character: "Preethi", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80" },
-      { name: "Upendra", role: "Actor", character: "Kaleesha", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80" }
-    ],
-    crewMembers: [
-      { name: "Lokesh Kanagaraj", role: "Director", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80" },
-      { name: "Kalanithi Maran", role: "Producer", image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=300&q=80" },
-      { name: "Anirudh Ravichander", role: "Musician", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80" },
-      { name: "Girish Gangadharan", role: "Cinematographer", image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300&q=80" },
-      { name: "Philomin Raj", role: "Editor", image: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&q=80" }
-    ]
-  },
-  {
-    id: "mov_dont_trouble",
-    title: "Don't Trouble the Trouble",
-    genre: "Comedy / Drama",
-    lang: "Telugu",
-    certification: "UA13+",
-    rating: "8.4",
-    img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
-    duration: "2h 15m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_doraemon_devil",
-    title: "Doraemon: Castle of the Undersea Devil",
-    genre: "Animation / Adventure",
-    lang: "Telugu",
-    certification: "U",
-    rating: "8.8",
-    img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=vV_CqGfN5iI",
-    duration: "1h 41m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_sigma",
-    title: "Sigma",
-    genre: "Action / Thriller",
-    lang: "Telugu",
-    certification: "UA16+",
-    rating: "7.9",
-    img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=1kVK0MZlbI4",
-    duration: "2h 32m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_thellakaagitham",
-    title: "Thellakaagitham",
-    genre: "Romantic Drama",
-    lang: "Telugu",
-    certification: "UA16+",
-    rating: "8.1",
-    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
-    duration: "2h 10m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_baththa",
-    title: "Baththa",
-    genre: "Action / Crime",
-    lang: "Tamil",
-    certification: "UA13+",
-    rating: "8.0",
-    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=600&q=75",
-    langKey: "tamil",
-    trailerUrl: "https://www.youtube.com/watch?v=qeVfT2i_2kM",
-    duration: "2h 28m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_verity",
-    title: "Verity",
-    genre: "Mystery / Thriller",
-    lang: "English",
-    certification: "A",
-    rating: "7.8",
-    img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&q=75",
-    langKey: "english",
-    trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
-    duration: "2h 05m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_the_paradise",
-    title: "The Paradise",
-    genre: "Action / Period Drama",
-    lang: "Telugu",
-    certification: "A",
-    rating: "8.6",
-    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
-    duration: "2h 40m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_avengers_endgame",
-    title: "Avengers Endgame: Encore",
-    genre: "Sci-Fi / Action",
-    lang: "Telugu",
-    additionalLanguages: ["English", "Hindi"],
-    certification: "UA16+",
-    rating: "9.2",
-    img: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=75",
-    poster: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=600&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
-    duration: "3h 02m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_heart_of_the_beast",
-    title: "Heart of the Beast",
-    genre: "Drama / Thriller",
-    lang: "English",
-    certification: "UA16+",
-    rating: "8.3",
-    img: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=601&q=75",
-    poster: "https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=601&q=75",
-    langKey: "english",
-    trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
-    duration: "2h 18m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_resident_evil",
-    title: "Resident Evil",
-    genre: "Horror / Sci-Fi",
-    lang: "Telugu",
-    additionalLanguages: ["English"],
-    certification: "A",
-    rating: "7.7",
-    img: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=601&q=75",
-    poster: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=601&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=4q6UacW8N9I",
-    duration: "1h 58m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_sub_inspector_yugandhar",
-    title: "Sub-Inspector Yugandhar",
-    genre: "Action / Crime",
-    lang: "Telugu",
-    certification: "UA16+",
-    rating: "8.5",
-    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=601&q=75",
-    poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=601&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=1kVK0MZlbI4",
-    duration: "2h 35m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_sanchari",
-    title: "Sanchari",
-    genre: "Drama / Romance",
-    lang: "Telugu",
-    certification: "UA13+",
-    rating: "7.9",
-    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=601&q=75",
-    poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=601&q=75",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
-    duration: "2h 12m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_kalki_2898_ad",
-    title: "Kalki 2898 AD",
-    genre: "Sci-Fi / Epic",
-    lang: "Telugu",
-    additionalLanguages: ["Hindi", "Tamil"],
-    certification: "UA16+",
-    rating: "8.9",
-    img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=kQDd1AhGIHk",
-    duration: "3h 01m",
-    releaseYear: 2026
-  },
-  {
-    id: "mov_devara",
-    title: "Devara",
-    genre: "Action / Drama",
-    lang: "Telugu",
-    additionalLanguages: ["Hindi"],
-    certification: "UA16+",
-    rating: "8.2",
-    img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=70",
-    poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=70",
-    langKey: "telugu",
-    trailerUrl: "https://www.youtube.com/watch?v=4rgGY_l2S94",
-    duration: "2h 58m",
-    releaseYear: 2026
   }
 ];
 
@@ -387,91 +73,28 @@ export const INITIAL_MOVIES: Movie[] = [
 export const INITIAL_THEATRES: Theatre[] = [
   {
     id: 1,
-    name: "PVR Nexus",
-    location: "Hyderabad · Kukatpally",
-    city: "Hyderabad",
-    latitude: 17.4834,
-    longitude: 78.3871,
-    features: ["4K Laser", "Dolby Atmos", "Recliner"],
-    price: "₹4,999",
-    img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=60"
-  },
-  {
-    id: 2,
-    name: "IMAX Prasads",
-    location: "Hyderabad · Tank Bund",
-    city: "Hyderabad",
+    name: "CineVenue Sandbox Multiplex",
+    location: "Main Road, Central",
+    city: "All Cities",
     latitude: 17.4126,
     longitude: 78.4655,
-    features: ["IMAX", "Dolby Vision", "Premium F&B"],
-    price: "₹7,499",
-    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=60"
-  },
-  {
-    id: 3,
-    name: "Cinepolis GVK",
-    location: "Hyderabad · Banjara Hills",
-    city: "Hyderabad",
-    latitude: 17.4193,
-    longitude: 78.4485,
-    features: ["VIP Lounge", "Gourmet Menu", "Recliner"],
-    price: "₹5,999",
-    img: "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?w=600&q=60"
-  },
-  {
-    id: 4,
-    name: "PVP Square INOX",
-    location: "Vijayawada · MG Road",
-    city: "Vijayawada",
-    latitude: 16.5020,
-    longitude: 80.6385,
-    features: ["4K Laser", "Recliner"],
-    price: "₹2,999",
-    img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=600&q=60"
-  },
-  {
-    id: 5,
-    name: "Capital Cinemas",
-    location: "Vijayawada · Trendset Mall",
-    city: "Vijayawada",
-    latitude: 16.4950,
-    longitude: 80.6550,
-    features: ["Dolby Atmos", "Giant Screen"],
-    price: "₹3,499",
-    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=60"
-  },
-  {
-    id: 6,
-    name: "Naaz Cinemas, Kothapet Main Road, Guntur",
-    location: "Guntur · Kothapet Main Road",
-    city: "Guntur",
-    latitude: 16.3067,
-    longitude: 80.4365,
-    features: ["4K Projection", "Dolby Digital 7.1", "M-Ticket"],
-    price: "₹2,200",
-    img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=60"
-  },
-  {
-    id: 7,
-    name: "Cinepolis Sudarshan",
-    location: "Guntur · Lakshmipuram",
-    city: "Guntur",
-    latitude: 16.3025,
-    longitude: 80.4300,
-    features: ["Recliner", "Dolby Atmos", "Food & Beverage"],
-    price: "₹2,499",
-    img: "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?w=600&q=60"
-  },
-  {
-    id: 8,
-    name: "Miraj Cinemas, Vidya Nagar",
-    location: "Guntur · Vidya Nagar",
-    city: "Guntur",
-    latitude: 16.3150,
-    longitude: 80.4420,
-    features: ["Dolby 7.1", "Laser 3D", "Recliner"],
-    price: "₹2,300",
-    img: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&q=60"
+    features: ["4K Laser", "Dolby Atmos", "Standard Test Screen"],
+    price: "₹10",
+    ticketPrice: 10,
+    img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=60",
+    seatRows: ["A", "B", "C"],
+    seatsPerRow: 6,
+    premiumRows: [],
+    seatPrices: { A: 10, B: 10, C: 10 },
+    screens: [
+      {
+        id: "SCR-1",
+        name: "Screen 1 (Test Screen)",
+        screenType: "2D",
+        totalSeats: 18,
+        isActive: true
+      }
+    ]
   }
 ];
 
@@ -494,13 +117,13 @@ export const CITIES = [
 export const INITIAL_EVENTS: Event[] = [];
 
 export const DEFAULT_SPOTLIGHT = {
-  title: "The Last Horizon",
-  genre: "Sci-Fi • Space Odyssey",
-  duration: "2h 18m",
-  rating: "8.7",
-  image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=900&q=70",
-  description: "A stunning visual masterpiece exploring deep space that redefines the boundaries of human survival and exploration. When humanity's final interstellar colonization ship suddenly loses connection with Earth, one astronomer must decide between individual salvation and the ultimate truth.",
-  showtimes: ["10:30 AM", "1:45 PM", "4:00 PM", "7:30 PM", "10:15 PM"]
+  title: "Baththa",
+  genre: "Action / Crime • Tamil",
+  duration: "2h 28m",
+  rating: "9.2",
+  image: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=900&q=70",
+  description: "An intense high-octane crime action thriller following Baththa's journey through the treacherous underworld. Special testing release at ₹10 per ticket with live convenience fee & GST calculation.",
+  showtimes: ["11:30 AM", "2:45 PM", "6:30 PM", "9:45 PM"]
 };
 
 export const DEFAULT_CINECOINS_REWARD_RULES: CineCoinRewardItemConfig[] = [

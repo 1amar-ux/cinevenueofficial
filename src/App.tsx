@@ -201,6 +201,18 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
   return result;
 }
 
+const CINE_DATA_VERSION = "v_baththa_test_v2";
+if (typeof window !== "undefined") {
+  try {
+    if (localStorage.getItem("cine_data_version") !== CINE_DATA_VERSION) {
+      localStorage.removeItem("cine_movies");
+      localStorage.removeItem("cine_theatres");
+      localStorage.removeItem("cine_schedules");
+      localStorage.setItem("cine_data_version", CINE_DATA_VERSION);
+    }
+  } catch {}
+}
+
 export default function App() {
   // 1. Core Data Lists (loaded from localStorage or INITIAL_X fallback)
   const [movies, setMovies] = useState<Movie[]>(() => {
@@ -288,10 +300,10 @@ export default function App() {
   const [schedules, setSchedules] = useState<MovieSchedule[]>(() => {
     const saved = localStorage.getItem("cine_schedules");
     return saved ? JSON.parse(saved) : [
-      { id: "SCH-1", movieTitle: "Kalki 2898 AD", theatreName: "IMAX Prasads", timeSlot: "7:30 PM", pricePerSeat: 250, date: "Today", isDeployed: true },
-      { id: "SCH-2", movieTitle: "Kalki 2898 AD", theatreName: "PVR Nexus", timeSlot: "10:30 AM", pricePerSeat: 220, date: "Today", isDeployed: true },
-      { id: "SCH-3", movieTitle: "Stree 2", theatreName: "Cinepolis GVK", timeSlot: "4:00 PM", pricePerSeat: 200, date: "Today", isDeployed: true },
-      { id: "SCH-4", movieTitle: "Deadpool & Wolverine", theatreName: "Sathyam Cinemas", timeSlot: "10:15 PM", pricePerSeat: 300, date: "Today", isDeployed: true }
+      { id: "SCH-1", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "11:30 AM", pricePerSeat: 10, date: "daily", isDeployed: true },
+      { id: "SCH-2", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "2:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
+      { id: "SCH-3", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "6:30 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
+      { id: "SCH-4", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "9:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true }
     ];
   });
 
@@ -898,7 +910,8 @@ export default function App() {
           };
         });
         const uniqueApiMovies = deduplicateMovies(apiMovies);
-        const fullMerged = deduplicateMovies([...uniqueApiMovies, ...INITIAL_MOVIES]);
+        const filteredApiMovies = uniqueApiMovies.filter(m => (m.title || "").toLowerCase() === "baththa");
+        const fullMerged = deduplicateMovies(filteredApiMovies.length > 0 ? filteredApiMovies : INITIAL_MOVIES);
         setMovies((prev) => {
           if (
             prev.length === fullMerged.length &&
@@ -995,14 +1008,21 @@ export default function App() {
             isDeployed: s.status === 'ACTIVE' || s.isActive !== false,
           };
         });
+        const filteredApiShows = apiShows.filter(s => (s.movieTitle || "").toLowerCase() === "baththa");
+        const activeSchedulesToUse = filteredApiShows.length > 0 ? filteredApiShows : [
+          { id: "SCH-1", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "11:30 AM", pricePerSeat: 10, date: "daily", isDeployed: true },
+          { id: "SCH-2", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "2:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
+          { id: "SCH-3", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "6:30 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
+          { id: "SCH-4", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "9:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true }
+        ];
         setSchedules((prev) => {
           if (
-            prev.length === apiShows.length &&
-            prev.every((s, idx) => s.id === apiShows[idx]?.id && s.timeSlot === apiShows[idx]?.timeSlot && s.pricePerSeat === apiShows[idx]?.pricePerSeat)
+            prev.length === activeSchedulesToUse.length &&
+            prev.every((s, idx) => s.id === activeSchedulesToUse[idx]?.id && s.timeSlot === activeSchedulesToUse[idx]?.timeSlot && s.pricePerSeat === activeSchedulesToUse[idx]?.pricePerSeat)
           ) {
             return prev;
           }
-          return apiShows;
+          return activeSchedulesToUse;
         });
       }
 

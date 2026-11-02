@@ -28,10 +28,10 @@ export default function Payment() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
 
-  const movieTitle = booking.movie ? booking.movie.title : "Pushpa 2";
-  const theatreName = booking.theatre ? booking.theatre : "PVR Cinemas";
+  const movieTitle = booking.movie ? booking.movie.title : "Baththa";
+  const theatreName = booking.theatre ? booking.theatre : "CineVenue Sandbox Multiplex";
   const seats = booking.seats.length > 0 ? booking.seats.join(" ") : "A1 A2";
-  const total = booking.total > 0 ? booking.total : 500;
+  const total = booking.total > 0 ? booking.total : 12.36;
 
   const handlePayment = async () => {
     setPaymentError(null);

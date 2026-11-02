@@ -20,20 +20,7 @@ interface BookingItem {
   amount: number;
 }
 
-const defaultBookings: BookingItem[] = [
-  {
-    movie: "Pushpa 2",
-    date: "25 June",
-    seats: "A1 A2",
-    amount: 500
-  },
-  {
-    movie: "Salaar",
-    date: "20 June",
-    seats: "B4 B5",
-    amount: 600
-  }
-];
+const defaultBookings: BookingItem[] = [];
 
 export default function BookingHistory() {
   const navigate = useNavigate();
