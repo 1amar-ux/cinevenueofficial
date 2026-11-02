@@ -199,7 +199,7 @@ export function mergeCineEvents(cineEvents: any[] = [], ticketedEvents: any[] = 
   return result;
 }
 
-const CINE_DATA_VERSION = "v_baththa_test_v4";
+const CINE_DATA_VERSION = "v_baththa_test_v5";
 if (typeof window !== "undefined") {
   try {
     if (localStorage.getItem("cine_data_version") !== CINE_DATA_VERSION) {

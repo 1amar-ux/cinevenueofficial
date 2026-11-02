@@ -1477,35 +1477,27 @@ export default function BookingModal({
             {/* Live Payment QR Card */}
             <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-5 sm:p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
               
-              {/* Official Verified UPI QR Code Image */}
-              <div className="relative p-2 bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden max-w-[220px]">
+              {/* Clean Extracted QR Code (No background banners or names) */}
+              <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex items-center justify-center max-w-[220px]">
                 {!qrImgError ? (
                   <img
-                    src="/payment-qr.jpg"
-                    alt="Gattem Amarnath UPI QR Code"
+                    src="/payment-qr.png"
+                    alt="Payment QR Code"
                     onError={() => setQrImgError(true)}
-                    className="w-48 h-48 sm:w-52 sm:h-52 object-contain rounded-xl select-none"
+                    className="w-48 h-48 sm:w-52 sm:h-52 object-contain select-none"
                   />
                 ) : (
-                  <div className="p-2 bg-white">
-                    <QRCode
-                      value="upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH"
-                      size={180}
-                      level="M"
-                    />
-                  </div>
+                  <QRCode
+                    value="upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH"
+                    size={190}
+                    level="M"
+                  />
                 )}
               </div>
 
-              <div className="text-center space-y-1.5">
-                <div className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Payee: <strong>Gattem Amarnath</strong></span>
-                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-full font-bold">Verified ✓</span>
-                </div>
-
-                <span className="text-xs font-bold text-gray-700 block">
-                  Scan with GPay, PhonePe, Paytm, BHIM, or any Banking App
+              <div className="text-center space-y-1">
+                <span className="text-xs font-bold text-gray-800 block">
+                  Scan with GPay, PhonePe, Paytm, or any UPI App
                 </span>
 
                 <div className="flex items-center justify-center gap-2 pt-0.5 text-xs text-gray-600 font-mono">
