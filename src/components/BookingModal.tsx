@@ -1477,7 +1477,7 @@ export default function BookingModal({
             <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
               <div className="p-3 bg-white rounded-xl shadow-md border border-gray-100">
                 <QRCode
-                  value={`upi://pay?pa=cinevenue@upi&pn=CineVenue&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
+                  value={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
                   size={180}
                   level="M"
                 />
@@ -1488,10 +1488,15 @@ export default function BookingModal({
                   Scan with GPay, PhonePe, Paytm, BHIM, or any UPI App
                 </span>
                 <div className="flex items-center justify-center gap-2 pt-1 text-[11px] text-gray-500 font-mono">
-                  <span>UPI ID: <strong>cinevenue@upi</strong></span>
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-800">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Payee: <strong>Gattem Amarnath</strong></span>
+                  <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">Verified</span>
+                </div>
+                <span>UPI ID: <strong className="font-mono text-gray-900">9491336996@ptsbi</strong></span>
                   <button
                     onClick={() => {
-                      navigator.clipboard?.writeText("cinevenue@upi");
+                      navigator.clipboard?.writeText("9491336996@ptsbi");
                       setCopiedUpi(true);
                       setTimeout(() => setCopiedUpi(false), 2000);
                     }}
@@ -1532,7 +1537,7 @@ export default function BookingModal({
 
               {/* Direct UPI Mobile Deep Link */}
               <a
-                href={`upi://pay?pa=cinevenue@upi&pn=CineVenue&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
+                href={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Baththa-${selectedSeats.join(",")}`)}`}
                 className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
               >
                 <Smartphone className="w-4 h-4" />
