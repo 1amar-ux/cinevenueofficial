@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppSettings } from "./context/AppSettingsContext";
 import Navbar from "./components/Navbar";
-import Featured from "./components/Featured";
 import NowShowing from "./components/NowShowing";
 import EventsShowcase from "./components/EventsShowcase";
 import ContactForm from "./components/ContactForm";
@@ -2351,11 +2350,6 @@ export default function App() {
               /* Normal Customer Immersive Single Page Website */
               <div className="animate-fade-in pt-14 sm:pt-16">
                 <CmsPromoBannerSlider />
-                <Featured
-                  spotlight={spotlight}
-                  onBookMovie={handleBookMovie}
-                  isMovieBookingSystemActive={isMovieBookingSystemActive}
-                />
 
                 <NowShowing
                   movies={movies}
