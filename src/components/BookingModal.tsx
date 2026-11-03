@@ -12,6 +12,7 @@ import { POPULAR_CITIES, ALL_INDIAN_CITIES } from "../lib/location";
 import { FeeCalculationService } from "../services/feeCalculationService";
 import { FeeCalculationResult, FeeRule, TaxRule, DiscountRule } from "../types/fees";
 import { movieFeeClient, calculateLocalMovieFeeFallback, MovieFeeBreakdown } from "../services/movieFeeService";
+import { centralizedPricingClient } from "../services/centralizedPricingService";
 import { generateAndDownloadTicketPdf, getTicketVerificationUrl } from "../utils/ticketDeliveryService";
 import { getEligibleTheatresAndShows, parseTimeToMinutes, getPrimaryMovieTrailer } from "../utils/movieAvailability";
 import { openVenueDirections, downloadCalendarEvent } from "../services/venueLocationService";
@@ -432,27 +433,30 @@ export default function BookingModal({
     const discount = appliedCoupon ? (appliedCoupon === "WELCOME50" ? 50 : 20) : 0;
     const donation = isMusicianDonationAdded ? selectedSeats.length * 1.0 : 0;
 
-    // Instant local calculation using canonical table fallback
-    const localCalc = calculateLocalMovieFeeFallback(tickets, undefined, undefined, {
+    // Instant local calculation using centralized pricing engine
+    const localCalc = centralizedPricingClient.calculateLocalFallback({
+      itemType: "MOVIE",
+      tickets,
       couponCode: appliedCoupon || undefined,
       musicianDonation: isMusicianDonationAdded,
     });
-    setMovieFeeBreakdown(localCalc);
+    setMovieFeeBreakdown(localCalc as any);
 
-    // Call authoritative server calculation
-    movieFeeClient
+    // Authoritative server calculation via centralized pricing engine
+    centralizedPricingClient
       .calculatePrice({
+        itemType: "MOVIE",
         tickets,
-        couponDiscount: discount,
-        otherCharges: donation,
-      } as any)
+        couponCode: appliedCoupon || undefined,
+        musicianDonation: isMusicianDonationAdded,
+      })
       .then((serverCalc) => {
         if (serverCalc) {
-          setMovieFeeBreakdown(serverCalc);
+          setMovieFeeBreakdown(serverCalc as any);
         }
       })
       .catch((err) => {
-        console.warn("Using fallback local movie fee calculation:", err);
+        console.warn("Using fallback centralized pricing calculation:", err);
       });
   }, [selectedSeats, seatCategoryLabel, appliedCoupon, isMusicianDonationAdded, currentTheatre]);
 

@@ -58,6 +58,8 @@ import {
 import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin, CastMember, CrewMember } from "../types";
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
+import CentralizedConvenienceFeeAdmin from "../components/admin/finance/CentralizedConvenienceFeeAdmin";
+import { Sliders } from "lucide-react";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
 import EntryLogsModule from "../components/admin/monitoring/EntryLogsModule";
@@ -269,6 +271,7 @@ export default function AdminLayout() {
       items: [
         { id: "bookings", label: "Booking Audit", icon: Ticket },
         { id: "payments", label: "Payments & GST", icon: CreditCard },
+        { id: "convenience_fees", label: "Convenience Fee Management", icon: Sliders },
         { id: "coupons", label: "Coupons & Promos", icon: Tag },
         { id: "reviews", label: "Reviews Moderation", icon: Star }
       ]
@@ -327,7 +330,8 @@ export default function AdminLayout() {
       case "bookings":
         return !!perms.BOOKINGS?.VIEW || !!perms.EVENTS?.VIEW || !!perms.FINANCE?.VIEW || roleName === "EVENT_MANAGER" || roleName === "THEATRE_MANAGER" || roleName === "FINANCE";
       case "payments":
-        return !!perms.FINANCE?.VIEW || roleName === "FINANCE";
+      case "convenience_fees":
+        return !!perms.FINANCE?.VIEW || roleName === "FINANCE" || isSuperAdminSession;
       case "coupons":
       case "notifications":
       case "content":
@@ -2848,9 +2852,42 @@ export default function AdminLayout() {
               </div>
             )}
 
-            {/* 9. PAYMENTS & GST REPORTS */}
-            {activeTab === "payments" && (
+            {/* 9. PAYMENTS & CONVENIENCE FEE MANAGEMENT */}
+            {(activeTab === "payments" || activeTab === "convenience_fees") && (
               <div className="space-y-6">
+                {/* Sub-tab navigation bar */}
+                <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                  <button
+                    onClick={() => setPaymentSubTab("fees")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      paymentSubTab === "fees" || activeTab === "convenience_fees"
+                        ? "bg-[#242015] border-[#D4AF37]/50 text-[#F5C518] shadow-sm"
+                        : "bg-white/[0.02] border-transparent text-white/60 hover:text-white"
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Convenience Fee Management</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPaymentSubTab("logs");
+                      if (activeTab === "convenience_fees") setActiveTab("payments");
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      paymentSubTab === "logs" && activeTab !== "convenience_fees"
+                        ? "bg-[#242015] border-[#D4AF37]/50 text-[#F5C518] shadow-sm"
+                        : "bg-white/[0.02] border-transparent text-white/60 hover:text-white"
+                    }`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Payment Gateway Logs & GST Ledger</span>
+                  </button>
+                </div>
+
+                {(activeTab === "convenience_fees" || paymentSubTab === "fees") ? (
+                  <CentralizedConvenienceFeeAdmin isSuperAdmin={isSuperAdminSession} />
+                ) : (
+                  <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
@@ -2926,6 +2963,8 @@ export default function AdminLayout() {
                     </div>
                   </div>
                 </div>
+                  </div>
+                )}
               </div>
             )}
 

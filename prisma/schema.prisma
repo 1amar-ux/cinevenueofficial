@@ -1159,3 +1159,94 @@ model AnalyticsEngagementEvent {
   @@index([sessionId])
   @@index([createdAt])
 }
+
+
+// ==========================================
+// 17. CENTRALIZED PRICING & CONVENIENCE FEE ENGINE
+// ==========================================
+
+model PricingConfiguration {
+  id                      String               @id @default("global_pricing_config")
+  enabled                 Boolean              @default(true)
+  calculationType         String               @default("SLAB") @map("calculation_type") // "FIXED" | "PERCENTAGE" | "SLAB"
+  fixedAmount             Decimal              @default(15.00) @db.Decimal(10, 2) @map("fixed_amount")
+  percentageRate          Decimal              @default(10.00) @db.Decimal(5, 2) @map("percentage_rate")
+  applyTo                 String               @default("BOTH") @map("apply_to") // "MOVIES" | "EVENTS" | "BOTH"
+  feeApplication          String               @default("PER_TICKET") @map("fee_application") // "PER_TICKET" | "PER_BOOKING"
+  gstEnabled              Boolean              @default(true) @map("gst_enabled")
+  gstPercentage           Decimal              @default(18.00) @db.Decimal(5, 2) @map("gst_percentage")
+  taxMethod               String               @default("EXCLUSIVE") @map("tax_method") // "EXCLUSIVE" | "INCLUSIVE"
+  displayTaxSeparately    Boolean              @default(true) @map("display_tax_separately")
+  eventFeeCalculationType String?              @default("SLAB") @map("event_fee_calculation_type")
+  eventFixedAmount        Decimal?             @default(20.00) @db.Decimal(10, 2) @map("event_fixed_amount")
+  eventPercentageRate     Decimal?             @default(10.00) @db.Decimal(5, 2) @map("event_percentage_rate")
+  version                 Int                  @default(1)
+  updatedAt               DateTime             @default(now()) @updatedAt @map("updated_at")
+  updatedBy               String?              @map("updated_by")
+
+  slabs                   ConvenienceFeeSlab[]
+
+  @@map("pricing_configurations")
+}
+
+model ConvenienceFeeSlab {
+  id          String               @id @default(cuid())
+  configId    String               @default("global_pricing_config") @map("config_id")
+  minPrice    Decimal              @db.Decimal(10, 2) @map("min_price")
+  maxPrice    Decimal?             @db.Decimal(10, 2) @map("max_price") // null represents 'and above'
+  feeAmount   Decimal              @db.Decimal(10, 2) @map("fee_amount")
+  feeType     String               @default("FIXED") @map("fee_type") // "FIXED" | "PERCENTAGE"
+  applyTo     String               @default("BOTH") @map("apply_to") // "MOVIES" | "EVENTS" | "BOTH"
+  category    String               @default("STANDARD")
+  enabled     Boolean              @default(true)
+  orderIndex  Int                  @default(0) @map("order_index")
+  description String?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  config      PricingConfiguration @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([minPrice, maxPrice])
+  @@index([applyTo])
+  @@index([enabled])
+  @@map("convenience_fee_slabs")
+}
+
+model PricingAuditLog {
+  id             String   @id @default(cuid())
+  action         String   // "CONFIG_UPDATED", "SLAB_CREATED", "SLAB_UPDATED", "SLAB_DELETED", "GLOBAL_TOGGLE"
+  actorId        String?  @map("actor_id")
+  actorEmail     String?  @map("actor_email")
+  sourceIp       String?  @map("source_ip")
+  deviceInfo     String?  @map("device_info")
+  previousConfig Json?    @map("previous_config")
+  updatedConfig  Json?    @map("updated_config")
+  reason         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([createdAt])
+  @@map("pricing_audit_logs")
+}
+
+model BookingPricingSnapshot {
+  id                  String   @id @default(cuid())
+  bookingId           String?  @unique @map("booking_id")
+  eventRegistrationId String?  @unique @map("event_registration_id")
+  baseTicketAmount    Decimal  @db.Decimal(12, 2) @map("base_ticket_amount")
+  ticketCount         Int      @map("ticket_count")
+  convenienceFee      Decimal  @db.Decimal(12, 2) @map("convenience_fee")
+  gstAmount           Decimal  @db.Decimal(12, 2) @map("gst_amount")
+  gstPercentage       Decimal  @default(18.0) @db.Decimal(5, 2) @map("gst_percentage")
+  discountAmount      Decimal  @default(0.0) @db.Decimal(12, 2) @map("discount_amount")
+  otherCharges        Decimal  @default(0.0) @db.Decimal(12, 2) @map("other_charges")
+  finalPayableAmount  Decimal  @db.Decimal(12, 2) @map("final_payable_amount")
+  pricingVersion      Int      @default(1) @map("pricing_version")
+  configSnapshot      Json?    @map("config_snapshot")
+  breakdownLines      Json?    @map("breakdown_lines")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@index([eventRegistrationId])
+  @@map("booking_pricing_snapshots")
+}

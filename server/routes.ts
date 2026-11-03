@@ -27,6 +27,7 @@ import { razorpayService } from "./modules/payments/razorpay.service";
 import { authenticate, isValidAdminPasscode } from "./middleware/auth";
 import { authorize } from "./middleware/authorize";
 import proposalsRouter from "./modules/proposals/proposals.routes";
+import pricingRouter from "./modules/pricing/pricing.routes";
 
 const router = Router();
 
@@ -83,6 +84,8 @@ router.use("/theatres", theatreRoutes);
 router.use("/shows", showRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/movie-fees", movieFeeRoutes);
+router.use("/pricing", pricingRouter);
+router.use("/admin/pricing", pricingRouter);
 router.use("/payments", paymentRoutes);
 router.use("/cinecoins", cinecoinsRoutes);
 router.use("/events", eventRoutes);

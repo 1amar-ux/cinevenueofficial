@@ -5,6 +5,7 @@ import { NotFoundError, ConflictError, ValidationError } from "../../shared/erro
 import { logger } from "../../shared/logger";
 import { posIntegrationService } from "../pos/pos.service";
 import { movieFeeService } from "./movieFee.service";
+import { centralizedPricingService } from "../../services/pricing.service";
 
 const LOCK_TTL_SECONDS = 600; // 10 minutes default hold
 
@@ -134,7 +135,9 @@ export class BookingService {
       ticketList = seatList.map(() => ({ price: 150, category: "STANDARD" }));
     }
 
-    const feeBreakdown = await movieFeeService.calculateMovieBookingFees(ticketList, {
+    const feeBreakdown = centralizedPricingService.calculatePricing({
+      itemType: "MOVIE",
+      tickets: ticketList,
       couponCode: coupon,
       musicianDonation: donation
     });
@@ -143,7 +146,7 @@ export class BookingService {
       ticketCount: feeBreakdown.ticketCount,
       ticketAmount: feeBreakdown.ticketSubtotal,
       ticketSubtotal: feeBreakdown.ticketSubtotal,
-      baseCharge: feeBreakdown.baseChargeTotal,
+      baseCharge: feeBreakdown.baseConvenienceFee,
       convenienceFee: feeBreakdown.totalConvenienceFee,
       convenienceFeeTax: feeBreakdown.convenienceFeeGstTotal,
       taxAmount: feeBreakdown.convenienceFeeGstTotal,
@@ -218,6 +221,10 @@ export class BookingService {
 
       return b;
     });
+
+    // Save permanent immutable pricing snapshot in database
+    await centralizedPricingService.saveBookingSnapshot(booking.id, priceBreakdown as any);
+    return booking;
 
     logger.info(`Pending booking created: ${booking.bookingNumber} for total ₹${priceBreakdown.totalAmount}`);
 

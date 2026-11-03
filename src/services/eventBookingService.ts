@@ -24,6 +24,7 @@ import type {
   EventPass,
 } from '../types/eventBooking';
 import apiClient from './apiClient';
+import { centralizedPricingClient } from './centralizedPricingService';
 import { supabase } from '../lib/supabase';
 import { dispatchTicketEmail, dispatchTicketSms } from '../utils/ticketDeliveryService';
 import { sendEventPassToEmail } from '../utils/eventPassPdf';
@@ -1182,6 +1183,36 @@ export function calculateEventFees(params: {
       feeApplication: 'PER_TICKET',
       feeStatus: 'PENDING',
       feeAmountConfigured: 0
+    };
+  }
+
+  // Authoritative Centralized Pricing Engine Integration for Events
+  const centralConfig = centralizedPricingClient.getCachedConfigSync();
+  const isCentralActiveForEvents = centralConfig.enabled && (centralConfig.applyTo === 'BOTH' || centralConfig.applyTo === 'EVENTS');
+
+  if (isCentralActiveForEvents) {
+    const centralBreakdown = centralizedPricingClient.calculateLocalFallback({
+      itemType: 'EVENT',
+      ticketPrice: params.ticketPrice,
+      quantity: params.quantity,
+      couponCode: params.couponCode,
+      cineCoinsToRedeem: params.cineCoinsToRedeem,
+    });
+
+    return {
+      ticketSubtotal: centralBreakdown.ticketSubtotal,
+      convenienceFee: centralBreakdown.totalConvenienceFee,
+      platformBookingFee: centralBreakdown.baseConvenienceFee,
+      taxAmount: centralBreakdown.taxAmount,
+      discountAmount: centralBreakdown.couponDiscount,
+      cineCoinsRedeemed: centralBreakdown.cineCoinsDiscount,
+      cineCoinsDiscount: centralBreakdown.cineCoinsDiscount,
+      finalAmount: centralBreakdown.finalPayableAmount,
+      feeType: centralBreakdown.calculationType === 'PERCENTAGE' ? 'PERCENTAGE' : 'FIXED',
+      feeApplication: centralBreakdown.feeApplication,
+      feeStatus: 'APPROVED',
+      feeAmountConfigured: centralBreakdown.baseConvenienceFee,
+      isFeeApproved: true
     };
   }
 

@@ -13,6 +13,7 @@ import showRoutes from "./src/modules/shows/show.routes";
 import bookingRoutes from "./src/modules/bookings/booking.routes";
 import settlementRoutes from "./src/modules/settlements/settlement.routes";
 import eventRoutes from "./src/modules/events/events.routes";
+import pricingRoutes from "./server/modules/pricing/pricing.routes";
 import theatreBankRoutes from "./src/modules/theatres/theatreBank.routes";
 import integrationRoutes from "./src/modules/integrations/integration.routes";
 import reconciliationRoutes from "./src/modules/reconciliation/reconciliation.routes";
@@ -44,6 +45,8 @@ async function startServer() {
   app.use("/api", bookingRoutes);
   app.use("/api", settlementRoutes);
   app.use("/api", eventRoutes);
+  app.use("/api/v1/pricing", pricingRoutes);
+  app.use("/api/pricing", pricingRoutes);
 
   app.get("/api/integrations/adapters", (req, res) => {
     const adapters = integrationManager.getAllAdapters().map(a => ({

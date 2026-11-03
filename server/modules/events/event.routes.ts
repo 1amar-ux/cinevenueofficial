@@ -10,6 +10,7 @@ import { NotFoundError, ValidationError, PaymentError } from "../../shared/error
 import { sendEventPassEmail } from "../../services/emailService";
 import { razorpayService } from "../payments/razorpay.service";
 import { logger } from "../../shared/logger";
+import { centralizedPricingService } from "../../services/pricing.service";
 
 const router = Router();
 
@@ -364,17 +365,24 @@ export function calculateEventPriceBreakdown(
 
   const isFeeApproved = isFeeEnabled && feeStatus === "APPROVED";
 
+  // Centralized Pricing Integration
+  const centralPricing = centralizedPricingService.calculatePricing({
+    itemType: "EVENT",
+    ticketPrice: unitPrice,
+    quantity: validCount,
+    couponCode
+  });
+
   let convenienceFee = 0;
-  if (ticketSubtotal > 0 && isFeeApproved && feeAmount > 0) {
+  if (centralPricing.isFeeEnabled) {
+    convenienceFee = centralPricing.totalConvenienceFee;
+  } else if (ticketSubtotal > 0 && isFeeApproved && feeAmount > 0) {
     if (feeType === "PERCENTAGE") {
-      // Calculate fee using ticket subtotal before discounts
       convenienceFee = Math.round(((ticketSubtotal * feeAmount) / 100) * 100) / 100;
     } else {
-      // FIXED fee
       if (feeApplication === "PER_BOOKING") {
         convenienceFee = Math.round(feeAmount * 100) / 100;
       } else {
-        // PER_TICKET
         convenienceFee = Math.round(feeAmount * validCount * 100) / 100;
       }
     }

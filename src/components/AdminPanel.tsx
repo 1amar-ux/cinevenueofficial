@@ -33,6 +33,7 @@ import CineCoinsAdminControl from "./admin/CineCoinsAdminControl";
 import { ProposalAdminModule } from "./proposals/ProposalAdminModule";
 import FeeManagementAdmin from "./admin/FeeManagementAdmin";
 import MovieConvenienceFeeAdmin from "./admin/MovieConvenienceFeeAdmin";
+import CentralizedConvenienceFeeAdmin from "./admin/finance/CentralizedConvenienceFeeAdmin";
 import TheatreBankManagement from "./TheatreBankManagement";
 import EventManagementAdminPanel from "./productions/EventManagementAdminPanel";
 import CineVenueFilmAdminTab from "./film-production/CineVenueFilmAdminTab";
@@ -2316,14 +2317,14 @@ export default function AdminPanel({
         },
         {
           id: "movie_fees",
-          label: "Movie Convenience Fee Settings",
-          icon: Ticket,
-          superAdminOnly: true,
+          label: "Convenience Fee Management",
+          icon: Sliders,
           badge: (
-            <span className="text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded">
-              ADMIN
+            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+              CENTRAL
             </span>
           ),
+          superAdminOnly: true,
           domId: "tab-btn-movie-convenience-fees",
         },
       ],
@@ -6143,18 +6144,21 @@ export default function AdminPanel({
                     💰 Financial & Taxation Fees
                   </span>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase">Internet Convenience Fee (₹ per seat)</label>
-                    <input 
-                      type="number"
-                      value={convenienceFee}
-                      onChange={(e) => setConvenienceFee(Number(e.target.value))}
-                      className="w-full bg-white/[0.02] border border-white/10 rounded px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-gold font-mono"
-                      min="0"
-                      max="500"
-                      required
-                    />
-                    <span className="text-[9px] text-text-muted block">Charged on top of each luxury venue reservation ticket.</span>
+                  <div className="space-y-1.5 bg-[#141418] border border-[#D4AF37]/30 p-3.5 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold text-gold uppercase">Internet Convenience Fee Engine</label>
+                      <span className="text-[8px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.5 rounded">CENTRALIZED</span>
+                    </div>
+                    <p className="text-[10px] text-text-secondary leading-relaxed">
+                      Convenience fees are centrally managed by the Single Source of Truth backend pricing engine.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("movie_fees")}
+                      className="mt-1 text-[10px] text-gold hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Open Convenience Fee Management &rarr;</span>
+                    </button>
                   </div>
 
                   <div className="space-y-1.5">
@@ -6847,7 +6851,7 @@ export default function AdminPanel({
 
           {activeTab === "movie_fees" && (
             <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500" id="tab-movie-convenience-fees">
-              <MovieConvenienceFeeAdmin isSuperAdmin={isSuperAdmin} />
+              <CentralizedConvenienceFeeAdmin isSuperAdmin={isSuperAdmin} />
             </div>
           )}
 
