@@ -10,6 +10,7 @@ import Footer from "./components/Footer";
 // Critical Modals & UI Components (kept sync for instant layout)
 import AuthModal from "./components/AuthModal";
 import GlobalBackButton from "./components/GlobalBackButton";
+import ScrollToTop from "./components/ScrollToTop";
 import MobileBottomNav from "./components/MobileBottomNav";
 
 // Core Booking Flow Pages (kept sync for instant transitions)
@@ -2076,6 +2077,7 @@ export default function App() {
 
   return (
     <>
+      <ScrollToTop />
       <GlobalBackButton />
       <Routes>
       {/* Supabase OAuth Callback Handler */}

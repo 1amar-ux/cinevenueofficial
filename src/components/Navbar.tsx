@@ -205,7 +205,13 @@ export default function Navbar({
           <button
             type="button"
             onClick={() => {
-              window.location.href = "/booking";
+              if (window.location.pathname === "/booking") {
+                window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              } else {
+                window.location.href = "/booking";
+              }
             }}
             className="px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-xs shadow-[#D4AF37]/30 whitespace-nowrap flex items-center gap-1"
           >
@@ -494,7 +500,16 @@ export default function Navbar({
 
             <button 
               type="button"
-              onClick={() => { setMobileMenuOpen(false); window.location.href = "/booking"; }} 
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (window.location.pathname === "/booking") {
+                  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                } else {
+                  window.location.href = "/booking";
+                }
+              }} 
               className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-between ${
                 isMovieBookingLive ? "text-slate-800 dark:text-white" : "text-rose-500 dark:text-rose-400"
               }`}

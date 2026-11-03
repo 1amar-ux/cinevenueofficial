@@ -54,6 +54,25 @@ export default function NowShowing({
   const [audienceTags, setAudienceTags] = useState<string[]>(["#Blockbuster", "#MustWatch"]);
   const [ratingSuccessToast, setRatingSuccessToast] = useState<string | null>(null);
 
+  // Ensure booking page always opens at the very top of the page
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      const timer = setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+
+
   const handleSubmitAudienceRating = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ratingMovie) return;
