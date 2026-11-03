@@ -34,6 +34,8 @@ import { ProposalAdminModule } from "./proposals/ProposalAdminModule";
 import FeeManagementAdmin from "./admin/FeeManagementAdmin";
 import MovieConvenienceFeeAdmin from "./admin/MovieConvenienceFeeAdmin";
 import CentralizedConvenienceFeeAdmin from "./admin/finance/CentralizedConvenienceFeeAdmin";
+import UserFeedbackAdmin from "./admin/analytics/UserFeedbackAdmin";
+import { MessageSquareHeart } from "lucide-react";
 import TheatreBankManagement from "./TheatreBankManagement";
 import EventManagementAdminPanel from "./productions/EventManagementAdminPanel";
 import CineVenueFilmAdminTab from "./film-production/CineVenueFilmAdminTab";
@@ -2326,6 +2328,17 @@ export default function AdminPanel({
           ),
           superAdminOnly: true,
           domId: "tab-btn-movie-convenience-fees",
+        },
+        {
+          id: "user_feedback",
+          label: "User Feedback & Reviews",
+          icon: MessageSquareHeart,
+          badge: (
+            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+              LIVE
+            </span>
+          ),
+          domId: "tab-btn-user-feedback",
         },
       ],
     },
@@ -6852,6 +6865,12 @@ export default function AdminPanel({
           {activeTab === "movie_fees" && (
             <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500" id="tab-movie-convenience-fees">
               <CentralizedConvenienceFeeAdmin isSuperAdmin={isSuperAdmin} />
+            </div>
+          )}
+
+          {activeTab === "user_feedback" && (
+            <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500" id="tab-user-feedback">
+              <UserFeedbackAdmin />
             </div>
           )}
 

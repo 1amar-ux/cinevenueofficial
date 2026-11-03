@@ -1,0 +1,86 @@
+[
+  {
+    "id": "fb-mw08sa4u-f7446527",
+    "userId": null,
+    "bookingId": "EVT-TEST-PASS-442",
+    "bookingType": "EVENT",
+    "rating": 4,
+    "comment": "Loved the digital pass and instant QR ticket generation.",
+    "userEmail": "event.goer@cinevenue.com",
+    "userName": "Ananya Roy",
+    "title": "Sunburn Music Arena 2026",
+    "createdAt": "2026-11-03T05:23:21.295Z"
+  },
+  {
+    "id": "fb-mw08s6vy-258660bf",
+    "userId": null,
+    "bookingId": "BK-TEST-MOV-901",
+    "bookingType": "MOVIE",
+    "rating": 5,
+    "comment": "Superb theater sound and lightning fast seat selection!",
+    "userEmail": "test.patron@cinevenue.com",
+    "userName": "Ramesh Kumar",
+    "title": "The Raja Saab (Telugu - IMAX)",
+    "createdAt": "2026-11-03T05:23:17.087Z"
+  },
+  {
+    "id": "fb-seed-001",
+    "userId": null,
+    "bookingId": "BK-829104",
+    "bookingType": "MOVIE",
+    "rating": 5,
+    "comment": "Seamless seat selection and instant UPI payment! The QR ticket loaded immediately in the Android app.",
+    "userEmail": "sarah.m@gmail.com",
+    "userName": "Sarah Mukherjee",
+    "title": "The Raja Saab (Telugu - IMAX)",
+    "createdAt": "2026-11-03T03:23:17.083Z"
+  },
+  {
+    "id": "fb-seed-002",
+    "userId": null,
+    "bookingId": "BK-829012",
+    "bookingType": "MOVIE",
+    "rating": 5,
+    "comment": "Super smooth checkout, loved the transparent tax and convenience fee breakdown. Best cinema booking experience.",
+    "userEmail": "kiran.dev@cinepatron.com",
+    "userName": "Kiran Dev",
+    "title": "Varanasi Vibes (Standard 2D)",
+    "createdAt": "2026-11-02T23:23:17.084Z"
+  },
+  {
+    "id": "fb-seed-003",
+    "userId": null,
+    "bookingId": "EVT-REG-7712",
+    "bookingType": "EVENT",
+    "rating": 4,
+    "comment": "Got our VIP gala passes smoothly. Looking forward to the music festival. Download pass button was instant.",
+    "userEmail": "rohit.sharma@outlook.com",
+    "userName": "Rohit Sharma",
+    "title": "Arijit Singh Symphony Night 2026",
+    "createdAt": "2026-11-02T11:23:17.084Z"
+  },
+  {
+    "id": "fb-seed-004",
+    "userId": null,
+    "bookingId": "EVT-REG-6601",
+    "bookingType": "EVENT",
+    "rating": 5,
+    "comment": "The live pass preview with anti-tamper barcode was incredible. Loved the CineCoins redemption feature at checkout!",
+    "userEmail": "priya.nair@yahoo.com",
+    "userName": "Priya Nair",
+    "title": "Standup Comedy Fest - Bangalore",
+    "createdAt": "2026-11-01T23:23:17.084Z"
+  },
+  {
+    "id": "fb-seed-005",
+    "userId": null,
+    "bookingId": "BK-828940",
+    "bookingType": "MOVIE",
+    "rating": 4,
+    "comment": "Good experience overall. Clean UI and fast payment gateway redirect.",
+    "userEmail": "arun.verma@gmail.com",
+    "userName": "Arun Verma",
+    "title": "Thunderbolt 4K ATMOS",
+    "createdAt": "2026-11-01T05:23:17.084Z"
+  }
+]

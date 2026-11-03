@@ -217,6 +217,27 @@ const CONFIG_FILE = path.join(process.cwd(), "server/config/centralized_pricing.
 const TMP_CONFIG_FILE = path.join("/tmp", "centralized_pricing.json");
 
 export class CentralizedPricingService {
+  private static memorySnapshots: Map<string, any> = new Map();
+  private static dbConnected: boolean | null = null;
+  private static lastDbCheck: number = 0;
+
+  private isDbHealthy(): boolean {
+    if (CentralizedPricingService.dbConnected === false) {
+      if (Date.now() - CentralizedPricingService.lastDbCheck < 30000) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private markDbOffline(err?: any) {
+    CentralizedPricingService.dbConnected = false;
+    CentralizedPricingService.lastDbCheck = Date.now();
+  }
+
+  private markDbOnline() {
+    CentralizedPricingService.dbConnected = true;
+  }
   private activeConfig: PricingConfigItem = { ...INITIAL_DEFAULT_CONFIG };
   private auditLogs: any[] = [];
   private isLoadedFromStorage = false;
@@ -280,6 +301,7 @@ export class CentralizedPricingService {
 
   // Synchronize with database if connected
   private async syncFromDatabase(): Promise<void> {
+    if (!this.isDbHealthy()) return;
     try {
       if ((prisma as any).pricingConfiguration?.findUnique) {
         const dbConfig = await (prisma as any).pricingConfiguration.findUnique({
@@ -384,8 +406,9 @@ export class CentralizedPricingService {
     this.persistToStorage();
 
     // Persist to DB if available
-    try {
-      if ((prisma as any).pricingConfiguration?.upsert) {
+    if (this.isDbHealthy()) {
+      try {
+        if ((prisma as any).pricingConfiguration?.upsert) {
         await (prisma as any).pricingConfiguration.upsert({
           where: { id: "global_pricing_config" },
           create: {
@@ -424,10 +447,13 @@ export class CentralizedPricingService {
             updatedBy: actorEmail
           }
         });
+        this.markDbOnline();
       }
     } catch (dbErr: any) {
+      this.markDbOffline(dbErr);
       logger.warn(`Database pricingConfiguration save fallback: ${dbErr.message}`);
     }
+  }
 
     // Audit Log
     await this.recordAuditLog({
@@ -844,55 +870,93 @@ export class CentralizedPricingService {
     breakdown: PricingCalculationResult,
     eventRegistrationId?: string
   ): Promise<any> {
-    try {
-      if ((prisma as any).bookingPricingSnapshot?.upsert) {
-        return await (prisma as any).bookingPricingSnapshot.upsert({
-          where: { bookingId },
-          create: {
-            bookingId,
-            eventRegistrationId: eventRegistrationId || null,
-            baseTicketAmount: breakdown.baseTicketAmount,
-            ticketCount: breakdown.ticketCount,
-            convenienceFee: breakdown.totalConvenienceFee,
-            gstAmount: breakdown.convenienceFeeGstTotal,
-            gstPercentage: breakdown.gstRate,
-            discountAmount: breakdown.discountAmount,
-            otherCharges: breakdown.otherCharges,
-            finalPayableAmount: breakdown.finalPayableAmount,
-            pricingVersion: breakdown.pricingVersion,
-            configSnapshot: this.activeConfig as any,
-            breakdownLines: breakdown.feeLines as any
-          },
-          update: {
-            finalPayableAmount: breakdown.finalPayableAmount,
-            breakdownLines: breakdown.feeLines as any
-          }
-        });
+    const snapshotRecord = {
+      bookingId,
+      eventRegistrationId: eventRegistrationId || null,
+      baseTicketAmount: breakdown.baseTicketAmount,
+      ticketSubtotal: breakdown.ticketSubtotal,
+      ticketCount: breakdown.ticketCount,
+      convenienceFee: breakdown.totalConvenienceFee,
+      totalConvenienceFee: breakdown.totalConvenienceFee,
+      baseConvenienceFee: breakdown.baseConvenienceFee,
+      gstAmount: breakdown.convenienceFeeGstTotal,
+      convenienceFeeGstTotal: breakdown.convenienceFeeGstTotal,
+      gstPercentage: breakdown.gstRate,
+      discountAmount: breakdown.discountAmount,
+      otherCharges: breakdown.otherCharges,
+      finalPayableAmount: breakdown.finalPayableAmount,
+      totalAmount: breakdown.finalPayableAmount,
+      pricingVersion: breakdown.pricingVersion,
+      configSnapshot: this.activeConfig as any,
+      breakdownLines: breakdown.feeLines as any,
+      createdAt: new Date().toISOString()
+    };
+
+    CentralizedPricingService.memorySnapshots.set(bookingId, snapshotRecord);
+
+    if (this.isDbHealthy()) {
+      try {
+        if ((prisma as any).bookingPricingSnapshot?.upsert) {
+          const res = await (prisma as any).bookingPricingSnapshot.upsert({
+            where: { bookingId },
+            create: {
+              bookingId,
+              eventRegistrationId: eventRegistrationId || null,
+              baseTicketAmount: breakdown.baseTicketAmount,
+              ticketCount: breakdown.ticketCount,
+              convenienceFee: breakdown.totalConvenienceFee,
+              gstAmount: breakdown.convenienceFeeGstTotal,
+              gstPercentage: breakdown.gstRate,
+              discountAmount: breakdown.discountAmount,
+              otherCharges: breakdown.otherCharges,
+              finalPayableAmount: breakdown.finalPayableAmount,
+              pricingVersion: breakdown.pricingVersion,
+              configSnapshot: this.activeConfig as any,
+              breakdownLines: breakdown.feeLines as any
+            },
+            update: {
+              finalPayableAmount: breakdown.finalPayableAmount,
+              breakdownLines: breakdown.feeLines as any
+            }
+          });
+          this.markDbOnline();
+          return res;
+        }
+      } catch (e: any) {
+        this.markDbOffline(e);
+        logger.warn(`Database bookingPricingSnapshot save fallback: ${e.message}`);
       }
-    } catch (e: any) {
-      logger.warn(`Failed saving BookingPricingSnapshot to DB: ${e.message}`);
     }
-    return breakdown.feeSnapshot;
+
+    return snapshotRecord;
   }
 
   public async getBookingSnapshot(bookingId: string): Promise<any | null> {
-    try {
-      if ((prisma as any).bookingPricingSnapshot?.findUnique) {
-        const snap = await (prisma as any).bookingPricingSnapshot.findUnique({
-          where: { bookingId }
-        });
-        if (snap) return snap;
-      }
+    if (this.isDbHealthy()) {
+      try {
+        if ((prisma as any).bookingPricingSnapshot?.findUnique) {
+          const snap = await (prisma as any).bookingPricingSnapshot.findUnique({
+            where: { bookingId }
+          });
+          if (snap) {
+            this.markDbOnline();
+            return snap;
+          }
+        }
 
-      // Check booking.feeSnapshot
-      const b = await prisma.booking.findUnique({
-        where: { id: bookingId }
-      });
-      if (b && (b as any).feeSnapshot) {
-        return (b as any).feeSnapshot;
+        // Check booking.feeSnapshot
+        const b = await prisma.booking.findUnique({
+          where: { id: bookingId }
+        });
+        if (b && (b as any).feeSnapshot) {
+          this.markDbOnline();
+          return (b as any).feeSnapshot;
+        }
+      } catch (e: any) {
+        this.markDbOffline(e);
       }
-    } catch (e) {}
-    return null;
+    }
+    return CentralizedPricingService.memorySnapshots.get(bookingId) || null;
   }
 
   // ==========================================

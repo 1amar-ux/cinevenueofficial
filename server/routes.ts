@@ -28,6 +28,7 @@ import { authenticate, isValidAdminPasscode } from "./middleware/auth";
 import { authorize } from "./middleware/authorize";
 import proposalsRouter from "./modules/proposals/proposals.routes";
 import pricingRouter from "./modules/pricing/pricing.routes";
+import feedbackRouter from "./modules/feedback/feedback.routes";
 
 const router = Router();
 
@@ -86,6 +87,8 @@ router.use("/bookings", bookingRoutes);
 router.use("/movie-fees", movieFeeRoutes);
 router.use("/pricing", pricingRouter);
 router.use("/admin/pricing", pricingRouter);
+router.use("/feedback", feedbackRouter);
+router.use("/admin/feedback", feedbackRouter);
 router.use("/payments", paymentRoutes);
 router.use("/cinecoins", cinecoinsRoutes);
 router.use("/events", eventRoutes);

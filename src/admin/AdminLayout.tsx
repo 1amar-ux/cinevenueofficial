@@ -59,6 +59,7 @@ import { Movie, Theatre, Booking, MovieSchedule, TheatreAdmin, CastMember, CrewM
 import AdminManagementPanel from "./admin-management/AdminManagementPanel";
 import EventsAdminModule from "../components/admin/events/EventsAdminModule";
 import CentralizedConvenienceFeeAdmin from "../components/admin/finance/CentralizedConvenienceFeeAdmin";
+import UserFeedbackAdmin from "../components/admin/analytics/UserFeedbackAdmin";
 import { Sliders } from "lucide-react";
 import IntegrationTestingModule from "../components/admin/integration-testing/IntegrationTestingModule";
 import SystemMonitoringModule from "../components/admin/monitoring/SystemMonitoringModule";
@@ -273,7 +274,7 @@ export default function AdminLayout() {
         { id: "payments", label: "Payments & GST", icon: CreditCard },
         { id: "convenience_fees", label: "Convenience Fee Management", icon: Sliders },
         { id: "coupons", label: "Coupons & Promos", icon: Tag },
-        { id: "reviews", label: "Reviews Moderation", icon: Star }
+        { id: "reviews", label: "User Feedback & Reviews", icon: Star }
       ]
     },
     {
@@ -3217,54 +3218,9 @@ export default function AdminLayout() {
               </div>
             )}
 
-            {/* 14. REVIEWS MODERATION */}
+            {/* 14. USER FEEDBACK & REVIEWS */}
             {activeTab === "reviews" && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
-                    Platform Reviews Moderation Center
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Moderate client comment reviews, flag inappropriate content, and maintain community scoreboards
-                  </p>
-                </div>
-
-                <div className="bg-[#121213] border border-white/5 p-6 rounded-2xl space-y-4 text-xs">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-white border-b border-white/5 pb-2">
-                    Client Comment Feed
-                  </h3>
-                  <div className="space-y-3.5">
-                    {userReviews.map((rev) => (
-                      <div key={rev.id} className="p-4 bg-white/[0.01] border border-white/5 rounded-2xl flex justify-between items-center">
-                        <div className="space-y-1">
-                          <div className="flex gap-2 items-center">
-                            <span className="font-bold text-white font-mono">{rev.user}</span>
-                            <span className="text-[9px] text-text-muted font-mono font-bold">on {rev.movie}</span>
-                            <span className="text-[10px] text-gold font-mono font-bold">★ {rev.rating}/5</span>
-                          </div>
-                          <p className="text-text-secondary leading-relaxed">{rev.comment}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border ${
-                            rev.status === "Approved"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-red-500/10 text-red-400 border-red-500/20"
-                          }`}>
-                            {rev.status}
-                          </span>
-                          <button
-                            onClick={() => handleDeleteReview(rev.id)}
-                            className="p-1 bg-red-500/10 hover:bg-red-500 hover:text-black border border-red-500/10 text-red-400 rounded transition-colors"
-                            title="Delete review"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <UserFeedbackAdmin />
             )}
 
             {/* 15. REPORTS EXPORTS */}

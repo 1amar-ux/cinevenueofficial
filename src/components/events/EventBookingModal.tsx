@@ -33,6 +33,8 @@ import DigitalTicketPassModal from './DigitalTicketPassModal';
 import { sendEventPassToEmail } from '../../utils/eventPassPdf';
 import apiClient from '../../services/apiClient';
 import { bookingReminderScheduler } from '../../services/bookingReminderScheduler';
+import PostBookingFeedbackModal from '../feedback/PostBookingFeedbackModal';
+import { feedbackClient } from '../../services/feedbackClient';
 
 interface EventBookingModalProps {
   event: EventItem;
@@ -171,6 +173,15 @@ export default function EventBookingModal({
 
   // Confirmed booking state
   const [confirmedBooking, setConfirmedBooking] = useState<EventBookingRecord | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
+
+  const handleExitConfirmedEventPass = () => {
+    if (confirmedBooking && !feedbackClient.isFeedbackHandled(confirmedBooking.id)) {
+      setShowFeedbackModal(true);
+    } else {
+      onClose();
+    }
+  };
 
   // Calculate ticket count
   const totalTicketCount = effectiveSeatingType === 'AssignedSeating'
@@ -543,10 +554,24 @@ export default function EventBookingModal({
   // If already confirmed, render Digital Pass Modal
   if (confirmedBooking) {
     return (
-      <DigitalTicketPassModal
-        booking={confirmedBooking}
-        onClose={onClose}
-      />
+      <>
+        <DigitalTicketPassModal
+          booking={confirmedBooking}
+          onClose={handleExitConfirmedEventPass}
+        />
+        <PostBookingFeedbackModal
+          isOpen={showFeedbackModal}
+          bookingId={confirmedBooking.id}
+          bookingType="EVENT"
+          title={confirmedBooking.eventTitle}
+          userEmail={primaryEmail}
+          userName={attendeeName}
+          onClose={() => {
+            setShowFeedbackModal(false);
+            onClose();
+          }}
+        />
+      </>
     );
   }
 

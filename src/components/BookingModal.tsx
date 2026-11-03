@@ -17,6 +17,8 @@ import { generateAndDownloadTicketPdf, getTicketVerificationUrl } from "../utils
 import { getEligibleTheatresAndShows, parseTimeToMinutes, getPrimaryMovieTrailer } from "../utils/movieAvailability";
 import { openVenueDirections, downloadCalendarEvent } from "../services/venueLocationService";
 import { bookingReminderScheduler } from "../services/bookingReminderScheduler";
+import PostBookingFeedbackModal from "./feedback/PostBookingFeedbackModal";
+import { feedbackClient } from "../services/feedbackClient";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -90,6 +92,15 @@ export default function BookingModal({
   
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
+
+  const handleExitBookingConfirmed = () => {
+    if (generatedBookingId && !feedbackClient.isFeedbackHandled(generatedBookingId)) {
+      setShowFeedbackModal(true);
+    } else {
+      onClose();
+    }
+  };
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("");
   const [generatedBookingId, setGeneratedBookingId] = useState<string>("");
   
@@ -545,6 +556,15 @@ export default function BookingModal({
     <div
       className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start justify-center p-2 sm:p-4 md:p-6 overflow-y-auto animate-fade-in text-left select-none"
       id="booking-modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          if (bookingStep === "confirmed") {
+            handleExitBookingConfirmed();
+          } else {
+            onClose();
+          }
+        }
+      }}
     >
       <div
         className={`${
@@ -557,7 +577,7 @@ export default function BookingModal({
       >
         {/* Top Floating Close Button */}
         <button
-          onClick={onClose}
+          onClick={bookingStep === "confirmed" ? handleExitBookingConfirmed : onClose}
           className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors z-30"
           aria-label="Close"
         >
@@ -1623,7 +1643,7 @@ export default function BookingModal({
                   <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
                 </button>
                 <button
-                  onClick={onClose}
+                  onClick={handleExitBookingConfirmed}
                   className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-800 transition-colors cursor-pointer border-none bg-transparent"
                   title="Close"
                 >
@@ -1814,7 +1834,7 @@ export default function BookingModal({
                 </div>
 
                 <button
-                  onClick={onClose}
+                  onClick={handleExitBookingConfirmed}
                   className="w-full py-2.5 rounded-xl text-gray-500 hover:text-gray-900 text-xs font-semibold cursor-pointer transition-colors"
                 >
                   Done
@@ -1827,6 +1847,18 @@ export default function BookingModal({
 
 
       </div>
+
+      <PostBookingFeedbackModal
+        isOpen={showFeedbackModal}
+        bookingId={generatedBookingId || "BK-RECENT"}
+        bookingType="MOVIE"
+        title={movieTitle}
+        userEmail={userEmail}
+        onClose={() => {
+          setShowFeedbackModal(false);
+          onClose();
+        }}
+      />
     </div>
   );
 }

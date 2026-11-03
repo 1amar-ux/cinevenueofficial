@@ -123,6 +123,7 @@ model User {
   wallet           CineCoinWallet?
   registrations    EventRegistration[]
   applications     JobApplication[]
+  feedbacks        UserFeedback[]
   
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
@@ -1249,4 +1250,29 @@ model BookingPricingSnapshot {
   @@index([bookingId])
   @@index([eventRegistrationId])
   @@map("booking_pricing_snapshots")
+}
+
+// ==========================================
+// 19. POST-BOOKING USER FEEDBACK
+// ==========================================
+
+model UserFeedback {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  bookingId   String   @map("booking_id")
+  bookingType String   @map("booking_type") // "MOVIE" or "EVENT"
+  rating      Int
+  comment     String   @default("")
+  userEmail   String?  @map("user_email")
+  userName    String?  @map("user_name")
+  title       String?  @map("title")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@index([rating])
+  @@index([bookingType])
+  @@index([createdAt])
+  @@map("user_feedbacks")
 }

@@ -52,7 +52,9 @@ async function runTestSuite() {
       slabs: [
         { id: "S1", minPrice: 1, maxPrice: 49, feeAmount: 10, feeType: "FIXED", applyTo: "BOTH", category: "STANDARD", enabled: true, orderIndex: 0 },
         { id: "S2", minPrice: 50, maxPrice: 99, feeAmount: 12, feeType: "FIXED", applyTo: "BOTH", category: "STANDARD", enabled: true, orderIndex: 1 },
-        { id: "S3", minPrice: 100, maxPrice: 199, feeAmount: 16, feeType: "FIXED", applyTo: "BOTH", category: "STANDARD", enabled: true, orderIndex: 2 }
+        { id: "S3", minPrice: 100, maxPrice: 199, feeAmount: 16, feeType: "FIXED", applyTo: "BOTH", category: "STANDARD", enabled: true, orderIndex: 2 },
+        { id: "S4", minPrice: 200, maxPrice: 499, feeAmount: 25, feeType: "FIXED", applyTo: "BOTH", category: "STANDARD", enabled: true, orderIndex: 3 },
+        { id: "S5", minPrice: 500, maxPrice: null, feeAmount: 35, feeType: "FIXED", applyTo: "BOTH", category: "STANDARD", enabled: true, orderIndex: 4 }
       ]
     });
 
@@ -247,6 +249,7 @@ async function runTestSuite() {
   // --------------------------------------------------------------------------
   console.log("\n--- Executing TEST 8: Payment Gateway Order Parity ---");
   {
+    await service.updateConfig({ calculationType: "SLAB" });
     const pricing = service.calculatePricing({
       itemType: "MOVIE",
       tickets: [{ price: 200, category: "STANDARD" }, { price: 200, category: "STANDARD" }]
