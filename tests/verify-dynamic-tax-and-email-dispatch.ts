@@ -2,7 +2,7 @@
  * CineVenue Dynamic Tax Calculation & Automated Email Dispatch Verification Suite
  * 
  * Verifies:
- * 1. Base Price Only on Initial Summary View (Zero upfront fees)
+ * 1. Base Price Only on Initial Summary View (Zero upfront fees, normal pricing e.g. ₹150)
  * 2. Dynamic Convenience Fee & 18% GST calculation on "Proceed to Payment"
  * 3. Automatic UPI QR Code formatting with exact payable amount & UPI ID
  * 4. Automated Ticket Confirmation Email Dispatch for Movies & Events
@@ -22,25 +22,25 @@ async function runDynamicTaxAndEmailSuite() {
   let passedTests = 0;
   const totalTests = 5;
 
-  // TEST 1: Initial Base Price Only (e.g. ₹10 test ticket)
-  console.log("[TEST 1/5] Initial Display - Base Price Isolation (e.g. 'Baththa' @ ₹10/ticket)");
-  const singleTicketPrice = 10;
+  // TEST 1: Initial Base Price Only (Normal ticket price ₹150)
+  console.log("[TEST 1/5] Initial Display - Base Price Isolation (e.g. 'Baththa' @ ₹150/ticket)");
+  const singleTicketPrice = 150;
   const ticketCount = 1;
   const baseSubtotal = singleTicketPrice * ticketCount;
   
-  if (baseSubtotal === 10) {
+  if (baseSubtotal === 150) {
     console.log(`  ✓ Initial summary strictly isolated: Base Price = ₹${baseSubtotal.toFixed(2)}`);
     console.log(`  ✓ Upfront taxes and fees are hidden until user proceeds to payment.`);
     passedTests++;
   } else {
-    console.error(`  ✗ Failed base price isolation: Expected 10, got ${baseSubtotal}`);
+    console.error(`  ✗ Failed base price isolation: Expected 150, got ${baseSubtotal}`);
   }
 
   // TEST 2: Dynamic Fee & GST Addition on Proceed to Payment
   console.log("\n[TEST 2/5] Dynamic Convenience Fee & GST Calculation on Proceed to Payment");
   const pricingResult = centralizedPricingEngine.calculatePricing({
     itemType: "MOVIE",
-    tickets: [10],
+    tickets: [150],
   });
 
   const baseFee = pricingResult.baseConvenienceFee;
@@ -85,15 +85,15 @@ async function runDynamicTaxAndEmailSuite() {
     bookingId: "BK-BATHTHA-9901",
     bookingCode: "BK-BATHTHA-9901",
     movieTitle: "Baththa",
-    theatreName: "PVR Cinemas, Mall of Guntur",
-    theatreAddress: "Brodiplast Ring Road, Guntur, AP 522002",
+    theatreName: "CineVenue Prime Multiplex",
+    theatreAddress: "Brodiplast Ring Road, City Center",
     city: "Guntur",
     screenName: "Audi 1 (4K Dolby Atmos Laser)",
     date: "Sunday, 08 Nov 2026",
     timeSlot: "06:45 PM",
     seats: ["A1"],
-    seatCategory: "ELITE",
-    basePrice: 10.00,
+    seatCategory: "CLASSIC",
+    basePrice: 150.00,
     convenienceFee: baseFee,
     gstAmount: gstFee,
     totalPaid: finalPayable,

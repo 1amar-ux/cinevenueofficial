@@ -15,13 +15,13 @@ export const INITIAL_MOVIES: Movie[] = [
     releaseDate: "2026-10-09",
     formats: ["2D", "4K Dolby Atmos", "IMAX 2D"],
     langKey: "tamil",
-    img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
-    poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
-    banner: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&q=85",
+    img: "/baththa-poster.jpg",
+    poster: "/baththa-poster.jpg",
+    banner: "/baththa-poster.jpg",
     trailerUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
     videoUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
     description: "Set in 1986 Madras, feared gangster Baththa gets accidentally locked inside an elementary school restroom by a timid 8-year-old student. The unusual predicament strands the dreaded criminal inside for days, igniting a heartwarming, hilarious, and redemptive journey that transforms both of their lives.",
-    price: 10,
+    price: 150,
     status: "Now Showing",
     isActive: true,
     director: "Balaji Tharaneetharan",
@@ -119,11 +119,11 @@ export const INITIAL_MOVIES: Movie[] = [
     ],
     offers: [
       {
-        id: "off-test-1",
-        title: "Baththa Special Testing Pass (Flat ₹10 Tickets)",
-        subtitle: "GST and dynamic convenience fee applied at checkout",
-        bankName: "CineVenue Test",
-        discountBadge: "TEST MODE"
+        id: "off-premiere-1",
+        title: "CineVenue Gold Privilege (20% Off F&B Concessions)",
+        subtitle: "Complimentary snack voucher with any Prime or Recliner ticket",
+        bankName: "CineVenue Rewards",
+        discountBadge: "GOLD PERK"
       }
     ]
   }
@@ -132,8 +132,8 @@ export const INITIAL_MOVIES: Movie[] = [
 export const INITIAL_THEATRES: Theatre[] = [
   {
     id: 1,
-    name: "CineVenue Sandbox Multiplex",
-    location: "Main Road, Central",
+    name: "CineVenue Prime Multiplex",
+    location: "Brodiplast Ring Road, City Center",
     city: "All Cities",
     latitude: 17.4126,
     longitude: 78.4655,
@@ -142,8 +142,8 @@ export const INITIAL_THEATRES: Theatre[] = [
       "J1", "J2", "J3", "J4", "J5", "J6", "J7", "J8", "J9", "J10", "J11", "J12", "J13", "J14",
       "K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8", "K9", "K10", "K11", "K12", "K13", "K14"
     ],
-    price: "₹10",
-    ticketPrice: 10,
+    price: "₹150",
+    ticketPrice: 150,
     img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=60",
     seatRows: ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"],
     seatsPerRow: 14,
@@ -160,7 +160,11 @@ export const INITIAL_THEATRES: Theatre[] = [
       J: "Recliner",
       K: "Recliner"
     },
-    seatPrices: { A: 10, B: 10, C: 10, D: 10, E: 10, F: 10, G: 10, H: 10, J: 10, K: 10 },
+    seatPrices: {
+      A: 150, B: 150, C: 150, D: 150,
+      E: 220, F: 220, G: 220, H: 220,
+      J: 350, K: 350
+    },
     screens: [
       {
         id: "SCR-1",
@@ -196,7 +200,7 @@ export const DEFAULT_SPOTLIGHT = {
   genre: "Action / Comedy / Crime-Drama • Tamil & Telugu",
   duration: "2h 24m",
   rating: "9.3",
-  image: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=900&q=70",
+  image: "/baththa-poster.jpg",
   description: "Set in 1986 Madras, feared gangster Baththa gets accidentally locked inside an elementary school restroom by a timid 8-year-old student. The unusual predicament strands the dreaded criminal inside for days, igniting a heartwarming, hilarious, and redemptive journey that transforms both of their lives.",
   showtimes: ["11:30 AM", "2:45 PM", "6:30 PM", "9:45 PM"]
 };

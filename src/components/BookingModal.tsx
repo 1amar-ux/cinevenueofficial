@@ -170,8 +170,8 @@ export default function BookingModal({
         certification: "UA",
         duration: "2h 24m",
         rating: "9.3",
-        poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
-        img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
+        poster: "/baththa-poster.jpg",
+        img: "/baththa-poster.jpg",
         releaseYear: 2026,
         trailerUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
         description: "Set in 1986 Madras, feared gangster Baththa gets accidentally locked inside an elementary school restroom by a timid 8-year-old student. The unusual predicament strands the dreaded criminal inside for days, igniting a heartwarming, hilarious, and redemptive journey that transforms both of their lives.",
@@ -287,10 +287,10 @@ export default function BookingModal({
       {
         theatre: primaryTheatre,
         shows: [
-          { id: "SHOW-TEST-1", time: "11:30 AM", status: "Available", pricePerSeat: 10 },
-          { id: "SHOW-TEST-2", time: "2:45 PM", status: "Filling fast", pricePerSeat: 10 },
+          { id: "SHOW-TEST-1", time: "11:30 AM", status: "Available", pricePerSeat: 150 },
+          { id: "SHOW-TEST-2", time: "2:45 PM", status: "Filling fast", pricePerSeat: 150 },
           { id: "SHOW-TEST-3", time: "6:30 PM", status: "Available", pricePerSeat: 10 },
-          { id: "SHOW-TEST-4", time: "9:45 PM", status: "Available", pricePerSeat: 10 }
+          { id: "SHOW-TEST-4", time: "9:45 PM", status: "Available", pricePerSeat: 150 }
         ]
       }
     ];
@@ -338,7 +338,7 @@ export default function BookingModal({
       (!selectedShowTime || s.timeSlot === selectedShowTime)
   ) || schedules.find((s) => (s.movieTitle || "").toLowerCase() === movieTitle.toLowerCase());
 
-  const pricePerSeat = Number(activeSchedule?.pricePerSeat ?? (movieObj as any)?.price ?? (currentTheatre as any)?.ticketPrice ?? 10) || 10;
+  const pricePerSeat = Number(activeSchedule?.pricePerSeat ?? (movieObj as any)?.price ?? (currentTheatre as any)?.ticketPrice ?? 150) || 150;
 
   // Layout settings (140 Seats Multiplex Layout: Rows A-K, 14 seats per row)
   const rows = currentTheatre?.seatRows || ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"];
@@ -670,6 +670,15 @@ export default function BookingModal({
                     {movieTitle} <span className="text-white/40 font-normal">({movieObj.releaseYear || 2026})</span>
                   </h1>
 
+                  <button
+                    type="button"
+                    onClick={() => setShowTrailerVideo(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/40 text-gold text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-gold" />
+                    <span>Watch Trailer</span>
+                  </button>
+
 
                 </div>
                 
@@ -807,32 +816,7 @@ export default function BookingModal({
               </div>
             </div>
 
-            {/* Embedded Trailer Video Player (Collapsible) */}
-            {showTrailerVideo && (
-              <div className="bg-black/90 rounded-2xl border border-white/10 overflow-hidden animate-fade-in text-left">
-                <div className="p-3 bg-[#141418] text-white flex items-center justify-between text-xs border-b border-white/10">
-                  <span className="font-bold flex items-center gap-2 truncate">
-                    <Film className="w-4 h-4 text-gold" />
-                    {movieTitle} Official Trailer
-                  </span>
-                  <button
-                    onClick={() => setShowTrailerVideo(false)}
-                    className="text-xs text-white/70 hover:text-white px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer border-none transition-colors"
-                  >
-                    Close Trailer ✕
-                  </button>
-                </div>
-                <div className="relative aspect-video w-full">
-                  <iframe
-                    src={trailerEmbedUrl}
-                    title={`${movieTitle} Official Trailer`}
-                    className="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-            )}
+
 
             {/* Date Selector Ribbon */}
             <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-1">
@@ -1139,9 +1123,9 @@ export default function BookingModal({
                   const isReclinerRow = row === "J" || row === "K" || (reclinerSeats && reclinerSeats.some((s: string) => s.startsWith(row)));
                   const isPrimeRow = premiumRows.includes(row) || rowCategories[row] === "Prime";
                   const sectionHeader = 
-                    row === "A" ? "CLASSIC SECTION · ₹10.00" :
-                    row === "E" ? "PRIME / ELITE SECTION · ₹10.00" :
-                    row === "J" ? "LUXURY RECLINERS · ₹10.00" : null;
+                    row === "A" ? "CLASSIC SECTION · ₹150.00" :
+                    row === "E" ? "PRIME / ELITE SECTION · ₹220.00" :
+                    row === "J" ? "LUXURY RECLINERS · ₹350.00" : null;
 
                   return (
                     <React.Fragment key={row}>
@@ -1193,15 +1177,15 @@ export default function BookingModal({
               <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/60 pt-2 border-t border-white/10">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-[#18181C] border border-white/10 inline-block" />
-                  <span>Classic (₹10)</span>
+                  <span>Classic (₹150)</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-[#181822] border border-indigo-400/30 inline-block" />
-                  <span>Prime (₹10)</span>
+                  <span>Prime (₹220)</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-[#251F14] border border-gold/50 inline-block" />
-                  <span>Recliner (₹10)</span>
+                  <span>Recliner (₹350)</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-gold inline-block" />
@@ -1868,6 +1852,57 @@ export default function BookingModal({
 
 
       </div>
+
+            {/* Full Viewport Centered Trailer Video Modal (Guarantees video is immediately visible on screen) */}
+      {showTrailerVideo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/95 backdrop-blur-md animate-fade-in">
+          {/* Backdrop click to close */}
+          <div className="absolute inset-0" onClick={() => setShowTrailerVideo(false)} />
+
+          <div className="relative z-10 w-full max-w-4xl bg-[#121216] border border-gold/40 rounded-2xl overflow-hidden shadow-2xl shadow-black/90 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-[#18181F] border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <Film className="w-4 h-4 text-gold" />
+                <span className="text-sm sm:text-base font-bold text-white truncate">
+                  {movieTitle} — Official Theatrical Trailer
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTrailerVideo(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors"
+                aria-label="Close Trailer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 16:9 Aspect Ratio Video Frame */}
+            <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+              <iframe
+                src={trailerEmbedUrl}
+                title={`${movieTitle} Official Trailer`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-2.5 bg-[#0e0e12] border-t border-white/5 flex items-center justify-between text-xs text-white/50">
+              <span className="text-gold font-medium">Streaming via CineVenue Official Media</span>
+              <button
+                type="button"
+                onClick={() => setShowTrailerVideo(false)}
+                className="text-xs text-white/70 hover:text-white underline cursor-pointer bg-transparent border-none p-0"
+              >
+                Close Trailer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <PostBookingFeedbackModal
         isOpen={showFeedbackModal}

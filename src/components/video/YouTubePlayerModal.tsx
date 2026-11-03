@@ -37,7 +37,7 @@ export default function YouTubePlayerModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 bg-black/90 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 md:p-10 bg-black/95 backdrop-blur-md animate-fadeIn">
       {/* Background click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 

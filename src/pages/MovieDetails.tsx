@@ -72,10 +72,10 @@ export default function MovieDetails() {
     // Ensure sample trailers exist if not configured
     if (found && (!found.videos || found.videos.length === 0)) {
       const initialMatch = INITIAL_MOVIES.find((m) => m.title.toLowerCase() === found.title?.toLowerCase());
-      const validTrailer = found.trailerUrl || initialMatch?.trailerUrl || "https://www.youtube.com/watch?v=bC36d8e3bb0";
+      const validTrailer = found.trailerUrl || initialMatch?.trailerUrl || "https://www.youtube.com/watch?v=fLnMzPk_p_M";
       const trailerVidId = validTrailer.includes("watch?v=")
         ? validTrailer.split("watch?v=")[1]?.split("&")[0]
-        : "bC36d8e3bb0";
+        : "fLnMzPk_p_M";
 
       found.videos = [
         {
