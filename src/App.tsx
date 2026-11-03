@@ -216,12 +216,28 @@ export default function App() {
   const [movies, setMovies] = useState<Movie[]>(() => {
     const saved = localStorage.getItem("cine_movies");
     const initialList = saved ? JSON.parse(saved) : INITIAL_MOVIES;
-    return deduplicateMovies(initialList);
+    return deduplicateMovies([...INITIAL_MOVIES, ...initialList]);
   });
 
   const [theatres, setTheatres] = useState<Theatre[]>(() => {
     const saved = localStorage.getItem("cine_theatres");
-    return saved ? JSON.parse(saved) : INITIAL_THEATRES;
+    const list: Theatre[] = saved ? JSON.parse(saved) : INITIAL_THEATRES;
+    return list.map((t) => {
+      const init = INITIAL_THEATRES.find((it) => it.name.toLowerCase() === t.name.toLowerCase());
+      if (init && (!t.seatRows || t.seatRows.length < init.seatRows.length || !t.seatsPerRow || t.seatsPerRow < init.seatsPerRow)) {
+        return {
+          ...t,
+          seatRows: init.seatRows,
+          seatsPerRow: init.seatsPerRow,
+          screens: init.screens,
+          reclinerSeats: init.reclinerSeats,
+          premiumRows: init.premiumRows,
+          rowCategories: init.rowCategories,
+          seatPrices: init.seatPrices,
+        };
+      }
+      return t;
+    });
   });
 
   const [events, setEvents] = useState<Event[]>(() => {

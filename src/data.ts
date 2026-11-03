@@ -4,57 +4,117 @@ export const INITIAL_MOVIES: Movie[] = [
   {
     id: "mov_baththa",
     title: "Baththa",
-    genre: "Action, Crime, Thriller",
+    genre: "Action, Comedy, Crime-Drama",
     lang: "Tamil",
-    additionalLanguages: ["Telugu", "Hindi"],
-    certification: "UA16+",
-    rating: "9.2",
-    votes: "4.8K+ Votes",
-    duration: "2h 28m",
+    additionalLanguages: ["Telugu", "Hindi", "Kannada", "Malayalam"],
+    certification: "UA",
+    rating: "9.3",
+    votes: "8.4K+ Votes",
+    duration: "2h 24m",
     releaseYear: 2026,
     releaseDate: "2026-10-09",
-    formats: ["2D", "4K Atmos"],
+    formats: ["2D", "4K Dolby Atmos", "IMAX 2D"],
     langKey: "tamil",
     img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
     poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
     banner: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&q=85",
-    trailerUrl: "https://www.youtube.com/watch?v=qeVfT2i_2kM",
-    description: "An intense high-octane crime action thriller following Baththa's journey through the treacherous underworld. Special testing release at ₹10 per ticket.",
+    trailerUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
+    videoUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
+    description: "Set in 1986 Madras, feared gangster Baththa gets accidentally locked inside an elementary school restroom by a timid 8-year-old student. The unusual predicament strands the dreaded criminal inside for days, igniting a heartwarming, hilarious, and redemptive journey that transforms both of their lives.",
     price: 10,
     status: "Now Showing",
     isActive: true,
-    director: "G. V. Kumar",
-    cast: ["Vikram Prabhu", "SJ Suryah", "Anurag Kashyap"],
+    director: "Balaji Tharaneetharan",
+    actors: [
+      "Vijay Sethupathi",
+      "Master Sai Prithviraj",
+      "Lijomol Jose",
+      "Santhy Balachandran",
+      "Ajay Ghosh",
+      "Arjun Chidambaram"
+    ],
+    cast: [
+      "Vijay Sethupathi",
+      "Master Sai Prithviraj",
+      "Lijomol Jose",
+      "Santhy Balachandran",
+      "Ajay Ghosh",
+      "Arjun Chidambaram"
+    ],
     castMembers: [
       {
-        name: "Vikram Prabhu",
-        role: "Actor",
-        character: "Baththa",
+        name: "Vijay Sethupathi",
+        role: "Lead Actor",
+        character: "Baththa (Feared Gangster)",
         image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80"
       },
       {
-        name: "SJ Suryah",
-        role: "Actor",
-        character: "Commissioner",
+        name: "Master Sai Prithviraj",
+        role: "Lead Child Actor",
+        character: "Young Schoolboy",
+        image: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=300&q=80"
+      },
+      {
+        name: "Lijomol Jose",
+        role: "Lead Actress",
+        character: "School Teacher",
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80"
+      },
+      {
+        name: "Santhy Balachandran",
+        role: "Supporting Actress",
+        character: "Mother",
+        image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&q=80"
+      },
+      {
+        name: "Ajay Ghosh",
+        role: "Supporting Actor",
+        character: "Gang Lieutenant",
         image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80"
       },
       {
-        name: "Anurag Kashyap",
-        role: "Actor",
-        character: "Underworld Don",
+        name: "Arjun Chidambaram",
+        role: "Supporting Actor",
+        character: "Sub-Inspector",
         image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&q=80"
       }
     ],
     crewMembers: [
       {
-        name: "G. V. Kumar",
-        role: "Director",
+        name: "Balaji Tharaneetharan",
+        role: "Director & Screenplay",
         image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&q=80"
       },
       {
-        name: "Anirudh Ravichander",
-        role: "Musician",
+        name: "Sai Abhyankkar",
+        role: "Music Director & Composer",
         image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80"
+      },
+      {
+        name: "Atlee",
+        role: "Presenter & Producer (A for Apple Studios)",
+        image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&q=80"
+      },
+      {
+        name: "Murad Khetani",
+        role: "Producer (Cine1 Studios)",
+        image: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=300&q=80"
+      }
+    ],
+    videos: [
+      {
+        id: "vid-baththa-official-trailer",
+        movieId: "mov_baththa",
+        type: "TRAILER",
+        title: "Baththa — Official Theatrical Trailer",
+        youtubeVideoId: "fLnMzPk_p_M",
+        youtubeUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
+        thumbnailUrl: "https://img.youtube.com/vi/fLnMzPk_p_M/hqdefault.jpg",
+        language: "Tamil / Telugu / Hindi",
+        displayOrder: 1,
+        isActive: true,
+        createdAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-01T00:00:00.000Z"
       }
     ],
     offers: [
@@ -69,7 +129,6 @@ export const INITIAL_MOVIES: Movie[] = [
   }
 ];
 
-
 export const INITIAL_THEATRES: Theatre[] = [
   {
     id: 1,
@@ -78,21 +137,36 @@ export const INITIAL_THEATRES: Theatre[] = [
     city: "All Cities",
     latitude: 17.4126,
     longitude: 78.4655,
-    features: ["4K Laser", "Dolby Atmos", "Recliners", "Standard Test Screen"],
-    reclinerSeats: ["C1", "C2", "C3", "C4", "C5", "C6"],
+    features: ["4K Laser", "Dolby Atmos", "Luxury Recliners", "Prime Section", "Classic Section"],
+    reclinerSeats: [
+      "J1", "J2", "J3", "J4", "J5", "J6", "J7", "J8", "J9", "J10", "J11", "J12", "J13", "J14",
+      "K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8", "K9", "K10", "K11", "K12", "K13", "K14"
+    ],
     price: "₹10",
     ticketPrice: 10,
     img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=60",
-    seatRows: ["A", "B", "C"],
-    seatsPerRow: 6,
-    premiumRows: [],
-    seatPrices: { A: 10, B: 10, C: 10 },
+    seatRows: ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"],
+    seatsPerRow: 14,
+    premiumRows: ["E", "F", "G", "H"],
+    rowCategories: {
+      A: "Classic",
+      B: "Classic",
+      C: "Classic",
+      D: "Classic",
+      E: "Prime",
+      F: "Prime",
+      G: "Prime",
+      H: "Prime",
+      J: "Recliner",
+      K: "Recliner"
+    },
+    seatPrices: { A: 10, B: 10, C: 10, D: 10, E: 10, F: 10, G: 10, H: 10, J: 10, K: 10 },
     screens: [
       {
         id: "SCR-1",
-        name: "Screen 1 (Test Screen)",
-        screenType: "2D",
-        totalSeats: 18,
+        name: "Screen 1 (4K Dolby Atmos Laser)",
+        screenType: "4K Laser Dolby Atmos",
+        totalSeats: 140,
         isActive: true
       }
     ]
@@ -119,11 +193,11 @@ export const INITIAL_EVENTS: Event[] = [];
 
 export const DEFAULT_SPOTLIGHT = {
   title: "Baththa",
-  genre: "Action / Crime • Tamil",
-  duration: "2h 28m",
-  rating: "9.2",
+  genre: "Action / Comedy / Crime-Drama • Tamil & Telugu",
+  duration: "2h 24m",
+  rating: "9.3",
   image: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=900&q=70",
-  description: "An intense high-octane crime action thriller following Baththa's journey through the treacherous underworld. Special testing release at ₹10 per ticket with live convenience fee & GST calculation.",
+  description: "Set in 1986 Madras, feared gangster Baththa gets accidentally locked inside an elementary school restroom by a timid 8-year-old student. The unusual predicament strands the dreaded criminal inside for days, igniting a heartwarming, hilarious, and redemptive journey that transforms both of their lives.",
   showtimes: ["11:30 AM", "2:45 PM", "6:30 PM", "9:45 PM"]
 };
 

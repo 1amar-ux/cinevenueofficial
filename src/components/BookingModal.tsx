@@ -138,24 +138,46 @@ export default function BookingModal({
   // Lookup target movie metadata with live local storage and prop fallback
   const getResolvedMovie = (): Movie => {
     const cachedMovies: Movie[] = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("cine_movies") || "[]") : [];
+    const fromProps = movies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase());
+    const fromCache = cachedMovies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase());
+    const fromInitial = INITIAL_MOVIES.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase());
+
+    if (fromInitial) {
+      return {
+        ...fromInitial,
+        ...(fromCache || {}),
+        ...(fromProps || {}),
+        castMembers: fromInitial.castMembers,
+        crewMembers: fromInitial.crewMembers,
+        cast: fromInitial.cast,
+        actors: fromInitial.actors,
+        director: fromInitial.director,
+        trailerUrl: fromInitial.trailerUrl,
+        videoUrl: fromInitial.videoUrl,
+        videos: fromInitial.videos,
+        description: fromInitial.description,
+        genre: fromInitial.genre,
+        rating: fromInitial.rating,
+        certification: fromInitial.certification,
+      };
+    }
     return (
-      movies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) ||
-      cachedMovies.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) ||
-      INITIAL_MOVIES.find((m) => m.title.toLowerCase() === movieTitle.toLowerCase()) || {
+      fromProps ||
+      fromCache || {
         title: movieTitle,
-        genre: "Action / Drama",
-        lang: "Telugu",
+        genre: "Action / Comedy / Crime-Drama",
+        lang: "Tamil",
         certification: "UA",
-        duration: "2h 30m",
-        rating: "8.5",
-        poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
-        img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=70",
+        duration: "2h 24m",
+        rating: "9.3",
+        poster: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
+        img: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=800&q=80",
         releaseYear: 2026,
-        trailerUrl: "https://www.youtube.com/watch?v=bC36d8e3bb0",
-        description: "Experience world-class cinematic excellence at CineVenue with high-fidelity sound and immersive screens.",
-        cast: ["Lead Star", "Supporting Artist"],
-        actors: ["Lead Star", "Supporting Artist"],
-        director: "Acclaimed Filmmaker"
+        trailerUrl: "https://www.youtube.com/watch?v=fLnMzPk_p_M",
+        description: "Set in 1986 Madras, feared gangster Baththa gets accidentally locked inside an elementary school restroom by a timid 8-year-old student. The unusual predicament strands the dreaded criminal inside for days, igniting a heartwarming, hilarious, and redemptive journey that transforms both of their lives.",
+        cast: ["Vijay Sethupathi", "Master Sai Prithviraj", "Lijomol Jose", "Santhy Balachandran", "Ajay Ghosh", "Arjun Chidambaram"],
+        actors: ["Vijay Sethupathi", "Master Sai Prithviraj", "Lijomol Jose", "Santhy Balachandran", "Ajay Ghosh", "Arjun Chidambaram"],
+        director: "Balaji Tharaneetharan"
       }
     );
   };
@@ -176,7 +198,7 @@ export default function BookingModal({
     ? `https://www.youtube.com/embed/${primaryTrailer.youtubeVideoId}?autoplay=1&rel=0&modestbranding=1`
     : (primaryTrailer?.youtubeUrl?.includes("watch?v=") 
         ? `https://www.youtube.com/embed/${primaryTrailer.youtubeUrl.split("watch?v=")[1]?.split("&")[0]}?autoplay=1&rel=0&modestbranding=1`
-        : "https://www.youtube.com/embed/bC36d8e3bb0?autoplay=1&rel=0&modestbranding=1");
+        : "https://www.youtube.com/embed/fLnMzPk_p_M?autoplay=1&rel=0&modestbranding=1");
 
   // State lookup for header pill
   const matchedCity =
@@ -318,15 +340,22 @@ export default function BookingModal({
 
   const pricePerSeat = Number(activeSchedule?.pricePerSeat ?? (movieObj as any)?.price ?? (currentTheatre as any)?.ticketPrice ?? 10) || 10;
 
-  // Layout settings
-  const rows = currentTheatre?.seatRows || ["A", "B", "C", "D", "E", "F"];
-  const seatsPerRow = currentTheatre?.seatsPerRow || 8;
-  const premiumRows = currentTheatre?.premiumRows || ["A", "B"];
+  // Layout settings (140 Seats Multiplex Layout: Rows A-K, 14 seats per row)
+  const rows = currentTheatre?.seatRows || ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"];
+  const seatsPerRow = currentTheatre?.seatsPerRow || 14;
+  const premiumRows = currentTheatre?.premiumRows || ["E", "F", "G", "H"];
   const blockedSeats = currentTheatre?.blockedSeats || [];
   const wheelchairSeats = currentTheatre?.wheelchairSeats || [];
   const vipSeats = currentTheatre?.vipSeats || [];
-  const reclinerSeats = currentTheatre?.reclinerSeats || [];
-  const rowCategories = currentTheatre?.rowCategories || {};
+  const reclinerSeats = currentTheatre?.reclinerSeats || [
+    "J1", "J2", "J3", "J4", "J5", "J6", "J7", "J8", "J9", "J10", "J11", "J12", "J13", "J14",
+    "K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8", "K9", "K10", "K11", "K12", "K13", "K14"
+  ];
+  const rowCategories = currentTheatre?.rowCategories || {
+    A: "Classic", B: "Classic", C: "Classic", D: "Classic",
+    E: "Prime", F: "Prime", G: "Prime", H: "Prime",
+    J: "Recliner", K: "Recliner"
+  };
 
   const getSeatPrice = (seatId: string) => {
     const rowLetter = seatId.charAt(0);
@@ -1104,45 +1133,75 @@ export default function BookingModal({
                 </span>
               </div>
 
-              {/* Seat Matrix */}
-              <div className="flex flex-col items-center gap-2 py-4 overflow-x-auto">
-                {rows.map((row) => (
-                  <div key={row} className="flex items-center gap-2">
-                    <span className="w-6 text-center text-xs font-bold font-mono text-white/50">{row}</span>
-                    <div className="flex gap-1.5">
-                      {Array.from({ length: seatsPerRow }).map((_, colIdx) => {
-                        const seatId = `${row}${colIdx + 1}`;
-                        const isSelected = selectedSeats.includes(seatId);
-                        const blocked = isSeatBlocked(seatId);
+              {/* Seat Matrix (Expanded 140 Seats Multiplex Layout) */}
+              <div className="flex flex-col items-center gap-2 py-4 overflow-x-auto w-full">
+                {rows.map((row, rIdx) => {
+                  const isReclinerRow = row === "J" || row === "K" || (reclinerSeats && reclinerSeats.some((s: string) => s.startsWith(row)));
+                  const isPrimeRow = premiumRows.includes(row) || rowCategories[row] === "Prime";
+                  const sectionHeader = 
+                    row === "A" ? "CLASSIC SECTION · ₹10.00" :
+                    row === "E" ? "PRIME / ELITE SECTION · ₹10.00" :
+                    row === "J" ? "LUXURY RECLINERS · ₹10.00" : null;
 
-                        return (
-                          <button
-                            key={seatId}
-                            disabled={blocked}
-                            onClick={() => handleSeatClick(seatId)}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono transition-all cursor-pointer ${
-                              blocked
-                                ? "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
-                                : isSelected
-                                ? "bg-gold text-black shadow-lg shadow-gold/30 font-extrabold scale-110 border-0"
-                                : "bg-[#18181C] hover:bg-white/20 text-white/80 border border-white/10 hover:border-gold/40"
-                            }`}
-                            title={`${seatId} - ₹${getSeatPrice(seatId)}`}
-                          >
-                            {colIdx + 1}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                  return (
+                    <React.Fragment key={row}>
+                      {sectionHeader && (
+                        <div className={`w-full max-w-lg flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/50 pt-3 pb-1 border-b border-white/5 ${rIdx > 0 ? "mt-2" : ""}`}>
+                          <span className="text-gold font-mono">{sectionHeader}</span>
+                          <span className="text-white/40 text-[9px]">14 Seats / Row</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 text-center text-xs font-bold font-mono text-white/50">{row}</span>
+                        <div className="flex gap-1.5">
+                          {Array.from({ length: seatsPerRow }).map((_, colIdx) => {
+                            const seatId = `${row}${colIdx + 1}`;
+                            const isSelected = selectedSeats.includes(seatId);
+                            const blocked = isSeatBlocked(seatId);
+                            const isAisleGap = colIdx === 3 || colIdx === 9; // Aisle spaces after seat 4 and seat 10
+
+                            return (
+                              <button
+                                key={seatId}
+                                disabled={blocked}
+                                onClick={() => handleSeatClick(seatId)}
+                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono transition-all cursor-pointer ${isAisleGap ? "mr-2.5 sm:mr-3.5" : ""} ${
+                                  blocked
+                                    ? "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
+                                    : isSelected
+                                    ? "bg-gold text-black shadow-lg shadow-gold/30 font-extrabold scale-110 border-0"
+                                    : isReclinerRow
+                                    ? "bg-[#251F14] hover:bg-[#382C18] text-amber-200 border border-gold/40 hover:border-gold"
+                                    : isPrimeRow
+                                    ? "bg-[#181822] hover:bg-white/20 text-white/90 border border-indigo-400/20 hover:border-gold/40"
+                                    : "bg-[#18181C] hover:bg-white/20 text-white/80 border border-white/10 hover:border-gold/40"
+                                }`}
+                                title={`${seatId} (${isReclinerRow ? "Recliner" : isPrimeRow ? "Prime" : "Classic"}) - ₹${getSeatPrice(seatId)}`}
+                              >
+                                {colIdx + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
               </div>
 
               {/* Seat Legend */}
               <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/60 pt-2 border-t border-white/10">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-[#18181C] border border-white/10 inline-block" />
-                  <span>Available</span>
+                  <span>Classic (₹10)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-[#181822] border border-indigo-400/30 inline-block" />
+                  <span>Prime (₹10)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-[#251F14] border border-gold/50 inline-block" />
+                  <span>Recliner (₹10)</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-gold inline-block" />
