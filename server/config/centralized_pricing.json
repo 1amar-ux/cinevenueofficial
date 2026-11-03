@@ -13,8 +13,8 @@
   "eventFeeCalculationType": "FIXED",
   "eventFixedAmount": 40,
   "eventPercentageRate": 10,
-  "version": 49,
-  "updatedAt": "2026-11-03T05:27:16.702Z",
+  "version": 59,
+  "updatedAt": "2026-11-03T05:54:21.260Z",
   "updatedBy": "superadmin@cinevenue.com",
   "slabs": [
     {

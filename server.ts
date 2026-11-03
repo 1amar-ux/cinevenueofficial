@@ -15,6 +15,7 @@ import settlementRoutes from "./src/modules/settlements/settlement.routes";
 import eventRoutes from "./src/modules/events/events.routes";
 import pricingRoutes from "./server/modules/pricing/pricing.routes";
 import feedbackRoutes from "./server/modules/feedback/feedback.routes";
+import notificationRoutes from "./server/modules/notifications/notification.routes";
 import theatreBankRoutes from "./src/modules/theatres/theatreBank.routes";
 import integrationRoutes from "./src/modules/integrations/integration.routes";
 import reconciliationRoutes from "./src/modules/reconciliation/reconciliation.routes";
@@ -50,6 +51,8 @@ async function startServer() {
   app.use("/api/pricing", pricingRoutes);
   app.use("/api/v1/feedback", feedbackRoutes);
   app.use("/api/feedback", feedbackRoutes);
+  app.use("/api/v1/notifications", notificationRoutes);
+  app.use("/api/notifications", notificationRoutes);
 
   app.get("/api/integrations/adapters", (req, res) => {
     const adapters = integrationManager.getAllAdapters().map(a => ({

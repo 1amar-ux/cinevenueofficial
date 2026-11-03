@@ -19,6 +19,7 @@ import { openVenueDirections, downloadCalendarEvent } from "../services/venueLoc
 import { bookingReminderScheduler } from "../services/bookingReminderScheduler";
 import PostBookingFeedbackModal from "./feedback/PostBookingFeedbackModal";
 import { feedbackClient } from "../services/feedbackClient";
+import { ticketConfirmationService } from "../services/ticketConfirmationService";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -546,6 +547,30 @@ export default function BookingModal({
         time: displayTimeSlot,
         status: "CONFIRMED",
         recipientEmail: userEmail || "guest@cinevenue.com",
+      });
+
+      // Automated Ticket Confirmation Email Dispatch (Non-blocking background delivery)
+      ticketConfirmationService.dispatchMovieConfirmation({
+        bookingId: finalBookingId,
+        bookingCode: finalBookingId,
+        movieTitle,
+        theatreName: displayTheatre,
+        theatreAddress: currentTheatre?.address || currentTheatre?.location || `${selectedCity}, India`,
+        city: currentTheatre?.city || selectedCity,
+        screenName: currentTheatre?.screens?.[0]?.name || "Screen 1 (4K Dolby Atmos)",
+        date: activeDate.fullDayName || activeDate.dateStr,
+        timeSlot: displayTimeSlot,
+        seats: selectedSeats,
+        seatCategory: seatCategoryLabel,
+        basePrice: rawBaseTicketPrice,
+        convenienceFee: baseConvenienceAmount,
+        gstAmount: igstTaxAmount,
+        totalPaid: orderTotalAmount,
+        customerEmail: userEmail || bookingName,
+        customerName: (bookingName || userEmail || "").split("@")[0] || "Valued Patron",
+        paymentMethod: paymentMethod,
+        posterUrl: movieObj.posterUrl || movieObj.poster,
+        qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=2&data=${encodeURIComponent(finalBookingId)}`
       });
     }, 800);
   };
@@ -1227,114 +1252,43 @@ export default function BookingModal({
                 </div>
               </div>
 
-              {/* Card 2: Price Breakdown */}
+              {/* Card 2: Initial Display - Base Price Only (Convenience fee & GST calculated dynamically on Proceed) */}
               <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm space-y-3 text-left">
                 {/* Line 1: Ticket Quantity and Subtotal */}
                 <div className="flex items-center justify-between text-sm text-gray-800">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-gray-600">Ticket subtotal</span>
+                    <span className="text-gray-600 font-medium">Ticket Base Subtotal</span>
                     <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                       {selectedSeats.length} {selectedSeats.length === 1 ? "ticket" : "tickets"}
                     </span>
                   </div>
-                  <span className="font-semibold text-gray-900 font-mono">
+                  <span className="font-bold text-gray-900 font-mono text-base">
                     ₹{rawBaseTicketPrice.toFixed(2)}
                   </span>
                 </div>
 
-                {/* Line 2: Convenience Fees (Collapsible) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm text-gray-800">
-                    <button
-                      onClick={() => setIsConvenienceFeesExpanded(!isConvenienceFeesExpanded)}
-                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900 cursor-pointer bg-transparent border-none p-0 text-sm"
-                    >
-                      <span>Convenience fees</span>
-                      {isConvenienceFeesExpanded ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-                      )}
-                    </button>
-                    <span className="font-semibold text-gray-900 font-mono">
-                      ₹{totalConvenienceFee.toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Sub-breakdown: Base Charge + GST on Fee */}
-                  {isConvenienceFeesExpanded && (
-                    <div className="pl-2 space-y-1 text-xs text-gray-500 border-l-2 border-amber-300 ml-1">
-                      <div className="flex items-center justify-between">
-                        <span>Base Charge ({movieFeeBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : "Per Ticket"})</span>
-                        <span className="font-mono">₹{baseConvenienceAmount.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>GST on Convenience Fee @ {movieFeeBreakdown?.gstRateApplied ?? 18}%</span>
-                        <span className="font-mono">₹{igstTaxAmount.toFixed(2)}</span>
-                      </div>
-                      {movieFeeBreakdown?.feeLines && movieFeeBreakdown.feeLines.length > 0 && (
-                        <div className="pt-1 mt-1 border-t border-gray-100 text-[11px] text-gray-400 space-y-0.5">
-                          {movieFeeBreakdown.feeLines.map((line, idx) => (
-                            <div key={idx} className="flex justify-between">
-                              <span>Seat {selectedSeats[idx] || `#${idx + 1}`} (₹{line.ticketPrice}):</span>
-                              <span>₹{line.baseCharge.toFixed(2)} + ₹{line.gstAmount.toFixed(2)} GST</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Price per ticket:</span>
+                  <span className="font-mono text-gray-700">₹{pricePerSeat.toFixed(2)} × {selectedSeats.length}</span>
                 </div>
 
-                {/* Line 3: Give to Underprivileged Musicians */}
-                <div className="flex items-center justify-between text-sm text-gray-800 pt-1">
-                  <div className="space-y-0.5">
-                    <div className="text-gray-800 font-medium text-xs sm:text-sm">
-                      Give to Underprivileged Musicians
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
-                      <span>(₹1 per ticket)</span>
-                      <button 
-                        onClick={() => alert("Donations support elderly and underprivileged performing artists across Indian classical & regional cinema music orchestras.")}
-                        className="underline uppercase font-bold text-[10px] text-gray-600 hover:text-gray-900 cursor-pointer border-none bg-transparent p-0"
-                      >
-                        VIEW T&C
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="text-right space-y-0.5">
-                    <div className="font-semibold text-gray-900 font-mono text-sm">
-                      ₹{musicianDonationAmount.toFixed(2)}
-                    </div>
-                    <button
-                      onClick={() => setIsMusicianDonationAdded(!isMusicianDonationAdded)}
-                      className="text-xs font-bold text-[#E11D48] hover:text-[#BE123C] cursor-pointer bg-transparent border-none p-0"
-                    >
-                      {isMusicianDonationAdded ? "Remove" : `Add ₹${(selectedSeats.length * 1.0).toFixed(2)}`}
-                    </button>
+                {/* Dynamic Taxes Notice */}
+                <div className="bg-amber-50/80 border border-amber-200/70 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
+                  <span className="text-amber-600 font-bold text-sm leading-none mt-0.5">ℹ</span>
+                  <div className="leading-snug">
+                    <span className="font-bold block text-amber-950">Dynamic Pricing Engine</span>
+                    Applicable convenience fee and 18% GST are dynamically calculated and displayed when you proceed to payment.
                   </div>
                 </div>
-
-                {/* Discounts */}
-                {couponDiscountAmount > 0 && (
-                  <div className="flex items-center justify-between text-sm text-emerald-600 font-semibold pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5" />
-                      <span>Discount ({appliedCoupon})</span>
-                    </div>
-                    <span className="font-mono">-₹{couponDiscountAmount.toFixed(2)}</span>
-                  </div>
-                )}
 
                 {/* Dotted Separator */}
                 <div className="border-t border-dashed border-gray-300 my-2" />
 
-                {/* Line 4: Final Payable Amount */}
+                {/* Total Base Ticket Amount */}
                 <div className="flex items-center justify-between text-sm sm:text-base font-bold text-gray-900">
-                  <span className="text-gray-900 font-bold">Final payable amount</span>
+                  <span className="text-gray-900 font-bold">Total Ticket Price</span>
                   <span className="font-mono text-lg font-extrabold text-[#E11D48]">
-                    ₹{orderTotalAmount.toFixed(2)}
+                    ₹{rawBaseTicketPrice.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -1444,9 +1398,9 @@ export default function BookingModal({
             {/* Sticky Bottom Bar */}
             <div className="bg-white border-t border-gray-200 px-5 py-3.5 flex items-center justify-between sticky bottom-0 z-20 shadow-lg">
               <div className="text-left">
-                <span className="text-xs text-gray-500 block font-medium">Total</span>
+                <span className="text-xs text-gray-500 block font-medium">Base Price</span>
                 <span className="text-xl font-extrabold text-gray-900 font-mono">
-                  ₹{orderTotalAmount.toFixed(2)}
+                  ₹{rawBaseTicketPrice.toFixed(2)}
                 </span>
               </div>
               <button
@@ -1454,7 +1408,7 @@ export default function BookingModal({
                 onClick={() => setBookingStep("payment_qr")}
                 className="bg-[#E11D48] hover:bg-[#BE123C] text-white px-6 sm:px-8 py-3 rounded-xl font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center gap-2"
               >
-                <span>Proceed to Pay (₹{orderTotalAmount.toFixed(2)})</span>
+                <span>Proceed to Payment (₹{rawBaseTicketPrice.toFixed(2)})</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1512,7 +1466,7 @@ export default function BookingModal({
                   />
                 ) : (
                   <QRCode
-                    value="upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH"
+                    value={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${movieTitle.replace(/\s+/g, "")}-${selectedSeats.join("")}`)}`}
                     size={190}
                     level="M"
                   />
@@ -1541,14 +1495,22 @@ export default function BookingModal({
               </div>
 
               {/* Itemized calculation breakdown */}
-              <div className="w-full bg-gray-50 rounded-xl p-3 text-xs space-y-1 text-gray-600 border border-gray-100">
+              <div className="w-full bg-gray-50 rounded-xl p-3 text-xs space-y-1.5 text-gray-600 border border-gray-100">
                 <div className="flex justify-between">
-                  <span>Ticket Subtotal ({selectedSeats.length} x ₹{pricePerSeat}):</span>
+                  <span>Base Ticket Price ({selectedSeats.length} × ₹{pricePerSeat}):</span>
                   <span className="font-mono font-semibold text-gray-800">₹{rawBaseTicketPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Convenience Fee & GST (18%):</span>
-                  <span className="font-mono font-semibold text-gray-800">₹{totalConvenienceFee.toFixed(2)}</span>
+                  <span>Convenience Fee ({movieFeeBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : "Per Ticket"}):</span>
+                  <span className="font-mono font-semibold text-gray-800">₹{baseConvenienceAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>GST on Convenience Fee @ {movieFeeBreakdown?.gstRateApplied ?? 18}%:</span>
+                  <span className="font-mono font-semibold text-gray-800">₹{igstTaxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-amber-700 font-medium">
+                  <span>Total Convenience Fee & Taxes:</span>
+                  <span className="font-mono font-semibold">₹{totalConvenienceFee.toFixed(2)}</span>
                 </div>
                 {musicianDonationAmount > 0 && (
                   <div className="flex justify-between">
@@ -1570,7 +1532,7 @@ export default function BookingModal({
 
               {/* Direct UPI Mobile Deep Link */}
               <a
-                href="upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH"
+                href={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${orderTotalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${movieTitle.replace(/\s+/g, "")}-${selectedSeats.join("")}`)}`}
                 className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
               >
                 <Smartphone className="w-4 h-4" />

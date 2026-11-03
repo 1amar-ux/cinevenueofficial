@@ -35,6 +35,8 @@ import apiClient from '../../services/apiClient';
 import { bookingReminderScheduler } from '../../services/bookingReminderScheduler';
 import PostBookingFeedbackModal from '../feedback/PostBookingFeedbackModal';
 import { feedbackClient } from '../../services/feedbackClient';
+import QRCode from "react-qr-code";
+import { ticketConfirmationService } from '../../services/ticketConfirmationService';
 
 interface EventBookingModalProps {
   event: EventItem;
@@ -354,6 +356,29 @@ export default function EventBookingModal({
 
       // Automatically dispatch event pass directly to attendee's email
       sendEventPassToEmail(booking);
+
+      // Automated Ticket Confirmation Email Dispatch (Non-blocking background delivery)
+      ticketConfirmationService.dispatchEventConfirmation({
+        bookingId: booking.id || (booking as any).passId || `EVT-${Date.now()}`,
+        ticketCode: (booking as any).passId || (booking as any).ticketCode || booking.id,
+        eventTitle: event.title,
+        venueName: (event as any).venue?.name || (event as any).venueName || "Grand Convention Hall",
+        venueAddress: (event as any).venue?.address || (event as any).venueAddress,
+        city: (event as any).venue?.city || (event as any).city || "Guntur",
+        date: event.date || "Upcoming",
+        time: (event as any).time || (event as any).startTime || "07:00 PM",
+        seats: selectedSeatCodes.length > 0 ? selectedSeatCodes : (selectedTicketType?.name || "General Pass"),
+        seatCategory: selectedTicketType?.name || "General Pass",
+        basePrice: fees.ticketSubtotal,
+        convenienceFee: fees.platformBookingFee,
+        gstAmount: fees.taxAmount,
+        totalPaid: fees.finalAmount,
+        customerEmail: primaryEmail.trim(),
+        customerName: primaryName.trim(),
+        paymentMethod: `UPI Online (${paymentMethod})`,
+        posterUrl: event.imageUrl || (event as any).bannerUrl || "",
+        ticketUrl: typeof window !== "undefined" ? `${window.location.origin}/events/pass/${encodeURIComponent((booking as any).passId || booking.id)}` : undefined,
+      });
 
       // Automatically schedule multi-interval reminders (24h, 3h, 1h, 15m)
       bookingReminderScheduler.scheduleBookingReminders({
@@ -1096,6 +1121,33 @@ export default function EventBookingModal({
                     </button>
                   ))}
                 </div>
+
+                {/* Automatic UPI Payment QR Generation on Screen */}
+                {paymentMethod === 'UPI' && fees.finalAmount > 0 && (
+                  <div className="mt-4 p-4 rounded-2xl bg-white/[0.03] border-2 border-dashed border-gold/40 flex flex-col items-center justify-center space-y-3 animate-fade-in text-center">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Instant UPI Payment Gateway</span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-2xl shadow-xl border border-gold/30 overflow-hidden flex items-center justify-center max-w-[210px]">
+                      <QRCode
+                        value={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${fees.finalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(event.title.replace(/\s+/g, ""))}`}
+                        size={175}
+                        level="M"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-white block">
+                        Scan & Pay ₹{fees.finalAmount.toLocaleString('en-IN')} with Any UPI App
+                      </span>
+                      <span className="text-[11px] text-gold font-mono block">
+                        UPI ID: <strong>9491336996@ptsbi</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1104,9 +1156,11 @@ export default function EventBookingModal({
         {/* Footer Navigation Actions */}
         <div className="bg-white/[0.02] border-t border-white/10 p-4 sm:p-6 flex items-center justify-between shrink-0">
           <div>
-            <span className="text-[10px] text-white/40 uppercase font-mono block">Order Total</span>
+            <span className="text-[10px] text-white/40 uppercase font-mono block">
+              {currentStep === 3 ? "Order Total" : "Base Ticket Price"}
+            </span>
             <span className="text-lg font-black text-gold font-mono">
-              ₹{fees.finalAmount.toLocaleString('en-IN')}
+              ₹{(currentStep === 3 ? fees.finalAmount : fees.ticketSubtotal).toLocaleString('en-IN')}
             </span>
           </div>
 
@@ -1141,7 +1195,7 @@ export default function EventBookingModal({
                 }}
                 className="px-6 py-2.5 rounded-xl bg-gold hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-lg shadow-gold/20"
               >
-                <span>{fees.finalAmount === 0 ? 'Review & Confirm Pass' : 'Proceed to Payment'}</span>
+                <span>{fees.ticketSubtotal === 0 ? 'Review & Confirm Pass' : `Proceed to Payment (₹${fees.ticketSubtotal.toLocaleString('en-IN')})`}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}

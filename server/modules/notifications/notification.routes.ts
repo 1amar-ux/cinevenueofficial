@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { logger } from "../../shared/logger";
-import { sendEventPassEmail } from "../../services/emailService";
+import { sendEventPassEmail, sendBookingConfirmationEmail, sendMovieTicketEmail } from "../../services/emailService";
 
 const router = Router();
 
@@ -10,7 +10,7 @@ const router = Router();
  */
 router.post("/send-ticket-email", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const toEmail = req.body.email || req.body.recipientEmail;
+    const toEmail = req.body.email || req.body.recipientEmail || req.body.to;
 
     if (!toEmail) {
       return res.status(400).json({ success: false, message: "Recipient email is required." });
@@ -19,35 +19,64 @@ router.post("/send-ticket-email", async (req: Request, res: Response, next: Next
     const email = toEmail;
     const {
       name,
+      customerName,
       bookingId,
       ticketCode,
+      bookingCode,
       title,
+      movieTitle,
       venue,
+      theatreName,
+      theatreAddress,
+      venueAddress,
+      city,
+      screenName,
       date,
       time,
+      timeSlot,
       seats,
       category,
+      seatCategory,
       quantity,
       ticketUrl,
-      type
+      type,
+      basePrice,
+      convenienceFee,
+      gstAmount,
+      totalPaid,
+      paymentMethod,
+      posterUrl,
+      qrCodeUrl
     } = req.body;
 
-    const emailResult = await sendEventPassEmail({
+    const emailResult = await sendBookingConfirmationEmail({
+      type: (type && type.toUpperCase() === "EVENT") ? "EVENT" : "MOVIE",
       to: email,
-      passId: ticketCode || bookingId || `TKT-${Date.now()}`,
-      orderId: bookingId,
-      eventTitle: title || "CineVenue",
-      attendeeName: name || "Customer",
-      venueName: venue || "CineVenue Multiplex",
+      customerName: customerName || name || "Valued Patron",
+      bookingId: bookingId || ticketCode || `TKT-${Date.now()}`,
+      ticketCode: ticketCode || bookingCode || bookingId,
+      title: title || movieTitle || "CineVenue Booking",
+      venueName: venue || theatreName || "CineVenue Multiplex",
+      venueAddress: venueAddress || theatreAddress,
+      city: city || "Guntur",
+      screenName: screenName || "Screen 1 (4K Dolby Atmos)",
       date: date || "Upcoming",
-      time: time || "Showtime",
-      tier: category || (type === "MOVIE" ? "Cinema Ticket" : "Event Pass"),
-      passUrl: ticketUrl
+      time: time || timeSlot || "Showtime",
+      seats: seats || "Standard",
+      seatCategory: seatCategory || category || "ELITE",
+      basePrice: Number(basePrice) || (Number(totalPaid) || 0),
+      convenienceFee: Number(convenienceFee) || 0,
+      gstAmount: Number(gstAmount) || 0,
+      totalPaid: Number(totalPaid) || Number(basePrice) || 0,
+      paymentMethod: paymentMethod || "UPI Online",
+      posterUrl,
+      passUrl: ticketUrl,
+      qrCodeUrl
     });
 
     return res.json({
       success: true,
-      message: emailResult.message || `CineVenue confirmation email and digital ticket pass dispatched to ${email}`,
+      message: emailResult.message || `CineVenue confirmation email and digital ticket dispatched to ${email}`,
       data: {
         recipient: email,
         bookingId: bookingId || ticketCode,
