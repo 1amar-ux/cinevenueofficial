@@ -217,34 +217,12 @@ const CONFIG_FILE = path.join(process.cwd(), "server/config/centralized_pricing.
 const TMP_CONFIG_FILE = path.join("/tmp", "centralized_pricing.json");
 
 export class CentralizedPricingService {
-  private static memorySnapshots: Map<string, any> = new Map();
-  private static dbConnected: boolean | null = null;
-  private static lastDbCheck: number = 0;
-
   private activeConfig: PricingConfigItem = { ...INITIAL_DEFAULT_CONFIG };
   private auditLogs: any[] = [];
   private isLoadedFromStorage = false;
 
   constructor() {
     this.loadFromStorage();
-  }
-
-  private isDbHealthy(): boolean {
-    if (CentralizedPricingService.dbConnected === false) {
-      if (Date.now() - CentralizedPricingService.lastDbCheck < 30000) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private markDbOffline(err?: any) {
-    CentralizedPricingService.dbConnected = false;
-    CentralizedPricingService.lastDbCheck = Date.now();
-  }
-
-  private markDbOnline() {
-    CentralizedPricingService.dbConnected = true;
   }
 
   private loadFromStorage() {
@@ -302,7 +280,6 @@ export class CentralizedPricingService {
 
   // Synchronize with database if connected
   private async syncFromDatabase(): Promise<void> {
-    if (!this.isDbHealthy()) return;
     try {
       if ((prisma as any).pricingConfiguration?.findUnique) {
         const dbConfig = await (prisma as any).pricingConfiguration.findUnique({
@@ -311,7 +288,6 @@ export class CentralizedPricingService {
         });
 
         if (dbConfig) {
-          this.markDbOnline();
           this.activeConfig = {
             id: dbConfig.id,
             enabled: Boolean(dbConfig.enabled),
@@ -352,7 +328,6 @@ export class CentralizedPricingService {
         }
       }
     } catch (e: any) {
-      this.markDbOffline(e);
       // Fallback to memory/file storage gracefully if DB is offline
     }
   }
@@ -409,53 +384,49 @@ export class CentralizedPricingService {
     this.persistToStorage();
 
     // Persist to DB if available
-    if (this.isDbHealthy()) {
-      try {
-        if ((prisma as any).pricingConfiguration?.upsert) {
-          await (prisma as any).pricingConfiguration.upsert({
-            where: { id: "global_pricing_config" },
-            create: {
-              id: "global_pricing_config",
-              enabled: this.activeConfig.enabled,
-              calculationType: this.activeConfig.calculationType,
-              fixedAmount: this.activeConfig.fixedAmount,
-              percentageRate: this.activeConfig.percentageRate,
-              applyTo: this.activeConfig.applyTo,
-              feeApplication: this.activeConfig.feeApplication,
-              gstEnabled: this.activeConfig.gstEnabled,
-              gstPercentage: this.activeConfig.gstPercentage,
-              taxMethod: this.activeConfig.taxMethod,
-              displayTaxSeparately: this.activeConfig.displayTaxSeparately,
-              eventFeeCalculationType: this.activeConfig.eventFeeCalculationType || null,
-              eventFixedAmount: this.activeConfig.eventFixedAmount || null,
-              eventPercentageRate: this.activeConfig.eventPercentageRate || null,
-              version: this.activeConfig.version,
-              updatedBy: actorEmail
-            },
-            update: {
-              enabled: this.activeConfig.enabled,
-              calculationType: this.activeConfig.calculationType,
-              fixedAmount: this.activeConfig.fixedAmount,
-              percentageRate: this.activeConfig.percentageRate,
-              applyTo: this.activeConfig.applyTo,
-              feeApplication: this.activeConfig.feeApplication,
-              gstEnabled: this.activeConfig.gstEnabled,
-              gstPercentage: this.activeConfig.gstPercentage,
-              taxMethod: this.activeConfig.taxMethod,
-              displayTaxSeparately: this.activeConfig.displayTaxSeparately,
-              eventFeeCalculationType: this.activeConfig.eventFeeCalculationType || null,
-              eventFixedAmount: this.activeConfig.eventFixedAmount || null,
-              eventPercentageRate: this.activeConfig.eventPercentageRate || null,
-              version: this.activeConfig.version,
-              updatedBy: actorEmail
-            }
-          });
-          this.markDbOnline();
-        }
-      } catch (dbErr: any) {
-        this.markDbOffline(dbErr);
-        logger.warn(`Database pricingConfiguration save fallback: ${dbErr.message}`);
+    try {
+      if ((prisma as any).pricingConfiguration?.upsert) {
+        await (prisma as any).pricingConfiguration.upsert({
+          where: { id: "global_pricing_config" },
+          create: {
+            id: "global_pricing_config",
+            enabled: this.activeConfig.enabled,
+            calculationType: this.activeConfig.calculationType,
+            fixedAmount: this.activeConfig.fixedAmount,
+            percentageRate: this.activeConfig.percentageRate,
+            applyTo: this.activeConfig.applyTo,
+            feeApplication: this.activeConfig.feeApplication,
+            gstEnabled: this.activeConfig.gstEnabled,
+            gstPercentage: this.activeConfig.gstPercentage,
+            taxMethod: this.activeConfig.taxMethod,
+            displayTaxSeparately: this.activeConfig.displayTaxSeparately,
+            eventFeeCalculationType: this.activeConfig.eventFeeCalculationType || null,
+            eventFixedAmount: this.activeConfig.eventFixedAmount || null,
+            eventPercentageRate: this.activeConfig.eventPercentageRate || null,
+            version: this.activeConfig.version,
+            updatedBy: actorEmail
+          },
+          update: {
+            enabled: this.activeConfig.enabled,
+            calculationType: this.activeConfig.calculationType,
+            fixedAmount: this.activeConfig.fixedAmount,
+            percentageRate: this.activeConfig.percentageRate,
+            applyTo: this.activeConfig.applyTo,
+            feeApplication: this.activeConfig.feeApplication,
+            gstEnabled: this.activeConfig.gstEnabled,
+            gstPercentage: this.activeConfig.gstPercentage,
+            taxMethod: this.activeConfig.taxMethod,
+            displayTaxSeparately: this.activeConfig.displayTaxSeparately,
+            eventFeeCalculationType: this.activeConfig.eventFeeCalculationType || null,
+            eventFixedAmount: this.activeConfig.eventFixedAmount || null,
+            eventPercentageRate: this.activeConfig.eventPercentageRate || null,
+            version: this.activeConfig.version,
+            updatedBy: actorEmail
+          }
+        });
       }
+    } catch (dbErr: any) {
+      logger.warn(`Database pricingConfiguration save fallback: ${dbErr.message}`);
     }
 
     // Audit Log
@@ -873,94 +844,55 @@ export class CentralizedPricingService {
     breakdown: PricingCalculationResult,
     eventRegistrationId?: string
   ): Promise<any> {
-    const snapshotRecord = {
-      bookingId,
-      eventRegistrationId: eventRegistrationId || null,
-      baseTicketAmount: breakdown.baseTicketAmount,
-      ticketSubtotal: breakdown.ticketSubtotal,
-      ticketCount: breakdown.ticketCount,
-      convenienceFee: breakdown.totalConvenienceFee,
-      totalConvenienceFee: breakdown.totalConvenienceFee,
-      baseConvenienceFee: breakdown.baseConvenienceFee,
-      gstAmount: breakdown.convenienceFeeGstTotal,
-      convenienceFeeGstTotal: breakdown.convenienceFeeGstTotal,
-      gstPercentage: breakdown.gstRate,
-      discountAmount: breakdown.discountAmount,
-      otherCharges: breakdown.otherCharges,
-      finalPayableAmount: breakdown.finalPayableAmount,
-      totalAmount: breakdown.finalPayableAmount,
-      pricingVersion: breakdown.pricingVersion,
-      configSnapshot: this.activeConfig as any,
-      breakdownLines: breakdown.feeLines as any,
-      createdAt: new Date().toISOString()
-    };
-
-    // Keep immutable snapshot in memory cache
-    CentralizedPricingService.memorySnapshots.set(bookingId, snapshotRecord);
-
-    if (this.isDbHealthy()) {
-      try {
-        if ((prisma as any).bookingPricingSnapshot?.upsert) {
-          const res = await (prisma as any).bookingPricingSnapshot.upsert({
-            where: { bookingId },
-            create: {
-              bookingId,
-              eventRegistrationId: eventRegistrationId || null,
-              baseTicketAmount: breakdown.baseTicketAmount,
-              ticketCount: breakdown.ticketCount,
-              convenienceFee: breakdown.totalConvenienceFee,
-              gstAmount: breakdown.convenienceFeeGstTotal,
-              gstPercentage: breakdown.gstRate,
-              discountAmount: breakdown.discountAmount,
-              otherCharges: breakdown.otherCharges,
-              finalPayableAmount: breakdown.finalPayableAmount,
-              pricingVersion: breakdown.pricingVersion,
-              configSnapshot: this.activeConfig as any,
-              breakdownLines: breakdown.feeLines as any
-            },
-            update: {
-              finalPayableAmount: breakdown.finalPayableAmount,
-              breakdownLines: breakdown.feeLines as any
-            }
-          });
-          this.markDbOnline();
-          return res;
-        }
-      } catch (e: any) {
-        this.markDbOffline(e);
-        logger.warn(`Database bookingPricingSnapshot save fallback: ${e.message}`);
+    try {
+      if ((prisma as any).bookingPricingSnapshot?.upsert) {
+        return await (prisma as any).bookingPricingSnapshot.upsert({
+          where: { bookingId },
+          create: {
+            bookingId,
+            eventRegistrationId: eventRegistrationId || null,
+            baseTicketAmount: breakdown.baseTicketAmount,
+            ticketCount: breakdown.ticketCount,
+            convenienceFee: breakdown.totalConvenienceFee,
+            gstAmount: breakdown.convenienceFeeGstTotal,
+            gstPercentage: breakdown.gstRate,
+            discountAmount: breakdown.discountAmount,
+            otherCharges: breakdown.otherCharges,
+            finalPayableAmount: breakdown.finalPayableAmount,
+            pricingVersion: breakdown.pricingVersion,
+            configSnapshot: this.activeConfig as any,
+            breakdownLines: breakdown.feeLines as any
+          },
+          update: {
+            finalPayableAmount: breakdown.finalPayableAmount,
+            breakdownLines: breakdown.feeLines as any
+          }
+        });
       }
+    } catch (e: any) {
+      logger.warn(`Failed saving BookingPricingSnapshot to DB: ${e.message}`);
     }
-
-    return snapshotRecord;
+    return breakdown.feeSnapshot;
   }
 
   public async getBookingSnapshot(bookingId: string): Promise<any | null> {
-    if (this.isDbHealthy()) {
-      try {
-        if ((prisma as any).bookingPricingSnapshot?.findUnique) {
-          const snap = await (prisma as any).bookingPricingSnapshot.findUnique({
-            where: { bookingId }
-          });
-          if (snap) {
-            this.markDbOnline();
-            return snap;
-          }
-        }
-
-        // Check booking.feeSnapshot
-        const b = await prisma.booking.findUnique({
-          where: { id: bookingId }
+    try {
+      if ((prisma as any).bookingPricingSnapshot?.findUnique) {
+        const snap = await (prisma as any).bookingPricingSnapshot.findUnique({
+          where: { bookingId }
         });
-        if (b && (b as any).feeSnapshot) {
-          this.markDbOnline();
-          return (b as any).feeSnapshot;
-        }
-      } catch (e: any) {
-        this.markDbOffline(e);
+        if (snap) return snap;
       }
-    }
-    return CentralizedPricingService.memorySnapshots.get(bookingId) || null;
+
+      // Check booking.feeSnapshot
+      const b = await prisma.booking.findUnique({
+        where: { id: bookingId }
+      });
+      if (b && (b as any).feeSnapshot) {
+        return (b as any).feeSnapshot;
+      }
+    } catch (e) {}
+    return null;
   }
 
   // ==========================================
@@ -989,45 +921,34 @@ export class CentralizedPricingService {
     this.auditLogs.unshift(logItem);
     if (this.auditLogs.length > 200) this.auditLogs.pop();
 
-    if (this.isDbHealthy()) {
-      try {
-        if ((prisma as any).pricingAuditLog?.create) {
-          await (prisma as any).pricingAuditLog.create({
-            data: {
-              action: entry.action,
-              actorEmail: entry.actorEmail,
-              previousConfig: entry.previousConfig as any,
-              updatedConfig: entry.updatedConfig as any,
-              reason: entry.reason
-            }
-          });
-          this.markDbOnline();
-        }
-      } catch (e: any) {
-        this.markDbOffline(e);
+    try {
+      if ((prisma as any).pricingAuditLog?.create) {
+        await (prisma as any).pricingAuditLog.create({
+          data: {
+            action: entry.action,
+            actorEmail: entry.actorEmail,
+            previousConfig: entry.previousConfig as any,
+            updatedConfig: entry.updatedConfig as any,
+            reason: entry.reason
+          }
+        });
       }
-    }
+    } catch (e) {}
   }
 
   public async getAuditLogs(): Promise<any[]> {
-    if (this.isDbHealthy()) {
-      try {
-        if ((prisma as any).pricingAuditLog?.findMany) {
-          const dbLogs = await (prisma as any).pricingAuditLog.findMany({
-            take: 100,
-            orderBy: { createdAt: "desc" }
-          });
-          if (dbLogs && dbLogs.length > 0) {
-            this.markDbOnline();
-            return dbLogs;
-          }
-        }
-      } catch (e: any) {
-        this.markDbOffline(e);
+    try {
+      if ((prisma as any).pricingAuditLog?.findMany) {
+        const dbLogs = await (prisma as any).pricingAuditLog.findMany({
+          take: 100,
+          orderBy: { createdAt: "desc" }
+        });
+        if (dbLogs && dbLogs.length > 0) return dbLogs;
       }
-    }
+    } catch (e) {}
     return this.auditLogs;
   }
 }
 
 export const centralizedPricingService = new CentralizedPricingService();
+
