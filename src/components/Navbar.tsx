@@ -157,7 +157,9 @@ export default function Navbar({
               size="md" 
               onClick={() => {
                 if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "")) {
-                  handleScroll("home");
+                  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
                 } else {
                   window.location.href = "/";
                 }
@@ -195,7 +197,13 @@ export default function Navbar({
           <button
             type="button"
             onClick={() => {
-              window.location.href = "/#home";
+              if (window.location.pathname === "/" || window.location.pathname === "") {
+                window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              } else {
+                window.location.href = "/";
+              }
             }}
             className="px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5 whitespace-nowrap"
           >

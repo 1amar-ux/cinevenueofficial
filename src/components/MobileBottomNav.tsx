@@ -27,6 +27,17 @@ export default function MobileBottomNav() {
           <Link
             key={path}
             to={path}
+            onClick={() => {
+              if (path === "/" && (location.pathname === "/" || location.pathname === "")) {
+                window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              } else if (path === "/movies" && location.pathname === "/booking") {
+                window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              }
+            }}
             className={`mobile-bottom-nav__item${isActive ? " is-active" : ""}`}
             aria-current={isActive ? "page" : undefined}
           >

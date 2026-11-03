@@ -61,6 +61,35 @@ export default function Home({
   const navigate = useNavigate();
   const [activeDivision, setActiveDivision] = useState<DivisionType>("none");
 
+  // Ensure Home page always opens and stays at the top after refresh / load
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      // Ensure that after initial layout, images, and fonts load, it remains at the top
+      const t1 = setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 60);
+
+      const t2 = setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 250);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, []);
+
+
+
   // Film Studio Sub-Website states
   const [filmStudioTab, setFilmStudioTab] = useState<'marketplace' | 'films' | 'casting' | 'investors' | 'portfolio' | 'contact'>('marketplace');
   const [auditionModalOpen, setAuditionModalOpen] = useState(false);
