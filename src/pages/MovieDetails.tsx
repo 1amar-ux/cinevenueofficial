@@ -241,7 +241,7 @@ export default function MovieDetails() {
       ...prev,
       movie: movie,
     }));
-    navigate("/theatres");
+    navigate(`/booking?movie=${encodeURIComponent(movie.title)}`);
   };
 
   const handleShare = () => {

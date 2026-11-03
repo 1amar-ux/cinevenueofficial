@@ -738,10 +738,28 @@ export default function App() {
         setSelectedCityState(cityParam);
         localStorage.setItem("cine_selected_city", cityParam);
       }
+      const movieParam = params.get("movie") || params.get("book") || params.get("bookMovie") || params.get("movieTitle") || params.get("title");
+      if (movieParam) {
+        const found = movies.find(m =>
+          (m.title && m.title.toLowerCase() === movieParam.toLowerCase()) ||
+          (m.id && m.id.toLowerCase() === movieParam.toLowerCase()) ||
+          (m.slug && m.slug.toLowerCase() === movieParam.toLowerCase())
+        );
+        setBookingMovieTitle(found ? found.title : movieParam);
+        const timeParam = params.get("time") || params.get("timeSlot");
+        if (timeParam) setBookingTimeSlot(timeParam);
+      }
     }
   }, [location.search]);
   const [locationOpen, setLocationOpen] = useState(false);
   const [bookingMovieTitle, setBookingMovieTitle] = useState("");
+  useEffect(() => {
+    if (location.pathname !== "/booking") {
+      setBookingMovieTitle("");
+    }
+  }, [location.pathname]);
+
+
   const [bookingTimeSlot, setBookingTimeSlot] = useState("7:30 PM");
   const [rentalOpen, setRentalOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -2105,6 +2123,8 @@ export default function App() {
         } 
       />
       <Route path="/movies" element={<Navigate to="/booking" replace />} />
+      <Route path="/theatres" element={<Navigate to={`/booking${location.search}`} replace />} />
+      <Route path="/theatre-selection" element={<Navigate to={`/booking${location.search}`} replace />} />
       <Route 
         path="/services" 
         element={
@@ -2412,7 +2432,22 @@ export default function App() {
               <Suspense fallback={null}>
                 <BookingModal
                   isOpen={bookingMovieTitle !== ""}
-                  onClose={() => setBookingMovieTitle("")}
+                  onClose={() => {
+                    setBookingMovieTitle("");
+                    if (typeof window !== "undefined") {
+                      const url = new URL(window.location.href);
+                      if (url.searchParams.has("movie") || url.searchParams.has("book") || url.searchParams.has("bookMovie") || url.searchParams.has("movieTitle") || url.searchParams.has("title")) {
+                        url.searchParams.delete("movie");
+                        url.searchParams.delete("book");
+                        url.searchParams.delete("bookMovie");
+                        url.searchParams.delete("movieTitle");
+                        url.searchParams.delete("title");
+                        url.searchParams.delete("time");
+                        url.searchParams.delete("timeSlot");
+                        window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+                      }
+                    }
+                  }}
                   movieTitle={bookingMovieTitle}
                   selectedCity={selectedCity}
                   userEmail={userEmail}
