@@ -290,6 +290,16 @@ svg {
     padding-bottom: calc(76px + max(env(safe-area-inset-bottom, 0px), 8px));
   }
 
+  /* Hide mobile bottom navigation bar when booking modal is open so it doesn't overlap checkout buttons */
+  body.modal-open-hide-bottom-nav .mobile-bottom-nav,
+  body:has(#booking-modal-overlay) .mobile-bottom-nav {
+    display: none !important;
+  }
+  body.modal-open-hide-bottom-nav,
+  body:has(#booking-modal-overlay) {
+    padding-bottom: 0 !important;
+  }
+
   .mobile-bottom-nav {
     position: fixed;
     left: 0;

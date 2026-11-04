@@ -101,10 +101,26 @@ export default function BookingModal({
         if (seatScrollRef.current) {
           seatScrollRef.current.scrollLeft = 0;
         }
+        const overlay = document.getElementById("booking-modal-overlay");
+        if (overlay) {
+          overlay.scrollTop = 0;
+        }
       }, 50);
       return () => clearTimeout(timer);
     }
   }, [bookingStep]);
+
+  // Manage body class to hide mobile bottom nav while modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open-hide-bottom-nav");
+    } else {
+      document.body.classList.remove("modal-open-hide-bottom-nav");
+    }
+    return () => {
+      document.body.classList.remove("modal-open-hide-bottom-nav");
+    };
+  }, [isOpen]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
 
@@ -621,8 +637,9 @@ export default function BookingModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start justify-center p-2 sm:p-4 md:p-6 overflow-y-auto animate-fade-in text-left select-none"
+      className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-start justify-center p-1.5 sm:p-4 md:p-6 overflow-y-auto animate-fade-in text-left"
       id="booking-modal-overlay"
+      style={{ WebkitOverflowScrolling: "touch" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           if (bookingStep === "confirmed") {
@@ -638,7 +655,7 @@ export default function BookingModal({
           bookingStep === "confirmed" || bookingStep === "confirm_booking"
             ? "bg-[#F4F6FA] text-gray-900 border border-gray-200 max-w-md w-full shadow-2xl"
             : "bg-[#0D0D10] text-white border border-white/10 max-w-5xl w-full"
-        } rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden text-left my-auto backdrop-blur-lg relative transition-all duration-300`}
+        } rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden text-left my-0 sm:my-auto backdrop-blur-lg relative transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
         id="booking-modal-content"
       >
@@ -1084,7 +1101,7 @@ export default function BookingModal({
         {/* STEP 2: VIP SEAT SELECTION & CHECKOUT SCREEN                              */}
         {/* ========================================================================= */}
         {bookingStep === "seat_selection" && (
-          <div className="p-4 sm:p-6 md:p-8 space-y-6">
+          <div className="p-3 sm:p-6 md:p-8 space-y-5 sm:space-y-6 pb-24 sm:pb-8">
             
             {/* Top Navigation Bar back to Theatres */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -1140,7 +1157,7 @@ export default function BookingModal({
               {/* Seat Matrix (Expanded 140 Seats Multiplex Layout) */}
               <div 
                 ref={seatScrollRef}
-                className="w-full overflow-x-auto overflow-y-hidden py-3 px-2 sm:px-4 touch-pan-x overscroll-x-contain seat-matrix-scroll"
+                className="w-full overflow-x-auto py-3 px-2 sm:px-4 overscroll-contain seat-matrix-scroll"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 <div className="w-max min-w-full flex flex-col items-center gap-2">
@@ -1225,11 +1242,11 @@ export default function BookingModal({
               </div>
             </div>
 
-            {/* Price Breakdown & Checkout Action */}
-            <div className="bg-[#141418] border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Sticky Price Breakdown & Checkout Action */}
+            <div className="sticky bottom-2 z-30 bg-[#141418]/95 sm:bg-[#141418] border border-white/20 sm:border-white/10 rounded-2xl p-3 sm:p-5 flex items-center justify-between gap-3 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] backdrop-blur-md mt-6">
               <div>
-                <span className="text-xs text-white/50 block">Total Payable ({selectedSeats.length} seats)</span>
-                <span className="text-2xl font-extrabold text-gold font-mono">
+                <span className="text-[10px] sm:text-xs text-white/60 block">Total Payable ({selectedSeats.length} seats)</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-gold font-mono">
                   ₹{finalPayableAmount.toFixed(2)}
                 </span>
               </div>
@@ -1237,14 +1254,14 @@ export default function BookingModal({
               <button
                 disabled={selectedSeats.length === 0 || isProcessingPayment}
                 onClick={() => setBookingStep("confirm_booking")}
-                className={`w-full sm:w-auto px-8 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
+                className={`px-5 sm:px-8 py-3 sm:py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 ${
                   selectedSeats.length > 0 && !isProcessingPayment
                     ? "bg-gold hover:bg-gold-light text-black shadow-gold/20"
                     : "bg-white/10 text-white/40 cursor-not-allowed border border-white/5"
                 }`}
               >
-                <CreditCard className="w-4 h-4" />
-                <span>Review & Confirm ({selectedSeats.length} Tickets)</span>
+                <CreditCard className="w-4 h-4 shrink-0" />
+                <span>Review & Confirm ({selectedSeats.length})</span>
               </button>
             </div>
 
