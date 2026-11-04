@@ -1016,5 +1016,39 @@ svg:not([aria-hidden="true"]) {
   }
 }
 
+/* =========================================================
+   14. SEAT MATRIX HORIZONTAL SCROLLBAR FOR MOBILE
+   ========================================================= */
+.seat-matrix-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.4) rgba(255, 255, 255, 0.05);
+}
+.seat-matrix-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.seat-matrix-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+.seat-matrix-scroll::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.4);
+  border-radius: 4px;
+}
+.seat-matrix-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.7);
+}
+html[data-theme="light"] .seat-matrix-scroll,
+.light .seat-matrix-scroll {
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+html[data-theme="light"] .seat-matrix-scroll::-webkit-scrollbar-track,
+.light .seat-matrix-scroll::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+html[data-theme="light"] .seat-matrix-scroll::-webkit-scrollbar-thumb,
+.light .seat-matrix-scroll::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+
 
 

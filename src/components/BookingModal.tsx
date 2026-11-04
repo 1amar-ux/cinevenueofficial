@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   X, Calendar, MapPin, Armchair, CheckCircle, ShieldCheck, CreditCard, 
   AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info,
@@ -92,6 +92,19 @@ export default function BookingModal({
   const [showTrailerVideo, setShowTrailerVideo] = useState(false);
   
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const seatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Automatically scroll seat matrix to start (Seat 1) on mobile when entering seat selection
+  useEffect(() => {
+    if (bookingStep === "seat_selection") {
+      const timer = setTimeout(() => {
+        if (seatScrollRef.current) {
+          seatScrollRef.current.scrollLeft = 0;
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [bookingStep]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
 
@@ -1117,60 +1130,74 @@ export default function BookingModal({
                 </span>
               </div>
 
+              {/* Mobile Horizontal Scroll Indicator & Hint */}
+              <div className="sm:hidden flex items-center justify-between text-[11px] text-gold font-mono px-3 py-1.5 bg-gold/10 border border-gold/20 rounded-lg mx-auto max-w-sm">
+                <span>← Seats 1 - 7</span>
+                <span className="text-[10px] text-white/60 font-sans tracking-wide">Swipe to see all seats</span>
+                <span>Seats 8 - {seatsPerRow} →</span>
+              </div>
+
               {/* Seat Matrix (Expanded 140 Seats Multiplex Layout) */}
-              <div className="flex flex-col items-center gap-2 py-4 overflow-x-auto w-full">
-                {rows.map((row, rIdx) => {
-                  const isReclinerRow = row === "J" || row === "K" || (reclinerSeats && reclinerSeats.some((s: string) => s.startsWith(row)));
-                  const isPrimeRow = premiumRows.includes(row) || rowCategories[row] === "Prime";
-                  const sectionHeader = 
-                    row === "A" ? "CLASSIC SECTION · ₹150.00" :
-                    row === "E" ? "PRIME / ELITE SECTION · ₹220.00" :
-                    row === "J" ? "LUXURY RECLINERS · ₹350.00" : null;
+              <div 
+                ref={seatScrollRef}
+                className="w-full overflow-x-auto overflow-y-hidden py-3 px-2 sm:px-4 touch-pan-x overscroll-x-contain seat-matrix-scroll"
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
+                <div className="w-max min-w-full flex flex-col items-center gap-2">
+                  {rows.map((row, rIdx) => {
+                    const isReclinerRow = row === "J" || row === "K" || (reclinerSeats && reclinerSeats.some((s: string) => s.startsWith(row)));
+                    const isPrimeRow = premiumRows.includes(row) || rowCategories[row] === "Prime";
+                    const sectionHeader = 
+                      row === "A" ? "CLASSIC SECTION · ₹150.00" :
+                      row === "E" ? "PRIME / ELITE SECTION · ₹220.00" :
+                      row === "J" ? "LUXURY RECLINERS · ₹350.00" : null;
 
-                  return (
-                    <React.Fragment key={row}>
-                      {sectionHeader && (
-                        <div className={`w-full max-w-lg flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/50 pt-3 pb-1 border-b border-white/5 ${rIdx > 0 ? "mt-2" : ""}`}>
-                          <span className="text-gold font-mono">{sectionHeader}</span>
-                          <span className="text-white/40 text-[9px]">14 Seats / Row</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 text-center text-xs font-bold font-mono text-white/50">{row}</span>
-                        <div className="flex gap-1.5">
-                          {Array.from({ length: seatsPerRow }).map((_, colIdx) => {
-                            const seatId = `${row}${colIdx + 1}`;
-                            const isSelected = selectedSeats.includes(seatId);
-                            const blocked = isSeatBlocked(seatId);
-                            const isAisleGap = colIdx === 3 || colIdx === 9; // Aisle spaces after seat 4 and seat 10
+                    return (
+                      <React.Fragment key={row}>
+                        {sectionHeader && (
+                          <div className={`w-full max-w-[580px] flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/50 pt-3 pb-1 border-b border-white/5 ${rIdx > 0 ? "mt-2" : ""}`}>
+                            <span className="text-gold font-mono">{sectionHeader}</span>
+                            <span className="text-white/40 text-[9px]">{seatsPerRow} Seats / Row</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 text-center text-xs font-bold font-mono text-white/50 shrink-0">{row}</span>
+                          <div className="flex gap-1.5">
+                            {Array.from({ length: seatsPerRow }).map((_, colIdx) => {
+                              const seatId = `${row}${colIdx + 1}`;
+                              const isSelected = selectedSeats.includes(seatId);
+                              const blocked = isSeatBlocked(seatId);
+                              const isAisleGap = colIdx === 3 || colIdx === 9; // Aisle spaces after seat 4 and seat 10
 
-                            return (
-                              <button
-                                key={seatId}
-                                disabled={blocked}
-                                onClick={() => handleSeatClick(seatId)}
-                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono transition-all cursor-pointer ${isAisleGap ? "mr-2.5 sm:mr-3.5" : ""} ${
-                                  blocked
-                                    ? "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
-                                    : isSelected
-                                    ? "bg-gold text-black shadow-lg shadow-gold/30 font-extrabold scale-110 border-0"
-                                    : isReclinerRow
-                                    ? "bg-[#251F14] hover:bg-[#382C18] text-amber-200 border border-gold/40 hover:border-gold"
-                                    : isPrimeRow
-                                    ? "bg-[#181822] hover:bg-white/20 text-white/90 border border-indigo-400/20 hover:border-gold/40"
-                                    : "bg-[#18181C] hover:bg-white/20 text-white/80 border border-white/10 hover:border-gold/40"
-                                }`}
-                                title={`${seatId} (${isReclinerRow ? "Recliner" : isPrimeRow ? "Prime" : "Classic"}) - ₹${getSeatPrice(seatId)}`}
-                              >
-                                {colIdx + 1}
-                              </button>
-                            );
-                          })}
+                              return (
+                                <button
+                                  key={seatId}
+                                  disabled={blocked}
+                                  onClick={() => handleSeatClick(seatId)}
+                                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono transition-all cursor-pointer shrink-0 ${isAisleGap ? "mr-2.5 sm:mr-3.5" : ""} ${
+                                    blocked
+                                      ? "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
+                                      : isSelected
+                                      ? "bg-gold text-black shadow-lg shadow-gold/30 font-extrabold scale-110 border-0"
+                                      : isReclinerRow
+                                      ? "bg-[#251F14] hover:bg-[#382C18] text-amber-200 border border-gold/40 hover:border-gold"
+                                      : isPrimeRow
+                                      ? "bg-[#181822] hover:bg-white/20 text-white/90 border border-indigo-400/20 hover:border-gold/40"
+                                      : "bg-[#18181C] hover:bg-white/20 text-white/80 border border-white/10 hover:border-gold/40"
+                                  }`}
+                                  title={`${seatId} (${isReclinerRow ? "Recliner" : isPrimeRow ? "Prime" : "Classic"}) - ₹${getSeatPrice(seatId)}`}
+                                >
+                                  {colIdx + 1}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <span className="w-6 text-center text-xs font-bold font-mono text-white/50 shrink-0">{row}</span>
                         </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Seat Legend */}
