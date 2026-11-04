@@ -637,9 +637,8 @@ export default function BookingModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-start justify-center p-1.5 sm:p-4 md:p-6 overflow-y-auto animate-fade-in text-left"
+      className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-0 sm:p-4 md:p-6 overflow-hidden animate-fade-in text-left"
       id="booking-modal-overlay"
-      style={{ WebkitOverflowScrolling: "touch" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           if (bookingStep === "confirmed") {
@@ -653,26 +652,26 @@ export default function BookingModal({
       <div
         className={`${
           bookingStep === "confirmed" || bookingStep === "confirm_booking"
-            ? "bg-[#F4F6FA] text-gray-900 border border-gray-200 max-w-md w-full shadow-2xl"
-            : "bg-[#0D0D10] text-white border border-white/10 max-w-5xl w-full"
-        } rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden text-left my-0 sm:my-auto backdrop-blur-lg relative transition-all duration-300`}
+            ? "bg-[#F4F6FA] text-gray-900 border border-gray-200 max-w-md w-full shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[92vh]"
+            : "bg-[#0D0D10] text-white border border-white/10 max-w-5xl w-full h-[100dvh] sm:h-auto sm:max-h-[92vh]"
+        } rounded-none sm:rounded-3xl shadow-2xl overflow-hidden text-left flex flex-col backdrop-blur-lg relative transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
         id="booking-modal-content"
       >
         {/* Top Floating Close Button */}
         <button
           onClick={bookingStep === "confirmed" ? handleExitBookingConfirmed : onClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors z-30"
+          className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors z-30"
           aria-label="Close"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* ========================================================================= */}
         {/* STEP 1: MOVIE THEATRES & SHOWTIMES SCREEN (Dark Luxury Wide UI)          */}
         {/* ========================================================================= */}
         {bookingStep === "theatres_showtimes" && (
-          <div className="p-4 sm:p-6 md:p-8 space-y-6 text-white min-h-full">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 text-white" style={{ WebkitOverflowScrolling: "touch" }}>
             {/* Top Movie Header Card */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 pr-12">
               {/* Poster Thumbnail with Play Trailer Trigger */}
@@ -1101,66 +1100,71 @@ export default function BookingModal({
         {/* STEP 2: VIP SEAT SELECTION & CHECKOUT SCREEN                              */}
         {/* ========================================================================= */}
         {bookingStep === "seat_selection" && (
-          <div className="p-3 sm:p-6 md:p-8 space-y-5 sm:space-y-6 pb-24 sm:pb-8">
+          <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden text-left">
             
-            {/* Top Navigation Bar back to Theatres */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <button
-                onClick={() => setBookingStep("theatres_showtimes")}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white hover:text-gold transition-all cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4 text-gold" />
-                <span>Change Theatre / Time</span>
-              </button>
+            {/* Pinned Top Navigation Bar & Movie Details */}
+            <div className="shrink-0 p-3 sm:p-6 pb-2.5 space-y-3 border-b border-white/10 bg-[#0D0D10]/95 backdrop-blur-md">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setBookingStep("theatres_showtimes")}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white hover:text-gold transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4 text-gold" />
+                  <span>Change Theatre / Time</span>
+                </button>
 
-              <div className="text-right">
-                <span className="text-xs font-bold text-white block">{displayTheatre}</span>
-                <span className="text-[11px] text-gold font-mono">{activeDate.fullDayName} · {displayTimeSlot}</span>
-              </div>
-            </div>
-
-            {/* Movie Title Banner */}
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold text-gold uppercase tracking-widest block">
-                  Select Seats for
-                </span>
-                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  {movieTitle}
-                </h2>
-              </div>
-
-              {selectedSeats.length > 0 && (
-                <div className="bg-gold/15 border border-gold/30 px-3 py-1.5 rounded-xl text-right">
-                  <span className="text-[10px] text-text-secondary uppercase tracking-wider block">Seats Selected</span>
-                  <span className="text-xs font-extrabold text-gold font-mono">{selectedSeats.join(", ")}</span>
+                <div className="text-right pr-9 sm:pr-0">
+                  <span className="text-xs font-bold text-white block truncate max-w-[150px] sm:max-w-none">{displayTheatre}</span>
+                  <span className="text-[11px] text-gold font-mono">{activeDate.fullDayName} · {displayTimeSlot}</span>
                 </div>
-              )}
+              </div>
+
+              {/* Movie Title Banner */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-gold uppercase tracking-widest block">
+                    Select Seats for
+                  </span>
+                  <h2 className="text-lg sm:text-2xl font-bold text-white tracking-tight">
+                    {movieTitle}
+                  </h2>
+                </div>
+
+                {selectedSeats.length > 0 && (
+                  <div className="bg-gold/15 border border-gold/30 px-3 py-1.5 rounded-xl text-right">
+                    <span className="text-[10px] text-text-secondary uppercase tracking-wider block">Seats Selected</span>
+                    <span className="text-xs font-extrabold text-gold font-mono">{selectedSeats.join(", ")}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive Cinema Screen Arc */}
+              <div className="space-y-1.5 py-1">
+                <div className="w-full flex flex-col items-center">
+                  <div className="w-3/4 max-w-xs h-1.5 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full shadow-[0_0_15px_rgba(212,175,55,0.6)]" />
+                  <span className="text-[9px] uppercase font-mono tracking-[0.3em] text-white/40 mt-1">
+                    All Eyes this Way · 4K Laser Screen
+                  </span>
+                </div>
+
+                {/* Mobile Horizontal Scroll Indicator & Hint */}
+                <div className="sm:hidden flex items-center justify-between text-[10px] text-gold font-mono px-3 py-1 bg-gold/10 border border-gold/20 rounded-lg mx-auto max-w-sm">
+                  <span>← Seats 1 - 7</span>
+                  <span className="text-[9px] text-white/60 font-sans tracking-wide">Swipe horizontally for seats</span>
+                  <span>Seats 8 - {seatsPerRow} →</span>
+                </div>
+              </div>
             </div>
 
-            {/* Interactive Cinema Screen Arc */}
-            <div className="space-y-4 py-2">
-              <div className="w-full flex flex-col items-center">
-                <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-gold to-transparent rounded-full shadow-[0_0_15px_rgba(212,175,55,0.6)]" />
-                <span className="text-[10px] uppercase font-mono tracking-[0.3em] text-white/40 mt-1">
-                  All Eyes this Way · 4K Laser Screen
-                </span>
-              </div>
-
-              {/* Mobile Horizontal Scroll Indicator & Hint */}
-              <div className="sm:hidden flex items-center justify-between text-[11px] text-gold font-mono px-3 py-1.5 bg-gold/10 border border-gold/20 rounded-lg mx-auto max-w-sm">
-                <span>← Seats 1 - 7</span>
-                <span className="text-[10px] text-white/60 font-sans tracking-wide">Swipe to see all seats</span>
-                <span>Seats 8 - {seatsPerRow} →</span>
-              </div>
-
+            {/* Scrollable Center: Seats Matrix & Legend */}
+            <div className="flex-1 overflow-y-auto p-2 sm:p-6 space-y-4 text-left" style={{ WebkitOverflowScrolling: "touch" }}>
               {/* Seat Matrix (Expanded 140 Seats Multiplex Layout) */}
               <div 
                 ref={seatScrollRef}
-                className="w-full overflow-x-auto py-3 px-2 sm:px-4 overscroll-contain seat-matrix-scroll"
+                className="w-full overflow-x-auto py-2 seat-matrix-scroll"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
-                <div className="w-max min-w-full flex flex-col items-center gap-2">
+                <div className="w-max min-w-full flex flex-col items-start sm:items-center gap-2 px-3 sm:px-4">
                   {rows.map((row, rIdx) => {
                     const isReclinerRow = row === "J" || row === "K" || (reclinerSeats && reclinerSeats.some((s: string) => s.startsWith(row)));
                     const isPrimeRow = premiumRows.includes(row) || rowCategories[row] === "Prime";
@@ -1218,7 +1222,7 @@ export default function BookingModal({
               </div>
 
               {/* Seat Legend */}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/60 pt-2 border-t border-white/10">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-white/60 py-3 border-t border-white/10">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3.5 h-3.5 rounded bg-[#18181C] border border-white/10 inline-block" />
                   <span>Classic (₹150)</span>
@@ -1242,8 +1246,8 @@ export default function BookingModal({
               </div>
             </div>
 
-            {/* Sticky Price Breakdown & Checkout Action */}
-            <div className="sticky bottom-2 z-30 bg-[#141418]/95 sm:bg-[#141418] border border-white/20 sm:border-white/10 rounded-2xl p-3 sm:p-5 flex items-center justify-between gap-3 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] backdrop-blur-md mt-6">
+            {/* Pinned Bottom: Price Breakdown & Checkout Action */}
+            <div className="shrink-0 bg-[#141418] border-t border-white/15 p-3.5 sm:p-5 flex items-center justify-between gap-3 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] z-20">
               <div>
                 <span className="text-[10px] sm:text-xs text-white/60 block">Total Payable ({selectedSeats.length} seats)</span>
                 <span className="text-xl sm:text-2xl font-extrabold text-gold font-mono">
@@ -1254,7 +1258,7 @@ export default function BookingModal({
               <button
                 disabled={selectedSeats.length === 0 || isProcessingPayment}
                 onClick={() => setBookingStep("confirm_booking")}
-                className={`px-5 sm:px-8 py-3 sm:py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 ${
+                className={`px-5 sm:px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 ${
                   selectedSeats.length > 0 && !isProcessingPayment
                     ? "bg-gold hover:bg-gold-light text-black shadow-gold/20"
                     : "bg-white/10 text-white/40 cursor-not-allowed border border-white/5"
@@ -1264,7 +1268,6 @@ export default function BookingModal({
                 <span>Review & Confirm ({selectedSeats.length})</span>
               </button>
             </div>
-
           </div>
         )}
 
@@ -1272,7 +1275,7 @@ export default function BookingModal({
         {/* STEP 2.5: CONFIRM BOOKING SCREEN (Matching Uploaded Screenshot)           */}
         {/* ========================================================================= */}
         {bookingStep === "confirm_booking" && (
-          <div className="bg-[#F4F6FA] text-gray-900 min-h-full">
+          <div className="bg-[#F4F6FA] text-gray-900 min-h-full flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
             {/* Top Navigation Bar with Back Arrow and Title */}
             <div className="flex items-center gap-3 px-4 py-3.5 bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
               <button
@@ -1506,7 +1509,7 @@ export default function BookingModal({
         {/* STEP 2.75: UPI / PAYMENT QR CODE CHECKOUT SCREEN                          */}
         {/* ========================================================================= */}
         {bookingStep === "payment_qr" && (
-          <div className="bg-[#F8FAFC] text-gray-900 rounded-3xl p-5 sm:p-7 max-w-lg mx-auto space-y-5 animate-fade-in text-left">
+          <div className="bg-[#F8FAFC] text-gray-900 rounded-3xl p-5 sm:p-7 max-w-lg mx-auto space-y-5 animate-fade-in text-left flex-1 overflow-y-auto w-full" style={{ WebkitOverflowScrolling: "touch" }}>
             {/* Top Navigation */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-200">
               <button
@@ -1681,7 +1684,7 @@ export default function BookingModal({
           } | ${displayTimeSlot}`;
 
           return (
-            <div className="p-5 sm:p-7 bg-white text-gray-900 rounded-3xl max-w-md mx-auto">
+            <div className="p-5 sm:p-7 bg-white text-gray-900 rounded-3xl max-w-md mx-auto flex-1 overflow-y-auto w-full" style={{ WebkitOverflowScrolling: "touch" }}>
               {/* Top Navigation Bar with Back Arrow and Close Button */}
               <div className="flex items-center justify-between pb-2">
                 <button
