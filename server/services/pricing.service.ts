@@ -10,6 +10,7 @@ import path from "path";
 import { prisma } from "../config/database";
 import { logger } from "../shared/logger";
 import { ValidationError, NotFoundError } from "../shared/errors";
+import { globalSyncService } from "./globalSyncService";
 
 export interface ConvenienceFeeSlabItem {
   id: string;
@@ -758,15 +759,35 @@ export class CentralizedPricingService {
     gstTotal = Math.round(gstTotal * 100) / 100;
     const totalConvenienceFee = Math.round((baseChargeTotal + gstTotal) * 100) / 100;
 
-    // 5. Discounts (Coupons & CineCoins)
+    // 5. Discounts (Database Coupons & CineCoins)
     let couponDiscount = 0;
     if (params.couponCode) {
       const code = params.couponCode.trim().toUpperCase();
-      if (code === "WELCOME50" || code === "FLAT50") couponDiscount = Math.min(ticketSubtotal, 50);
-      else if (code === "CINE20" || code === "CINEEVENT20") couponDiscount = Math.round(ticketSubtotal * 0.20 * 100) / 100;
-      else if (code === "STUDENT10") couponDiscount = Math.round(ticketSubtotal * 0.10 * 100) / 100;
-      else if (code === "FIRSTPASS100") couponDiscount = Math.min(ticketSubtotal, 100);
-      else if (code === "VIPGALA300") couponDiscount = Math.min(ticketSubtotal, 300);
+      try {
+        const syncState = globalSyncService.getAdminState();
+        const found = (syncState as any).coupons?.find((c: any) => c.code?.toUpperCase() === code && c.active);
+        if (found) {
+          const isNotExpired = !found.expires || new Date(found.expires) >= new Date();
+          const meetsMin = !found.minAmount || ticketSubtotal >= found.minAmount;
+          if (isNotExpired && meetsMin) {
+            const rawDisc = Number(found.discount) || 0;
+            if (rawDisc > 0 && rawDisc <= 100) {
+              couponDiscount = Math.round(ticketSubtotal * (rawDisc / 100) * 100) / 100;
+            } else {
+              couponDiscount = Math.min(ticketSubtotal, rawDisc);
+            }
+          }
+        }
+      } catch (err) {}
+
+      // Fallback for promotional codes
+      if (couponDiscount === 0) {
+        if (code === "WELCOME50" || code === "FLAT50") couponDiscount = Math.min(ticketSubtotal, 50);
+        else if (code === "CINE20" || code === "CINEEVENT20") couponDiscount = Math.round(ticketSubtotal * 0.20 * 100) / 100;
+        else if (code === "STUDENT10") couponDiscount = Math.round(ticketSubtotal * 0.10 * 100) / 100;
+        else if (code === "FIRSTPASS100") couponDiscount = Math.min(ticketSubtotal, 100);
+        else if (code === "VIPGALA300") couponDiscount = Math.min(ticketSubtotal, 300);
+      }
     }
 
     let cineCoinsDiscount = 0;

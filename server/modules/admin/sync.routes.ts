@@ -31,33 +31,41 @@ const verifyAdminAccess = (req: Request, res: Response, next: NextFunction) => {
 // ==========================================
 
 // Full state (Public view by default, Admin view if authenticated)
-syncPublicRouter.get("/state", (req: Request, res: Response) => {
-  const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  const isAdmin = isValidAdminPasscode(passcode) || (req as any).user?.role === "SUPER_ADMIN" || (req as any).user?.role === "ADMIN";
+syncPublicRouter.get("/state", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const passcode = req.headers["x-admin-passcode"] as string | undefined;
+    const isAdmin = isValidAdminPasscode(passcode) || (req as any).user?.role === "SUPER_ADMIN" || (req as any).user?.role === "ADMIN";
 
-  const state = isAdmin ? globalSyncService.getAdminState() : globalSyncService.getPublicState();
-  return res.json({
-    success: true,
-    data: state
-  });
+    const state = isAdmin ? await globalSyncService.getAdminState() : await globalSyncService.getPublicState();
+    return res.json({
+      success: true,
+      data: state
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Incremental Delta Sync (poll fallback)
-syncPublicRouter.get("/delta", (req: Request, res: Response) => {
-  const { since, version } = req.query;
-  const passcode = req.headers["x-admin-passcode"] as string | undefined;
-  const isAdmin = isValidAdminPasscode(passcode) || (req as any).user?.role === "SUPER_ADMIN" || (req as any).user?.role === "ADMIN";
+syncPublicRouter.get("/delta", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { since, version } = req.query;
+    const passcode = req.headers["x-admin-passcode"] as string | undefined;
+    const isAdmin = isValidAdminPasscode(passcode) || (req as any).user?.role === "SUPER_ADMIN" || (req as any).user?.role === "ADMIN";
 
-  const delta = globalSyncService.getDelta(
-    since ? String(since) : undefined,
-    version ? Number(version) : undefined,
-    isAdmin
-  );
+    const delta = await globalSyncService.getDelta(
+      since ? String(since) : undefined,
+      version ? Number(version) : undefined,
+      isAdmin
+    );
 
-  return res.json({
-    success: true,
-    data: delta
-  });
+    return res.json({
+      success: true,
+      data: delta
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Server-Sent Events (SSE) Stream

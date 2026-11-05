@@ -1,9 +1,57 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
 import { NotFoundError, ForbiddenError, ValidationError } from "../../shared/errors";
-import { isDatabaseConnected } from "../../config/database";
+import { isDatabaseConnected, prisma } from "../../config/database";
 
 const router = Router();
+
+// DB persistence helpers for professional profiles
+let dbHydrated = false;
+async function hydrateProfessionalsFromDb() {
+  if (dbHydrated) return;
+  try {
+    const record = await (prisma as any).platformSetting.findFirst({
+      where: { key: "marketplace_professionals_store" }
+    });
+    if (record?.value) {
+      const parsed = typeof record.value === "string" ? JSON.parse(record.value) : record.value;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryProfessionals = parsed;
+        dbHydrated = true;
+        return;
+      }
+    }
+  } catch (err) {
+    // Graceful fallback to initial seed
+  }
+  dbHydrated = true;
+}
+
+async function persistProfessionalsToDb() {
+  try {
+    const serialized = JSON.stringify(inMemoryProfessionals);
+    const existing = await (prisma as any).platformSetting.findFirst({
+      where: { key: "marketplace_professionals_store" }
+    });
+    if (existing) {
+      await (prisma as any).platformSetting.update({
+        where: { id: existing.id },
+        data: { value: serialized, updatedAt: new Date() }
+      });
+    } else {
+      await (prisma as any).platformSetting.create({
+        data: {
+          key: "marketplace_professionals_store",
+          value: serialized,
+          description: "Persistent store for film production professional profiles",
+          isPublic: true
+        }
+      });
+    }
+  } catch (err) {
+    // Non-blocking fallback
+  }
+}
 
 // In-Memory Seed Profiles with real handles, multi-roles, and verified credentials
 let inMemoryProfessionals: any[] = [
@@ -438,8 +486,9 @@ router.get("/filters", (req: Request, res: Response) => {
 // ----------------------------------------------------
 // 2. GET /professionals & /professionals/search: Directory Query
 // ----------------------------------------------------
-const handleListProfessionals = (req: Request, res: Response, next: NextFunction) => {
+const handleListProfessionals = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await hydrateProfessionalsFromDb();
     const {
       search,
       q,
@@ -598,10 +647,134 @@ router.get("/professionals", optionalAuthenticate, handleListProfessionals);
 router.get("/professionals/search", optionalAuthenticate, handleListProfessionals);
 
 // ----------------------------------------------------
+// 2b. GET /professionals/me & POST /professionals: Profile Management
+// ----------------------------------------------------
+router.get("/professionals/me", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await hydrateProfessionalsFromDb();
+    const userId = req.user?.userId;
+    const email = req.user?.email;
+    if (!userId && !email) {
+      return res.json({ success: true, data: null });
+    }
+    const profile = inMemoryProfessionals.find(p => 
+      (userId && p.userId === userId) ||
+      (email && p.userEmail && p.userEmail.toLowerCase() === email.toLowerCase())
+    );
+    return res.json({
+      success: true,
+      data: profile || null
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/professionals", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await hydrateProfessionalsFromDb();
+    const body = req.body || {};
+    const userId = req.user?.userId || body.userId || `user-${Date.now()}`;
+    const userEmail = req.user?.email || body.userEmail || "user@cinevenue.com";
+
+    const existingIndex = inMemoryProfessionals.findIndex(p =>
+      (body.id && p.id === body.id) ||
+      (userId && p.userId === userId) ||
+      (userEmail && p.userEmail && p.userEmail.toLowerCase() === userEmail.toLowerCase())
+    );
+
+    let savedProfile: any;
+    if (existingIndex >= 0) {
+      savedProfile = {
+        ...inMemoryProfessionals[existingIndex],
+        ...body,
+        userId: inMemoryProfessionals[existingIndex].userId || userId,
+        userEmail: inMemoryProfessionals[existingIndex].userEmail || userEmail,
+        updatedAt: new Date().toISOString()
+      };
+      inMemoryProfessionals[existingIndex] = savedProfile;
+    } else {
+      savedProfile = {
+        id: body.id || `prof-${Date.now()}`,
+        userId,
+        userEmail,
+        fullName: body.fullName || "Film Professional",
+        handle: body.handle || `@${(body.fullName || "user").toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+        professionalHeadline: body.professionalHeadline || "Film Industry Professional",
+        avatarUrl: body.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        coverImageUrl: body.coverImageUrl || "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=1200&auto=format&fit=crop&q=80",
+        location: body.location || "Hyderabad",
+        state: body.state || "Telangana",
+        country: "India",
+        languages: body.languages || ["Telugu", "English"],
+        bio: body.bio || "Dedicated cinema professional on CineVenue.",
+        experienceYears: Number(body.experienceYears || 2),
+        primaryCraftId: body.primaryCraftId || "craft-1",
+        primaryCraftName: body.primaryCraftName || "Direction",
+        roles: Array.isArray(body.roles) ? body.roles : [body.primaryCraftName || "Director"],
+        skills: Array.isArray(body.skills) ? body.skills : [],
+        verificationLevel: body.verificationLevel || "None",
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ...body
+      };
+      inMemoryProfessionals.unshift(savedProfile);
+    }
+
+    await persistProfessionalsToDb();
+
+    return res.json({
+      success: true,
+      message: "Professional profile saved successfully",
+      data: savedProfile
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/professionals/me", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await hydrateProfessionalsFromDb();
+    const userId = req.user?.userId;
+    const email = req.user?.email;
+    const body = req.body || {};
+
+    const existingIndex = inMemoryProfessionals.findIndex(p =>
+      (userId && p.userId === userId) ||
+      (email && p.userEmail && p.userEmail.toLowerCase() === email.toLowerCase())
+    );
+
+    if (existingIndex < 0) {
+      throw new NotFoundError("Professional profile for current user not found.");
+    }
+
+    const updated = {
+      ...inMemoryProfessionals[existingIndex],
+      ...body,
+      updatedAt: new Date().toISOString()
+    };
+    inMemoryProfessionals[existingIndex] = updated;
+
+    await persistProfessionalsToDb();
+
+    return res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ----------------------------------------------------
 // 3. GET /professionals/:username: Public Profile Page Data
 // ----------------------------------------------------
-router.get("/professionals/:username", optionalAuthenticate, (req: Request, res: Response, next: NextFunction) => {
+router.get("/professionals/:username", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await hydrateProfessionalsFromDb();
     const rawParam = req.params.username.trim();
     const queryHandle = rawParam.startsWith("@") ? rawParam.toLowerCase() : `@${rawParam.toLowerCase()}`;
     const rawLower = rawParam.toLowerCase();
@@ -760,8 +933,9 @@ router.post("/professionals/report", optionalAuthenticate, (req: Request, res: R
 // ----------------------------------------------------
 // 7. ADMIN ROUTES: Professional Profiles Moderation
 // ----------------------------------------------------
-router.get("/admin/professionals", authenticate, (req: Request, res: Response, next: NextFunction) => {
+router.get("/admin/professionals", authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await hydrateProfessionalsFromDb();
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
       throw new ForbiddenError("CineVenue administrator privileges required.");
@@ -779,8 +953,9 @@ router.get("/admin/professionals", authenticate, (req: Request, res: Response, n
   }
 });
 
-router.patch("/admin/professionals/:id/verify", authenticate, (req: Request, res: Response, next: NextFunction) => {
+router.patch("/admin/professionals/:id/verify", authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await hydrateProfessionalsFromDb();
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
       throw new ForbiddenError("CineVenue administrator privileges required.");
@@ -796,6 +971,7 @@ router.patch("/admin/professionals/:id/verify", authenticate, (req: Request, res
 
     profile.verificationLevel = verificationLevel || "Profile Verified";
     profile.updatedAt = new Date().toISOString();
+    await persistProfessionalsToDb();
 
     return res.json({
       success: true,
@@ -807,8 +983,9 @@ router.patch("/admin/professionals/:id/verify", authenticate, (req: Request, res
   }
 });
 
-router.patch("/admin/professionals/:id/status", authenticate, (req: Request, res: Response, next: NextFunction) => {
+router.patch("/admin/professionals/:id/status", authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await hydrateProfessionalsFromDb();
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
       throw new ForbiddenError("CineVenue administrator privileges required.");
@@ -824,6 +1001,7 @@ router.patch("/admin/professionals/:id/status", authenticate, (req: Request, res
 
     profile.status = status || "Active";
     profile.updatedAt = new Date().toISOString();
+    await persistProfessionalsToDb();
 
     return res.json({
       success: true,

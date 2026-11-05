@@ -181,9 +181,9 @@ class GlobalSyncService {
   }
 
   /**
-   * Attempt to sync with DB on startup if available
+   * Attempt to sync with DB on startup or request
    */
-  private async initDatabaseSync() {
+  public async initDatabaseSync() {
     try {
       if ((prisma as any).platformSetting) {
         const setting = await (prisma as any).platformSetting.findUnique({
@@ -191,9 +191,11 @@ class GlobalSyncService {
         });
         if (setting && setting.value) {
           const parsed = JSON.parse(setting.value);
-          if (parsed.syncVersion > this.memoryStore.syncVersion) {
-            this.memoryStore = parsed;
-            logger.info(`[GlobalSyncService] Hydrated store from database setting (v${parsed.syncVersion})`);
+          if (parsed && typeof parsed.syncVersion === "number") {
+            if (parsed.syncVersion >= this.memoryStore.syncVersion) {
+              this.memoryStore = parsed;
+              logger.info(`[GlobalSyncService] Hydrated store from database setting (v${parsed.syncVersion})`);
+            }
           }
         }
       }
@@ -261,8 +263,8 @@ class GlobalSyncService {
   /**
    * Return full administrative state (Super Admin & Admin sessions)
    */
-  public getAdminState() {
-    this.memoryStore = loadStore();
+  public async getAdminState() {
+    await this.initDatabaseSync();
     return {
       syncVersion: this.memoryStore.syncVersion,
       lastSyncedAt: this.memoryStore.lastSyncedAt,
@@ -280,8 +282,8 @@ class GlobalSyncService {
   /**
    * Return sanitized public state (Website & Mobile App public view)
    */
-  public getPublicState() {
-    this.memoryStore = loadStore();
+  public async getPublicState() {
+    await this.initDatabaseSync();
     return {
       syncVersion: this.memoryStore.syncVersion,
       lastSyncedAt: this.memoryStore.lastSyncedAt,
@@ -300,8 +302,8 @@ class GlobalSyncService {
   /**
    * Incremental Delta Sync since timestamp or version
    */
-  public getDelta(since?: string | number, sinceVersionParam?: number, isAdmin: boolean = false) {
-    this.memoryStore = loadStore();
+  public async getDelta(since?: string | number, sinceVersionParam?: number, isAdmin: boolean = false) {
+    await this.initDatabaseSync();
     
     let targetVersion = typeof since === "number" ? since : sinceVersionParam;
     let isStale = false;
@@ -319,7 +321,7 @@ class GlobalSyncService {
       return true;
     });
 
-    const state = isAdmin ? this.getAdminState() : this.getPublicState();
+    const state = isAdmin ? await this.getAdminState() : await this.getPublicState();
     return {
       isStale,
       currentVersion: this.memoryStore.syncVersion,

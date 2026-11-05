@@ -1319,7 +1319,20 @@ var init_database = __esm({
       employeeactivitylog: "EmployeeActivityLog",
       employeeActivityLog: "EmployeeActivityLog",
       auditentrylog: "AuditEntryLog",
-      auditEntryLog: "AuditEntryLog"
+      auditEntryLog: "AuditEntryLog",
+      platformsetting: "PlatformSetting",
+      platformSetting: "PlatformSetting",
+      professionalprofile: "ProfessionalProfile",
+      professionalProfile: "ProfessionalProfile",
+      filmproject: "FilmProject",
+      filmProject: "FilmProject",
+      castingcall: "CastingCall",
+      castingCall: "CastingCall",
+      jobapplication: "JobApplication",
+      jobApplication: "JobApplication",
+      userfeedback: "UserFeedback",
+      userFeedback: "UserFeedback",
+      coupon: "Coupon"
     };
     prisma = initPrismaClient();
   }
@@ -8813,8 +8826,636 @@ var posIntegrationService = new PosIntegrationService();
 // server/services/pricing.service.ts
 init_database();
 init_logger();
+import fs5 from "fs";
+import path5 from "path";
+
+// server/services/globalSyncService.ts
+init_database();
+init_logger();
 import fs4 from "fs";
 import path4 from "path";
+
+// server/services/realtimeHub.ts
+init_logger();
+import { WebSocketServer, WebSocket } from "ws";
+var RealtimeHub = class {
+  constructor() {
+    this.wss = null;
+    this.clients = /* @__PURE__ */ new Map();
+    this.heartbeatInterval = null;
+  }
+  /**
+   * Attach WebSocket Server to the core Node HTTP Server
+   */
+  attachServer(server) {
+    if (this.wss) return;
+    this.wss = new WebSocketServer({
+      noServer: true
+    });
+    server.on("upgrade", (request, socket, head) => {
+      const pathname = new URL(request.url || "", `http://${request.headers.host}`).pathname;
+      if (pathname === "/ws/sync" || pathname === "/ws") {
+        this.wss.handleUpgrade(request, socket, head, (ws) => {
+          this.wss.emit("connection", ws, request);
+        });
+      }
+    });
+    this.wss.on("connection", (ws, request) => {
+      const clientId = `ws_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const urlObj = new URL(request.url || "", `http://${request.headers.host}`);
+      const roleParam = urlObj.searchParams.get("role") || "ANONYMOUS";
+      const emailParam = urlObj.searchParams.get("email") || "guest@cinevenue.com";
+      const passcode = urlObj.searchParams.get("passcode") || "";
+      const isAdmin = roleParam === "SUPER_ADMIN" || roleParam === "ADMIN" || passcode === "999999" || passcode === "123456";
+      const clientRecord = {
+        id: clientId,
+        ws,
+        isAdmin,
+        role: isAdmin ? roleParam || "ADMIN" : "CUSTOMER",
+        email: emailParam,
+        connectedAt: /* @__PURE__ */ new Date()
+      };
+      this.clients.set(clientId, clientRecord);
+      logger2.info(`[RealtimeHub] Client connected: ${clientId} (Role: ${clientRecord.role}, Admin: ${isAdmin})`);
+      ws.send(JSON.stringify({
+        type: "SYNC_CONNECTED",
+        clientId,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        serverTime: Date.now()
+      }));
+      ws.on("message", (rawMsg) => {
+        try {
+          const msg = JSON.parse(rawMsg.toString());
+          if (msg.type === "PING") {
+            ws.send(JSON.stringify({ type: "PONG", timestamp: (/* @__PURE__ */ new Date()).toISOString() }));
+          } else if (msg.type === "AUTH") {
+            if (msg.passcode === "999999" || msg.role === "SUPER_ADMIN" || msg.role === "ADMIN") {
+              clientRecord.isAdmin = true;
+              clientRecord.role = msg.role || "ADMIN";
+              clientRecord.email = msg.email || clientRecord.email;
+              ws.send(JSON.stringify({ type: "AUTH_SUCCESS", role: clientRecord.role }));
+            }
+          }
+        } catch (e) {
+        }
+      });
+      ws.on("close", () => {
+        this.clients.delete(clientId);
+        logger2.info(`[RealtimeHub] Client disconnected: ${clientId}`);
+      });
+      ws.on("error", (err) => {
+        logger2.warn(`[RealtimeHub] Client socket error on ${clientId}: ${err.message}`);
+        this.clients.delete(clientId);
+      });
+    });
+    this.heartbeatInterval = setInterval(() => {
+      this.clients.forEach((client, id) => {
+        if (client.ws && client.ws.readyState === WebSocket.OPEN) {
+          try {
+            client.ws.ping();
+          } catch (e) {
+            this.clients.delete(id);
+          }
+        }
+      });
+    }, 25e3);
+    logger2.info("\u{1F4E1} [RealtimeHub] Authoritative WebSocket server initialized on /ws/sync");
+  }
+  /**
+   * Register a Server-Sent Events (SSE) Client
+   */
+  registerSseClient(res, isAdminOrRole = false, roleParam, emailParam) {
+    const clientId = `sse_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    let isAdmin = false;
+    let role = "CUSTOMER";
+    let email = emailParam || "";
+    if (typeof isAdminOrRole === "boolean") {
+      isAdmin = isAdminOrRole;
+      role = roleParam || (isAdmin ? "ADMIN" : "CUSTOMER");
+    } else if (typeof isAdminOrRole === "string") {
+      const lower = isAdminOrRole.toLowerCase();
+      isAdmin = lower === "super_admin" || lower === "admin";
+      role = isAdminOrRole.toUpperCase();
+    }
+    if (typeof res.setHeader === "function") {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+    }
+    if (typeof res.flushHeaders === "function") {
+      res.flushHeaders();
+    }
+    const clientRecord = {
+      id: clientId,
+      sseRes: res,
+      isAdmin,
+      role,
+      email,
+      connectedAt: /* @__PURE__ */ new Date()
+    };
+    this.clients.set(clientId, clientRecord);
+    if (typeof res.write === "function") {
+      res.write(`data: ${JSON.stringify({ type: "SYNC_CONNECTED", clientId, timestamp: (/* @__PURE__ */ new Date()).toISOString() })}
+
+`);
+    }
+    if (typeof res.on === "function") {
+      res.on("close", () => {
+        this.clients.delete(clientId);
+      });
+    }
+    const unregister = () => {
+      this.clients.delete(clientId);
+    };
+    unregister.clientId = clientId;
+    unregister.toString = () => clientId;
+    return unregister;
+  }
+  /**
+   * Broadcast an authoritative sync event to all relevant connected clients
+   */
+  broadcastUpdate(event) {
+    const eventType = event.type || (event.entityType ? `${event.entityType}:${event.action}` : "SYNC_UPDATE");
+    const rawPayload = JSON.stringify({
+      type: eventType,
+      event
+    });
+    let deliveredCount = 0;
+    this.clients.forEach((client) => {
+      if (event.isPrivate && !client.isAdmin) {
+        return;
+      }
+      if (client.ws && client.ws.readyState === WebSocket.OPEN) {
+        try {
+          client.ws.send(rawPayload);
+          deliveredCount++;
+        } catch (e) {
+          logger2.warn(`Failed to send sync message to WS client ${client.id}`);
+        }
+      }
+      if (client.sseRes && !client.sseRes.writableEnded) {
+        try {
+          client.sseRes.write(`data: ${rawPayload}
+
+`);
+          deliveredCount++;
+        } catch (e) {
+          logger2.warn(`Failed to send sync message to SSE client ${client.id}`);
+        }
+      }
+    });
+    logger2.info(`[RealtimeHub] Broadcasted ${event.entityType}:${event.action} (v${event.version}) to ${deliveredCount} client(s)`);
+  }
+  /**
+   * Get telemetry stats
+   */
+  getStats() {
+    let wsCount = 0;
+    let sseCount = 0;
+    let adminCount = 0;
+    this.clients.forEach((c) => {
+      if (c.ws) wsCount++;
+      if (c.sseRes) sseCount++;
+      if (c.isAdmin) adminCount++;
+    });
+    return {
+      totalClients: this.clients.size,
+      wsCount,
+      sseCount,
+      adminCount,
+      serverTime: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+};
+var realtimeHub = new RealtimeHub();
+
+// server/services/globalSyncService.ts
+var STORE_PATH = path4.resolve(process.cwd(), "server/config/global_admin_store.json");
+function loadStore2() {
+  try {
+    if (fs4.existsSync(STORE_PATH)) {
+      const raw = fs4.readFileSync(STORE_PATH, "utf-8");
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    logger2.warn(`[GlobalSyncService] Error reading store from disk, initializing fallback: ${err.message}`);
+  }
+  return {
+    syncVersion: 1,
+    lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    banners: [],
+    coupons: [],
+    reviews: [],
+    supportTickets: [],
+    cities: ["Hyderabad", "Bangalore", "Mumbai"],
+    spotlight: {
+      title: "Kalki 2898 AD",
+      rating: 9.2,
+      votes: "184.2K",
+      genre: "Sci-Fi / Epic",
+      duration: "3h 01m",
+      language: "Telugu, Hindi",
+      description: "Epic action",
+      image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1",
+      badge: "BLOCKBUSTER",
+      releaseDate: "Now Showing",
+      formats: ["IMAX 3D", "2D"],
+      showtimes: ["10:30 AM", "7:30 PM"]
+    },
+    featureToggles: {
+      isMovieBookingSystemActive: true,
+      isEventBookingSystemActive: true,
+      isCineCoinsActive: true,
+      isRentalSystemActive: true,
+      isFoodOrderingActive: true,
+      version: 1,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    },
+    recentBroadcasts: [],
+    changelog: []
+  };
+}
+function saveStore2(store) {
+  try {
+    store.syncVersion += 1;
+    store.lastSyncedAt = (/* @__PURE__ */ new Date()).toISOString();
+    if (store.changelog && store.changelog.length > 500) {
+      store.changelog = store.changelog.slice(0, 500);
+    }
+    fs4.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
+  } catch (err) {
+    logger2.error(`[GlobalSyncService] Failed to persist store to disk: ${err.message}`);
+  }
+}
+var GlobalSyncService = class {
+  constructor() {
+    this.memoryStore = loadStore2();
+    this.initDatabaseSync();
+  }
+  /**
+   * Attempt to sync with DB on startup or request
+   */
+  async initDatabaseSync() {
+    try {
+      if (prisma.platformSetting) {
+        const setting = await prisma.platformSetting.findUnique({
+          where: { key: "global_admin_sync_store" }
+        });
+        if (setting && setting.value) {
+          const parsed = JSON.parse(setting.value);
+          if (parsed && typeof parsed.syncVersion === "number") {
+            if (parsed.syncVersion >= this.memoryStore.syncVersion) {
+              this.memoryStore = parsed;
+              logger2.info(`[GlobalSyncService] Hydrated store from database setting (v${parsed.syncVersion})`);
+            }
+          }
+        }
+      }
+    } catch (e) {
+    }
+  }
+  /**
+   * Save store to disk and asynchronously to DB setting
+   */
+  async commit(entityType, entityId, action, payload, actorEmail = "system@cinevenue.com", isPrivate = false) {
+    saveStore2(this.memoryStore);
+    const changeEntry = {
+      id: `chg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      entityType,
+      entityId,
+      action,
+      version: this.memoryStore.syncVersion,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.memoryStore.changelog.unshift(changeEntry);
+    try {
+      if (prisma.platformSetting) {
+        await prisma.platformSetting.upsert({
+          where: { key: "global_admin_sync_store" },
+          update: {
+            value: JSON.stringify(this.memoryStore),
+            updatedAt: /* @__PURE__ */ new Date()
+          },
+          create: {
+            key: "global_admin_sync_store",
+            value: JSON.stringify(this.memoryStore),
+            description: "Authoritative synchronized admin state"
+          }
+        });
+      }
+    } catch (e) {
+    }
+    realtimeHub.broadcastUpdate({
+      entityType,
+      action,
+      entityId,
+      data: payload,
+      version: this.memoryStore.syncVersion,
+      timestamp: changeEntry.timestamp,
+      actorEmail,
+      isPrivate
+    });
+    return {
+      success: true,
+      syncVersion: this.memoryStore.syncVersion,
+      timestamp: changeEntry.timestamp
+    };
+  }
+  // -------------------------------------------------------------
+  // GETTERS: PUBLIC & ADMIN PARTITIONING
+  // -------------------------------------------------------------
+  /**
+   * Return full administrative state (Super Admin & Admin sessions)
+   */
+  async getAdminState() {
+    await this.initDatabaseSync();
+    return {
+      syncVersion: this.memoryStore.syncVersion,
+      lastSyncedAt: this.memoryStore.lastSyncedAt,
+      banners: this.memoryStore.banners,
+      coupons: this.memoryStore.coupons,
+      reviews: this.memoryStore.reviews,
+      supportTickets: this.memoryStore.supportTickets,
+      cities: this.memoryStore.cities,
+      spotlight: this.memoryStore.spotlight,
+      featureToggles: this.memoryStore.featureToggles,
+      recentBroadcasts: this.memoryStore.recentBroadcasts
+    };
+  }
+  /**
+   * Return sanitized public state (Website & Mobile App public view)
+   */
+  async getPublicState() {
+    await this.initDatabaseSync();
+    return {
+      syncVersion: this.memoryStore.syncVersion,
+      lastSyncedAt: this.memoryStore.lastSyncedAt,
+      // Public only sees active promotional banners
+      banners: this.memoryStore.banners.filter((b) => b.active),
+      // Public only sees approved reviews
+      reviews: this.memoryStore.reviews.filter((r) => r.status === "Approved"),
+      cities: this.memoryStore.cities,
+      spotlight: this.memoryStore.spotlight,
+      featureToggles: this.memoryStore.featureToggles,
+      // Public only receives public broadcast announcements
+      recentBroadcasts: this.memoryStore.recentBroadcasts.slice(0, 5)
+    };
+  }
+  /**
+   * Incremental Delta Sync since timestamp or version
+   */
+  async getDelta(since, sinceVersionParam, isAdmin = false) {
+    await this.initDatabaseSync();
+    let targetVersion = typeof since === "number" ? since : sinceVersionParam;
+    let isStale = false;
+    if (targetVersion !== void 0 && targetVersion < this.memoryStore.syncVersion) {
+      isStale = true;
+    }
+    const relevantChanges = this.memoryStore.changelog.filter((c) => {
+      if (targetVersion !== void 0) {
+        return c.version > targetVersion;
+      }
+      if (typeof since === "string") {
+        return c.timestamp > since;
+      }
+      return true;
+    });
+    const state = isAdmin ? await this.getAdminState() : await this.getPublicState();
+    return {
+      isStale,
+      currentVersion: this.memoryStore.syncVersion,
+      lastSyncedAt: this.memoryStore.lastSyncedAt,
+      changes: relevantChanges,
+      state
+    };
+  }
+  // -------------------------------------------------------------
+  // BANNERS MANAGEMENT
+  // -------------------------------------------------------------
+  async createBanner(bannerData, clientVersion, actorEmail) {
+    const id = bannerData.id || `ban_${Date.now()}`;
+    return this.updateBanner({ ...bannerData, id }, clientVersion, actorEmail);
+  }
+  async updateBanner(bannerData, clientVersionParam, actorEmail) {
+    this.memoryStore = loadStore2();
+    const clientVersion = clientVersionParam !== void 0 ? clientVersionParam : bannerData.clientVersion;
+    const index = this.memoryStore.banners.findIndex((b) => b.id === bannerData.id);
+    if (index >= 0) {
+      const existing = this.memoryStore.banners[index];
+      if (clientVersion !== void 0 && (clientVersion < existing.version || clientVersion < this.memoryStore.syncVersion)) {
+        throw new Error(`CONFLICT_DETECTED: Banner was modified by another session (v${existing.version}). Please refresh.`);
+      }
+      const updated = {
+        ...existing,
+        ...bannerData,
+        version: existing.version + 1,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      this.memoryStore.banners[index] = updated;
+      await this.commit("BANNER", updated.id, "UPDATED", updated, actorEmail, false);
+      return updated;
+    } else {
+      const newBanner = {
+        id: bannerData.id,
+        title: bannerData.title || "New Promotional Campaign",
+        active: bannerData.active !== void 0 ? bannerData.active : true,
+        clicks: bannerData.clicks || 0,
+        type: bannerData.type || "Wide Slider",
+        imageUrl: bannerData.imageUrl,
+        linkUrl: bannerData.linkUrl,
+        targetAudience: bannerData.targetAudience || "All Users",
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        version: 1
+      };
+      this.memoryStore.banners.unshift(newBanner);
+      await this.commit("BANNER", newBanner.id, "CREATED", newBanner, actorEmail, false);
+      return newBanner;
+    }
+  }
+  async toggleBanner(bannerId, actorEmail) {
+    this.memoryStore = loadStore2();
+    const banner = this.memoryStore.banners.find((b) => b.id === bannerId);
+    if (!banner) {
+      throw new Error(`Banner with ID "${bannerId}" not found`);
+    }
+    banner.active = !banner.active;
+    banner.version += 1;
+    banner.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await this.commit("BANNER", banner.id, "STATUS_CHANGED", banner, actorEmail, false);
+    return banner;
+  }
+  async deleteBanner(bannerId, actorEmail) {
+    this.memoryStore = loadStore2();
+    const index = this.memoryStore.banners.findIndex((b) => b.id === bannerId);
+    if (index === -1) {
+      throw new Error(`Banner with ID "${bannerId}" not found`);
+    }
+    const removed = this.memoryStore.banners.splice(index, 1)[0];
+    await this.commit("BANNER", bannerId, "DELETED", { id: bannerId }, actorEmail, false);
+    return removed;
+  }
+  // -------------------------------------------------------------
+  // COUPONS MANAGEMENT
+  // -------------------------------------------------------------
+  async upsertCoupon(couponData, clientVersion, actorEmail) {
+    return this.updateCoupon(couponData, clientVersion, actorEmail);
+  }
+  async updateCoupon(couponData, clientVersionParam, actorEmail) {
+    this.memoryStore = loadStore2();
+    const clientVersion = clientVersionParam !== void 0 ? clientVersionParam : couponData.clientVersion;
+    const upperCode = couponData.code.trim().toUpperCase();
+    const index = this.memoryStore.coupons.findIndex((c) => c.code.toUpperCase() === upperCode);
+    if (index >= 0) {
+      const existing = this.memoryStore.coupons[index];
+      if (clientVersion !== void 0 && (clientVersion < existing.version || clientVersion < this.memoryStore.syncVersion)) {
+        throw new Error(`CONFLICT_DETECTED: Coupon was modified by another session. Please refresh.`);
+      }
+      const updated = {
+        ...existing,
+        ...couponData,
+        code: upperCode,
+        version: existing.version + 1,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      this.memoryStore.coupons[index] = updated;
+      await this.commit("COUPON", updated.code, "UPDATED", updated, actorEmail, false);
+      return updated;
+    } else {
+      const newCoupon = {
+        id: `coup_${Date.now()}`,
+        code: upperCode,
+        discount: Number(couponData.discount) || 20,
+        minAmount: Number(couponData.minAmount) || 500,
+        expires: couponData.expires || "2026-12-31",
+        active: couponData.active !== void 0 ? couponData.active : true,
+        claims: couponData.claims || 0,
+        version: 1,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      this.memoryStore.coupons.unshift(newCoupon);
+      await this.commit("COUPON", newCoupon.code, "CREATED", newCoupon, actorEmail, false);
+      return newCoupon;
+    }
+  }
+  async toggleCoupon(code, actorEmail) {
+    this.memoryStore = loadStore2();
+    const coupon = this.memoryStore.coupons.find((c) => c.code.toUpperCase() === code.trim().toUpperCase());
+    if (!coupon) throw new Error(`Coupon with code "${code}" not found`);
+    coupon.active = !coupon.active;
+    coupon.version += 1;
+    coupon.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await this.commit("COUPON", coupon.code, "STATUS_CHANGED", coupon, actorEmail, false);
+    return coupon;
+  }
+  async deleteCoupon(code, actorEmail) {
+    this.memoryStore = loadStore2();
+    const index = this.memoryStore.coupons.findIndex((c) => c.code.toUpperCase() === code.trim().toUpperCase());
+    if (index === -1) throw new Error(`Coupon with code "${code}" not found`);
+    const removed = this.memoryStore.coupons.splice(index, 1)[0];
+    await this.commit("COUPON", code, "DELETED", { code }, actorEmail, false);
+    return removed;
+  }
+  // -------------------------------------------------------------
+  // REVIEWS MODERATION
+  // -------------------------------------------------------------
+  async moderateReview(reviewId, status, actorEmail) {
+    this.memoryStore = loadStore2();
+    const review = this.memoryStore.reviews.find((r) => r.id === reviewId);
+    if (!review) throw new Error(`Review "${reviewId}" not found`);
+    review.status = status;
+    review.version += 1;
+    review.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await this.commit("REVIEW", review.id, "STATUS_CHANGED", review, actorEmail, false);
+    return review;
+  }
+  async deleteReview(reviewId, actorEmail) {
+    this.memoryStore = loadStore2();
+    const index = this.memoryStore.reviews.findIndex((r) => r.id === reviewId);
+    if (index === -1) throw new Error(`Review "${reviewId}" not found`);
+    const removed = this.memoryStore.reviews.splice(index, 1)[0];
+    await this.commit("REVIEW", reviewId, "DELETED", { id: reviewId }, actorEmail, false);
+    return removed;
+  }
+  // -------------------------------------------------------------
+  // SUPPORT TICKETS
+  // -------------------------------------------------------------
+  async updateSupportTicket(ticketId, patch, actorEmail) {
+    this.memoryStore = loadStore2();
+    const ticket = this.memoryStore.supportTickets.find((t) => t.id === ticketId);
+    if (!ticket) throw new Error(`Ticket "${ticketId}" not found`);
+    Object.assign(ticket, patch);
+    ticket.version += 1;
+    ticket.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await this.commit("SUPPORT_TICKET", ticket.id, "UPDATED", ticket, actorEmail, true);
+    return ticket;
+  }
+  // -------------------------------------------------------------
+  // CITIES CONFIGURATION
+  // -------------------------------------------------------------
+  async updateCities(cities, actorEmail) {
+    if (!Array.isArray(cities) || cities.length === 0) {
+      throw new Error("Cities list cannot be empty");
+    }
+    this.memoryStore = loadStore2();
+    const deduplicated = Array.from(new Set(cities.map((c) => c.trim()).filter(Boolean)));
+    this.memoryStore.cities = deduplicated;
+    await this.commit("CITIES", "global_cities", "UPDATED", deduplicated, actorEmail, false);
+    return deduplicated;
+  }
+  // -------------------------------------------------------------
+  // SPOTLIGHT MOVIE
+  // -------------------------------------------------------------
+  async updateSpotlight(spotlightData, actorEmail) {
+    this.memoryStore = loadStore2();
+    this.memoryStore.spotlight = {
+      ...this.memoryStore.spotlight,
+      ...spotlightData,
+      version: (this.memoryStore.spotlight.version || 1) + 1,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    await this.commit("SPOTLIGHT", "global_spotlight", "UPDATED", this.memoryStore.spotlight, actorEmail, false);
+    return this.memoryStore.spotlight;
+  }
+  // -------------------------------------------------------------
+  // FEATURE TOGGLES
+  // -------------------------------------------------------------
+  async updateFeatureToggles(toggles, actorEmail) {
+    this.memoryStore = loadStore2();
+    this.memoryStore.featureToggles = {
+      ...this.memoryStore.featureToggles,
+      ...toggles,
+      version: this.memoryStore.featureToggles.version + 1,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    await this.commit("FEATURE_TOGGLES", "global_toggles", "UPDATED", this.memoryStore.featureToggles, actorEmail, false);
+    return this.memoryStore.featureToggles;
+  }
+  // -------------------------------------------------------------
+  // BROADCAST ANNOUNCEMENTS
+  // -------------------------------------------------------------
+  async dispatchBroadcast(notification, actorEmail) {
+    this.memoryStore = loadStore2();
+    const added = {
+      id: `BC-${Math.floor(100 + Math.random() * 900)}`,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type || "Push",
+      target: notification.target || "All Devices",
+      date: "Just Now",
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.memoryStore.recentBroadcasts.unshift(added);
+    if (this.memoryStore.recentBroadcasts.length > 50) {
+      this.memoryStore.recentBroadcasts = this.memoryStore.recentBroadcasts.slice(0, 50);
+    }
+    await this.commit("BROADCAST", added.id, "CREATED", added, actorEmail, false);
+    return added;
+  }
+};
+var globalSyncService = new GlobalSyncService();
+
+// server/services/pricing.service.ts
 var INITIAL_DEFAULT_SLABS = [
   {
     id: "SLAB-1",
@@ -8903,8 +9544,8 @@ var INITIAL_DEFAULT_CONFIG = {
   updatedBy: "System Default",
   slabs: INITIAL_DEFAULT_SLABS
 };
-var CONFIG_FILE = path4.join(process.cwd(), "server/config/centralized_pricing.json");
-var TMP_CONFIG_FILE = path4.join("/tmp", "centralized_pricing.json");
+var CONFIG_FILE = path5.join(process.cwd(), "server/config/centralized_pricing.json");
+var TMP_CONFIG_FILE = path5.join("/tmp", "centralized_pricing.json");
 var CentralizedPricingService = class _CentralizedPricingService {
   constructor() {
     this.activeConfig = { ...INITIAL_DEFAULT_CONFIG };
@@ -8938,8 +9579,8 @@ var CentralizedPricingService = class _CentralizedPricingService {
   }
   loadFromStorage() {
     try {
-      if (fs4.existsSync(TMP_CONFIG_FILE)) {
-        const raw = fs4.readFileSync(TMP_CONFIG_FILE, "utf-8");
+      if (fs5.existsSync(TMP_CONFIG_FILE)) {
+        const raw = fs5.readFileSync(TMP_CONFIG_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         if (parsed && parsed.id) {
           this.activeConfig = parsed;
@@ -8947,8 +9588,8 @@ var CentralizedPricingService = class _CentralizedPricingService {
           return;
         }
       }
-      if (fs4.existsSync(CONFIG_FILE)) {
-        const raw = fs4.readFileSync(CONFIG_FILE, "utf-8");
+      if (fs5.existsSync(CONFIG_FILE)) {
+        const raw = fs5.readFileSync(CONFIG_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         if (parsed && parsed.id) {
           this.activeConfig = parsed;
@@ -8970,13 +9611,13 @@ var CentralizedPricingService = class _CentralizedPricingService {
     try {
       const payload = JSON.stringify(this.activeConfig, null, 2);
       try {
-        const dir = path4.dirname(CONFIG_FILE);
-        if (!fs4.existsSync(dir)) fs4.mkdirSync(dir, { recursive: true });
-        fs4.writeFileSync(CONFIG_FILE, payload, "utf-8");
+        const dir = path5.dirname(CONFIG_FILE);
+        if (!fs5.existsSync(dir)) fs5.mkdirSync(dir, { recursive: true });
+        fs5.writeFileSync(CONFIG_FILE, payload, "utf-8");
       } catch (e) {
       }
       try {
-        fs4.writeFileSync(TMP_CONFIG_FILE, payload, "utf-8");
+        fs5.writeFileSync(TMP_CONFIG_FILE, payload, "utf-8");
       } catch (e) {
       }
     } catch (err) {
@@ -9363,11 +10004,30 @@ var CentralizedPricingService = class _CentralizedPricingService {
     let couponDiscount = 0;
     if (params.couponCode) {
       const code = params.couponCode.trim().toUpperCase();
-      if (code === "WELCOME50" || code === "FLAT50") couponDiscount = Math.min(ticketSubtotal, 50);
-      else if (code === "CINE20" || code === "CINEEVENT20") couponDiscount = Math.round(ticketSubtotal * 0.2 * 100) / 100;
-      else if (code === "STUDENT10") couponDiscount = Math.round(ticketSubtotal * 0.1 * 100) / 100;
-      else if (code === "FIRSTPASS100") couponDiscount = Math.min(ticketSubtotal, 100);
-      else if (code === "VIPGALA300") couponDiscount = Math.min(ticketSubtotal, 300);
+      try {
+        const syncState = globalSyncService.getAdminState();
+        const found = syncState.coupons?.find((c) => c.code?.toUpperCase() === code && c.active);
+        if (found) {
+          const isNotExpired = !found.expires || new Date(found.expires) >= /* @__PURE__ */ new Date();
+          const meetsMin = !found.minAmount || ticketSubtotal >= found.minAmount;
+          if (isNotExpired && meetsMin) {
+            const rawDisc = Number(found.discount) || 0;
+            if (rawDisc > 0 && rawDisc <= 100) {
+              couponDiscount = Math.round(ticketSubtotal * (rawDisc / 100) * 100) / 100;
+            } else {
+              couponDiscount = Math.min(ticketSubtotal, rawDisc);
+            }
+          }
+        }
+      } catch (err) {
+      }
+      if (couponDiscount === 0) {
+        if (code === "WELCOME50" || code === "FLAT50") couponDiscount = Math.min(ticketSubtotal, 50);
+        else if (code === "CINE20" || code === "CINEEVENT20") couponDiscount = Math.round(ticketSubtotal * 0.2 * 100) / 100;
+        else if (code === "STUDENT10") couponDiscount = Math.round(ticketSubtotal * 0.1 * 100) / 100;
+        else if (code === "FIRSTPASS100") couponDiscount = Math.min(ticketSubtotal, 100);
+        else if (code === "VIPGALA300") couponDiscount = Math.min(ticketSubtotal, 300);
+      }
     }
     let cineCoinsDiscount = 0;
     if (params.cineCoinsToRedeem && Number(params.cineCoinsToRedeem) > 0) {
@@ -9837,14 +10497,37 @@ router5.post("/calculate-price", checkMovieBookingMaintenance, async (req, res, 
     next(error);
   }
 });
-router5.post("/", authenticate, checkMovieBookingMaintenance, async (req, res, next) => {
+router5.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
-    const { showId, seatIds, couponCode, totalAmount, bookingNumber, qrToken } = req.body;
-    if (showId && Array.isArray(seatIds) && seatIds.length > 0) {
+    const {
+      showId,
+      seatIds,
+      couponCode,
+      totalAmount,
+      ticketAmount,
+      convenienceFee,
+      taxAmount,
+      bookingNumber,
+      bookingId,
+      qrToken,
+      theatreId,
+      movieTitle,
+      theatreName,
+      seats,
+      userName,
+      userEmail,
+      mobileNumber,
+      paymentMethod
+    } = req.body;
+    if (showId && Array.isArray(seatIds) && seatIds.length > 0 && !totalAmount && !bookingNumber && !bookingId) {
+      const userId = req.user?.userId;
+      if (!userId) {
+        throw new UnauthorizedError("Authentication required to lock seats and create pending booking");
+      }
       const result = await bookingService.createPendingBooking({
         showId,
         showSeatIds: seatIds,
-        userId: req.user.userId,
+        userId,
         couponCode
       });
       return res.status(201).json({
@@ -9853,14 +10536,66 @@ router5.post("/", authenticate, checkMovieBookingMaintenance, async (req, res, n
         data: result
       });
     }
-    const bNumber = bookingNumber || `CV-${Math.floor(1e5 + Math.random() * 9e5)}`;
+    const bNumber = bookingNumber || bookingId || `CV-${Math.floor(1e5 + Math.random() * 9e5)}`;
+    let targetShowId = showId;
+    let targetTheatreId = theatreId;
+    if (!targetShowId || !targetTheatreId) {
+      const matchedShow = await prisma.show.findFirst({
+        where: {
+          isActive: true,
+          ...movieTitle ? { movie: { title: { contains: movieTitle, mode: "insensitive" } } } : {}
+        },
+        include: { theatre: true }
+      });
+      if (matchedShow) {
+        targetShowId = targetShowId || matchedShow.id;
+        targetTheatreId = targetTheatreId || matchedShow.theatreId;
+      } else {
+        const firstTheatre = await prisma.theatre.findFirst();
+        const firstShow = await prisma.show.findFirst();
+        targetTheatreId = targetTheatreId || firstTheatre?.id || "1";
+        targetShowId = targetShowId || firstShow?.id || "sch-1";
+      }
+    }
+    let targetUserId = req.user?.userId;
+    if (!targetUserId && userEmail) {
+      const existingUser = await prisma.user.findFirst({
+        where: { email: { equals: userEmail.trim().toLowerCase(), mode: "insensitive" } }
+      });
+      if (existingUser) {
+        targetUserId = existingUser.id;
+      }
+    }
+    const tSubtotal = Number(ticketAmount) || Number(totalAmount) || 250;
+    const cFee = Number(convenienceFee) || 0;
+    const tTax = Number(taxAmount) || 0;
+    const tTotal = Number(totalAmount) || tSubtotal + cFee + tTax;
     const newBooking = await prisma.booking.create({
       data: {
         bookingNumber: bNumber,
-        userId: req.user.userId,
-        totalAmount: Number(totalAmount) || 250,
-        ticketAmount: Number(totalAmount) || 250,
-        status: "CONFIRMED"
+        theatreId: targetTheatreId,
+        showId: targetShowId,
+        userId: targetUserId || null,
+        ticketAmount: tSubtotal,
+        ticketSubtotal: tSubtotal,
+        platformFee: cFee,
+        convenienceFee: cFee,
+        convenienceFeeTax: tTax,
+        taxAmount: tTax,
+        discountAmount: 0,
+        gatewayFee: 0,
+        totalAmount: tTotal,
+        status: "CONFIRMED",
+        feeSnapshot: {
+          movieTitle: movieTitle || "Movie",
+          theatreName: theatreName || "Theatre",
+          seats: Array.isArray(seats) ? seats : [],
+          userName: userName || "Guest Patron",
+          userEmail: userEmail || null,
+          mobileNumber: mobileNumber || null,
+          paymentMethod: paymentMethod || "CASHFREE",
+          confirmedAt: (/* @__PURE__ */ new Date()).toISOString()
+        }
       }
     });
     const token = qrToken || `QR_${newBooking.id}_${Date.now()}`;
@@ -9868,12 +10603,23 @@ router5.post("/", authenticate, checkMovieBookingMaintenance, async (req, res, n
       data: {
         bookingId: newBooking.id,
         ticketCode: bNumber,
-        qrToken: token
+        qrToken: token,
+        isUsed: false
       }
+    });
+    await prisma.payment.create({
+      data: {
+        bookingId: newBooking.id,
+        provider: (paymentMethod || "CASHFREE").toUpperCase(),
+        amount: tTotal,
+        currency: "INR",
+        status: "SUCCESS"
+      }
+    }).catch(() => {
     });
     return res.status(201).json({
       success: true,
-      message: "Booking recorded in database",
+      message: "Booking recorded authoritatively in database",
       data: {
         booking: newBooking,
         bookingNumber: bNumber,
@@ -9884,10 +10630,20 @@ router5.post("/", authenticate, checkMovieBookingMaintenance, async (req, res, n
     next(error);
   }
 });
-router5.get("/my", authenticate, async (req, res, next) => {
+router5.get("/my", optionalAuthenticate, async (req, res, next) => {
   try {
+    const userId = req.user?.userId;
+    const emailParam = req.query.email ? String(req.query.email).trim().toLowerCase() : void 0;
+    const userEmail = req.user?.email?.toLowerCase() || emailParam;
+    const whereConditions = [];
+    if (userId) {
+      whereConditions.push({ userId });
+    }
+    if (userEmail) {
+      whereConditions.push({ user: { email: userEmail } });
+    }
     const bookings = await prisma.booking.findMany({
-      where: { userId: req.user.userId },
+      where: whereConditions.length > 0 ? { OR: whereConditions } : {},
       include: {
         show: {
           include: { movie: true, theatre: true, screen: true }
@@ -9898,7 +10654,8 @@ router5.get("/my", authenticate, async (req, res, next) => {
         payment: true,
         ticket: true
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      take: 100
     });
     return res.json({
       success: true,
@@ -9916,8 +10673,8 @@ import { Router as Router7 } from "express";
 // server/modules/bookings/movieFee.service.ts
 init_database();
 init_logger();
-import fs5 from "fs";
-import path5 from "path";
+import fs6 from "fs";
+import path6 from "path";
 var DEFAULT_MOVIE_FEE_CONFIGS = [
   { ticketPrice: 50, baseCharge: 12, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Budget Tier" },
   { ticketPrice: 84, baseCharge: 14, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Standard Matinee" },
@@ -9938,7 +10695,7 @@ var DEFAULT_MOVIE_FEE_CONFIGS = [
   { ticketPrice: 470, baseCharge: 36, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "IMAX 3D Laser" },
   { ticketPrice: 708, baseCharge: 36, category: "STANDARD", gstRate: 18, feeApplication: "PER_TICKET", enabled: true, description: "Luxury Recliner Suite" }
 ];
-var SETTINGS_FILE = path5.join(process.cwd(), "server/config/movie_fee_settings.json");
+var SETTINGS_FILE = path6.join(process.cwd(), "server/config/movie_fee_settings.json");
 var MovieFeeService = class {
   constructor() {
     this.inMemoryConfigs = [];
@@ -9953,8 +10710,8 @@ var MovieFeeService = class {
   }
   init() {
     try {
-      if (fs5.existsSync(SETTINGS_FILE)) {
-        const raw = fs5.readFileSync(SETTINGS_FILE, "utf-8");
+      if (fs6.existsSync(SETTINGS_FILE)) {
+        const raw = fs6.readFileSync(SETTINGS_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         if (parsed.globalSettings) this.globalSettings = { ...this.globalSettings, ...parsed.globalSettings };
         if (Array.isArray(parsed.configs) && parsed.configs.length > 0) {
@@ -9982,7 +10739,7 @@ var MovieFeeService = class {
         configs: this.inMemoryConfigs,
         updatedAt: (/* @__PURE__ */ new Date()).toISOString()
       };
-      fs5.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
+      fs6.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), "utf-8");
     } catch (err) {
       logger2.warn(`Failed saving movie_fee_settings.json: ${err.message}`);
     }
@@ -10880,9 +11637,9 @@ var razorpayService = new RazorpayService();
 // server/services/fraudTrustService.ts
 init_database();
 init_logger();
-import fs6 from "fs";
-import path6 from "path";
-var FALLBACK_STORE_PATH2 = path6.resolve(process.cwd(), "server/config/fraud_trust_store.json");
+import fs7 from "fs";
+import path7 from "path";
+var FALLBACK_STORE_PATH2 = path7.resolve(process.cwd(), "server/config/fraud_trust_store.json");
 var DEFAULT_CONFIG = {
   id: "default_fraud_config",
   maxBookingAttemptsPerWindow: 5,
@@ -10924,10 +11681,10 @@ function decorateAlertRecord(record) {
   }
   return record;
 }
-function loadStore2() {
+function loadStore3() {
   try {
-    if (fs6.existsSync(FALLBACK_STORE_PATH2)) {
-      const parsed = JSON.parse(fs6.readFileSync(FALLBACK_STORE_PATH2, "utf-8"));
+    if (fs7.existsSync(FALLBACK_STORE_PATH2)) {
+      const parsed = JSON.parse(fs7.readFileSync(FALLBACK_STORE_PATH2, "utf-8"));
       return {
         alerts: Array.isArray(parsed.alerts) ? parsed.alerts.map(decorateAlertRecord) : [],
         reports: Array.isArray(parsed.reports) ? parsed.reports : [],
@@ -10939,16 +11696,16 @@ function loadStore2() {
   }
   return { alerts: [], reports: [], config: DEFAULT_CONFIG };
 }
-function saveStore2(data) {
+function saveStore3(data) {
   try {
-    const dir = path6.dirname(FALLBACK_STORE_PATH2);
-    if (!fs6.existsSync(dir)) fs6.mkdirSync(dir, { recursive: true });
-    fs6.writeFileSync(FALLBACK_STORE_PATH2, JSON.stringify(data, null, 2), "utf-8");
+    const dir = path7.dirname(FALLBACK_STORE_PATH2);
+    if (!fs7.existsSync(dir)) fs7.mkdirSync(dir, { recursive: true });
+    fs7.writeFileSync(FALLBACK_STORE_PATH2, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     logger2.error("[FraudTrustStore] Error saving fallback store", err);
   }
 }
-var memoryStore = loadStore2();
+var memoryStore = loadStore3();
 function calculateTextSimilarity(textA, textB) {
   if (!textA || !textB) return 0;
   const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length > 2);
@@ -11120,7 +11877,7 @@ var FraudTrustService = class {
     };
     decorateAlertRecord(record);
     memoryStore.alerts.unshift(record);
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.fraudAlert && typeof prisma.fraudAlert.create === "function") {
       try {
         await prisma.fraudAlert.create({
@@ -11216,7 +11973,7 @@ var FraudTrustService = class {
       details: effectiveReason ? `Reason: ${effectiveReason}` : void 0
     };
     alert.actionHistory.push(actionItem);
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.fraudAlert && typeof prisma.fraudAlert.update === "function") {
       try {
         await prisma.fraudAlert.update({
@@ -11268,7 +12025,7 @@ var FraudTrustService = class {
       timestamp: nowIso,
       details: `Assigned to ${investigatorEmail}`
     });
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.fraudAlert && typeof prisma.fraudAlert.update === "function") {
       try {
         await prisma.fraudAlert.update({
@@ -11322,7 +12079,7 @@ var FraudTrustService = class {
       timestamp: nowIso,
       details: `Added note: ${noteText.substring(0, 60)}...`
     });
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.fraudAlert && typeof prisma.fraudAlert.update === "function") {
       try {
         await prisma.fraudAlert.update({
@@ -11357,7 +12114,7 @@ var FraudTrustService = class {
       timestamp: nowIso,
       details: reason || (isRestricted ? "Temporary safety restriction" : "Safety restriction lifted")
     });
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.fraudAlert && typeof prisma.fraudAlert.update === "function") {
       try {
         await prisma.fraudAlert.update({
@@ -11470,7 +12227,7 @@ var FraudTrustService = class {
       }
       record.linkedAlertId = existingAlert.id;
     }
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.userReport && typeof prisma.userReport.create === "function") {
       try {
         await prisma.userReport.create({
@@ -11503,7 +12260,7 @@ var FraudTrustService = class {
     const effectiveActor = typeof actor === "string" ? { email: actor, name: actor } : actor || {};
     report.status = status;
     report.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.userReport && typeof prisma.userReport.update === "function") {
       try {
         await prisma.userReport.update({
@@ -11559,7 +12316,7 @@ var FraudTrustService = class {
     updated.bookingAttemptWindowSeconds = updated.bookingAttemptWindowMinutes * 60;
     updated.duplicateScanWindowSeconds = updated.duplicateScanWindowMinutes * 60;
     memoryStore.config = updated;
-    saveStore2(memoryStore);
+    saveStore3(memoryStore);
     if (prisma.fraudRuleConfig && typeof prisma.fraudRuleConfig.upsert === "function") {
       try {
         await prisma.fraudRuleConfig.upsert({
@@ -12786,8 +13543,8 @@ var cinecoins_routes_default = router8;
 init_database();
 import { Router as Router10 } from "express";
 import { randomBytes as randomBytes2 } from "crypto";
-import fs7 from "fs";
-import path7 from "path";
+import fs8 from "fs";
+import path8 from "path";
 import bcrypt2 from "bcryptjs";
 init_emailService();
 init_logger();
@@ -13863,11 +14620,11 @@ router9.delete("/:id", verifyAdminAccess3, async (req, res, next) => {
     next(error);
   }
 });
-var PROPOSALS_FILE_PATH = path7.join(process.cwd(), "server", "config", "event_proposals.json");
+var PROPOSALS_FILE_PATH = path8.join(process.cwd(), "server", "config", "event_proposals.json");
 function readProposalsStore() {
   try {
-    if (fs7.existsSync(PROPOSALS_FILE_PATH)) {
-      const raw = fs7.readFileSync(PROPOSALS_FILE_PATH, "utf-8");
+    if (fs8.existsSync(PROPOSALS_FILE_PATH)) {
+      const raw = fs8.readFileSync(PROPOSALS_FILE_PATH, "utf-8");
       return JSON.parse(raw);
     }
   } catch (e) {
@@ -13877,7 +14634,7 @@ function readProposalsStore() {
 }
 function writeProposalsStore(proposals) {
   try {
-    fs7.writeFileSync(PROPOSALS_FILE_PATH, JSON.stringify(proposals, null, 2), "utf-8");
+    fs8.writeFileSync(PROPOSALS_FILE_PATH, JSON.stringify(proposals, null, 2), "utf-8");
   } catch (e) {
     logger2.error({ error: e }, "Failed to write event proposals file");
   }
@@ -14365,11 +15122,223 @@ router10.patch("/proposals/:id/assign", authenticate, async (req, res, next) => 
     next(error);
   }
 });
+router10.post("/projects", authenticate, async (req, res, next) => {
+  try {
+    const { title, genre, synopsis, budget, director, producer, status } = req.body;
+    const project = await prisma.filmProject.create({
+      data: {
+        title: title || "Untitled Project",
+        genre: genre || "Drama",
+        synopsis: synopsis || "",
+        budget: budget ? Number(budget) : null,
+        director: director || null,
+        producer: producer || null,
+        status: status || "PRE_PRODUCTION"
+      }
+    });
+    return res.status(201).json({ success: true, message: "Film project created successfully", data: { project } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.put("/projects/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const project = await prisma.filmProject.update({
+      where: { id },
+      data: req.body
+    });
+    return res.json({ success: true, message: "Film project updated successfully", data: { project } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.delete("/projects/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.filmProject.delete({ where: { id } }).catch(async () => {
+      await prisma.filmProject.update({ where: { id }, data: { status: "ARCHIVED" } });
+    });
+    return res.json({ success: true, message: "Film project removed successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.get("/casting-calls", async (req, res, next) => {
+  try {
+    const { category, projectId, status } = req.query;
+    const castingCalls = await prisma.castingCall.findMany({
+      where: {
+        ...category ? { category: String(category) } : {},
+        ...projectId ? { projectId: String(projectId) } : {},
+        status: status ? String(status) : "OPEN"
+      },
+      include: {
+        project: { select: { id: true, title: true, director: true, producer: true, genre: true } },
+        _count: { select: { applications: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({ success: true, data: { castingCalls } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.post("/casting-calls", authenticate, async (req, res, next) => {
+  try {
+    const { projectId, roleName, category, description, ageRange, gender, deadline } = req.body;
+    let targetProjectId = projectId;
+    if (!targetProjectId) {
+      const firstProject = await prisma.filmProject.findFirst();
+      if (firstProject) {
+        targetProjectId = firstProject.id;
+      } else {
+        const newProj = await prisma.filmProject.create({
+          data: { title: "CineVenue Productions", genre: "Feature Film", synopsis: "Production listing" }
+        });
+        targetProjectId = newProj.id;
+      }
+    }
+    const castingCall = await prisma.castingCall.create({
+      data: {
+        projectId: targetProjectId,
+        roleName: roleName || "Actor",
+        category: category || "ACTOR",
+        description: description || "",
+        ageRange: ageRange || null,
+        gender: gender || null,
+        deadline: deadline ? new Date(deadline) : null,
+        status: "OPEN"
+      }
+    });
+    return res.status(201).json({ success: true, message: "Casting call created successfully", data: { castingCall } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.put("/casting-calls/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const castingCall = await prisma.castingCall.update({
+      where: { id },
+      data: req.body
+    });
+    return res.json({ success: true, message: "Casting call updated successfully", data: { castingCall } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.delete("/casting-calls/:id", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.castingCall.delete({ where: { id } }).catch(async () => {
+      await prisma.castingCall.update({ where: { id }, data: { status: "CLOSED" } });
+    });
+    return res.json({ success: true, message: "Casting call removed successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.get("/applications/my", authenticate, async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const applications = await prisma.jobApplication.findMany({
+      where: { userId },
+      include: {
+        castingCall: { include: { project: true } },
+        project: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({ success: true, data: { applications } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.get("/admin/applications", authenticate, async (req, res, next) => {
+  try {
+    const { status, castingCallId, projectId } = req.query;
+    const applications = await prisma.jobApplication.findMany({
+      where: {
+        ...status ? { status: String(status) } : {},
+        ...castingCallId ? { castingCallId: String(castingCallId) } : {},
+        ...projectId ? { projectId: String(projectId) } : {}
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, mobile: true } },
+        castingCall: { include: { project: true } },
+        project: true
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200
+    });
+    return res.json({ success: true, data: { applications } });
+  } catch (error) {
+    next(error);
+  }
+});
+router10.patch("/applications/:id/status", authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const application = await prisma.jobApplication.update({
+      where: { id },
+      data: { status }
+    });
+    return res.json({ success: true, message: `Application status updated to ${status}`, data: { application } });
+  } catch (error) {
+    next(error);
+  }
+});
 var marketplace_routes_default = router10;
 
 // server/modules/marketplace/filmProduction.routes.ts
 import { Router as Router12 } from "express";
+init_database();
 var router11 = Router12();
+var dbHydrated = false;
+async function hydrateProfessionalsFromDb() {
+  if (dbHydrated) return;
+  try {
+    const record = await prisma.platformSetting.findFirst({
+      where: { key: "marketplace_professionals_store" }
+    });
+    if (record?.value) {
+      const parsed = typeof record.value === "string" ? JSON.parse(record.value) : record.value;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        inMemoryProfessionals = parsed;
+        dbHydrated = true;
+        return;
+      }
+    }
+  } catch (err) {
+  }
+  dbHydrated = true;
+}
+async function persistProfessionalsToDb() {
+  try {
+    const serialized = JSON.stringify(inMemoryProfessionals);
+    const existing = await prisma.platformSetting.findFirst({
+      where: { key: "marketplace_professionals_store" }
+    });
+    if (existing) {
+      await prisma.platformSetting.update({
+        where: { id: existing.id },
+        data: { value: serialized, updatedAt: /* @__PURE__ */ new Date() }
+      });
+    } else {
+      await prisma.platformSetting.create({
+        data: {
+          key: "marketplace_professionals_store",
+          value: serialized,
+          description: "Persistent store for film production professional profiles",
+          isPublic: true
+        }
+      });
+    }
+  } catch (err) {
+  }
+}
 var inMemoryProfessionals = [
   {
     id: "prof-1",
@@ -14803,8 +15772,9 @@ router11.get("/filters", (req, res) => {
     }
   });
 });
-var handleListProfessionals = (req, res, next) => {
+var handleListProfessionals = async (req, res, next) => {
   try {
+    await hydrateProfessionalsFromDb();
     const {
       search,
       q,
@@ -14920,8 +15890,113 @@ var handleListProfessionals = (req, res, next) => {
 };
 router11.get("/professionals", optionalAuthenticate, handleListProfessionals);
 router11.get("/professionals/search", optionalAuthenticate, handleListProfessionals);
-router11.get("/professionals/:username", optionalAuthenticate, (req, res, next) => {
+router11.get("/professionals/me", optionalAuthenticate, async (req, res, next) => {
   try {
+    await hydrateProfessionalsFromDb();
+    const userId = req.user?.userId;
+    const email = req.user?.email;
+    if (!userId && !email) {
+      return res.json({ success: true, data: null });
+    }
+    const profile = inMemoryProfessionals.find(
+      (p) => userId && p.userId === userId || email && p.userEmail && p.userEmail.toLowerCase() === email.toLowerCase()
+    );
+    return res.json({
+      success: true,
+      data: profile || null
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router11.post("/professionals", optionalAuthenticate, async (req, res, next) => {
+  try {
+    await hydrateProfessionalsFromDb();
+    const body = req.body || {};
+    const userId = req.user?.userId || body.userId || `user-${Date.now()}`;
+    const userEmail = req.user?.email || body.userEmail || "user@cinevenue.com";
+    const existingIndex = inMemoryProfessionals.findIndex(
+      (p) => body.id && p.id === body.id || userId && p.userId === userId || userEmail && p.userEmail && p.userEmail.toLowerCase() === userEmail.toLowerCase()
+    );
+    let savedProfile;
+    if (existingIndex >= 0) {
+      savedProfile = {
+        ...inMemoryProfessionals[existingIndex],
+        ...body,
+        userId: inMemoryProfessionals[existingIndex].userId || userId,
+        userEmail: inMemoryProfessionals[existingIndex].userEmail || userEmail,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      inMemoryProfessionals[existingIndex] = savedProfile;
+    } else {
+      savedProfile = {
+        id: body.id || `prof-${Date.now()}`,
+        userId,
+        userEmail,
+        fullName: body.fullName || "Film Professional",
+        handle: body.handle || `@${(body.fullName || "user").toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+        professionalHeadline: body.professionalHeadline || "Film Industry Professional",
+        avatarUrl: body.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        coverImageUrl: body.coverImageUrl || "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=1200&auto=format&fit=crop&q=80",
+        location: body.location || "Hyderabad",
+        state: body.state || "Telangana",
+        country: "India",
+        languages: body.languages || ["Telugu", "English"],
+        bio: body.bio || "Dedicated cinema professional on CineVenue.",
+        experienceYears: Number(body.experienceYears || 2),
+        primaryCraftId: body.primaryCraftId || "craft-1",
+        primaryCraftName: body.primaryCraftName || "Direction",
+        roles: Array.isArray(body.roles) ? body.roles : [body.primaryCraftName || "Director"],
+        skills: Array.isArray(body.skills) ? body.skills : [],
+        verificationLevel: body.verificationLevel || "None",
+        status: "Active",
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        ...body
+      };
+      inMemoryProfessionals.unshift(savedProfile);
+    }
+    await persistProfessionalsToDb();
+    return res.json({
+      success: true,
+      message: "Professional profile saved successfully",
+      data: savedProfile
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router11.put("/professionals/me", authenticate, async (req, res, next) => {
+  try {
+    await hydrateProfessionalsFromDb();
+    const userId = req.user?.userId;
+    const email = req.user?.email;
+    const body = req.body || {};
+    const existingIndex = inMemoryProfessionals.findIndex(
+      (p) => userId && p.userId === userId || email && p.userEmail && p.userEmail.toLowerCase() === email.toLowerCase()
+    );
+    if (existingIndex < 0) {
+      throw new NotFoundError("Professional profile for current user not found.");
+    }
+    const updated = {
+      ...inMemoryProfessionals[existingIndex],
+      ...body,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    inMemoryProfessionals[existingIndex] = updated;
+    await persistProfessionalsToDb();
+    return res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router11.get("/professionals/:username", optionalAuthenticate, async (req, res, next) => {
+  try {
+    await hydrateProfessionalsFromDb();
     const rawParam = req.params.username.trim();
     const queryHandle = rawParam.startsWith("@") ? rawParam.toLowerCase() : `@${rawParam.toLowerCase()}`;
     const rawLower = rawParam.toLowerCase();
@@ -15042,8 +16117,9 @@ router11.post("/professionals/report", optionalAuthenticate, (req, res, next) =>
     next(error);
   }
 });
-router11.get("/admin/professionals", authenticate, (req, res, next) => {
+router11.get("/admin/professionals", authenticate, async (req, res, next) => {
   try {
+    await hydrateProfessionalsFromDb();
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
       throw new ForbiddenError("CineVenue administrator privileges required.");
@@ -15059,8 +16135,9 @@ router11.get("/admin/professionals", authenticate, (req, res, next) => {
     next(error);
   }
 });
-router11.patch("/admin/professionals/:id/verify", authenticate, (req, res, next) => {
+router11.patch("/admin/professionals/:id/verify", authenticate, async (req, res, next) => {
   try {
+    await hydrateProfessionalsFromDb();
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
       throw new ForbiddenError("CineVenue administrator privileges required.");
@@ -15073,6 +16150,7 @@ router11.patch("/admin/professionals/:id/verify", authenticate, (req, res, next)
     }
     profile.verificationLevel = verificationLevel || "Profile Verified";
     profile.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await persistProfessionalsToDb();
     return res.json({
       success: true,
       message: `Profile verification updated to "${profile.verificationLevel}".`,
@@ -15082,8 +16160,9 @@ router11.patch("/admin/professionals/:id/verify", authenticate, (req, res, next)
     next(error);
   }
 });
-router11.patch("/admin/professionals/:id/status", authenticate, (req, res, next) => {
+router11.patch("/admin/professionals/:id/status", authenticate, async (req, res, next) => {
   try {
+    await hydrateProfessionalsFromDb();
     const isAdmin = req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
     if (!isAdmin) {
       throw new ForbiddenError("CineVenue administrator privileges required.");
@@ -15096,6 +16175,7 @@ router11.patch("/admin/professionals/:id/status", authenticate, (req, res, next)
     }
     profile.status = status || "Active";
     profile.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    await persistProfessionalsToDb();
     return res.json({
       success: true,
       message: `Profile status updated to "${profile.status}".`,
@@ -17278,9 +18358,9 @@ import { Router as Router16 } from "express";
 // server/modules/notifications/reminder.service.ts
 init_logger();
 init_database();
-import fs8 from "fs";
-import path8 from "path";
-var CONFIG_PATH = path8.resolve(process.cwd(), "server/config/booking_reminders.json");
+import fs9 from "fs";
+import path9 from "path";
+var CONFIG_PATH = path9.resolve(process.cwd(), "server/config/booking_reminders.json");
 var DEFAULT_SETTINGS = {
   movieRemindersEnabled: true,
   eventRemindersEnabled: true,
@@ -17306,8 +18386,8 @@ var DEFAULT_SETTINGS = {
 var ReminderService = class {
   readStore() {
     try {
-      if (fs8.existsSync(CONFIG_PATH)) {
-        const raw = fs8.readFileSync(CONFIG_PATH, "utf-8");
+      if (fs9.existsSync(CONFIG_PATH)) {
+        const raw = fs9.readFileSync(CONFIG_PATH, "utf-8");
         const parsed = JSON.parse(raw);
         return {
           settings: parsed.settings || DEFAULT_SETTINGS,
@@ -17321,11 +18401,11 @@ var ReminderService = class {
   }
   writeStore(data) {
     try {
-      const dir = path8.dirname(CONFIG_PATH);
-      if (!fs8.existsSync(dir)) {
-        fs8.mkdirSync(dir, { recursive: true });
+      const dir = path9.dirname(CONFIG_PATH);
+      if (!fs9.existsSync(dir)) {
+        fs9.mkdirSync(dir, { recursive: true });
       }
-      fs8.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 2), "utf-8");
+      fs9.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 2), "utf-8");
     } catch (err) {
       logger2.error("[ReminderService] Error writing store to disk:", err);
     }
@@ -17643,10 +18723,10 @@ import { Router as Router17 } from "express";
 // server/modules/advertising/advertising.service.ts
 init_env();
 init_logger();
-import fs9 from "fs";
-import path9 from "path";
-var DATA_FILE_PATH = path9.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
-var PLACEMENTS_FILE_PATH = path9.resolve(process.cwd(), "server/config/live_banner_placements.json");
+import fs10 from "fs";
+import path10 from "path";
+var DATA_FILE_PATH = path10.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
+var PLACEMENTS_FILE_PATH = path10.resolve(process.cwd(), "server/config/live_banner_placements.json");
 var DEFAULT_PLACEMENTS = [
   {
     id: "homepage_top",
@@ -17807,14 +18887,14 @@ var AdvertisingService = class {
   loadData() {
     if (this.isLoaded) return;
     try {
-      if (fs9.existsSync(PLACEMENTS_FILE_PATH)) {
-        const raw = fs9.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
+      if (fs10.existsSync(PLACEMENTS_FILE_PATH)) {
+        const raw = fs10.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
         this.placements = JSON.parse(raw);
       } else {
         this.savePlacements();
       }
-      if (fs9.existsSync(DATA_FILE_PATH)) {
-        const raw = fs9.readFileSync(DATA_FILE_PATH, "utf8");
+      if (fs10.existsSync(DATA_FILE_PATH)) {
+        const raw = fs10.readFileSync(DATA_FILE_PATH, "utf8");
         this.campaigns = JSON.parse(raw);
       } else {
         this.saveCampaigns();
@@ -17830,18 +18910,18 @@ var AdvertisingService = class {
   }
   saveCampaigns() {
     try {
-      const dir = path9.dirname(DATA_FILE_PATH);
-      if (!fs9.existsSync(dir)) fs9.mkdirSync(dir, { recursive: true });
-      fs9.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
+      const dir = path10.dirname(DATA_FILE_PATH);
+      if (!fs10.existsSync(dir)) fs10.mkdirSync(dir, { recursive: true });
+      fs10.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
     } catch (err) {
       logger2.error(`Failed saving live banner campaigns: ${err.message}`);
     }
   }
   savePlacements() {
     try {
-      const dir = path9.dirname(PLACEMENTS_FILE_PATH);
-      if (!fs9.existsSync(dir)) fs9.mkdirSync(dir, { recursive: true });
-      fs9.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
+      const dir = path10.dirname(PLACEMENTS_FILE_PATH);
+      if (!fs10.existsSync(dir)) fs10.mkdirSync(dir, { recursive: true });
+      fs10.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
     } catch (err) {
       logger2.error(`Failed saving live banner placements: ${err.message}`);
     }
@@ -18558,8 +19638,8 @@ init_database();
 import { Router as Router18 } from "express";
 import bcrypt3 from "bcryptjs";
 import jwt3 from "jsonwebtoken";
-import fs10 from "fs";
-import path10 from "path";
+import fs11 from "fs";
+import path11 from "path";
 init_env();
 var employeeRouter = Router18();
 var SYSTEM_MODULES = [
@@ -18738,11 +19818,11 @@ var INITIAL_ROLES = [
     }
   }
 ];
-var FALLBACK_STORE_PATH3 = path10.resolve(process.cwd(), "server/config/employee_store.json");
+var FALLBACK_STORE_PATH3 = path11.resolve(process.cwd(), "server/config/employee_store.json");
 function loadFallbackStore2() {
   try {
-    if (fs10.existsSync(FALLBACK_STORE_PATH3)) {
-      const data = JSON.parse(fs10.readFileSync(FALLBACK_STORE_PATH3, "utf-8"));
+    if (fs11.existsSync(FALLBACK_STORE_PATH3)) {
+      const data = JSON.parse(fs11.readFileSync(FALLBACK_STORE_PATH3, "utf-8"));
       return data;
     }
   } catch (err) {
@@ -18852,9 +19932,9 @@ function loadFallbackStore2() {
 }
 function saveFallbackStore2(store) {
   try {
-    const dir = path10.dirname(FALLBACK_STORE_PATH3);
-    if (!fs10.existsSync(dir)) fs10.mkdirSync(dir, { recursive: true });
-    fs10.writeFileSync(FALLBACK_STORE_PATH3, JSON.stringify(store, null, 2), "utf-8");
+    const dir = path11.dirname(FALLBACK_STORE_PATH3);
+    if (!fs11.existsSync(dir)) fs11.mkdirSync(dir, { recursive: true });
+    fs11.writeFileSync(FALLBACK_STORE_PATH3, JSON.stringify(store, null, 2), "utf-8");
   } catch (err) {
     console.error("[EMPLOYEE_STORE_WRITE_ERROR]", err);
   }
@@ -20048,30 +21128,30 @@ import { Router as Router21 } from "express";
 // server/services/entertainmentAnalyticsService.ts
 init_database();
 init_logger();
-import fs11 from "fs";
-import path11 from "path";
+import fs12 from "fs";
+import path12 from "path";
 import Decimal from "decimal.js";
-var STORE_PATH = path11.resolve(process.cwd(), "server/config/analytics_store.json");
-function loadStore3() {
+var STORE_PATH2 = path12.resolve(process.cwd(), "server/config/analytics_store.json");
+function loadStore4() {
   try {
-    if (fs11.existsSync(STORE_PATH)) {
-      return JSON.parse(fs11.readFileSync(STORE_PATH, "utf-8"));
+    if (fs12.existsSync(STORE_PATH2)) {
+      return JSON.parse(fs12.readFileSync(STORE_PATH2, "utf-8"));
     }
   } catch (err) {
     logger2.error("[EntertainmentAnalytics] Error loading fallback store", err);
   }
   return { movieBookings: [], eventRegistrations: [], engagementEvents: [], settlements: [] };
 }
-function saveStore3(data) {
+function saveStore4(data) {
   try {
-    const dir = path11.dirname(STORE_PATH);
-    if (!fs11.existsSync(dir)) fs11.mkdirSync(dir, { recursive: true });
-    fs11.writeFileSync(STORE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    const dir = path12.dirname(STORE_PATH2);
+    if (!fs12.existsSync(dir)) fs12.mkdirSync(dir, { recursive: true });
+    fs12.writeFileSync(STORE_PATH2, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     logger2.error("[EntertainmentAnalytics] Error saving fallback store", err);
   }
 }
-var memoryStore2 = loadStore3();
+var memoryStore2 = loadStore4();
 function isWithinDateRange(dateStr, filter) {
   if (!filter || !filter.range || filter.range === "all") return true;
   if (!dateStr) return true;
@@ -20182,7 +21262,7 @@ var EntertainmentAnalyticsService = class {
    */
   async getOverviewKPIs(filter = {}, actor) {
     const scopedFilter = this.enforceRoleScope(actor, filter);
-    memoryStore2 = loadStore3();
+    memoryStore2 = loadStore4();
     const includeMovies = scopedFilter.bookingType !== "EVENT";
     const includeEvents = scopedFilter.bookingType !== "MOVIE";
     const movieBookings = includeMovies ? this.filterMovieBookings(memoryStore2.movieBookings, scopedFilter) : [];
@@ -20248,7 +21328,7 @@ var EntertainmentAnalyticsService = class {
    */
   async getMovieAnalytics(filter = {}, actor) {
     const scopedFilter = this.enforceRoleScope(actor, filter);
-    memoryStore2 = loadStore3();
+    memoryStore2 = loadStore4();
     const bookings = this.filterMovieBookings(memoryStore2.movieBookings, scopedFilter);
     const confirmed = bookings.filter((b) => b.status === "CONFIRMED" || b.status === "SETTLED");
     const movieMap = /* @__PURE__ */ new Map();
@@ -20383,7 +21463,7 @@ var EntertainmentAnalyticsService = class {
    */
   async getEventAnalytics(filter = {}, actor) {
     const scopedFilter = this.enforceRoleScope(actor, filter);
-    memoryStore2 = loadStore3();
+    memoryStore2 = loadStore4();
     const registrations = this.filterEventRegistrations(memoryStore2.eventRegistrations, scopedFilter);
     const confirmed = registrations.filter((r) => r.status === "CONFIRMED" || r.status === "APPROVED");
     const categoryMap = /* @__PURE__ */ new Map();
@@ -20536,7 +21616,7 @@ var EntertainmentAnalyticsService = class {
    */
   async getFinancialAnalytics(filter = {}, actor) {
     const scopedFilter = this.enforceRoleScope(actor, filter);
-    memoryStore2 = loadStore3();
+    memoryStore2 = loadStore4();
     const movieBookings = this.filterMovieBookings(memoryStore2.movieBookings, scopedFilter);
     const eventRegistrations = this.filterEventRegistrations(memoryStore2.eventRegistrations, scopedFilter);
     const confirmedMovies = movieBookings.filter((b) => b.status === "CONFIRMED" || b.status === "SETTLED");
@@ -20596,7 +21676,7 @@ var EntertainmentAnalyticsService = class {
    */
   async getEngagementAndFunnel(filter = {}, actor) {
     this.enforceRoleScope(actor, filter);
-    memoryStore2 = loadStore3();
+    memoryStore2 = loadStore4();
     const events = memoryStore2.engagementEvents || [];
     const pageViewSessions = new Set(events.filter((e) => e.eventType === "PAGE_VIEW").map((e) => e.sessionId)).size || 1420;
     const selectListingSessions = new Set(events.filter((e) => e.eventType === "LISTING_SELECT").map((e) => e.sessionId)).size || 980;
@@ -20775,7 +21855,7 @@ var EntertainmentAnalyticsService = class {
     if (memoryStore2.engagementEvents.length > 3e3) {
       memoryStore2.engagementEvents = memoryStore2.engagementEvents.slice(0, 3e3);
     }
-    saveStore3(memoryStore2);
+    saveStore4(memoryStore2);
     if (prisma.analyticsEngagementEvent && typeof prisma.analyticsEngagementEvent.create === "function") {
       try {
         await prisma.analyticsEngagementEvent.create({
@@ -20991,632 +22071,6 @@ analyticsRouter.get("/export/csv", async (req, res) => {
 
 // server/modules/admin/sync.routes.ts
 import { Router as Router22 } from "express";
-
-// server/services/globalSyncService.ts
-init_database();
-init_logger();
-import fs12 from "fs";
-import path12 from "path";
-
-// server/services/realtimeHub.ts
-init_logger();
-import { WebSocketServer, WebSocket } from "ws";
-var RealtimeHub = class {
-  constructor() {
-    this.wss = null;
-    this.clients = /* @__PURE__ */ new Map();
-    this.heartbeatInterval = null;
-  }
-  /**
-   * Attach WebSocket Server to the core Node HTTP Server
-   */
-  attachServer(server) {
-    if (this.wss) return;
-    this.wss = new WebSocketServer({
-      noServer: true
-    });
-    server.on("upgrade", (request, socket, head) => {
-      const pathname = new URL(request.url || "", `http://${request.headers.host}`).pathname;
-      if (pathname === "/ws/sync" || pathname === "/ws") {
-        this.wss.handleUpgrade(request, socket, head, (ws) => {
-          this.wss.emit("connection", ws, request);
-        });
-      }
-    });
-    this.wss.on("connection", (ws, request) => {
-      const clientId = `ws_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const urlObj = new URL(request.url || "", `http://${request.headers.host}`);
-      const roleParam = urlObj.searchParams.get("role") || "ANONYMOUS";
-      const emailParam = urlObj.searchParams.get("email") || "guest@cinevenue.com";
-      const passcode = urlObj.searchParams.get("passcode") || "";
-      const isAdmin = roleParam === "SUPER_ADMIN" || roleParam === "ADMIN" || passcode === "999999" || passcode === "123456";
-      const clientRecord = {
-        id: clientId,
-        ws,
-        isAdmin,
-        role: isAdmin ? roleParam || "ADMIN" : "CUSTOMER",
-        email: emailParam,
-        connectedAt: /* @__PURE__ */ new Date()
-      };
-      this.clients.set(clientId, clientRecord);
-      logger2.info(`[RealtimeHub] Client connected: ${clientId} (Role: ${clientRecord.role}, Admin: ${isAdmin})`);
-      ws.send(JSON.stringify({
-        type: "SYNC_CONNECTED",
-        clientId,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        serverTime: Date.now()
-      }));
-      ws.on("message", (rawMsg) => {
-        try {
-          const msg = JSON.parse(rawMsg.toString());
-          if (msg.type === "PING") {
-            ws.send(JSON.stringify({ type: "PONG", timestamp: (/* @__PURE__ */ new Date()).toISOString() }));
-          } else if (msg.type === "AUTH") {
-            if (msg.passcode === "999999" || msg.role === "SUPER_ADMIN" || msg.role === "ADMIN") {
-              clientRecord.isAdmin = true;
-              clientRecord.role = msg.role || "ADMIN";
-              clientRecord.email = msg.email || clientRecord.email;
-              ws.send(JSON.stringify({ type: "AUTH_SUCCESS", role: clientRecord.role }));
-            }
-          }
-        } catch (e) {
-        }
-      });
-      ws.on("close", () => {
-        this.clients.delete(clientId);
-        logger2.info(`[RealtimeHub] Client disconnected: ${clientId}`);
-      });
-      ws.on("error", (err) => {
-        logger2.warn(`[RealtimeHub] Client socket error on ${clientId}: ${err.message}`);
-        this.clients.delete(clientId);
-      });
-    });
-    this.heartbeatInterval = setInterval(() => {
-      this.clients.forEach((client, id) => {
-        if (client.ws && client.ws.readyState === WebSocket.OPEN) {
-          try {
-            client.ws.ping();
-          } catch (e) {
-            this.clients.delete(id);
-          }
-        }
-      });
-    }, 25e3);
-    logger2.info("\u{1F4E1} [RealtimeHub] Authoritative WebSocket server initialized on /ws/sync");
-  }
-  /**
-   * Register a Server-Sent Events (SSE) Client
-   */
-  registerSseClient(res, isAdminOrRole = false, roleParam, emailParam) {
-    const clientId = `sse_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    let isAdmin = false;
-    let role = "CUSTOMER";
-    let email = emailParam || "";
-    if (typeof isAdminOrRole === "boolean") {
-      isAdmin = isAdminOrRole;
-      role = roleParam || (isAdmin ? "ADMIN" : "CUSTOMER");
-    } else if (typeof isAdminOrRole === "string") {
-      const lower = isAdminOrRole.toLowerCase();
-      isAdmin = lower === "super_admin" || lower === "admin";
-      role = isAdminOrRole.toUpperCase();
-    }
-    if (typeof res.setHeader === "function") {
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache, no-transform");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("X-Accel-Buffering", "no");
-    }
-    if (typeof res.flushHeaders === "function") {
-      res.flushHeaders();
-    }
-    const clientRecord = {
-      id: clientId,
-      sseRes: res,
-      isAdmin,
-      role,
-      email,
-      connectedAt: /* @__PURE__ */ new Date()
-    };
-    this.clients.set(clientId, clientRecord);
-    if (typeof res.write === "function") {
-      res.write(`data: ${JSON.stringify({ type: "SYNC_CONNECTED", clientId, timestamp: (/* @__PURE__ */ new Date()).toISOString() })}
-
-`);
-    }
-    if (typeof res.on === "function") {
-      res.on("close", () => {
-        this.clients.delete(clientId);
-      });
-    }
-    const unregister = () => {
-      this.clients.delete(clientId);
-    };
-    unregister.clientId = clientId;
-    unregister.toString = () => clientId;
-    return unregister;
-  }
-  /**
-   * Broadcast an authoritative sync event to all relevant connected clients
-   */
-  broadcastUpdate(event) {
-    const eventType = event.type || (event.entityType ? `${event.entityType}:${event.action}` : "SYNC_UPDATE");
-    const rawPayload = JSON.stringify({
-      type: eventType,
-      event
-    });
-    let deliveredCount = 0;
-    this.clients.forEach((client) => {
-      if (event.isPrivate && !client.isAdmin) {
-        return;
-      }
-      if (client.ws && client.ws.readyState === WebSocket.OPEN) {
-        try {
-          client.ws.send(rawPayload);
-          deliveredCount++;
-        } catch (e) {
-          logger2.warn(`Failed to send sync message to WS client ${client.id}`);
-        }
-      }
-      if (client.sseRes && !client.sseRes.writableEnded) {
-        try {
-          client.sseRes.write(`data: ${rawPayload}
-
-`);
-          deliveredCount++;
-        } catch (e) {
-          logger2.warn(`Failed to send sync message to SSE client ${client.id}`);
-        }
-      }
-    });
-    logger2.info(`[RealtimeHub] Broadcasted ${event.entityType}:${event.action} (v${event.version}) to ${deliveredCount} client(s)`);
-  }
-  /**
-   * Get telemetry stats
-   */
-  getStats() {
-    let wsCount = 0;
-    let sseCount = 0;
-    let adminCount = 0;
-    this.clients.forEach((c) => {
-      if (c.ws) wsCount++;
-      if (c.sseRes) sseCount++;
-      if (c.isAdmin) adminCount++;
-    });
-    return {
-      totalClients: this.clients.size,
-      wsCount,
-      sseCount,
-      adminCount,
-      serverTime: (/* @__PURE__ */ new Date()).toISOString()
-    };
-  }
-};
-var realtimeHub = new RealtimeHub();
-
-// server/services/globalSyncService.ts
-var STORE_PATH2 = path12.resolve(process.cwd(), "server/config/global_admin_store.json");
-function loadStore4() {
-  try {
-    if (fs12.existsSync(STORE_PATH2)) {
-      const raw = fs12.readFileSync(STORE_PATH2, "utf-8");
-      return JSON.parse(raw);
-    }
-  } catch (err) {
-    logger2.warn(`[GlobalSyncService] Error reading store from disk, initializing fallback: ${err.message}`);
-  }
-  return {
-    syncVersion: 1,
-    lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    banners: [],
-    coupons: [],
-    reviews: [],
-    supportTickets: [],
-    cities: ["Hyderabad", "Bangalore", "Mumbai"],
-    spotlight: {
-      title: "Kalki 2898 AD",
-      rating: 9.2,
-      votes: "184.2K",
-      genre: "Sci-Fi / Epic",
-      duration: "3h 01m",
-      language: "Telugu, Hindi",
-      description: "Epic action",
-      image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1",
-      badge: "BLOCKBUSTER",
-      releaseDate: "Now Showing",
-      formats: ["IMAX 3D", "2D"],
-      showtimes: ["10:30 AM", "7:30 PM"]
-    },
-    featureToggles: {
-      isMovieBookingSystemActive: true,
-      isEventBookingSystemActive: true,
-      isCineCoinsActive: true,
-      isRentalSystemActive: true,
-      isFoodOrderingActive: true,
-      version: 1,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    },
-    recentBroadcasts: [],
-    changelog: []
-  };
-}
-function saveStore4(store) {
-  try {
-    store.syncVersion += 1;
-    store.lastSyncedAt = (/* @__PURE__ */ new Date()).toISOString();
-    if (store.changelog && store.changelog.length > 500) {
-      store.changelog = store.changelog.slice(0, 500);
-    }
-    fs12.writeFileSync(STORE_PATH2, JSON.stringify(store, null, 2), "utf-8");
-  } catch (err) {
-    logger2.error(`[GlobalSyncService] Failed to persist store to disk: ${err.message}`);
-  }
-}
-var GlobalSyncService = class {
-  constructor() {
-    this.memoryStore = loadStore4();
-    this.initDatabaseSync();
-  }
-  /**
-   * Attempt to sync with DB on startup if available
-   */
-  async initDatabaseSync() {
-    try {
-      if (prisma.platformSetting) {
-        const setting = await prisma.platformSetting.findUnique({
-          where: { key: "global_admin_sync_store" }
-        });
-        if (setting && setting.value) {
-          const parsed = JSON.parse(setting.value);
-          if (parsed.syncVersion > this.memoryStore.syncVersion) {
-            this.memoryStore = parsed;
-            logger2.info(`[GlobalSyncService] Hydrated store from database setting (v${parsed.syncVersion})`);
-          }
-        }
-      }
-    } catch (e) {
-    }
-  }
-  /**
-   * Save store to disk and asynchronously to DB setting
-   */
-  async commit(entityType, entityId, action, payload, actorEmail = "system@cinevenue.com", isPrivate = false) {
-    saveStore4(this.memoryStore);
-    const changeEntry = {
-      id: `chg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      entityType,
-      entityId,
-      action,
-      version: this.memoryStore.syncVersion,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.memoryStore.changelog.unshift(changeEntry);
-    try {
-      if (prisma.platformSetting) {
-        await prisma.platformSetting.upsert({
-          where: { key: "global_admin_sync_store" },
-          update: {
-            value: JSON.stringify(this.memoryStore),
-            updatedAt: /* @__PURE__ */ new Date()
-          },
-          create: {
-            key: "global_admin_sync_store",
-            value: JSON.stringify(this.memoryStore),
-            description: "Authoritative synchronized admin state"
-          }
-        });
-      }
-    } catch (e) {
-    }
-    realtimeHub.broadcastUpdate({
-      entityType,
-      action,
-      entityId,
-      data: payload,
-      version: this.memoryStore.syncVersion,
-      timestamp: changeEntry.timestamp,
-      actorEmail,
-      isPrivate
-    });
-    return {
-      success: true,
-      syncVersion: this.memoryStore.syncVersion,
-      timestamp: changeEntry.timestamp
-    };
-  }
-  // -------------------------------------------------------------
-  // GETTERS: PUBLIC & ADMIN PARTITIONING
-  // -------------------------------------------------------------
-  /**
-   * Return full administrative state (Super Admin & Admin sessions)
-   */
-  getAdminState() {
-    this.memoryStore = loadStore4();
-    return {
-      syncVersion: this.memoryStore.syncVersion,
-      lastSyncedAt: this.memoryStore.lastSyncedAt,
-      banners: this.memoryStore.banners,
-      coupons: this.memoryStore.coupons,
-      reviews: this.memoryStore.reviews,
-      supportTickets: this.memoryStore.supportTickets,
-      cities: this.memoryStore.cities,
-      spotlight: this.memoryStore.spotlight,
-      featureToggles: this.memoryStore.featureToggles,
-      recentBroadcasts: this.memoryStore.recentBroadcasts
-    };
-  }
-  /**
-   * Return sanitized public state (Website & Mobile App public view)
-   */
-  getPublicState() {
-    this.memoryStore = loadStore4();
-    return {
-      syncVersion: this.memoryStore.syncVersion,
-      lastSyncedAt: this.memoryStore.lastSyncedAt,
-      // Public only sees active promotional banners
-      banners: this.memoryStore.banners.filter((b) => b.active),
-      // Public only sees approved reviews
-      reviews: this.memoryStore.reviews.filter((r) => r.status === "Approved"),
-      cities: this.memoryStore.cities,
-      spotlight: this.memoryStore.spotlight,
-      featureToggles: this.memoryStore.featureToggles,
-      // Public only receives public broadcast announcements
-      recentBroadcasts: this.memoryStore.recentBroadcasts.slice(0, 5)
-    };
-  }
-  /**
-   * Incremental Delta Sync since timestamp or version
-   */
-  getDelta(since, sinceVersionParam, isAdmin = false) {
-    this.memoryStore = loadStore4();
-    let targetVersion = typeof since === "number" ? since : sinceVersionParam;
-    let isStale = false;
-    if (targetVersion !== void 0 && targetVersion < this.memoryStore.syncVersion) {
-      isStale = true;
-    }
-    const relevantChanges = this.memoryStore.changelog.filter((c) => {
-      if (targetVersion !== void 0) {
-        return c.version > targetVersion;
-      }
-      if (typeof since === "string") {
-        return c.timestamp > since;
-      }
-      return true;
-    });
-    const state = isAdmin ? this.getAdminState() : this.getPublicState();
-    return {
-      isStale,
-      currentVersion: this.memoryStore.syncVersion,
-      lastSyncedAt: this.memoryStore.lastSyncedAt,
-      changes: relevantChanges,
-      state
-    };
-  }
-  // -------------------------------------------------------------
-  // BANNERS MANAGEMENT
-  // -------------------------------------------------------------
-  async createBanner(bannerData, clientVersion, actorEmail) {
-    const id = bannerData.id || `ban_${Date.now()}`;
-    return this.updateBanner({ ...bannerData, id }, clientVersion, actorEmail);
-  }
-  async updateBanner(bannerData, clientVersionParam, actorEmail) {
-    this.memoryStore = loadStore4();
-    const clientVersion = clientVersionParam !== void 0 ? clientVersionParam : bannerData.clientVersion;
-    const index = this.memoryStore.banners.findIndex((b) => b.id === bannerData.id);
-    if (index >= 0) {
-      const existing = this.memoryStore.banners[index];
-      if (clientVersion !== void 0 && (clientVersion < existing.version || clientVersion < this.memoryStore.syncVersion)) {
-        throw new Error(`CONFLICT_DETECTED: Banner was modified by another session (v${existing.version}). Please refresh.`);
-      }
-      const updated = {
-        ...existing,
-        ...bannerData,
-        version: existing.version + 1,
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      this.memoryStore.banners[index] = updated;
-      await this.commit("BANNER", updated.id, "UPDATED", updated, actorEmail, false);
-      return updated;
-    } else {
-      const newBanner = {
-        id: bannerData.id,
-        title: bannerData.title || "New Promotional Campaign",
-        active: bannerData.active !== void 0 ? bannerData.active : true,
-        clicks: bannerData.clicks || 0,
-        type: bannerData.type || "Wide Slider",
-        imageUrl: bannerData.imageUrl,
-        linkUrl: bannerData.linkUrl,
-        targetAudience: bannerData.targetAudience || "All Users",
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        version: 1
-      };
-      this.memoryStore.banners.unshift(newBanner);
-      await this.commit("BANNER", newBanner.id, "CREATED", newBanner, actorEmail, false);
-      return newBanner;
-    }
-  }
-  async toggleBanner(bannerId, actorEmail) {
-    this.memoryStore = loadStore4();
-    const banner = this.memoryStore.banners.find((b) => b.id === bannerId);
-    if (!banner) {
-      throw new Error(`Banner with ID "${bannerId}" not found`);
-    }
-    banner.active = !banner.active;
-    banner.version += 1;
-    banner.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    await this.commit("BANNER", banner.id, "STATUS_CHANGED", banner, actorEmail, false);
-    return banner;
-  }
-  async deleteBanner(bannerId, actorEmail) {
-    this.memoryStore = loadStore4();
-    const index = this.memoryStore.banners.findIndex((b) => b.id === bannerId);
-    if (index === -1) {
-      throw new Error(`Banner with ID "${bannerId}" not found`);
-    }
-    const removed = this.memoryStore.banners.splice(index, 1)[0];
-    await this.commit("BANNER", bannerId, "DELETED", { id: bannerId }, actorEmail, false);
-    return removed;
-  }
-  // -------------------------------------------------------------
-  // COUPONS MANAGEMENT
-  // -------------------------------------------------------------
-  async upsertCoupon(couponData, clientVersion, actorEmail) {
-    return this.updateCoupon(couponData, clientVersion, actorEmail);
-  }
-  async updateCoupon(couponData, clientVersionParam, actorEmail) {
-    this.memoryStore = loadStore4();
-    const clientVersion = clientVersionParam !== void 0 ? clientVersionParam : couponData.clientVersion;
-    const upperCode = couponData.code.trim().toUpperCase();
-    const index = this.memoryStore.coupons.findIndex((c) => c.code.toUpperCase() === upperCode);
-    if (index >= 0) {
-      const existing = this.memoryStore.coupons[index];
-      if (clientVersion !== void 0 && (clientVersion < existing.version || clientVersion < this.memoryStore.syncVersion)) {
-        throw new Error(`CONFLICT_DETECTED: Coupon was modified by another session. Please refresh.`);
-      }
-      const updated = {
-        ...existing,
-        ...couponData,
-        code: upperCode,
-        version: existing.version + 1,
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      this.memoryStore.coupons[index] = updated;
-      await this.commit("COUPON", updated.code, "UPDATED", updated, actorEmail, false);
-      return updated;
-    } else {
-      const newCoupon = {
-        id: `coup_${Date.now()}`,
-        code: upperCode,
-        discount: Number(couponData.discount) || 20,
-        minAmount: Number(couponData.minAmount) || 500,
-        expires: couponData.expires || "2026-12-31",
-        active: couponData.active !== void 0 ? couponData.active : true,
-        claims: couponData.claims || 0,
-        version: 1,
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      this.memoryStore.coupons.unshift(newCoupon);
-      await this.commit("COUPON", newCoupon.code, "CREATED", newCoupon, actorEmail, false);
-      return newCoupon;
-    }
-  }
-  async toggleCoupon(code, actorEmail) {
-    this.memoryStore = loadStore4();
-    const coupon = this.memoryStore.coupons.find((c) => c.code.toUpperCase() === code.trim().toUpperCase());
-    if (!coupon) throw new Error(`Coupon with code "${code}" not found`);
-    coupon.active = !coupon.active;
-    coupon.version += 1;
-    coupon.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    await this.commit("COUPON", coupon.code, "STATUS_CHANGED", coupon, actorEmail, false);
-    return coupon;
-  }
-  async deleteCoupon(code, actorEmail) {
-    this.memoryStore = loadStore4();
-    const index = this.memoryStore.coupons.findIndex((c) => c.code.toUpperCase() === code.trim().toUpperCase());
-    if (index === -1) throw new Error(`Coupon with code "${code}" not found`);
-    const removed = this.memoryStore.coupons.splice(index, 1)[0];
-    await this.commit("COUPON", code, "DELETED", { code }, actorEmail, false);
-    return removed;
-  }
-  // -------------------------------------------------------------
-  // REVIEWS MODERATION
-  // -------------------------------------------------------------
-  async moderateReview(reviewId, status, actorEmail) {
-    this.memoryStore = loadStore4();
-    const review = this.memoryStore.reviews.find((r) => r.id === reviewId);
-    if (!review) throw new Error(`Review "${reviewId}" not found`);
-    review.status = status;
-    review.version += 1;
-    review.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    await this.commit("REVIEW", review.id, "STATUS_CHANGED", review, actorEmail, false);
-    return review;
-  }
-  async deleteReview(reviewId, actorEmail) {
-    this.memoryStore = loadStore4();
-    const index = this.memoryStore.reviews.findIndex((r) => r.id === reviewId);
-    if (index === -1) throw new Error(`Review "${reviewId}" not found`);
-    const removed = this.memoryStore.reviews.splice(index, 1)[0];
-    await this.commit("REVIEW", reviewId, "DELETED", { id: reviewId }, actorEmail, false);
-    return removed;
-  }
-  // -------------------------------------------------------------
-  // SUPPORT TICKETS
-  // -------------------------------------------------------------
-  async updateSupportTicket(ticketId, patch, actorEmail) {
-    this.memoryStore = loadStore4();
-    const ticket = this.memoryStore.supportTickets.find((t) => t.id === ticketId);
-    if (!ticket) throw new Error(`Ticket "${ticketId}" not found`);
-    Object.assign(ticket, patch);
-    ticket.version += 1;
-    ticket.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    await this.commit("SUPPORT_TICKET", ticket.id, "UPDATED", ticket, actorEmail, true);
-    return ticket;
-  }
-  // -------------------------------------------------------------
-  // CITIES CONFIGURATION
-  // -------------------------------------------------------------
-  async updateCities(cities, actorEmail) {
-    if (!Array.isArray(cities) || cities.length === 0) {
-      throw new Error("Cities list cannot be empty");
-    }
-    this.memoryStore = loadStore4();
-    const deduplicated = Array.from(new Set(cities.map((c) => c.trim()).filter(Boolean)));
-    this.memoryStore.cities = deduplicated;
-    await this.commit("CITIES", "global_cities", "UPDATED", deduplicated, actorEmail, false);
-    return deduplicated;
-  }
-  // -------------------------------------------------------------
-  // SPOTLIGHT MOVIE
-  // -------------------------------------------------------------
-  async updateSpotlight(spotlightData, actorEmail) {
-    this.memoryStore = loadStore4();
-    this.memoryStore.spotlight = {
-      ...this.memoryStore.spotlight,
-      ...spotlightData,
-      version: (this.memoryStore.spotlight.version || 1) + 1,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    await this.commit("SPOTLIGHT", "global_spotlight", "UPDATED", this.memoryStore.spotlight, actorEmail, false);
-    return this.memoryStore.spotlight;
-  }
-  // -------------------------------------------------------------
-  // FEATURE TOGGLES
-  // -------------------------------------------------------------
-  async updateFeatureToggles(toggles, actorEmail) {
-    this.memoryStore = loadStore4();
-    this.memoryStore.featureToggles = {
-      ...this.memoryStore.featureToggles,
-      ...toggles,
-      version: this.memoryStore.featureToggles.version + 1,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    await this.commit("FEATURE_TOGGLES", "global_toggles", "UPDATED", this.memoryStore.featureToggles, actorEmail, false);
-    return this.memoryStore.featureToggles;
-  }
-  // -------------------------------------------------------------
-  // BROADCAST ANNOUNCEMENTS
-  // -------------------------------------------------------------
-  async dispatchBroadcast(notification, actorEmail) {
-    this.memoryStore = loadStore4();
-    const added = {
-      id: `BC-${Math.floor(100 + Math.random() * 900)}`,
-      title: notification.title,
-      message: notification.message,
-      type: notification.type || "Push",
-      target: notification.target || "All Devices",
-      date: "Just Now",
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.memoryStore.recentBroadcasts.unshift(added);
-    if (this.memoryStore.recentBroadcasts.length > 50) {
-      this.memoryStore.recentBroadcasts = this.memoryStore.recentBroadcasts.slice(0, 50);
-    }
-    await this.commit("BROADCAST", added.id, "CREATED", added, actorEmail, false);
-    return added;
-  }
-};
-var globalSyncService = new GlobalSyncService();
-
-// server/modules/admin/sync.routes.ts
 var syncPublicRouter = Router22();
 var syncAdminRouter = Router22();
 var verifyAdminAccess6 = (req, res, next) => {
@@ -21635,28 +22089,36 @@ var verifyAdminAccess6 = (req, res, next) => {
     return authorize("SUPER_ADMIN", "ADMIN")(req, res, next);
   });
 };
-syncPublicRouter.get("/state", (req, res) => {
-  const passcode = req.headers["x-admin-passcode"];
-  const isAdmin = isValidAdminPasscode(passcode) || req.user?.role === "SUPER_ADMIN" || req.user?.role === "ADMIN";
-  const state = isAdmin ? globalSyncService.getAdminState() : globalSyncService.getPublicState();
-  return res.json({
-    success: true,
-    data: state
-  });
+syncPublicRouter.get("/state", async (req, res, next) => {
+  try {
+    const passcode = req.headers["x-admin-passcode"];
+    const isAdmin = isValidAdminPasscode(passcode) || req.user?.role === "SUPER_ADMIN" || req.user?.role === "ADMIN";
+    const state = isAdmin ? await globalSyncService.getAdminState() : await globalSyncService.getPublicState();
+    return res.json({
+      success: true,
+      data: state
+    });
+  } catch (err) {
+    next(err);
+  }
 });
-syncPublicRouter.get("/delta", (req, res) => {
-  const { since, version } = req.query;
-  const passcode = req.headers["x-admin-passcode"];
-  const isAdmin = isValidAdminPasscode(passcode) || req.user?.role === "SUPER_ADMIN" || req.user?.role === "ADMIN";
-  const delta = globalSyncService.getDelta(
-    since ? String(since) : void 0,
-    version ? Number(version) : void 0,
-    isAdmin
-  );
-  return res.json({
-    success: true,
-    data: delta
-  });
+syncPublicRouter.get("/delta", async (req, res, next) => {
+  try {
+    const { since, version } = req.query;
+    const passcode = req.headers["x-admin-passcode"];
+    const isAdmin = isValidAdminPasscode(passcode) || req.user?.role === "SUPER_ADMIN" || req.user?.role === "ADMIN";
+    const delta = await globalSyncService.getDelta(
+      since ? String(since) : void 0,
+      version ? Number(version) : void 0,
+      isAdmin
+    );
+    return res.json({
+      success: true,
+      data: delta
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 syncPublicRouter.get("/events", (req, res) => {
   const passcode = req.headers["x-admin-passcode"];

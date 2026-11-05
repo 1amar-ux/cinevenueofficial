@@ -698,6 +698,31 @@ model JobApplication {
   @@index([userId])
 }
 
+model ProfessionalProfile {
+  id                String   @id @default(cuid())
+  userId            String?  @unique
+  fullName          String
+  category          String
+  roles             String[]
+  bio               String?
+  city              String?
+  state             String?
+  languages         String[]
+  experienceYears   Int?     @default(0)
+  skills            String[]
+  portfolioUrls     String[]
+  profileImageUrl   String?
+  verificationLevel String   @default("None")
+  status            String   @default("Active")
+  isPublic          Boolean  @default(true)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([category])
+  @@index([city])
+}
+
 // ==========================================
 // 11. PLATFORM SETTINGS & MAINTENANCE
 // ==========================================

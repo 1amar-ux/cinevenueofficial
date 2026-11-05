@@ -25,6 +25,7 @@ import MaintenancePage from "./components/MaintenancePage";
 import AuthCallback from "./pages/AuthCallback";
 import { bookingReminderScheduler } from "./services/bookingReminderScheduler";
 import { globalSyncClient } from "./services/globalSyncClient";
+import { syncFilmProductionMasterData } from "./services/filmProductionService";
 
 // Protected Route Guard
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -924,8 +925,7 @@ export default function App() {
           };
         });
         const uniqueApiMovies = deduplicateMovies(apiMovies);
-        const filteredApiMovies = uniqueApiMovies.filter(m => (m.title || "").toLowerCase() === "baththa");
-        const fullMerged = deduplicateMovies(filteredApiMovies.length > 0 ? filteredApiMovies : INITIAL_MOVIES);
+        const fullMerged = deduplicateMovies(uniqueApiMovies.length > 0 ? uniqueApiMovies : INITIAL_MOVIES);
         setMovies((prev) => {
           if (
             prev.length === fullMerged.length &&
@@ -972,10 +972,7 @@ export default function App() {
           image: t.images?.[0] || t.image || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
           rating: t.rating || 4.6,
         }));
-        const fullTheatres = [
-          ...INITIAL_THEATRES,
-          ...apiTheatres.filter(t => t.name.toLowerCase() !== INITIAL_THEATRES[0].name.toLowerCase())
-        ];
+        const fullTheatres = apiTheatres.length > 0 ? apiTheatres : INITIAL_THEATRES;
         setTheatres((prev) => {
           if (
             prev.length === fullTheatres.length &&
@@ -1026,12 +1023,11 @@ export default function App() {
             isDeployed: s.status === 'ACTIVE' || s.isActive !== false,
           };
         });
-        const filteredApiShows = apiShows.filter(s => (s.movieTitle || "").toLowerCase() === "baththa");
-        const activeSchedulesToUse = filteredApiShows.length > 0 ? filteredApiShows : [
-          { id: "SCH-1", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "11:30 AM", pricePerSeat: 10, date: "daily", isDeployed: true },
-          { id: "SCH-2", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "2:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
-          { id: "SCH-3", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "6:30 PM", pricePerSeat: 10, date: "daily", isDeployed: true },
-          { id: "SCH-4", movieTitle: "Baththa", theatreName: "CineVenue Sandbox Multiplex", timeSlot: "9:45 PM", pricePerSeat: 10, date: "daily", isDeployed: true }
+        const activeSchedulesToUse = apiShows.length > 0 ? apiShows : [
+          { id: "SCH-1", movieTitle: "Baththa", theatreName: "CineVenue Prime Multiplex", timeSlot: "11:30 AM", pricePerSeat: 150, date: "daily", isDeployed: true },
+          { id: "SCH-2", movieTitle: "Baththa", theatreName: "CineVenue Prime Multiplex", timeSlot: "2:45 PM", pricePerSeat: 150, date: "daily", isDeployed: true },
+          { id: "SCH-3", movieTitle: "Baththa", theatreName: "CineVenue Prime Multiplex", timeSlot: "6:30 PM", pricePerSeat: 220, date: "daily", isDeployed: true },
+          { id: "SCH-4", movieTitle: "Baththa", theatreName: "CineVenue Prime Multiplex", timeSlot: "9:45 PM", pricePerSeat: 220, date: "daily", isDeployed: true }
         ];
         setSchedules((prev) => {
           if (
@@ -1087,8 +1083,11 @@ export default function App() {
         });
       }
 
-      // 5. Authoritative Bookings Sync from Database
-      const bookingsRes = await apiClient.get('/admin/bookings').catch(() => null);
+      // 5. Authoritative Bookings Sync from Database (Admin or Customer)
+      let bookingsRes = await apiClient.get('/admin/bookings').catch(() => null);
+      if (!bookingsRes?.data?.data?.bookings) {
+        bookingsRes = await apiClient.get('/bookings/my', { params: { email: userEmail || localStorage.getItem("cine_user_email") || undefined } }).catch(() => null);
+      }
       const rawBookings = bookingsRes?.data?.data?.bookings || (bookingsRes?.data as any)?.bookings;
       if (Array.isArray(rawBookings) && rawBookings.length > 0) {
         const apiBookings: Booking[] = rawBookings.map((b: any) => ({
@@ -1119,6 +1118,9 @@ export default function App() {
           return apiBookings;
         });
       }
+
+      // Sync film production marketplace projects and casting calls in the background
+      syncFilmProductionMasterData().catch(() => {});
     } catch (err) {
       console.warn('Live master data synchronization notice:', err);
     }
@@ -1340,6 +1342,44 @@ export default function App() {
       setCineCoinsUserWallet(allUserWallets[activeEmail]);
     }
   }, [userEmail, allUserWallets]);
+
+  // Synchronize live CineCoins wallet from backend database
+  useEffect(() => {
+    const token =
+      localStorage.getItem("cine_access_token") ||
+      localStorage.getItem("cine_auth_token") ||
+      localStorage.getItem("token");
+    if (token || userEmail) {
+      apiClient
+        .get("/cinecoins/wallet")
+        .then((res) => {
+          if (res.data?.success && res.data?.data?.wallet) {
+            const w = res.data.data.wallet;
+            const txs = res.data.data.transactions || [];
+            setCineCoinsUserWallet((prev) => ({
+              ...prev,
+              balanceCoins: Number(w.balance) || prev.balanceCoins,
+              lifetimeEarned: Number(w.lifetimeEarned) || prev.lifetimeEarned,
+              totalRedeemed: Number(w.totalRedeemed) || prev.totalRedeemed
+            }));
+            if (txs.length > 0) {
+              setCineCoinsTransactions(
+                txs.map((t: any) => ({
+                  id: t.id,
+                  title: t.description || t.activityKey || "CineCoins Activity",
+                  date: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "Today",
+                  coins: Number(t.amount) || 0,
+                  type: t.type === "EARNED" ? ("Credit" as const) : ("Debit" as const),
+                  status: "Completed" as const,
+                  description: t.description || ""
+                }))
+              );
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [userEmail]);
 
   // Bi-directional wallet update handler: synchronizes active user wallet and master userWallets store
   const handleUpdateUserWallet = (updated: CineCoinsUserWallet) => {

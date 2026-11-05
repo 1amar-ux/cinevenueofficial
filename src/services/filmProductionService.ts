@@ -46,6 +46,7 @@ import {
 } from "../data/filmProductionData";
 import { FilmProjectApplication } from "../types/productions";
 import { INITIAL_FILM_APPLICATIONS } from "../data/productionsData";
+import apiClient from "./apiClient";
 
 const STORAGE_KEYS = {
   CRAFTS: "cv_film_crafts",
@@ -70,23 +71,30 @@ const STORAGE_KEYS = {
   CONSIDERATIONS: "cv_film_considerations"
 };
 
-// Helper for Local Storage with defaults
+// Helper for Local Storage with defaults & in-memory fallback
+const inMemoryStoreFallback: Record<string, any> = {};
+
 function getStored<T>(key: string, defaultValue: T): T {
   try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : defaultValue;
+    if (typeof localStorage !== "undefined") {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : defaultValue;
+    }
   } catch (e) {
-    console.error(`Error loading storage key ${key}`, e);
-    return defaultValue;
+    // fallback to in-memory
   }
+  return (inMemoryStoreFallback[key] as T) ?? defaultValue;
 }
 
 function setStored<T>(key: string, value: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
   } catch (e) {
-    console.error(`Error saving storage key ${key}`, e);
+    // fallback
   }
+  inMemoryStoreFallback[key] = value;
 }
 
 // ----------------------------------------------------
@@ -236,6 +244,7 @@ export const saveProfessionalProfile = (profile: Partial<ProfessionalProfile>): 
       lastActive: "Just now"
     } as ProfessionalProfile;
     setStored(STORAGE_KEYS.PROFESSIONALS, list);
+    apiClient.post("/film-production/professionals", list[existingIndex]).catch(() => {});
     return list[existingIndex];
   }
 
@@ -289,6 +298,7 @@ export const saveProfessionalProfile = (profile: Partial<ProfessionalProfile>): 
 
   list.unshift(newProfile);
   setStored(STORAGE_KEYS.PROFESSIONALS, list);
+  apiClient.post("/film-production/professionals", newProfile).catch(() => {});
   return newProfile;
 };
 
@@ -354,6 +364,7 @@ export const saveProject = (project: Partial<FilmProject>): FilmProject => {
         updatedAt: new Date().toISOString().split("T")[0] 
       } as FilmProject;
       setStored(STORAGE_KEYS.PROJECTS, list);
+      apiClient.put(`/marketplace/projects/${project.id}`, list[index]).catch(() => {});
       logActivity(list[index].id, project.ownerName || "Filmmaker", "Updated Project Details", `Project ${list[index].title} was updated.`);
       return list[index];
     }
@@ -394,6 +405,7 @@ export const saveProject = (project: Partial<FilmProject>): FilmProject => {
 
   list.unshift(newProject);
   setStored(STORAGE_KEYS.PROJECTS, list);
+  apiClient.post("/marketplace/projects", newProject).catch(() => {});
   logActivity(newProject.id, newProject.ownerName, "Created Project", `Film project "${newProject.title}" was published.`);
   return newProject;
 };
@@ -401,6 +413,7 @@ export const saveProject = (project: Partial<FilmProject>): FilmProject => {
 export const deleteProject = (projectId: string): void => {
   const list = getStored<FilmProject[]>(STORAGE_KEYS.PROJECTS, INITIAL_FILM_PROJECTS).filter(p => p.id !== projectId);
   setStored(STORAGE_KEYS.PROJECTS, list);
+  apiClient.delete(`/marketplace/projects/${projectId}`).catch(() => {});
 };
 
 // ----------------------------------------------------
@@ -557,6 +570,12 @@ export const submitApplication = (app: Partial<JobApplication>): JobApplication 
 
   list.unshift(newApp);
   setStored(STORAGE_KEYS.APPLICATIONS, list);
+  apiClient.post("/marketplace/applications", {
+    projectId: newApp.projectId,
+    role: newApp.requirementPosition || newApp.craftName,
+    coverLetter: newApp.coverMessage,
+    portfolioLinks: newApp.selectedPortfolioIds
+  }).catch(() => {});
   logActivity(newApp.projectId, newApp.applicantName, "New Application", `${newApp.applicantName} applied for ${newApp.requirementPosition}.`);
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("cinevenue-film-applications-updated", { detail: list }));
@@ -1185,6 +1204,7 @@ export const saveIndianCastingCall = (call: Partial<IndianCastingCall>): IndianC
     if (index >= 0) {
       list[index] = { ...list[index], ...call } as IndianCastingCall;
       setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+      apiClient.put(`/marketplace/casting-calls/${call.id}`, list[index]).catch(() => {});
       return list[index];
     }
   }
@@ -1226,6 +1246,7 @@ export const saveIndianCastingCall = (call: Partial<IndianCastingCall>): IndianC
 
   list.unshift(newCall);
   setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+  apiClient.post("/marketplace/casting-calls", newCall).catch(() => {});
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("cinevenue-casting-calls-updated", { detail: list }));
   }
@@ -1242,6 +1263,7 @@ export const updateCastingCallStatus = (
 
   list[index].status = status;
   setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+  apiClient.put(`/marketplace/casting-calls/${id}`, { status }).catch(() => {});
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("cinevenue-casting-calls-updated", { detail: list }));
   }
@@ -1251,6 +1273,7 @@ export const updateCastingCallStatus = (
 export const deleteIndianCastingCall = (id: string): void => {
   const list = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS).filter(c => c.id !== id);
   setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, list);
+  apiClient.delete(`/marketplace/casting-calls/${id}`).catch(() => {});
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("cinevenue-casting-calls-updated", { detail: list }));
   }
@@ -1333,6 +1356,13 @@ export const submitAudition = (audition: Partial<AuditionSubmission>): AuditionS
 
   list.unshift(newAudition);
   setStored(STORAGE_KEYS.AUDITIONS, list);
+  apiClient.post("/marketplace/applications", {
+    projectId: newAudition.projectId,
+    role: newAudition.roleType || newAudition.characterName,
+    coverLetter: newAudition.experienceSummary,
+    portfolioLinks: newAudition.portfolioLinks,
+    videoAuditionUrl: newAudition.videoAuditionUrl
+  }).catch(() => {});
 
   // Increment submissions count on casting call
   const castingCalls = getStored<IndianCastingCall[]>(STORAGE_KEYS.INDIAN_CASTING_CALLS, INITIAL_INDIAN_CASTING_CALLS);
@@ -1805,19 +1835,9 @@ export const discoverProfessionals = async (
     params.append("page", String(activePage));
     params.append("limit", String(activeLimit));
 
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
-    const res = await fetch(`/api/film-production/professionals?${params.toString()}`, {
-      headers: {
-        "Accept": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-      }
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        return json.data;
-      }
+    const res = await apiClient.get<any>(`/film-production/professionals?${params.toString()}`);
+    if (res.data?.success && res.data?.data) {
+      return res.data.data;
     }
   } catch (err) {
     console.warn("Backend /api/film-production/professionals unreachable, utilizing resilient client store:", err);
@@ -1945,22 +1965,12 @@ export const discoverProfessionals = async (
 
 export const fetchProfessionalPublicProfile = async (username: string): Promise<ProfessionalProfile | undefined> => {
   try {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
-    const res = await fetch(`/api/film-production/professionals/${encodeURIComponent(username)}`, {
-      headers: {
-        "Accept": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-      }
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data?.profile) {
-        return json.data.profile;
-      }
+    const res = await apiClient.get<any>(`/film-production/professionals/${encodeURIComponent(username)}`);
+    if (res.data?.success && res.data?.data?.profile) {
+      return res.data.data.profile;
     }
   } catch (err) {
-    console.warn("Backend /api/film-production/professionals/:username unreachable, searching local store:", err);
+    console.warn("Backend /film-production/professionals/:username unreachable, searching local store:", err);
   }
 
   return getProfessionalByUsername(username);
@@ -1968,19 +1978,9 @@ export const fetchProfessionalPublicProfile = async (username: string): Promise<
 
 export const considerForCastingCall = async (data: Partial<CastingConsideration>): Promise<any> => {
   try {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
-    const res = await fetch("/api/film-production/professionals/consider", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      return json.data?.consideration;
+    const res = await apiClient.post<any>("/film-production/professionals/consider", data);
+    if (res.data?.success && res.data?.data?.consideration) {
+      return res.data.data.consideration;
     }
   } catch (err) {
     console.warn("Backend consider API unreachable, writing to local considerations:", err);
@@ -2025,19 +2025,9 @@ export const submitProfileReport = async (
   };
 
   try {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
-    const res = await fetch("/api/film-production/professionals/report", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      return json.data?.report;
+    const res = await apiClient.post<any>("/film-production/professionals/report", payload);
+    if (res.data?.success && res.data?.data?.report) {
+      return res.data.data.report;
     }
   } catch (err) {
     console.warn("Backend report API unreachable, saving locally:", err);
@@ -2084,5 +2074,31 @@ export const updateProfileStatusAdmin = (id: string, status: "Active" | "Suspend
   }
   return undefined;
 };
+
+export const syncFilmProductionMasterData = async (): Promise<void> => {
+  try {
+    const [projRes, castRes] = await Promise.allSettled([
+      apiClient.get<any>("/marketplace/projects"),
+      apiClient.get<any>("/marketplace/casting-calls")
+    ]);
+
+    if (projRes.status === "fulfilled" && projRes.value?.data?.data) {
+      const serverProjects = projRes.value.data.data;
+      if (Array.isArray(serverProjects) && serverProjects.length > 0) {
+        setStored(STORAGE_KEYS.PROJECTS, serverProjects);
+      }
+    }
+
+    if (castRes.status === "fulfilled" && castRes.value?.data?.data) {
+      const serverCalls = castRes.value.data.data;
+      if (Array.isArray(serverCalls) && serverCalls.length > 0) {
+        setStored(STORAGE_KEYS.INDIAN_CASTING_CALLS, serverCalls);
+      }
+    }
+  } catch {
+    // Non-blocking resilient sync
+  }
+};
+
 
 
