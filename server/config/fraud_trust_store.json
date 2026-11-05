@@ -1,6 +1,568 @@
 {
   "alerts": [
     {
+      "id": "FA-839708",
+      "category": "ORGANIZER",
+      "severity": "MEDIUM",
+      "title": "Test Organizer Pending KYC",
+      "description": "Test Organizer Pending KYC",
+      "detectionRule": "MANUAL_INVESTIGATION",
+      "relatedEntityType": "ORGANIZER",
+      "relatedEntityId": "org_test_safety_99",
+      "relatedEntityTitle": null,
+      "riskScore": 50,
+      "evidenceSummary": "Pending GST and identity documents",
+      "evidenceData": {},
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888815876",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:55.876Z",
+          "details": "Rule: MANUAL_INVESTIGATION (Risk: 50)"
+        },
+        {
+          "id": "act-1793888815910",
+          "action": "ENTITY_RESTRICTED",
+          "actor": "superadmin@cinevenue.com",
+          "timestamp": "2026-11-05T14:26:55.910Z",
+          "details": "Pending organizer identity and tax GST registration documents"
+        },
+        {
+          "id": "act-1793888815941",
+          "action": "RESTRICTION_REMOVED",
+          "actor": "superadmin@cinevenue.com",
+          "timestamp": "2026-11-05T14:26:55.941Z",
+          "details": "Organizer completed physical office and GST registration audit"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:55.876Z",
+      "updatedAt": "2026-11-05T14:26:55.941Z",
+      "ruleTriggered": "MANUAL_INVESTIGATION",
+      "entityType": "ORGANIZER",
+      "entityId": "org_test_safety_99",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "MANUAL_INVESTIGATION",
+          "value": "Pending GST and identity documents",
+          "confidence": 50
+        }
+      ]
+    },
+    {
+      "id": "FA-871047",
+      "category": "BOOKING",
+      "severity": "HIGH",
+      "title": "Test Coordinated Bot Activity",
+      "description": "Test Coordinated Bot Activity",
+      "detectionRule": "TEST_BOT_RULE",
+      "relatedEntityType": "BOOKING",
+      "relatedEntityId": "bk_lifecycle_test",
+      "relatedEntityTitle": null,
+      "riskScore": 78,
+      "evidenceSummary": "Investigation raised by automated.detection@cinevenue.internal",
+      "evidenceData": [
+        {
+          "signal": "RAPID_CONCURRENT_ATTEMPTS",
+          "value": "8 attempts in 30s",
+          "confidence": 90
+        }
+      ],
+      "investigationStatus": "FALSE_POSITIVE",
+      "assignedTo": "sec_officer@cinevenue.com",
+      "internalNotes": [
+        {
+          "id": "note-1793888815829",
+          "author": "sec_officer@cinevenue.com",
+          "note": "Contacted customer bank to verify card ownership",
+          "timestamp": "2026-11-05T14:26:55.829Z"
+        }
+      ],
+      "resolutionReason": "Verified customer is corporate client booking for team outing",
+      "actionHistory": [
+        {
+          "id": "act-1793888815745",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:55.745Z",
+          "details": "Rule: TEST_BOT_RULE (Risk: 78)"
+        },
+        {
+          "id": "act-1793888815790",
+          "action": "INVESTIGATOR_ASSIGNED",
+          "actor": "admin@cinevenue.com",
+          "timestamp": "2026-11-05T14:26:55.790Z",
+          "details": "Assigned to sec_officer@cinevenue.com"
+        },
+        {
+          "id": "act-1793888815829",
+          "action": "NOTE_ADDED",
+          "actor": "sec_officer@cinevenue.com",
+          "timestamp": "2026-11-05T14:26:55.829Z",
+          "details": "Added note: Contacted customer bank to verify card ownership..."
+        },
+        {
+          "id": "act-1793888815849",
+          "action": "STATUS_CHANGED_TO_FALSE_POSITIVE",
+          "actor": "sec_officer@cinevenue.com",
+          "timestamp": "2026-11-05T14:26:55.849Z",
+          "details": "Reason: Verified customer is corporate client booking for team outing"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:55.745Z",
+      "updatedAt": "2026-11-05T14:26:55.849Z",
+      "ruleTriggered": "TEST_BOT_RULE",
+      "entityType": "BOOKING",
+      "entityId": "bk_lifecycle_test",
+      "status": "FALSE_POSITIVE",
+      "assignedInvestigator": "sec_officer@cinevenue.com",
+      "evidence": [
+        {
+          "signal": "RAPID_CONCURRENT_ATTEMPTS",
+          "value": "8 attempts in 30s",
+          "confidence": 90
+        }
+      ]
+    },
+    {
+      "id": "FA-914945",
+      "category": "TICKET",
+      "severity": "CRITICAL",
+      "title": "Invalid Ticket Status Scan: tkt_cancelled_777",
+      "description": "Ticket tkt_cancelled_777 with status 'CANCELLED' was presented at gate terminal. Entry refused.",
+      "detectionRule": "TICKET_INVALID_STATUS",
+      "relatedEntityType": "TICKET",
+      "relatedEntityId": "tkt_cancelled_777",
+      "relatedEntityTitle": "Ticket tkt_cancelled_777",
+      "riskScore": 90,
+      "evidenceSummary": "Admission attempted with cancelled/refunded pass by terminal staff_priya_02",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "INVALID_STATUS",
+            "value": "CANCELLED",
+            "confidence": 95
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888815691",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:55.691Z",
+          "details": "Rule: TICKET_INVALID_STATUS (Risk: 90)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:55.691Z",
+      "updatedAt": "2026-11-05T14:26:55.691Z",
+      "ruleTriggered": "TICKET_INVALID_STATUS",
+      "entityType": "TICKET",
+      "entityId": "tkt_cancelled_777",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "INVALID_STATUS",
+          "value": "CANCELLED",
+          "confidence": 95
+        }
+      ]
+    },
+    {
+      "id": "FA-746993",
+      "category": "TICKET",
+      "severity": "HIGH",
+      "title": "Duplicate Ticket Scan: tkt_val_test_555",
+      "description": "Ticket tkt_val_test_555 has already been scanned 2 time(s). Rescan recorded.",
+      "detectionRule": "TICKET_DUPLICATE_SCAN",
+      "relatedEntityType": "TICKET",
+      "relatedEntityId": "tkt_val_test_555",
+      "relatedEntityTitle": "Ticket tkt_val_test_555",
+      "riskScore": 82,
+      "evidenceSummary": "Previous scan registered at 2026-11-05T14:26:25.474Z. Gate staff: staff_ramesh_01",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "RAPID_RESCAN",
+            "value": "2 prior scans",
+            "confidence": 85
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888815475",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:55.474Z",
+          "details": "Rule: TICKET_DUPLICATE_SCAN (Risk: 82)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:55.474Z",
+      "updatedAt": "2026-11-05T14:26:55.474Z",
+      "ruleTriggered": "TICKET_DUPLICATE_SCAN",
+      "entityType": "TICKET",
+      "entityId": "tkt_val_test_555",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "RAPID_RESCAN",
+          "value": "2 prior scans",
+          "confidence": 85
+        }
+      ]
+    },
+    {
+      "id": "FA-111248",
+      "category": "PAYMENT",
+      "severity": "CRITICAL",
+      "title": "Duplicate Payment Reference: pay_replayed_ref_123",
+      "description": "Transaction reference 'pay_replayed_ref_123' was previously confirmed on another checkout. Replay attack blocked.",
+      "detectionRule": "PAYMENT_DUPLICATE_REFERENCE",
+      "relatedEntityType": "BOOKING",
+      "relatedEntityId": "bk_payment_test_02",
+      "relatedEntityTitle": "Booking bk_payment_test_02",
+      "riskScore": 92,
+      "evidenceSummary": "Replay attack detected: ref pay_replayed_ref_123 already consumed.",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "REPLAYED_REFERENCE",
+            "value": "pay_replayed_ref_123",
+            "confidence": 99
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888814074",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:54.074Z",
+          "details": "Rule: PAYMENT_DUPLICATE_REFERENCE (Risk: 92)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:54.074Z",
+      "updatedAt": "2026-11-05T14:26:54.074Z",
+      "ruleTriggered": "PAYMENT_DUPLICATE_REFERENCE",
+      "entityType": "BOOKING",
+      "entityId": "bk_payment_test_02",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "REPLAYED_REFERENCE",
+          "value": "pay_replayed_ref_123",
+          "confidence": 99
+        }
+      ]
+    },
+    {
+      "id": "FA-697446",
+      "category": "PAYMENT",
+      "severity": "CRITICAL",
+      "title": "Payment Amount Mismatch: Booking bk_payment_test_01",
+      "description": "Server-side verified checkout expected ₹1250, but gateway callback received ₹250 (Discrepancy: ₹1000).",
+      "detectionRule": "PAYMENT_AMOUNT_MISMATCH",
+      "relatedEntityType": "BOOKING",
+      "relatedEntityId": "bk_payment_test_01",
+      "relatedEntityTitle": "Booking bk_payment_test_01",
+      "riskScore": 98,
+      "evidenceSummary": "Expected ₹1250 vs Gateway ₹250. Confirmation halted.",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "AMOUNT_MISMATCH",
+            "value": "Expected ₹1250, got ₹250",
+            "confidence": 100
+          },
+          {
+            "signal": "GATEWAY",
+            "value": "CASHFREE",
+            "confidence": 95
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888813848",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:53.848Z",
+          "details": "Rule: PAYMENT_AMOUNT_MISMATCH (Risk: 98)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:53.848Z",
+      "updatedAt": "2026-11-05T14:26:53.848Z",
+      "ruleTriggered": "PAYMENT_AMOUNT_MISMATCH",
+      "entityType": "BOOKING",
+      "entityId": "bk_payment_test_01",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "AMOUNT_MISMATCH",
+          "value": "Expected ₹1250, got ₹250",
+          "confidence": 100
+        },
+        {
+          "signal": "GATEWAY",
+          "value": "CASHFREE",
+          "confidence": 95
+        }
+      ]
+    },
+    {
+      "id": "FA-981206",
+      "category": "ORGANIZER",
+      "severity": "LOW",
+      "title": "Unverified Organizer Submission: FirstTime Host",
+      "description": "Listing 'Local Standup Comedy Open Mic Night' submitted by unverified organizer FirstTime Host. Flagged for administrative verification without automatic block.",
+      "detectionRule": "LISTING_UNVERIFIED_ORGANIZER",
+      "relatedEntityType": "ORGANIZER",
+      "relatedEntityId": "org_pending_88",
+      "relatedEntityTitle": "FirstTime Host",
+      "riskScore": 35,
+      "evidenceSummary": "KYC documents and bank verification pending for organizer org_pending_88",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "UNVERIFIED_KYC",
+            "value": "KYC verification pending",
+            "confidence": 60
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888813558",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:53.558Z",
+          "details": "Rule: LISTING_UNVERIFIED_ORGANIZER (Risk: 35)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:53.558Z",
+      "updatedAt": "2026-11-05T14:26:53.558Z",
+      "ruleTriggered": "LISTING_UNVERIFIED_ORGANIZER",
+      "entityType": "ORGANIZER",
+      "entityId": "org_pending_88",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "UNVERIFIED_KYC",
+          "value": "KYC verification pending",
+          "confidence": 60
+        }
+      ]
+    },
+    {
+      "id": "FA-951072",
+      "category": "ORGANIZER",
+      "severity": "LOW",
+      "title": "Unverified Organizer Submission: Fake Events Org",
+      "description": "Listing 'A.R. Rahman Live In Concert Chennai 2026 Official' submitted by unverified organizer Fake Events Org. Flagged for administrative verification without automatic block.",
+      "detectionRule": "LISTING_UNVERIFIED_ORGANIZER",
+      "relatedEntityType": "ORGANIZER",
+      "relatedEntityId": "org_unverified_44",
+      "relatedEntityTitle": "Fake Events Org",
+      "riskScore": 35,
+      "evidenceSummary": "KYC documents and bank verification pending for organizer org_unverified_44",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "UNVERIFIED_KYC",
+            "value": "KYC verification pending",
+            "confidence": 60
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888813374",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:53.374Z",
+          "details": "Rule: LISTING_UNVERIFIED_ORGANIZER (Risk: 35)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:53.374Z",
+      "updatedAt": "2026-11-05T14:26:53.374Z",
+      "ruleTriggered": "LISTING_UNVERIFIED_ORGANIZER",
+      "entityType": "ORGANIZER",
+      "entityId": "org_unverified_44",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "UNVERIFIED_KYC",
+          "value": "KYC verification pending",
+          "confidence": 60
+        }
+      ]
+    },
+    {
+      "id": "FA-316704",
+      "category": "LISTING",
+      "severity": "HIGH",
+      "title": "Near-Duplicate Listing Detected: A.R. Rahman Live In Concert Chennai 2026 Official",
+      "description": "Listing 'A.R. Rahman Live In Concert Chennai 2026 Official' has 83% title similarity with existing event 'A.R. Rahman Live in Concert Chennai 2026' (evt_live_101).",
+      "detectionRule": "LISTING_DUPLICATE_DETECTED",
+      "relatedEntityType": "EVENT",
+      "relatedEntityId": "evt_new_suspicious_202",
+      "relatedEntityTitle": "A.R. Rahman Live In Concert Chennai 2026 Official",
+      "riskScore": 83,
+      "evidenceSummary": "83% lexical similarity with existing event evt_live_101",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "LEXICAL_SIMILARITY",
+            "value": "83% match",
+            "confidence": 83
+          },
+          {
+            "signal": "MATCHED_EVENT_ID",
+            "value": "evt_live_101",
+            "confidence": 90
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888812665",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:52.665Z",
+          "details": "Rule: LISTING_DUPLICATE_DETECTED (Risk: 83)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:52.665Z",
+      "updatedAt": "2026-11-05T14:26:52.665Z",
+      "ruleTriggered": "LISTING_DUPLICATE_DETECTED",
+      "entityType": "EVENT",
+      "entityId": "evt_new_suspicious_202",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "LEXICAL_SIMILARITY",
+          "value": "83% match",
+          "confidence": 83
+        },
+        {
+          "signal": "MATCHED_EVENT_ID",
+          "value": "evt_live_101",
+          "confidence": 90
+        }
+      ]
+    },
+    {
+      "id": "FA-902621",
+      "category": "BOOKING",
+      "severity": "CRITICAL",
+      "title": "Repeated Failed Bookings Spike: usr_bot_test_404",
+      "description": "Customer account usr_bot_test_404 logged 5 consecutive failed checkout attempts within 10 minutes.",
+      "detectionRule": "BOOKING_REPEATED_FAILURES",
+      "relatedEntityType": "BOOKING",
+      "relatedEntityId": "show_pushpa_screen3",
+      "relatedEntityTitle": "Customer bot@scalper-network.test",
+      "riskScore": 95,
+      "evidenceSummary": "5 failed attempts in 10-minute window. IP: 45.112.55.19",
+      "evidenceData": {
+        "signals": [
+          {
+            "signal": "REPEATED_FAILURES",
+            "value": "5 failures",
+            "confidence": 85
+          },
+          {
+            "signal": "RATE_ANOMALY",
+            "value": "12 attempts in 5 min",
+            "confidence": 80
+          }
+        ]
+      },
+      "investigationStatus": "NEW",
+      "assignedTo": null,
+      "internalNotes": [],
+      "resolutionReason": null,
+      "actionHistory": [
+        {
+          "id": "act-1793888812150",
+          "action": "ALERT_CREATED",
+          "actor": "Fraud Detection Engine",
+          "timestamp": "2026-11-05T14:26:52.150Z",
+          "details": "Rule: BOOKING_REPEATED_FAILURES (Risk: 95)"
+        }
+      ],
+      "isRestricted": false,
+      "createdAt": "2026-11-05T14:26:52.150Z",
+      "updatedAt": "2026-11-05T14:26:52.150Z",
+      "ruleTriggered": "BOOKING_REPEATED_FAILURES",
+      "entityType": "BOOKING",
+      "entityId": "show_pushpa_screen3",
+      "status": "NEW",
+      "assignedInvestigator": null,
+      "evidence": [
+        {
+          "signal": "REPEATED_FAILURES",
+          "value": "5 failures",
+          "confidence": 85
+        },
+        {
+          "signal": "RATE_ANOMALY",
+          "value": "12 attempts in 5 min",
+          "confidence": 80
+        }
+      ]
+    },
+    {
       "id": "FA-201942",
       "category": "ORGANIZER",
       "severity": "MEDIUM",
@@ -5940,6 +6502,51 @@
   ],
   "reports": [
     {
+      "id": "UR-1609",
+      "category": "FAKE_EVENT",
+      "reporterEmail": "victim3@gmail.com",
+      "reporterName": null,
+      "targetType": "EVENT",
+      "targetId": "evt_bogus_concert_999",
+      "targetTitle": "Organizer phone is switched off",
+      "reason": "Organizer customer care number does not ring.",
+      "evidenceText": null,
+      "status": "PENDING",
+      "linkedAlertId": "FA-746272",
+      "createdAt": "2026-11-05T14:26:56.027Z",
+      "updatedAt": "2026-11-05T14:26:56.027Z"
+    },
+    {
+      "id": "UR-1149",
+      "category": "FAKE_EVENT",
+      "reporterEmail": "victim2@gmail.com",
+      "reporterName": null,
+      "targetType": "EVENT",
+      "targetId": "evt_bogus_concert_999",
+      "targetTitle": "Artist posted they are not performing here",
+      "reason": "Artist official Instagram confirmed this is an unauthorized listing.",
+      "evidenceText": null,
+      "status": "PENDING",
+      "linkedAlertId": "FA-746272",
+      "createdAt": "2026-11-05T14:26:55.998Z",
+      "updatedAt": "2026-11-05T14:26:55.998Z"
+    },
+    {
+      "id": "UR-4835",
+      "category": "FAKE_EVENT",
+      "reporterEmail": "victim1@gmail.com",
+      "reporterName": null,
+      "targetType": "EVENT",
+      "targetId": "evt_bogus_concert_999",
+      "targetTitle": "Event venue does not exist",
+      "reason": "Visited the venue address, security says no such event is booked.",
+      "evidenceText": null,
+      "status": "PENDING",
+      "linkedAlertId": "FA-746272",
+      "createdAt": "2026-11-05T14:26:55.971Z",
+      "updatedAt": "2026-11-05T14:26:55.971Z"
+    },
+    {
       "id": "UR-6837",
       "category": "FAKE_EVENT",
       "reporterEmail": "victim3@gmail.com",
@@ -6471,7 +7078,7 @@
     "autoEscalateThreshold": 75,
     "alertRetentionDays": 90,
     "updatedBy": "superadmin@cinevenue.com",
-    "updatedAt": "2026-10-29T19:52:48.811Z",
+    "updatedAt": "2026-11-05T14:26:56.162Z",
     "metadata": {
       "version": "1.0.0",
       "environment": "production"

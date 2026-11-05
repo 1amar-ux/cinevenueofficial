@@ -19,7 +19,7 @@ import ThemeToggle from "../components/ThemeToggle";
 
 interface VerificationResult {
   success: boolean;
-  status: "VALID" | "ALREADY_USED" | "CANCELLED" | "INVALID";
+  status: "VALID" | "ALREADY_USED" | "CANCELLED" | "REFUNDED" | "NOT_YET_VALID" | "INVALID";
   message: string;
   checkedIn?: boolean;
   ticket?: {
@@ -27,6 +27,7 @@ interface VerificationResult {
     bookingNumber?: string;
     passCode?: string;
     type?: string;
+    seat?: string;
     title?: string;
     venue?: string;
     screen?: string;
@@ -165,12 +166,16 @@ export default function VerifyTicket() {
                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                 : result.status === "ALREADY_USED"
                 ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                : result.status === "NOT_YET_VALID"
+                ? "bg-sky-500/10 border-sky-500/30 text-sky-400"
                 : "bg-red-500/10 border-red-500/30 text-red-400"
             }`}>
               {result.status === "VALID" ? (
                 <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-400" />
               ) : result.status === "ALREADY_USED" ? (
                 <AlertCircle className="w-6 h-6 shrink-0 text-amber-400" />
+              ) : result.status === "NOT_YET_VALID" ? (
+                <Clock className="w-6 h-6 shrink-0 text-sky-400" />
               ) : (
                 <XCircle className="w-6 h-6 shrink-0 text-red-400" />
               )}
@@ -182,6 +187,10 @@ export default function VerifyTicket() {
                     ? "ALREADY SCANNED"
                     : result.status === "CANCELLED"
                     ? "TICKET CANCELLED"
+                    : result.status === "REFUNDED"
+                    ? "BOOKING REFUNDED"
+                    : result.status === "NOT_YET_VALID"
+                    ? "ENTRY NOT OPEN YET"
                     : "INVALID TICKET"}
                 </p>
                 <p className="text-[11px] opacity-90 leading-tight mt-0.5">
@@ -199,6 +208,15 @@ export default function VerifyTicket() {
                     {result.ticket.ticketCode || result.ticket.passCode || result.ticket.bookingNumber || tokenInput}
                   </span>
                 </div>
+
+                {result.ticket.seat && (
+                  <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                    <span className="text-text-secondary text-[10px] uppercase font-bold tracking-wider">Assigned Seat</span>
+                    <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
+                      Seat {result.ticket.seat}
+                    </span>
+                  </div>
+                )}
 
                 {result.ticket.title && (
                   <div>

@@ -273,6 +273,15 @@ export interface Booking {
   qrCode?: string;
   ticketId?: string;
   showId?: string;
+  individualTickets?: Array<{
+    ticketId: string;
+    ticketCode: string;
+    seat: string;
+    seatCategory?: string;
+    qrToken: string;
+    qrUrl: string;
+    status: "VALID" | "ALREADY_USED" | "CANCELLED" | "REFUNDED";
+  }>;
 }
 
 export interface MovieSchedule {

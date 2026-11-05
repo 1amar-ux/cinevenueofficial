@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import QRCode from "react-qr-code";
 import { 
   User, Ticket, Calendar, Film, Wallet, Coins, Bell, Settings, 
   QrCode, Clock, ShieldCheck, Download, Trash2, CheckCircle, 
-  AlertCircle, ChevronRight, LogOut, ArrowRight, Sparkles
+  AlertCircle, ChevronRight, LogOut, ArrowRight, Sparkles, Printer
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
 import ThemeToggle from "../ThemeToggle";
@@ -11,6 +12,13 @@ import {
   CineCoinsUserWallet, CineCoinsTransaction 
 } from "../../types";
 import { CustomerProposalsView } from "../proposals/CustomerProposalsView";
+import { 
+  generateAndDownloadTicketPdf, 
+  getTicketVerificationUrl, 
+  downloadQrCodeImage, 
+  generateIndividualSeatTickets,
+  generateSecureTicketToken 
+} from "../../utils/ticketDeliveryService";
 
 interface MyAccountModuleProps {
   userEmail: string | null;
@@ -44,6 +52,7 @@ export default function MyAccountModule({
   >("bookings");
 
   const [selectedBookingForQR, setSelectedBookingForQR] = useState<Booking | null>(null);
+  const [selectedSeatIndex, setSelectedSeatIndex] = useState<number>(0);
 
   // New Audition Application Form State
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -236,7 +245,10 @@ export default function MyAccountModule({
                       </div>
 
                       <button
-                        onClick={() => setSelectedBookingForQR(b)}
+                        onClick={() => {
+                          setSelectedSeatIndex(0);
+                          setSelectedBookingForQR(b);
+                        }}
                         className="p-2.5 bg-white/5 hover:bg-gold hover:text-black text-gold rounded-xl border border-white/10 transition-colors"
                         title="View Digital QR Pass"
                       >
@@ -613,34 +625,128 @@ export default function MyAccountModule({
       )}
 
       {/* VIEW TICKET QR MODAL */}
-      {selectedBookingForQR && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#0F0F12] border border-gold/40 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 relative shadow-2xl">
-            <button
-              onClick={() => setSelectedBookingForQR(null)}
-              className="absolute top-4 right-4 text-text-muted hover:text-white"
-            >
-              ✕
-            </button>
+      {selectedBookingForQR && (() => {
+        const individualTickets = selectedBookingForQR.individualTickets && selectedBookingForQR.individualTickets.length > 0
+          ? selectedBookingForQR.individualTickets
+          : generateIndividualSeatTickets(selectedBookingForQR.id, selectedBookingForQR.seats);
 
-            <CineVenueLogo size="sm" />
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-white">{selectedBookingForQR.movieTitle}</h3>
-              <p className="text-xs text-text-muted">{selectedBookingForQR.theatreName}</p>
-            </div>
+        const activeTicket = individualTickets[selectedSeatIndex] || individualTickets[0];
+        const activeQrUrl = activeTicket.qrUrl || getTicketVerificationUrl(activeTicket.qrToken);
 
-            <div className="bg-white p-4 rounded-2xl w-48 h-48 mx-auto flex items-center justify-center shadow-inner">
-              <QrCode className="w-36 h-36 text-black" />
-            </div>
+        return (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-[#0F0F12] border border-gold/40 w-full max-w-md rounded-2xl p-6 text-center space-y-4 relative shadow-2xl max-h-[92vh] overflow-y-auto">
+              <button
+                onClick={() => setSelectedBookingForQR(null)}
+                className="absolute top-4 right-4 text-text-muted hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
 
-            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 text-xs font-mono space-y-1 text-left">
-              <div className="flex justify-between"><span className="text-text-muted">Seats:</span><span className="text-gold font-bold">{selectedBookingForQR.seats.join(", ")}</span></div>
-              <div className="flex justify-between"><span className="text-text-muted">Date:</span><span className="text-white">{selectedBookingForQR.date}</span></div>
-              <div className="flex justify-between"><span className="text-text-muted">Slot:</span><span className="text-white">{selectedBookingForQR.timeSlot}</span></div>
+              <CineVenueLogo size="sm" />
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono font-bold text-gold bg-gold/10 px-2.5 py-0.5 rounded border border-gold/20 inline-block">
+                  BOOKING ID: {selectedBookingForQR.id}
+                </span>
+                <h3 className="text-lg font-black text-white">{selectedBookingForQR.movieTitle}</h3>
+                <p className="text-xs text-text-muted">{selectedBookingForQR.theatreName}</p>
+              </div>
+
+              {/* Multi-seat tabs if > 1 seat */}
+              {individualTickets.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 flex-wrap pt-1">
+                  {individualTickets.map((t, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedSeatIndex(idx)}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        selectedSeatIndex === idx
+                          ? "bg-gold text-black shadow-md shadow-gold/20"
+                          : "bg-white/5 text-white/70 hover:bg-white/10"
+                      }`}
+                    >
+                      Seat {t.seat}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* QR Code Container */}
+              <div className="bg-white p-3.5 rounded-2xl w-48 h-48 mx-auto flex flex-col items-center justify-center shadow-inner">
+                <QRCode
+                  value={activeQrUrl}
+                  size={144}
+                  level="M"
+                />
+              </div>
+
+              {/* Active Ticket Details */}
+              <div className="space-y-1">
+                <div className="text-xs font-mono font-bold text-emerald-400">
+                  ● VALID FOR ADMISSION
+                </div>
+                <div className="text-[11px] font-mono text-text-muted">
+                  Ticket Code: <span className="text-white font-bold">{activeTicket.ticketCode || activeTicket.ticketId}</span>
+                </div>
+              </div>
+
+              {/* Booking Summary Box */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 text-xs font-mono space-y-1.5 text-left">
+                <div className="flex justify-between"><span className="text-text-muted">Active Seat:</span><span className="text-gold font-bold">{activeTicket.seat}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">All Seats:</span><span className="text-white">{selectedBookingForQR.seats.join(", ")}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">Date:</span><span className="text-white">{selectedBookingForQR.date}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">Showtime:</span><span className="text-white">{selectedBookingForQR.timeSlot}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">Total Paid:</span><span className="text-emerald-400 font-bold">₹{Number(selectedBookingForQR.totalPrice).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">Status:</span><span className="text-emerald-400 font-bold uppercase">{selectedBookingForQR.status || "CONFIRMED"}</span></div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      downloadQrCodeImage(activeQrUrl, `CineVenue-QR-${selectedBookingForQR.id}-${activeTicket.seat}.png`);
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-gold" />
+                    <span>Download QR</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      generateAndDownloadTicketPdf({
+                        type: "MOVIE",
+                        bookingId: selectedBookingForQR.id,
+                        ticketCode: activeTicket.ticketCode || selectedBookingForQR.id,
+                        customerName: selectedBookingForQR.userName || userEmail?.split("@")[0] || "Valued Customer",
+                        customerEmail: selectedBookingForQR.userEmail || userEmail || "guest@cinevenue.com",
+                        customerMobile: selectedBookingForQR.mobileNumber,
+                        title: selectedBookingForQR.movieTitle,
+                        venue: selectedBookingForQR.theatreName,
+                        date: selectedBookingForQR.date,
+                        time: selectedBookingForQR.timeSlot,
+                        seats: selectedBookingForQR.seats,
+                        quantity: selectedBookingForQR.seats.length,
+                        totalPaid: Number(selectedBookingForQR.totalPrice),
+                        paymentMethod: selectedBookingForQR.paymentMethod || "Online",
+                        individualTickets
+                      });
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gold hover:bg-gold-light text-black text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-black" />
+                    <span>Download PDF</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

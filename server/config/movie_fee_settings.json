@@ -3,7 +3,7 @@
     "enabled": true,
     "defaultGstRate": 18,
     "defaultFeeApplication": "PER_TICKET",
-    "updatedAt": "2026-10-29T19:52:45.955Z",
+    "updatedAt": "2026-11-05T14:26:15.546Z",
     "updatedBy": "Super Admin"
   },
   "configs": [
@@ -15,7 +15,7 @@
       "gstRate": 18,
       "feeApplication": "PER_TICKET",
       "enabled": true,
-      "description": "Test Tier (\u20b910 Ticket)",
+      "description": "Test Tier (₹10 Ticket)",
       "createdAt": "2026-11-02T10:00:00.000Z",
       "updatedAt": "2026-11-02T10:00:00.000Z"
     },
@@ -236,5 +236,5 @@
       "updatedAt": "2026-10-15T05:25:54.368Z"
     }
   ],
-  "updatedAt": "2026-10-29T19:52:47.716Z"
+  "updatedAt": "2026-11-05T14:26:38.880Z"
 }

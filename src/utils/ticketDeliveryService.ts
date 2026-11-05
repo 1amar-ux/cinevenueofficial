@@ -12,6 +12,16 @@
 
 import apiClient from "../services/apiClient";
 
+export interface IndividualSeatTicket {
+  ticketId: string;
+  ticketCode: string;
+  seat: string;
+  seatCategory?: string;
+  qrToken: string;
+  qrUrl: string;
+  status: "VALID" | "ALREADY_USED" | "CANCELLED" | "REFUNDED";
+}
+
 export interface TicketDeliveryPayload {
   type: "MOVIE" | "EVENT";
   bookingId: string;
@@ -32,16 +42,83 @@ export interface TicketDeliveryPayload {
   isFree?: boolean;
   paymentMethod?: string;
   posterUrl?: string;
+  individualTickets?: IndividualSeatTicket[];
+}
+
+/**
+ * Generates individual tickets for every seat in a booking
+ * Ensuring each attendee / seat has a unique scannable QR code and ticket identifier.
+ */
+export function generateIndividualSeatTickets(
+  bookingId: string,
+  seats: string[],
+  seatCategory = "PRIME"
+): IndividualSeatTicket[] {
+  const cleanBookingId = (bookingId || "BK000000").replace(/[^a-zA-Z0-9]/g, "");
+
+  if (!seats || seats.length === 0) {
+    const token = generateSecureTicketToken(cleanBookingId, 1, "ADMIT");
+    return [
+      {
+        ticketId: `TKT-${cleanBookingId}-1`,
+        ticketCode: `TKT-${cleanBookingId}-1`,
+        seat: "General Admission",
+        seatCategory,
+        qrToken: token,
+        qrUrl: getTicketVerificationUrl(token),
+        status: "VALID"
+      }
+    ];
+  }
+
+  return seats.map((seat, index) => {
+    const cleanSeat = seat.replace(/[^a-zA-Z0-9]/g, "");
+    const token = generateSecureTicketToken(cleanBookingId, index + 1, cleanSeat);
+    return {
+      ticketId: `TKT-${cleanBookingId}-${cleanSeat}`,
+      ticketCode: `TKT-${cleanBookingId}-${cleanSeat}`,
+      seat,
+      seatCategory,
+      qrToken: token,
+      qrUrl: getTicketVerificationUrl(token),
+      status: "VALID"
+    };
+  });
+}
+
+/**
+ * Downloads a QR code image as PNG to user device
+ */
+export async function downloadQrCodeImage(qrDataUrlOrValue: string, filename = "CineVenue-Ticket-QR.png"): Promise<void> {
+  try {
+    const url = qrDataUrlOrValue.startsWith("data:")
+      ? qrDataUrlOrValue
+      : `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=2&data=${encodeURIComponent(qrDataUrlOrValue)}`;
+
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename.endsWith(".png") ? filename : `${filename}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error("Failed to download QR code image:", err);
+  }
 }
 
 /**
  * Generates a unique, tamper-resistant QR verification token
  */
-export function generateSecureTicketToken(bookingId: string, itemIndex = 0): string {
-  const cleanBookingId = bookingId.replace(/[^a-zA-Z0-9]/g, "");
+export function generateSecureTicketToken(bookingId: string, itemIndex: number | string = 0, seatIdentifier?: string): string {
+  const cleanBookingId = (bookingId || "BK000000").replace(/[^a-zA-Z0-9]/g, "");
+  const seatPart = seatIdentifier ? `-${seatIdentifier.replace(/[^a-zA-Z0-9]/g, "")}` : "";
   const entropy = Math.random().toString(36).substring(2, 8).toUpperCase();
   const timestamp = Date.now().toString(36).toUpperCase();
-  return `CVQR-${cleanBookingId}-${itemIndex}-${timestamp}-${entropy}`;
+  return `CVQR-${cleanBookingId}${seatPart}-${itemIndex}-${timestamp}-${entropy}`;
 }
 
 /**
@@ -153,11 +230,98 @@ export async function dispatchTicketSms(payload: TicketDeliveryPayload): Promise
 
 /**
  * Unified HTML Template for PDF Tickets (A4 Print-Ready & Mobile-Optimized)
+ * Supports multiple seats with individual unique QR codes and ticket passes.
  */
-function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, qrCodeUrl: string): string {
+function generateTicketPdfHtml(payload: TicketDeliveryPayload, defaultQrToken: string, defaultQrCodeUrl: string): string {
   const isMovie = payload.type === "MOVIE";
-  const seatsDisplay = payload.seats && payload.seats.length > 0 ? payload.seats.join(", ") : "General Admission";
+  const seatsList = payload.seats && payload.seats.length > 0 ? payload.seats : ["Standard Admission"];
   const formattedPrice = payload.isFree || payload.totalPaid === 0 ? "₹0.00 (FREE ADMISSION)" : `₹${payload.totalPaid.toFixed(2)}`;
+
+  // Determine individual tickets
+  const individualTickets = payload.individualTickets && payload.individualTickets.length > 0
+    ? payload.individualTickets
+    : generateIndividualSeatTickets(payload.bookingId, payload.seats || [], payload.categoryName || (isMovie ? "PRIME" : "GENERAL"));
+
+  const renderedTicketsHtml = individualTickets.map((tkt, idx) => {
+    const seatVerifyUrl = tkt.qrUrl || getTicketVerificationUrl(tkt.qrToken);
+    const seatQrImg = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(seatVerifyUrl)}&bgcolor=FFFFFF&color=0B0E14&margin=1`;
+    const isMulti = individualTickets.length > 1;
+
+    return `
+    <div class="ticket-container ${idx > 0 ? "page-break-before" : ""}">
+      <div class="header-ribbon">
+        <span class="brand-title">CINEVENUE</span>
+        <span>${isMovie ? "OFFICIAL CINEMA E-TICKET" : "OFFICIAL EVENT ADMISSION PASS"}</span>
+        <span>${isMulti ? `PASS ${idx + 1} OF ${individualTickets.length}` : "CONFIRMED"}</span>
+      </div>
+
+      <div class="ticket-body">
+        <div class="event-main">
+          ${payload.posterUrl ? `
+          <div class="poster-box">
+            <img src="${payload.posterUrl}" alt="${payload.title}" />
+          </div>` : ""}
+          <div class="event-meta">
+            <span class="badge-tag">${tkt.seatCategory || payload.categoryName || (isMovie ? "Cinema" : "Live Event")}</span>
+            <h1 class="item-title">${payload.title}</h1>
+            <div class="item-venue">📍 ${payload.venue}${payload.screen ? ` · ${payload.screen}` : ""}</div>
+            <div class="item-datetime">📅 ${payload.date} &nbsp;·&nbsp; ⏰ ${payload.time}</div>
+          </div>
+        </div>
+
+        <div class="perforated-divider">
+          <div class="notch-left"></div>
+          <div class="notch-right"></div>
+        </div>
+
+        <div class="details-grid">
+          <div>
+            <div class="grid-cell-label">Booking ID</div>
+            <div class="grid-cell-value" style="color: #D4AF37;">${payload.bookingId}</div>
+          </div>
+          <div>
+            <div class="grid-cell-label">Ticket ID</div>
+            <div class="grid-cell-value">${tkt.ticketCode || tkt.ticketId}</div>
+          </div>
+          <div>
+            <div class="grid-cell-label">${isMovie ? "Assigned Seat" : "Pass Type"}</div>
+            <div class="grid-cell-value" style="color: #34D399;">${tkt.seat}</div>
+          </div>
+          <div>
+            <div class="grid-cell-label">Status</div>
+            <div class="grid-cell-value" style="color: #10B981;">● ${tkt.status || "VALID"}</div>
+          </div>
+        </div>
+
+        <div class="qr-section">
+          <img class="qr-image" src="${seatQrImg}" alt="Ticket QR Code" />
+          <div class="qr-text">
+            <h4>Scan at Venue Turnstile (${tkt.seat})</h4>
+            <div class="qr-token-code">${tkt.qrToken}</div>
+            <p class="qr-instructions">
+              Present this official CineVenue digital pass at the entrance gate.
+              Turnstile scanners authenticate this unique seat-level cryptographic token for instant, independent admission.
+            </p>
+          </div>
+        </div>
+
+        <div class="instructions-card">
+          <h5>Gate Admission & Safety Policies</h5>
+          <ul>
+            <li>Direct turnstile QR scan is authorized for this pass (${tkt.seat}). No box office exchange needed.</li>
+            <li>Arrive at least 15 minutes before the showtime (${payload.time}).</li>
+            <li>Outside food, beverages, and recording equipment are strictly prohibited inside the auditorium.</li>
+            <li>Valid identification matching the booking name may be requested by venue security.</li>
+          </ul>
+        </div>
+
+        <div class="footer-support">
+          Booking: <span>${payload.bookingId}</span> &nbsp;·&nbsp; Customer: <span>${payload.customerName}</span> (${payload.customerEmail}) &nbsp;·&nbsp; Total Paid: <span>${formattedPrice}</span> &nbsp;·&nbsp; Support: <span>support@cinevenue.com</span>
+        </div>
+      </div>
+    </div>
+    `;
+  }).join("\n");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -169,7 +333,7 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
     
     @page {
       size: A4 portrait;
-      margin: 10mm;
+      margin: 8mm;
     }
     
     * {
@@ -183,8 +347,9 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
       background-color: #0B0E14;
       color: #FFFFFF;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      gap: 24px;
       min-height: 100vh;
       padding: 20px;
       -webkit-print-color-adjust: exact !important;
@@ -200,6 +365,11 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
       overflow: hidden;
       position: relative;
+    }
+
+    .page-break-before {
+      page-break-before: always;
+      break-before: page;
     }
 
     .header-ribbon {
@@ -223,19 +393,19 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
     }
 
     .ticket-body {
-      padding: 30px;
+      padding: 26px 30px;
     }
 
     .event-main {
       display: flex;
-      gap: 24px;
+      gap: 20px;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .poster-box {
-      width: 110px;
-      height: 155px;
+      width: 95px;
+      height: 135px;
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid rgba(212, 175, 55, 0.4);
@@ -261,40 +431,40 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
       color: #D4AF37;
       font-size: 10px;
       font-weight: 700;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 20px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .item-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
       color: #FFFFFF;
       line-height: 1.25;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       letter-spacing: -0.01em;
     }
 
     .item-venue {
-      font-size: 14px;
+      font-size: 13px;
       color: rgba(255, 255, 255, 0.75);
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .item-datetime {
-      font-size: 13px;
+      font-size: 12.5px;
       color: #D4AF37;
       font-weight: 600;
     }
 
     .perforated-divider {
       position: relative;
-      margin: 20px 0;
+      margin: 16px 0;
       border-top: 2px dashed rgba(255, 255, 255, 0.15);
     }
 
@@ -323,12 +493,12 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
     .details-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
+      gap: 12px;
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 24px;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
       text-align: center;
     }
 
@@ -341,7 +511,7 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
     }
 
     .grid-cell-value {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: #FFFFFF;
       font-family: 'JetBrains Mono', monospace;
@@ -349,26 +519,26 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
 
     .qr-section {
       background: #FFFFFF;
-      border-radius: 18px;
-      padding: 20px;
+      border-radius: 16px;
+      padding: 16px 20px;
       color: #0B0E14;
       display: flex;
       align-items: center;
-      gap: 24px;
-      margin-bottom: 24px;
+      gap: 20px;
+      margin-bottom: 20px;
     }
 
     .qr-image {
-      width: 140px;
-      height: 140px;
+      width: 125px;
+      height: 125px;
       border: 2px solid #0B0E14;
-      border-radius: 10px;
-      padding: 4px;
+      border-radius: 8px;
+      padding: 3px;
       background: #fff;
     }
 
     .qr-text h4 {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -378,15 +548,15 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
 
     .qr-token-code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
+      font-size: 10.5px;
       color: #996515;
       font-weight: 700;
       word-break: break-all;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .qr-instructions {
-      font-size: 10.5px;
+      font-size: 10px;
       color: #4A5568;
       line-height: 1.45;
     }
@@ -394,30 +564,30 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
     .instructions-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 16px 20px;
-      font-size: 10px;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 9.5px;
       color: rgba(255, 255, 255, 0.6);
-      line-height: 1.6;
+      line-height: 1.55;
     }
 
     .instructions-card h5 {
       color: #D4AF37;
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .instructions-card ul {
-      padding-left: 16px;
+      padding-left: 14px;
     }
 
     .footer-support {
-      margin-top: 16px;
+      margin-top: 14px;
       text-align: center;
-      font-size: 10px;
+      font-size: 9.5px;
       color: rgba(255, 255, 255, 0.4);
       font-family: 'JetBrains Mono', monospace;
     }
@@ -440,79 +610,7 @@ function generateTicketPdfHtml(payload: TicketDeliveryPayload, qrToken: string, 
   </style>
 </head>
 <body>
-  <div class="ticket-container">
-    <div class="header-ribbon">
-      <span class="brand-title">CINEVENUE</span>
-      <span>${isMovie ? "OFFICIAL CINEMA E-TICKET" : "OFFICIAL EVENT ADMISSION PASS"}</span>
-      <span>CONFIRMED</span>
-    </div>
-
-    <div class="ticket-body">
-      <div class="event-main">
-        ${payload.posterUrl ? `
-        <div class="poster-box">
-          <img src="${payload.posterUrl}" alt="${payload.title}" />
-        </div>` : ""}
-        <div class="event-meta">
-          <span class="badge-tag">${payload.categoryName || (isMovie ? "Cinema" : "Live Event")}</span>
-          <h1 class="item-title">${payload.title}</h1>
-          <div class="item-venue">📍 ${payload.venue}${payload.screen ? ` · ${payload.screen}` : ""}</div>
-          <div class="item-datetime">📅 ${payload.date} &nbsp;·&nbsp; ⏰ ${payload.time}</div>
-        </div>
-      </div>
-
-      <div class="perforated-divider">
-        <div class="notch-left"></div>
-        <div class="notch-right"></div>
-      </div>
-
-      <div class="details-grid">
-        <div>
-          <div class="grid-cell-label">Booking ID</div>
-          <div class="grid-cell-value" style="color: #D4AF37;">${payload.bookingId}</div>
-        </div>
-        <div>
-          <div class="grid-cell-label">Ticket ID</div>
-          <div class="grid-cell-value">${payload.ticketCode}</div>
-        </div>
-        <div>
-          <div class="grid-cell-label">${isMovie ? "Seats" : "Quantity"}</div>
-          <div class="grid-cell-value" style="color: #34D399;">${isMovie ? seatsDisplay : `${payload.quantity} Pass(es)`}</div>
-        </div>
-        <div>
-          <div class="grid-cell-label">Total Amount</div>
-          <div class="grid-cell-value">${formattedPrice}</div>
-        </div>
-      </div>
-
-      <div class="qr-section">
-        <img class="qr-image" src="${qrCodeUrl}" alt="Ticket Barcode" />
-        <div class="qr-text">
-          <h4>Scan at Venue Turnstile</h4>
-          <div class="qr-token-code">${qrToken}</div>
-          <p class="qr-instructions">
-            Present this official CineVenue digital ticket on your mobile device or printed copy at the entrance gate.
-            Turnstile scanners will authenticate this unique cryptographic token for instant entry.
-          </p>
-        </div>
-      </div>
-
-      <div class="instructions-card">
-        <h5>Important Gate & Safety Instructions</h5>
-        <ul>
-          <li>Direct turnstile entry is authorized with this digital pass. No physical box office exchange required.</li>
-          <li>Please arrive at least 15 minutes prior to the scheduled showtime.</li>
-          <li>Outside food, beverages, and recording equipment are strictly prohibited.</li>
-          <li>Valid photo identification may be requested by venue security upon arrival.</li>
-          <li>Tickets once confirmed are non-transferable. Cancellations, where permitted, must be initiated at least 2 hours prior to showtime.</li>
-        </ul>
-      </div>
-
-      <div class="footer-support">
-        Customer: <span>${payload.customerName}</span> (${payload.customerEmail}) &nbsp;·&nbsp; Support: <span>support@cinevenue.com</span>
-      </div>
-    </div>
-  </div>
+  ${renderedTicketsHtml}
 </body>
 </html>`;
 }

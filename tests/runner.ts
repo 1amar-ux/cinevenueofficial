@@ -9,6 +9,7 @@ import { runEntryLogsTests } from "./unit/entryLogs.test";
 import { runFraudTrustTests } from "./unit/fraudTrust.test";
 import { runEntertainmentAnalyticsTests } from "./unit/entertainmentAnalytics.test";
 import { runGlobalSyncTests } from "./unit/globalSync.test";
+import { runTicketVerificationTests } from "./unit/ticketVerification.test";
 
 async function main() {
   console.log("==========================================");
@@ -129,6 +130,18 @@ async function main() {
   console.log("\n--- 10. Centralized Global Admin Panel & Cross-Device Synchronization Tests ---");
   const syncResults = await runGlobalSyncTests();
   for (const r of syncResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 11. Automatic QR Ticket Generation & Multi-Seat Verification Tests ---");
+  const ticketResults = await runTicketVerificationTests();
+  for (const r of ticketResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;

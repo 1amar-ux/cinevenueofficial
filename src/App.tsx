@@ -93,7 +93,7 @@ import { INITIAL_MOVIES, INITIAL_THEATRES, INITIAL_EVENTS, DEFAULT_SPOTLIGHT, CI
 import { Movie, Theatre, Booking, MovieSchedule, RentalRequest, ContactMessage, TheatreAdmin, Event, EventCategory, EventReview, EventRegistration, NotifyMeRequest, EventOrganizer, SpotlightMovie, UpiGatewaySettings, Advertisement, ServiceProposal, RealtimeMetricOverride, FooterPagesData, DEFAULT_FOOTER_PAGES_DATA, CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, CineCoinsTransaction, CineCoinsUserWallet, CastingApplication } from "./types";
 import apiClient from "./services/apiClient";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
-import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "./utils/ticketDeliveryService";
+import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken, generateIndividualSeatTickets } from "./utils/ticketDeliveryService";
 import { getEvents as getTicketedEvents, fetchLiveEvents, isMockOrDuplicateEvent } from "./services/eventBookingService";
 import { deduplicateMovies, scrubStoredMovies, normalizeMovieTitle } from "./utils/movieDeduplication";
 
@@ -1683,6 +1683,7 @@ export default function App() {
   ) => {
     const bookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
     const qrToken = generateSecureTicketToken(bookingId);
+    const individualTickets = generateIndividualSeatTickets(bookingId, seats);
 
     const newBooking: Booking = {
       id: bookingId,
@@ -1694,6 +1695,8 @@ export default function App() {
       timeSlot: time,
       status: "Confirmed", // Authoritatively confirmed upon successful checkout
       qrCodeData: qrToken,
+      qrToken: qrToken,
+      individualTickets: individualTickets,
       userEmail: userEmail || "guest@cinevenue.com",
       city: selectedCity,
       userName: name || "Premium Guest",
@@ -1734,7 +1737,8 @@ export default function App() {
         seats,
         quantity: seats.length,
         totalPaid: price,
-        paymentMethod: feeDetails?.paymentMethod || "Cashfree"
+        paymentMethod: feeDetails?.paymentMethod || "Cashfree",
+        individualTickets
       }).catch(() => {});
 
       if (newBooking.mobileNumber) {
@@ -1753,7 +1757,8 @@ export default function App() {
           seats,
           quantity: seats.length,
           totalPaid: price,
-          paymentMethod: feeDetails?.paymentMethod || "Cashfree"
+          paymentMethod: feeDetails?.paymentMethod || "Cashfree",
+          individualTickets
         }).catch(() => {});
       }
     } catch (deliveryErr) {
@@ -1771,6 +1776,8 @@ export default function App() {
       userName: newBooking.userName,
       mobileNumber: newBooking.mobileNumber,
       status: 'Confirmed',
+      qrToken,
+      individualTickets,
       paymentMethod: feeDetails?.paymentMethod || 'Cashfree',
     }).catch(() => {});
 

@@ -50,6 +50,7 @@ router.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req:
       bookingNumber,
       bookingId,
       qrToken,
+      individualTickets,
       theatreId,
       movieTitle,
       theatreName,
@@ -151,12 +152,17 @@ router.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req:
     });
 
     const token = qrToken || `QR_${newBooking.id}_${Date.now()}`;
+    const scannedMetadata = Array.isArray(individualTickets) && individualTickets.length > 0
+      ? JSON.stringify({ individualTickets })
+      : null;
+
     await prisma.ticket.create({
       data: {
         bookingId: newBooking.id,
         ticketCode: bNumber,
         qrToken: token,
-        isUsed: false
+        isUsed: false,
+        scannedBy: scannedMetadata
       } as any
     });
 

@@ -584,6 +584,18 @@
   ],
   "engagementEvents": [
     {
+      "id": "eng_1793888816438_dldan",
+      "sessionId": "test-sess-analytics-999",
+      "eventType": "PAGE_VIEW",
+      "entityType": "MOVIE",
+      "entityId": "mov-01",
+      "entityTitle": null,
+      "category": null,
+      "city": "Hyderabad",
+      "device": "Mobile Chrome",
+      "createdAt": "2026-11-05T14:26:56.438Z"
+    },
+    {
       "id": "eng_1793303568828_xofx6",
       "sessionId": "test-sess-analytics-999",
       "eventType": "PAGE_VIEW",
