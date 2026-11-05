@@ -295,4 +295,192 @@ router.patch("/proposals/:id/assign", authenticate, async (req: Request, res: Re
   }
 });
 
+// 4. Create Film Project
+router.post("/projects", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title, genre, synopsis, budget, director, producer, status } = req.body;
+    const project = await prisma.filmProject.create({
+      data: {
+        title: title || "Untitled Project",
+        genre: genre || "Drama",
+        synopsis: synopsis || "",
+        budget: budget ? Number(budget) : null,
+        director: director || null,
+        producer: producer || null,
+        status: status || "PRE_PRODUCTION"
+      }
+    });
+    return res.status(201).json({ success: true, message: "Film project created successfully", data: { project } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 5. Update Film Project
+router.put("/projects/:id", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const project = await prisma.filmProject.update({
+      where: { id },
+      data: req.body
+    });
+    return res.json({ success: true, message: "Film project updated successfully", data: { project } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 6. Delete / Archive Film Project
+router.delete("/projects/:id", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.filmProject.delete({ where: { id } }).catch(async () => {
+      await prisma.filmProject.update({ where: { id }, data: { status: "ARCHIVED" } });
+    });
+    return res.json({ success: true, message: "Film project removed successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 7. List Casting Calls & Crew Jobs
+router.get("/casting-calls", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category, projectId, status } = req.query;
+    const castingCalls = await prisma.castingCall.findMany({
+      where: {
+        ...(category ? { category: String(category) } : {}),
+        ...(projectId ? { projectId: String(projectId) } : {}),
+        status: status ? String(status) : "OPEN"
+      },
+      include: {
+        project: { select: { id: true, title: true, director: true, producer: true, genre: true } },
+        _count: { select: { applications: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({ success: true, data: { castingCalls } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 8. Create Casting Call / Crew Job
+router.post("/casting-calls", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { projectId, roleName, category, description, ageRange, gender, deadline } = req.body;
+    let targetProjectId = projectId;
+    if (!targetProjectId) {
+      const firstProject = await prisma.filmProject.findFirst();
+      if (firstProject) {
+        targetProjectId = firstProject.id;
+      } else {
+        const newProj = await prisma.filmProject.create({
+          data: { title: "CineVenue Productions", genre: "Feature Film", synopsis: "Production listing" }
+        });
+        targetProjectId = newProj.id;
+      }
+    }
+    const castingCall = await prisma.castingCall.create({
+      data: {
+        projectId: targetProjectId,
+        roleName: roleName || "Actor",
+        category: category || "ACTOR",
+        description: description || "",
+        ageRange: ageRange || null,
+        gender: gender || null,
+        deadline: deadline ? new Date(deadline) : null,
+        status: "OPEN"
+      }
+    });
+    return res.status(201).json({ success: true, message: "Casting call created successfully", data: { castingCall } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 9. Update Casting Call
+router.put("/casting-calls/:id", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const castingCall = await prisma.castingCall.update({
+      where: { id },
+      data: req.body
+    });
+    return res.json({ success: true, message: "Casting call updated successfully", data: { castingCall } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 10. Delete / Close Casting Call
+router.delete("/casting-calls/:id", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.castingCall.delete({ where: { id } }).catch(async () => {
+      await prisma.castingCall.update({ where: { id }, data: { status: "CLOSED" } });
+    });
+    return res.json({ success: true, message: "Casting call removed successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 11. Get Current User's Submitted Auditions / Applications
+router.get("/applications/my", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const applications = await prisma.jobApplication.findMany({
+      where: { userId },
+      include: {
+        castingCall: { include: { project: true } },
+        project: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({ success: true, data: { applications } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 12. Admin / Production Team List Applications
+router.get("/admin/applications", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status, castingCallId, projectId } = req.query;
+    const applications = await prisma.jobApplication.findMany({
+      where: {
+        ...(status ? { status: String(status) } : {}),
+        ...(castingCallId ? { castingCallId: String(castingCallId) } : {}),
+        ...(projectId ? { projectId: String(projectId) } : {})
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, mobile: true } },
+        castingCall: { include: { project: true } },
+        project: true
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200
+    });
+    return res.json({ success: true, data: { applications } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 13. Update Application Status (Submitted -> Under Review -> Shortlisted -> Selected -> Rejected)
+router.patch("/applications/:id/status", authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const application = await prisma.jobApplication.update({
+      where: { id },
+      data: { status }
+    });
+    return res.json({ success: true, message: `Application status updated to ${status}`, data: { application } });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

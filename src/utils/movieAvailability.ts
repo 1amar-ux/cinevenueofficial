@@ -236,16 +236,9 @@ export function getEligibleTheatresAndShows(
   isTomorrow: boolean = false
 ): GroupedTheatreShows[] {
   // 1. Filter theatres strictly by city and active status
-  let cityTheatres = filterTheatresByCity(theatres, targetCity).filter(
+  const cityTheatres = filterTheatresByCity(theatres, targetCity).filter(
     (t) => (t as any).status !== 'INACTIVE' && (t as any).status !== 'SUSPENDED'
   );
-
-  // Fallback: If no theatres found for the specific city filter, use all active theatres
-  if (cityTheatres.length === 0 && theatres.length > 0) {
-    cityTheatres = theatres.filter(
-      (t) => (t as any).status !== 'INACTIVE' && (t as any).status !== 'SUSPENDED'
-    );
-  }
 
   const normMovie = (movieTitle || '').trim().toLowerCase();
   const results: GroupedTheatreShows[] = [];
@@ -255,27 +248,28 @@ export function getEligibleTheatresAndShows(
       // Must match movie title
       if ((s.movieTitle || '').trim().toLowerCase() !== normMovie) return false;
       
-      // Flexible match for sandbox test theatre or exact name
+      // Match theatre name or ID
       const normTheatSched = (s.theatreName || '').trim().toLowerCase();
       const normTheatName = theatre.name.trim().toLowerCase();
       const isTheatreMatch = normTheatSched === normTheatName || 
-        normTheatSched.includes("sandbox") || 
-        normTheatName.includes("sandbox");
+        (s.theatreId && String(s.theatreId) === String(theatre.id));
       if (!isTheatreMatch) return false;
 
       // Must be active and deployed
       if (s.isActive === false || s.isDeployed === false) return false;
 
-      // Date matching: test shows are accessible on any date selected
+      // Date matching
       const sDate = (s.date || '').trim().toLowerCase();
-      if (!sDate || sDate === 'all' || sDate === 'daily' || sDate === 'today' || sDate === targetDateStr.toLowerCase()) {
+      if (!sDate || sDate === 'all' || sDate === 'daily') {
         return true;
+      }
+      if (sDate === 'today') {
+        return isToday;
       }
       if (sDate === 'tomorrow') {
         return isTomorrow;
       }
-
-      return true;
+      return sDate === targetDateStr.toLowerCase();
     });
 
     if (matchingShows.length > 0) {

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenError, UnauthorizedError } from "../shared/errors";
 
-export type Role = "SUPER_ADMIN" | "ADMIN" | "THEATRE_ADMIN" | "THEATRE_MANAGER" | "EVENT_ORGANIZER" | "CUSTOMER";
+export type Role = "SUPER_ADMIN" | "ADMIN" | "THEATRE_ADMIN" | "THEATRE_MANAGER" | "EVENT_ORGANIZER" | "EVENT_MANAGER" | "FINANCE" | "MARKETING" | "STAFF" | "CUSTOMER" | string;
 
 export function authorize(...allowedRoles: (Role | Role[])[]) {
   const flatRoles = allowedRoles.flat();

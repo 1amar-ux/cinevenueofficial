@@ -737,7 +737,20 @@ const TABLE_MAP: { [key: string]: string } = {
   employeeactivitylog: "EmployeeActivityLog",
   employeeActivityLog: "EmployeeActivityLog",
   auditentrylog: "AuditEntryLog",
-  auditEntryLog: "AuditEntryLog"
+  auditEntryLog: "AuditEntryLog",
+  platformsetting: "PlatformSetting",
+  platformSetting: "PlatformSetting",
+  professionalprofile: "ProfessionalProfile",
+  professionalProfile: "ProfessionalProfile",
+  filmproject: "FilmProject",
+  filmProject: "FilmProject",
+  castingcall: "CastingCall",
+  castingCall: "CastingCall",
+  jobapplication: "JobApplication",
+  jobApplication: "JobApplication",
+  userfeedback: "UserFeedback",
+  userFeedback: "UserFeedback",
+  coupon: "Coupon"
 };
 
 function initPrismaClient(): PrismaClient {

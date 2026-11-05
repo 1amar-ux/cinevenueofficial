@@ -4,6 +4,7 @@ import { Shield, Lock, Mail, ArrowRight, UserCheck, KeyRound, AlertCircle, HelpC
 import CineVenueLogo from "../components/CineVenueLogo";
 import ThemeToggle from "../components/ThemeToggle";
 import { employeeService } from "../services/employeeService";
+import { apiClient } from "../services/apiClient";
 
 interface AdminLoginProps {
   defaultMode?: "admin" | "employee";
@@ -47,7 +48,7 @@ export default function AdminLogin({ defaultMode }: AdminLoginProps = {}) {
 
     try {
       if (loginMode === "employee") {
-        // Employee Login Flow
+        // Secure Employee Authentication via Centralized Backend Gateway
         const res = await employeeService.loginEmployee(cleanInput, cleanPass);
         if (res.success && res.employee) {
           navigate("/?admin=true");
@@ -56,45 +57,66 @@ export default function AdminLogin({ defaultMode }: AdminLoginProps = {}) {
           setError(res.message || "Invalid employee credentials. Please check your username and password.");
         }
       } else {
-        // Master Super Admin / Theatre Admin Flow
-        const saEmail = (localStorage.getItem("cine_sa_email") || "superadmin@cinevenue.com").toLowerCase().trim();
-        const saPass = localStorage.getItem("cine_sa_pass") || "Amarnath123";
+        // Production Backend Super Admin & Venue Administrator Gateway
+        try {
+          const res = await apiClient.post("/auth/login", {
+            identifier: cleanInput,
+            password: cleanPass
+          });
 
-        if ((cleanInput === saEmail || cleanInput === "superadmin@cinevenue.com") && (cleanPass === saPass || cleanPass === "asdfghjkl" || cleanPass === "Amarnath123")) {
-          // Clear employee session so Super Admin gets uninhibited universal access
+          const data = res.data?.data || res.data;
+          const user = data?.user;
+          const tokens = data?.tokens;
+          const accessToken = tokens?.accessToken || data?.token;
+
+          if (!user || !accessToken) {
+            throw new Error("Invalid response received from authentication gateway.");
+          }
+
+          // Enforce role separation: Deny regular customers from accessing administrative console
+          if (user.role === "CUSTOMER") {
+            setError("Unauthorized access. This account does not possess administrative privileges.");
+            return;
+          }
+
+          // Clear any active employee session to prevent privilege mixups
           localStorage.removeItem("cine_current_employee");
-          localStorage.setItem("cine_user_email", cleanInput);
-          localStorage.setItem("cine_sa_pass", cleanPass);
-          localStorage.setItem("adminToken", "cinevenue-superadmin-session-token");
+          localStorage.setItem("cine_access_token", accessToken);
+          localStorage.setItem("cine_auth_token", accessToken);
+          localStorage.setItem("adminToken", accessToken);
+          localStorage.setItem("cine_user", JSON.stringify(user));
+          localStorage.setItem("cine_user_email", user.email || cleanInput);
+
+          if (tokens?.refreshToken) {
+            localStorage.setItem("cine_refresh_token", tokens.refreshToken);
+          }
+
+          // Scoped navigation for theatre admin
+          if (user.role === "THEATRE_ADMIN" && user.theatreId) {
+            navigate(`/theatre-admin?theatreId=${user.theatreId}`);
+            return;
+          }
+
           navigate("/?admin=true");
           return;
+        } catch (apiErr: any) {
+          // If admin login fails, check if credentials belong to an employee
+          const empRes = await employeeService.loginEmployee(cleanInput, cleanPass);
+          if (empRes.success && empRes.employee) {
+            navigate("/?admin=true");
+            return;
+          }
+
+          const errMsg =
+            apiErr?.response?.data?.error?.message ||
+            apiErr?.response?.data?.message ||
+            apiErr?.message ||
+            "Invalid credentials. Please verify your email/username and password.";
+          setError(errMsg);
         }
-
-        // Check theatre admin accounts
-        const savedTheatreAdmins = JSON.parse(localStorage.getItem("cine_theatre_admins") || "[]");
-        const matchedAdm = savedTheatreAdmins.find(
-          (a: any) => a.email.toLowerCase() === cleanInput && a.passwordHash === cleanPass
-        );
-
-        if (matchedAdm) {
-          localStorage.removeItem("cine_current_employee");
-          localStorage.setItem("cine_user_email", cleanInput);
-          localStorage.setItem("adminToken", `cinevenue-theatre-token-${matchedAdm.id}`);
-          navigate(`/theatre-admin?theatreId=${matchedAdm.theatreId}`);
-          return;
-        }
-
-        // Try employee login as fallback if user typed here
-        const empRes = await employeeService.loginEmployee(cleanInput, cleanPass);
-        if (empRes.success && empRes.employee) {
-          navigate("/?admin=true");
-          return;
-        }
-
-        setError("Invalid credentials. Please verify your email/username and security password.");
       }
     } catch (err: any) {
-      setError(err?.message || "An error occurred during authentication.");
+      setError(err?.message || "An unexpected error occurred during authentication.");
     } finally {
       setLoading(false);
     }

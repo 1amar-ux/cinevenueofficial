@@ -8,6 +8,7 @@ import {
   Play, CheckSquare, Settings, Activity, ShieldAlert
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
+import { apiClient } from "../../services/apiClient";
 import { 
   CineCoinsSettings, CineCoinsReward, CineCoinsChallenge, 
   CineCoinsTransaction, CineCoinsUserWallet 
@@ -261,6 +262,12 @@ export default function CineCoinsModule({
       setIsSpinning(false);
       setSpunResult(serverWonCoins > 0 ? `🎉 Congratulations! You won ${serverWonCoins} CineCoins!` : "Better luck next time! Spin again tomorrow.");
       if (serverWonCoins > 0) {
+        // Authoritatively record spin win in backend database ledger
+        apiClient.post("/cinecoins/spin", {
+          rewardCoins: serverWonCoins,
+          rewardName: "Daily Spin & Win Wheel Prize"
+        }).catch(() => {});
+
         const success = executeReward(serverWonCoins, "Earned", "Daily Spin & Win Wheel Prize");
         if (success) {
            onUpdateWallet({
@@ -310,6 +317,8 @@ export default function CineCoinsModule({
     const totalReward = dailyLoginAmount + bonusReward;
 
     const sourceDesc = `Daily Login Reward (Day ${nextStreak} Streak: +${dailyLoginAmount} CC base ${bonusReward > 0 ? `+${bonusReward} CC Streak Milestone Bonus` : ""})`;
+    // Authoritatively claim daily login reward in backend database ledger
+    apiClient.post("/cinecoins/claim-daily").catch(() => {});
     const success = executeReward(totalReward, "Earned", sourceDesc);
     if (success) {
       // We must manually trigger the wallet update again but preserve the notifications added by executeReward

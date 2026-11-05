@@ -3,12 +3,15 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { UnauthorizedError } from "../shared/errors";
 
+export type UserRoleType = "SUPER_ADMIN" | "ADMIN" | "THEATRE_ADMIN" | "THEATRE_MANAGER" | "EVENT_ORGANIZER" | "EVENT_MANAGER" | "FINANCE" | "MARKETING" | "STAFF" | "CUSTOMER" | string;
+
 export interface AuthenticatedUserPayload {
   userId: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "THEATRE_ADMIN" | "THEATRE_MANAGER" | "EVENT_ORGANIZER" | "CUSTOMER";
+  role: UserRoleType;
   name?: string;
   theatreId?: string;
+  employeeId?: string;
 }
 
 declare global {
