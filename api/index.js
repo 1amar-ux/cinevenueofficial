@@ -34,6 +34,9 @@ var init_env = __esm({
       JWT_REFRESH_SECRET: z.string().default("cinevenue_dev_refresh_jwt_secret_key_882714"),
       JWT_ACCESS_EXPIRES_IN: z.string().default("1h"),
       JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
+      ADMIN_PASSCODE: z.string().optional(),
+      SUPER_ADMIN_PASSWORD: z.string().optional(),
+      SUPER_ADMIN_EMAIL: z.string().optional().default("superadmin@cinevenue.com"),
       GOOGLE_CLIENT_ID: z.string().optional(),
       GOOGLE_CLIENT_SECRET: z.string().optional(),
       GOOGLE_CALLBACK_URL: z.string().optional(),
@@ -2705,7 +2708,9 @@ var AuthService = class {
     }
     const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com").toLowerCase();
     const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2026";
-    if (rawIdentifier === superAdminEmail && data.password === superAdminPassword) {
+    const adminPasscode = process.env.ADMIN_PASSCODE;
+    const isSuperPasswordMatch = data.password === superAdminPassword || Boolean(adminPasscode) && data.password === adminPasscode;
+    if (rawIdentifier === superAdminEmail && isSuperPasswordMatch) {
       const superUser = {
         id: "superadmin_direct",
         email: superAdminEmail,
@@ -23133,18 +23138,50 @@ router19.get(["/public/platform-config", "/public/maintenance-status"], async (r
     next(error);
   }
 });
-router19.get(["/admin/platform-config", "/public/event-highlights", "/public/platform-config"], async (req, res, next) => {
+async function getPlatformConfig() {
+  try {
+    const dbRecord = await prisma.platformSetting.findUnique({
+      where: { key: "platform_config" }
+    });
+    if (dbRecord && dbRecord.value) {
+      return JSON.parse(dbRecord.value);
+    }
+  } catch (dbErr) {
+  }
   try {
     const fs16 = await import("fs");
     const path16 = await import("path");
     const configPath = path16.resolve(process.cwd(), "platform_config.json");
-    let currentConfig = {};
     if (fs16.existsSync(configPath)) {
-      try {
-        currentConfig = JSON.parse(fs16.readFileSync(configPath, "utf-8"));
-      } catch (e) {
-      }
+      return JSON.parse(fs16.readFileSync(configPath, "utf-8"));
     }
+  } catch (fileErr) {
+  }
+  return {};
+}
+async function savePlatformConfig(config) {
+  config.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+  const serialized = JSON.stringify(config);
+  try {
+    await prisma.platformSetting.upsert({
+      where: { key: "platform_config" },
+      update: { value: serialized, updatedAt: /* @__PURE__ */ new Date() },
+      create: { key: "platform_config", value: serialized, description: "Platform configuration and highlights" }
+    });
+  } catch (dbErr) {
+    console.error("[savePlatformConfig] Failed to persist to database:", dbErr);
+  }
+  try {
+    const fs16 = await import("fs");
+    const path16 = await import("path");
+    const configPath = path16.resolve(process.cwd(), "platform_config.json");
+    fs16.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+  } catch (fileErr) {
+  }
+}
+router19.get(["/admin/platform-config", "/public/event-highlights", "/public/platform-config"], async (req, res, next) => {
+  try {
+    const currentConfig = await getPlatformConfig();
     return res.json({
       success: true,
       trendingExperiences: currentConfig.trendingExperiences || [],
@@ -23156,16 +23193,7 @@ router19.get(["/admin/platform-config", "/public/event-highlights", "/public/pla
 });
 router19.post("/admin/platform-config", verifyAdminAccess8, async (req, res, next) => {
   try {
-    const fs16 = await import("fs");
-    const path16 = await import("path");
-    const configPath = path16.resolve(process.cwd(), "platform_config.json");
-    let currentConfig = {};
-    if (fs16.existsSync(configPath)) {
-      try {
-        currentConfig = JSON.parse(fs16.readFileSync(configPath, "utf-8"));
-      } catch (e) {
-      }
-    }
+    const currentConfig = await getPlatformConfig();
     const body = req.body || {};
     if (body.trendingExperiences !== void 0) {
       currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
@@ -23173,8 +23201,7 @@ router19.post("/admin/platform-config", verifyAdminAccess8, async (req, res, nex
     if (body.browseLiveCategories !== void 0) {
       currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
     }
-    currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    fs16.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    await savePlatformConfig(currentConfig);
     return res.json({
       success: true,
       message: "Highlights updated successfully.",
@@ -23187,16 +23214,7 @@ router19.post("/admin/platform-config", verifyAdminAccess8, async (req, res, nex
 });
 router19.put("/admin/platform-config", verifyAdminAccess8, async (req, res, next) => {
   try {
-    const fs16 = await import("fs");
-    const path16 = await import("path");
-    const configPath = path16.resolve(process.cwd(), "platform_config.json");
-    let currentConfig = {};
-    if (fs16.existsSync(configPath)) {
-      try {
-        currentConfig = JSON.parse(fs16.readFileSync(configPath, "utf-8"));
-      } catch (e) {
-      }
-    }
+    const currentConfig = await getPlatformConfig();
     const body = req.body || {};
     if (body.trendingExperiences !== void 0) {
       currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
@@ -23204,8 +23222,7 @@ router19.put("/admin/platform-config", verifyAdminAccess8, async (req, res, next
     if (body.browseLiveCategories !== void 0) {
       currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
     }
-    currentConfig.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    fs16.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    await savePlatformConfig(currentConfig);
     return res.json({
       success: true,
       message: "Highlights updated successfully.",

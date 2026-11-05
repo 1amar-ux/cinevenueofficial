@@ -488,7 +488,12 @@ export class AuthService {
     // 1. Direct Super Admin authentication
     const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || "superadmin@cinevenue.com").toLowerCase();
     const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || "SuperAdmin@2026";
-    if (rawIdentifier === superAdminEmail && data.password === superAdminPassword) {
+    const adminPasscode = process.env.ADMIN_PASSCODE;
+    const isSuperPasswordMatch =
+      data.password === superAdminPassword ||
+      (Boolean(adminPasscode) && data.password === adminPasscode);
+
+    if (rawIdentifier === superAdminEmail && isSuperPasswordMatch) {
       const superUser = {
         id: "superadmin_direct",
         email: superAdminEmail,

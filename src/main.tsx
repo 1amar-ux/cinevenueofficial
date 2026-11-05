@@ -11,23 +11,48 @@ if (typeof window !== "undefined") {
     win.__INITIAL_OAUTH_HREF__ = window.location.href;
   }
 
-  // Ensure native Capacitor environment routes relative API calls to the production HTTPS backend
+  // Global API Network Bridge for Native Mobile (Capacitor Android/iOS) and Web
   const isNative = (typeof win.Capacitor !== "undefined" && win.Capacitor?.isNativePlatform?.()) ||
     window.location.origin.startsWith("capacitor://") ||
     window.location.origin.startsWith("ionic://") ||
     (window.location.hostname === "localhost" && window.location.port === "");
 
-  if (isNative) {
-    const originalFetch = window.fetch;
-    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
+  const productionApiBase = ((import.meta as any).env?.VITE_API_URL || "https://cinevenue.com").replace(/\/+$/, "");
+
+  const originalFetch = window.fetch;
+  window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
+    let targetUrl: RequestInfo | URL = input;
+
+    if (isNative) {
       if (typeof input === "string" && input.startsWith("/api")) {
-        input = `https://cinevenue.com${input}`;
+        targetUrl = `${productionApiBase}${input}`;
       } else if (input instanceof URL && input.pathname.startsWith("/api") && input.origin === window.location.origin) {
-        input = new URL(`https://cinevenue.com${input.pathname}${input.search}`);
+        targetUrl = new URL(`${productionApiBase}${input.pathname}${input.search}`);
       }
-      return originalFetch.call(this, input, init);
-    };
-  }
+    }
+
+    // Inject Bearer token and admin passcode headers if available
+    let modifiedInit = init;
+    const token =
+      localStorage.getItem("cine_access_token") ||
+      localStorage.getItem("cine_auth_token") ||
+      localStorage.getItem("adminToken") ||
+      localStorage.getItem("token");
+    const adminPasscode = localStorage.getItem("cine_admin_passcode");
+
+    if (token || adminPasscode) {
+      const headers = new Headers(init?.headers || {});
+      if (token && !headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      if (adminPasscode && !headers.has("x-admin-passcode")) {
+        headers.set("x-admin-passcode", adminPasscode);
+      }
+      modifiedInit = { ...init, headers };
+    }
+
+    return originalFetch.call(this, targetUrl, modifiedInit);
+  };
 }
 
 window.addEventListener('error', (event) => {

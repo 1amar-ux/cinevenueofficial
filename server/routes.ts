@@ -21,7 +21,7 @@ import { entryLogsRouter } from "./modules/admin/entryLogs.routes";
 import { fraudTrustRouter } from "./modules/admin/fraudTrust.routes";
 import { analyticsRouter } from "./modules/admin/analytics.routes";
 import { syncPublicRouter, syncAdminRouter } from "./modules/admin/sync.routes";
-import { checkDatabaseConnection } from "./config/database";
+import { prisma, checkDatabaseConnection } from "./config/database";
 import { redis } from "./config/redis";
 import { razorpayService } from "./modules/payments/razorpay.service";
 import { authenticate, isValidAdminPasscode } from "./middleware/auth";
@@ -252,19 +252,57 @@ router.get(["/public/platform-config", "/public/maintenance-status"], async (req
   }
 });
 
-router.get(["/admin/platform-config", "/public/event-highlights", "/public/platform-config"], async (req, res, next) => {
+async function getPlatformConfig() {
+  try {
+    const dbRecord = await prisma.platformSetting.findUnique({
+      where: { key: "platform_config" }
+    });
+    if (dbRecord && dbRecord.value) {
+      return JSON.parse(dbRecord.value);
+    }
+  } catch (dbErr) {
+    // Database query failed, fallback to file
+  }
+
   try {
     const fs = await import("fs");
     const path = await import("path");
     const configPath = path.resolve(process.cwd(), "platform_config.json");
-
-    let currentConfig: any = {};
     if (fs.existsSync(configPath)) {
-      try {
-        currentConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      } catch (e) {}
+      return JSON.parse(fs.readFileSync(configPath, "utf-8"));
     }
+  } catch (fileErr) {}
 
+  return {};
+}
+
+async function savePlatformConfig(config: any) {
+  config.updatedAt = new Date().toISOString();
+  const serialized = JSON.stringify(config);
+
+  try {
+    await prisma.platformSetting.upsert({
+      where: { key: "platform_config" },
+      update: { value: serialized, updatedAt: new Date() },
+      create: { key: "platform_config", value: serialized, description: "Platform configuration and highlights" }
+    });
+  } catch (dbErr) {
+    console.error("[savePlatformConfig] Failed to persist to database:", dbErr);
+  }
+
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const configPath = path.resolve(process.cwd(), "platform_config.json");
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+  } catch (fileErr) {
+    // Ignore read-only serverless filesystem error on Vercel
+  }
+}
+
+router.get(["/admin/platform-config", "/public/event-highlights", "/public/platform-config"], async (req, res, next) => {
+  try {
+    const currentConfig = await getPlatformConfig();
     return res.json({
       success: true,
       trendingExperiences: currentConfig.trendingExperiences || [],
@@ -277,17 +315,7 @@ router.get(["/admin/platform-config", "/public/event-highlights", "/public/platf
 
 router.post("/admin/platform-config", verifyAdminAccess, async (req, res, next) => {
   try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const configPath = path.resolve(process.cwd(), "platform_config.json");
-
-    let currentConfig: any = {};
-    if (fs.existsSync(configPath)) {
-      try {
-        currentConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      } catch (e) {}
-    }
-
+    const currentConfig = await getPlatformConfig();
     const body = req.body || {};
     if (body.trendingExperiences !== undefined) {
       currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
@@ -295,8 +323,7 @@ router.post("/admin/platform-config", verifyAdminAccess, async (req, res, next) 
     if (body.browseLiveCategories !== undefined) {
       currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
     }
-    currentConfig.updatedAt = new Date().toISOString();
-    fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    await savePlatformConfig(currentConfig);
 
     return res.json({
       success: true,
@@ -311,17 +338,7 @@ router.post("/admin/platform-config", verifyAdminAccess, async (req, res, next) 
 
 router.put("/admin/platform-config", verifyAdminAccess, async (req, res, next) => {
   try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const configPath = path.resolve(process.cwd(), "platform_config.json");
-
-    let currentConfig: any = {};
-    if (fs.existsSync(configPath)) {
-      try {
-        currentConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      } catch (e) {}
-    }
-
+    const currentConfig = await getPlatformConfig();
     const body = req.body || {};
     if (body.trendingExperiences !== undefined) {
       currentConfig.trendingExperiences = Array.isArray(body.trendingExperiences) ? body.trendingExperiences : [];
@@ -329,8 +346,7 @@ router.put("/admin/platform-config", verifyAdminAccess, async (req, res, next) =
     if (body.browseLiveCategories !== undefined) {
       currentConfig.browseLiveCategories = Array.isArray(body.browseLiveCategories) ? body.browseLiveCategories : [];
     }
-    currentConfig.updatedAt = new Date().toISOString();
-    fs.writeFileSync(configPath, JSON.stringify(currentConfig, null, 2), "utf-8");
+    await savePlatformConfig(currentConfig);
 
     return res.json({
       success: true,

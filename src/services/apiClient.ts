@@ -42,7 +42,11 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         if (typeof window !== "undefined") {
-          const token = localStorage.getItem("cine_auth_token") || localStorage.getItem("token") || localStorage.getItem("cine_access_token");
+          const token =
+            localStorage.getItem("cine_access_token") ||
+            localStorage.getItem("cine_auth_token") ||
+            localStorage.getItem("adminToken") ||
+            localStorage.getItem("token");
           if (token && config.headers && !config.headers.Authorization) {
             config.headers.Authorization = `Bearer ${token}`;
           }

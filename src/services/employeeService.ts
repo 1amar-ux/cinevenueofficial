@@ -1,4 +1,5 @@
 import axios from "axios";
+import { apiClient } from "./apiClient";
 
 export interface RoleDef {
   id: string;
@@ -406,10 +407,14 @@ function getInitialActivityLogs(): EmployeeActivityLog[] {
 
 // Request Helper with Passcode & Bearer token
 function getAuthHeaders() {
-  const token = localStorage.getItem(LS_EMPLOYEE_TOKEN_KEY) || localStorage.getItem("adminToken");
+  const token =
+    localStorage.getItem("cine_access_token") ||
+    localStorage.getItem(LS_EMPLOYEE_TOKEN_KEY) ||
+    localStorage.getItem("adminToken");
+  const passcode = localStorage.getItem("cine_admin_passcode");
   return {
     "Content-Type": "application/json",
-    "x-admin-passcode": "8888",
+    ...(passcode ? { "x-admin-passcode": passcode } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {})
   };
 }
@@ -891,63 +896,30 @@ export const employeeService = {
   },
 
   /**
-   * Authenticate Employee Login
+   * Authenticate Employee Login via Centralized Backend Gateway
    */
   async loginEmployee(username: string, password: string): Promise<{ success: boolean; message?: string; employee?: Employee; token?: string }> {
     try {
-      const res = await axios.post("/api/auth/employee-login", { username, password });
+      const res = await apiClient.post("/auth/employee-login", { username, password });
       if (res.data?.success && res.data?.data) {
         const { employee, token } = res.data.data;
         this.setCurrentEmployee(employee, token);
         return { success: true, employee, token };
       }
+      return {
+        success: false,
+        message: res.data?.error?.message || "Invalid employee credentials. Please check your username and password."
+      };
     } catch (err: any) {
-      const serverMsg = err.response?.data?.error?.message;
-      if (serverMsg) return { success: false, message: serverMsg };
+      const serverMsg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message;
+      return {
+        success: false,
+        message: serverMsg || "Invalid credentials. Please verify your username and password."
+      };
     }
-
-    // Local fallback check
-    const employees = await this.getEmployees();
-    const cleanUser = username.trim().toLowerCase();
-    const emp = employees.find(
-      e => e.username.toLowerCase() === cleanUser || e.email.toLowerCase() === cleanUser
-    );
-
-    if (!emp) {
-      return { success: false, message: "Invalid username or password. Please verify credentials." };
-    }
-
-    if (emp.status === "INACTIVE") {
-      return { success: false, message: "Your employee account has been deactivated. Please contact Super Admin." };
-    }
-
-    // Check passwords in fallback
-    const validPasswords = ["Amarnath123", "EventMgr@2026", "MovieMgr@2026", "Theatre@2026", "Finance@2026", "Password@123", "CineVenue@2026"];
-    const matchesEmpPassword = emp.password && emp.password.trim() === password.trim();
-    const matchesGeneral = validPasswords.includes(password.trim()) || password.trim() === "Amarnath123";
-
-    if (!matchesEmpPassword && !matchesGeneral) {
-      return { success: false, message: "Invalid username or password. Please verify credentials." };
-    }
-
-    // Update login timestamp
-    emp.lastLoginAt = new Date().toISOString();
-    this.updateEmployee(emp.id, { lastLoginAt: emp.lastLoginAt });
-
-    const token = `cine_emp_token_${emp.id}_${Date.now()}`;
-    this.setCurrentEmployee(emp, token);
-
-    this.recordActivityLog({
-      employeeId: emp.id,
-      employeeName: emp.fullName,
-      username: emp.username,
-      employeeCode: emp.employeeId,
-      action: "Employee logged in",
-      module: "AUTH",
-      result: "SUCCESS"
-    });
-
-    return { success: true, employee: emp, token };
   },
 
   /**
@@ -966,8 +938,12 @@ export const employeeService = {
   setCurrentEmployee(emp: Employee | null, token?: string) {
     if (emp) {
       localStorage.setItem(LS_CURRENT_EMPLOYEE_KEY, JSON.stringify(emp));
-      if (token) localStorage.setItem(LS_EMPLOYEE_TOKEN_KEY, token);
-      localStorage.setItem("adminToken", token || "cinevenue-employee-session");
+      if (token) {
+        localStorage.setItem(LS_EMPLOYEE_TOKEN_KEY, token);
+        localStorage.setItem("adminToken", token);
+        localStorage.setItem("cine_access_token", token);
+        localStorage.setItem("cine_auth_token", token);
+      }
       localStorage.setItem("cine_user_email", emp.email);
     } else {
       localStorage.removeItem(LS_CURRENT_EMPLOYEE_KEY);
