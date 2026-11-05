@@ -1583,7 +1583,7 @@ function getMailTransporter() {
       port,
       secure,
       auth: { user, pass },
-      tls: { rejectUnauthorized: false }
+      tls: { rejectUnauthorized: true }
     });
   }
   if (user && pass) {
@@ -1594,13 +1594,13 @@ function getMailTransporter() {
         port: 465,
         secure: true,
         auth: { user, pass },
-        tls: { rejectUnauthorized: false }
+        tls: { rejectUnauthorized: true }
       });
     }
     return nodemailer.createTransport({
       service: "gmail",
       auth: { user, pass },
-      tls: { rejectUnauthorized: false }
+      tls: { rejectUnauthorized: true }
     });
   }
   return null;
