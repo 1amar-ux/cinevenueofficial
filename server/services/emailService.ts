@@ -49,7 +49,7 @@ export function getMailTransporter(): Transporter | null {
       port,
       secure,
       auth: { user, pass },
-      tls: { rejectUnauthorized: false }
+      tls: { rejectUnauthorized: true }
     });
   }
 
@@ -62,14 +62,14 @@ export function getMailTransporter(): Transporter | null {
         port: 465,
         secure: true,
         auth: { user, pass },
-        tls: { rejectUnauthorized: false }
+        tls: { rejectUnauthorized: true }
       });
     }
 
     return nodemailer.createTransport({
       service: "gmail",
       auth: { user, pass },
-      tls: { rejectUnauthorized: false }
+      tls: { rejectUnauthorized: true }
     });
   }
 
