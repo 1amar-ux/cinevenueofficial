@@ -1281,7 +1281,9 @@ var init_database = __esm({
       "app_settings",
       "FinancialAuditLog",
       "EventFeeAuditLog",
-      "MovieFeeAuditLog"
+      "MovieFeeAuditLog",
+      "pricing_audit_logs",
+      "booking_pricing_snapshots"
     ]);
     TABLE_MAP = {
       user: "User",
@@ -1330,9 +1332,17 @@ var init_database = __esm({
       castingCall: "CastingCall",
       jobapplication: "JobApplication",
       jobApplication: "JobApplication",
-      userfeedback: "UserFeedback",
-      userFeedback: "UserFeedback",
-      coupon: "Coupon"
+      userfeedback: "user_feedbacks",
+      userFeedback: "user_feedbacks",
+      coupon: "Coupon",
+      pricingconfiguration: "pricing_configurations",
+      pricingConfiguration: "pricing_configurations",
+      conveniencefeeslab: "convenience_fee_slabs",
+      convenienceFeeSlab: "convenience_fee_slabs",
+      pricingauditlog: "pricing_audit_logs",
+      pricingAuditLog: "pricing_audit_logs",
+      bookingpricingsnapshot: "booking_pricing_snapshots",
+      bookingPricingSnapshot: "booking_pricing_snapshots"
     };
     prisma = initPrismaClient();
   }
@@ -5310,11 +5320,11 @@ var GenericPosAdapter = class extends BasePosAdapter {
     return res.data?.data;
   }
   async handleWebhook(payload, signatureHeader, secret) {
-    const eventId2 = payload?.eventId || payload?.id || `evt_${Date.now()}`;
+    const eventId = payload?.eventId || payload?.id || `evt_${Date.now()}`;
     const eventType = payload?.eventType || payload?.event || "UNKNOWN";
     return {
       eventType,
-      eventId: eventId2,
+      eventId,
       data: payload?.data || payload,
       signatureValid: true
     };
@@ -10510,6 +10520,7 @@ router5.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req
       bookingNumber,
       bookingId,
       qrToken,
+      individualTickets,
       theatreId,
       movieTitle,
       theatreName,
@@ -10599,12 +10610,14 @@ router5.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req
       }
     });
     const token = qrToken || `QR_${newBooking.id}_${Date.now()}`;
+    const scannedMetadata = Array.isArray(individualTickets) && individualTickets.length > 0 ? JSON.stringify({ individualTickets }) : null;
     await prisma.ticket.create({
       data: {
         bookingId: newBooking.id,
         ticketCode: bNumber,
         qrToken: token,
-        isUsed: false
+        isUsed: false,
+        scannedBy: scannedMetadata
       }
     });
     await prisma.payment.create({
@@ -12739,7 +12752,7 @@ router7.get("/gateways", (req, res) => {
 });
 router7.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
-    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId: eventId2, eventTitle } = req.body;
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
     let amountInINR = 0;
     let resolvedBookingId = bookingId || null;
     if (bookingId) {
@@ -12758,8 +12771,9 @@ router7.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMa
     }
     if (!amountInINR) {
       if (Array.isArray(tickets) && tickets.length > 0) {
+        const resolvedItemType = itemType === "EVENT" || Boolean(eventId) ? "EVENT" : "MOVIE";
         const breakdown = centralizedPricingService.calculatePricing({
-          itemType: eventId2 ? "EVENT" : "MOVIE",
+          itemType: resolvedItemType,
           tickets: tickets.map((t) => ({
             price: Number(typeof t === "number" ? t : t.price || 0),
             category: (typeof t === "object" ? t.category : void 0) || "STANDARD"
@@ -12788,9 +12802,9 @@ router7.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMa
       notes: {
         bookingId: resolvedBookingId || "",
         showId: showId || "",
-        eventId: eventId2 || "",
+        eventId: eventId || "",
         eventTitle: eventTitle || "",
-        source: eventId2 ? "EVENT_BOOKING" : "MOVIE_BOOKING"
+        source: itemType === "EVENT" || Boolean(eventId) ? "EVENT_BOOKING" : "MOVIE_BOOKING"
       }
     });
     return res.json({
@@ -12866,7 +12880,7 @@ router7.post("/razorpay/webhook", async (req, res) => {
 });
 router7.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
-    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets } = req.body;
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
     let amountInINR = 0;
     let resolvedBookingId = bookingId || null;
     if (bookingId) {
@@ -12885,8 +12899,9 @@ router7.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance
     }
     if (!amountInINR) {
       if (Array.isArray(tickets) && tickets.length > 0) {
+        const resolvedItemType = itemType === "EVENT" || Boolean(eventId) ? "EVENT" : "MOVIE";
         const breakdown = centralizedPricingService.calculatePricing({
-          itemType: eventId ? "EVENT" : "MOVIE",
+          itemType: resolvedItemType,
           tickets: tickets.map((t) => ({
             price: Number(typeof t === "number" ? t : t.price || 0),
             category: (typeof t === "object" ? t.category : void 0) || "STANDARD"
@@ -12918,7 +12933,9 @@ router7.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance
       notes: {
         bookingId: resolvedBookingId || "",
         showId: showId || "",
-        source: "MOVIE_BOOKING"
+        eventId: eventId || "",
+        eventTitle: eventTitle || "",
+        source: itemType === "EVENT" || Boolean(eventId) ? "EVENT_BOOKING" : "MOVIE_BOOKING"
       }
     });
     return res.json({
@@ -12976,7 +12993,7 @@ router7.post("/verify-payment", optionalAuthenticate, checkMovieBookingMaintenan
 });
 router7.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req, res, next) => {
   try {
-    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets } = req.body;
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
     let amountInINR = 0;
     let resolvedCustomerName = customerName || req.user?.name || "Cinema Guest";
     let resolvedCustomerEmail = customerEmail || req.user?.email || "guest@cinevenue.in";
@@ -13006,8 +13023,9 @@ router7.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMa
     }
     if (!amountInINR) {
       if (Array.isArray(tickets) && tickets.length > 0) {
+        const resolvedItemType = itemType === "EVENT" || Boolean(eventId) ? "EVENT" : "MOVIE";
         const breakdown = centralizedPricingService.calculatePricing({
-          itemType: eventId ? "EVENT" : "MOVIE",
+          itemType: resolvedItemType,
           tickets: tickets.map((t) => ({
             price: Number(typeof t === "number" ? t : t.price || 0),
             category: (typeof t === "object" ? t.category : void 0) || "STANDARD"
@@ -13039,7 +13057,10 @@ router7.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMa
       notes: {
         bookingId: resolvedBookingId || "",
         showId: showId || "",
-        userId: req.user?.userId || ""
+        eventId: eventId || "",
+        eventTitle: eventTitle || "",
+        userId: req.user?.userId || "",
+        source: itemType === "EVENT" || Boolean(eventId) ? "EVENT_BOOKING" : "MOVIE_BOOKING"
       }
     });
     return res.json({
@@ -14847,9 +14868,9 @@ router9.post("/proposals/:id/convert", verifyAdminAccess3, async (req, res, next
         message: `Proposal has already been converted to Event #${item.convertedEventId}.`
       });
     }
-    const eventId2 = `EVT-${Date.now()}`;
+    const eventId = `EVT-${Date.now()}`;
     item.isConvertedToEvent = true;
-    item.convertedEventId = eventId2;
+    item.convertedEventId = eventId;
     item.convertedAt = (/* @__PURE__ */ new Date()).toISOString();
     item.status = "Converted to Event";
     item.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -14859,7 +14880,7 @@ router9.post("/proposals/:id/convert", verifyAdminAccess3, async (req, res, next
       message: "Proposal converted to live Event.",
       data: {
         proposal: item,
-        eventId: eventId2
+        eventId
       }
     });
   } catch (error) {
@@ -17158,7 +17179,7 @@ router12.post("/events", async (req, res, next) => {
     const capacity = Number(body.totalTicketCapacity || body.totalCapacity || body.capacity) || 1e3;
     const price = Number(body.eventType === "FREE" ? 0 : body.ticketTypes?.[0]?.price || body.price || 0);
     const status = body.status === "DRAFT" || body.status === "Draft" ? "DRAFT" : "PUBLISHED";
-    const eventId2 = body.id || `EVT-${Date.now().toString().slice(-4)}`;
+    const eventId = body.id || `EVT-${Date.now().toString().slice(-4)}`;
     const convenienceFeeEnabled = Boolean(body.convenienceFeeEnabled ?? body.convenience_fee_enabled ?? false);
     const convenienceFeeType = String(body.convenienceFeeType || body.convenience_fee_type || "FIXED").toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED";
     const convenienceFeeAmount = Number(body.convenienceFeeAmount !== void 0 ? body.convenienceFeeAmount : body.convenience_fee_amount || 0);
@@ -17168,7 +17189,7 @@ router12.post("/events", async (req, res, next) => {
     const isApproved = convenienceFeeStatus === "APPROVED";
     try {
       await prisma.event.upsert({
-        where: { id: eventId2 },
+        where: { id: eventId },
         update: {
           title,
           description,
@@ -17191,7 +17212,7 @@ router12.post("/events", async (req, res, next) => {
           updatedAt: /* @__PURE__ */ new Date()
         },
         create: {
-          id: eventId2,
+          id: eventId,
           title,
           description,
           category,
@@ -17216,7 +17237,7 @@ router12.post("/events", async (req, res, next) => {
       if (convenienceFeeEnabled) {
         await prisma.eventFeeAuditLog.create({
           data: {
-            eventId: eventId2,
+            eventId,
             action: isApproved ? "APPROVED" : "CREATED",
             newStatus: convenienceFeeStatus,
             feeType: convenienceFeeType,
@@ -17232,13 +17253,13 @@ router12.post("/events", async (req, res, next) => {
       }
       if (Array.isArray(body.ticketTypes) && body.ticketTypes.length > 0) {
         try {
-          await prisma.eventTicketType.deleteMany({ where: { eventId: eventId2 } });
+          await prisma.eventTicketType.deleteMany({ where: { eventId } });
         } catch (delErr) {
         }
         await prisma.eventTicketType.createMany({
           data: body.ticketTypes.map((tt, idx) => ({
-            id: tt.id || `TKT-${eventId2}-${idx + 1}`,
-            eventId: eventId2,
+            id: tt.id || `TKT-${eventId}-${idx + 1}`,
+            eventId,
             name: tt.name || "General Admission",
             price: Number(tt.price) || 0,
             capacity: Number(tt.totalQuantity || tt.capacity || 100),
@@ -17253,7 +17274,7 @@ router12.post("/events", async (req, res, next) => {
       success: true,
       message: `Event "${title}" saved and published successfully.`,
       event: {
-        id: eventId2,
+        id: eventId,
         title,
         description,
         category,
@@ -17286,17 +17307,17 @@ router12.post("/events", async (req, res, next) => {
 });
 router12.post("/events/:eventId/cancel", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
+    const { eventId } = req.params;
     try {
       await prisma.event.update({
-        where: { id: eventId2 },
+        where: { id: eventId },
         data: { status: "CANCELLED" }
       });
     } catch (dbErr) {
     }
     return res.json({
       success: true,
-      message: `Event ${eventId2} has been cancelled successfully.`,
+      message: `Event ${eventId} has been cancelled successfully.`,
       status: "CANCELLED",
       bookingStatus: "CLOSED"
     });
@@ -17306,17 +17327,17 @@ router12.post("/events/:eventId/cancel", async (req, res, next) => {
 });
 router12.post("/events/:eventId/publish", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
+    const { eventId } = req.params;
     try {
       await prisma.event.update({
-        where: { id: eventId2 },
+        where: { id: eventId },
         data: { status: "PUBLISHED" }
       });
     } catch (dbErr) {
     }
     return res.json({
       success: true,
-      message: `Event ${eventId2} published successfully.`,
+      message: `Event ${eventId} published successfully.`,
       status: "PUBLISHED",
       bookingStatus: "OPEN"
     });
@@ -17326,17 +17347,17 @@ router12.post("/events/:eventId/publish", async (req, res, next) => {
 });
 router12.post("/events/:eventId/unpublish", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
+    const { eventId } = req.params;
     try {
       await prisma.event.update({
-        where: { id: eventId2 },
+        where: { id: eventId },
         data: { status: "DRAFT" }
       });
     } catch (dbErr) {
     }
     return res.json({
       success: true,
-      message: `Event ${eventId2} unpublished (saved as draft).`,
+      message: `Event ${eventId} unpublished (saved as draft).`,
       status: "DRAFT",
       bookingStatus: "CLOSED"
     });
@@ -17346,19 +17367,19 @@ router12.post("/events/:eventId/unpublish", async (req, res, next) => {
 });
 router12.patch("/events/:eventId/status", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
+    const { eventId } = req.params;
     const { status, bookingStatus } = req.body;
     try {
       const allowedStatus = ["DRAFT", "PUBLISHED", "CANCELLED", "COMPLETED"].includes(status) ? status : "PUBLISHED";
       await prisma.event.update({
-        where: { id: eventId2 },
+        where: { id: eventId },
         data: { status: allowedStatus }
       });
     } catch (dbErr) {
     }
     return res.json({
       success: true,
-      message: `Event ${eventId2} status updated.`,
+      message: `Event ${eventId} status updated.`,
       status,
       bookingStatus
     });
@@ -17368,18 +17389,18 @@ router12.patch("/events/:eventId/status", async (req, res, next) => {
 });
 router12.delete("/events/:eventId", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
+    const { eventId } = req.params;
     try {
-      await prisma.event.delete({ where: { id: eventId2 } });
+      await prisma.event.delete({ where: { id: eventId } });
     } catch (dbErr) {
       try {
-        await prisma.event.update({ where: { id: eventId2 }, data: { status: "CANCELLED" } });
+        await prisma.event.update({ where: { id: eventId }, data: { status: "CANCELLED" } });
       } catch (e) {
       }
     }
     return res.json({
       success: true,
-      message: `Event ${eventId2} deleted successfully.`
+      message: `Event ${eventId} deleted successfully.`
     });
   } catch (error) {
     next(error);
@@ -17387,14 +17408,14 @@ router12.delete("/events/:eventId", async (req, res, next) => {
 });
 router12.post("/events/:eventId/approve-fee", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
-    const event = await prisma.event.findUnique({ where: { id: eventId2 } });
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
     const actorEmail = req.user?.email || "Authorized Admin";
     const approvedAt = /* @__PURE__ */ new Date();
     const updated = await prisma.event.update({
-      where: { id: eventId2 },
+      where: { id: eventId },
       data: {
         convenienceFeeStatus: "APPROVED",
         convenienceFeeApprovedBy: actorEmail,
@@ -17403,7 +17424,7 @@ router12.post("/events/:eventId/approve-fee", async (req, res, next) => {
     });
     await prisma.eventFeeAuditLog.create({
       data: {
-        eventId: eventId2,
+        eventId,
         action: "APPROVED",
         previousStatus: prevStatus,
         newStatus: "APPROVED",
@@ -17429,20 +17450,20 @@ router12.post("/events/:eventId/approve-fee", async (req, res, next) => {
 });
 router12.post("/events/:eventId/reject-fee", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
-    const event = await prisma.event.findUnique({ where: { id: eventId2 } });
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     const prevStatus = event.convenienceFeeStatus || event.convenience_fee_status || "PENDING";
     const actorEmail = req.user?.email || "Authorized Admin";
     const updated = await prisma.event.update({
-      where: { id: eventId2 },
+      where: { id: eventId },
       data: {
         convenienceFeeStatus: "REJECTED"
       }
     });
     await prisma.eventFeeAuditLog.create({
       data: {
-        eventId: eventId2,
+        eventId,
         action: "REJECTED",
         previousStatus: prevStatus,
         newStatus: "REJECTED",
@@ -17468,8 +17489,8 @@ router12.post("/events/:eventId/reject-fee", async (req, res, next) => {
 });
 router12.patch("/events/:eventId/fee-settings", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
-    const event = await prisma.event.findUnique({ where: { id: eventId2 } });
+    const { eventId } = req.params;
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     const {
       convenienceFeeEnabled,
@@ -17482,7 +17503,7 @@ router12.patch("/events/:eventId/fee-settings", async (req, res, next) => {
     const actorEmail = req.user?.email || "Admin";
     const isApproved = convenienceFeeStatus === "APPROVED";
     const updated = await prisma.event.update({
-      where: { id: eventId2 },
+      where: { id: eventId },
       data: {
         convenienceFeeEnabled: Boolean(convenienceFeeEnabled),
         convenienceFeeType: String(convenienceFeeType).toUpperCase() === "PERCENTAGE" ? "PERCENTAGE" : "FIXED",
@@ -17495,7 +17516,7 @@ router12.patch("/events/:eventId/fee-settings", async (req, res, next) => {
     });
     await prisma.eventFeeAuditLog.create({
       data: {
-        eventId: eventId2,
+        eventId,
         action: "EDITED",
         previousStatus: prevStatus,
         newStatus: convenienceFeeStatus,
@@ -17521,9 +17542,9 @@ router12.patch("/events/:eventId/fee-settings", async (req, res, next) => {
 });
 router12.get("/events/:eventId/fee-audit-logs", async (req, res, next) => {
   try {
-    const { eventId: eventId2 } = req.params;
+    const { eventId } = req.params;
     const logs = await prisma.eventFeeAuditLog.findMany({
-      where: { eventId: eventId2 },
+      where: { eventId },
       orderBy: { createdAt: "desc" }
     });
     return res.json({
@@ -18170,8 +18191,22 @@ router14.all("/verify", async (req, res, next) => {
       });
     }
     const cleanToken = token.trim();
+    const cvqrMatch = cleanToken.match(/^(?:CVQR|TKT)-([A-Za-z0-9]+?)(?:-([A-Za-z0-9]+))?(?:-.*)?$/);
+    const candidateBooking = cvqrMatch ? cvqrMatch[1] : null;
+    const candidateSeat = cvqrMatch && cvqrMatch[2] && !cvqrMatch[2].match(/^\d+$/) ? cvqrMatch[2] : null;
+    const orConditions = [
+      { qrToken: cleanToken },
+      { ticketCode: cleanToken },
+      { id: cleanToken },
+      { bookingId: cleanToken }
+    ];
+    if (candidateBooking) {
+      orConditions.push({ bookingId: candidateBooking });
+      orConditions.push({ ticketCode: { contains: candidateBooking } });
+      orConditions.push({ booking: { bookingNumber: { contains: candidateBooking } } });
+    }
     const movieTicket = await prisma.ticket.findFirst({
-      where: { OR: [{ qrToken: cleanToken }, { ticketCode: cleanToken }, { id: cleanToken }] },
+      where: { OR: orConditions },
       include: {
         booking: {
           include: {
@@ -18189,26 +18224,62 @@ router14.all("/verify", async (req, res, next) => {
     if (movieTicket) {
       const booking = movieTicket.booking;
       if (booking?.status === "CANCELLED" || booking?.status === "REFUNDED") {
+        const isRefund = booking.status === "REFUNDED";
         fraudTrustService.recordTicketScanAnomaly({
           ticketCode: movieTicket.ticketCode,
           bookingNumber: booking.bookingNumber,
           title: booking.show?.movie?.title,
           venueName: booking.theatre?.name,
-          scanType: "CANCELLED",
+          scanType: isRefund ? "REFUNDED" : "CANCELLED",
           operator: operatorName,
           previousScannedAt: null
         }).catch(() => {
         });
         return res.json({
           success: true,
-          status: "CANCELLED",
-          message: "This booking has been cancelled or refunded. Entry denied.",
+          status: isRefund ? "REFUNDED" : "CANCELLED",
+          message: isRefund ? "This booking has been refunded. Entry denied." : "This booking has been cancelled. Entry denied.",
           ticket: {
             ticketCode: movieTicket.ticketCode,
             bookingNumber: booking.bookingNumber,
             title: booking.show?.movie?.title || "Movie Show",
             venue: booking.theatre?.name || "Theatre",
-            status: "CANCELLED"
+            seat: candidateSeat || void 0,
+            status: isRefund ? "REFUNDED" : "CANCELLED"
+          }
+        });
+      }
+      let parsedMetadata = {};
+      try {
+        if (movieTicket.scannedBy && (movieTicket.scannedBy.startsWith("{") || movieTicket.scannedBy.startsWith("["))) {
+          parsedMetadata = JSON.parse(movieTicket.scannedBy);
+        }
+      } catch (e) {
+      }
+      const usedSeatsList = Array.isArray(parsedMetadata.usedSeats) ? parsedMetadata.usedSeats : [];
+      if (candidateSeat && usedSeatsList.includes(candidateSeat.toUpperCase())) {
+        fraudTrustService.recordTicketScanAnomaly({
+          ticketCode: `${movieTicket.ticketCode}-${candidateSeat}`,
+          bookingNumber: booking?.bookingNumber,
+          title: booking?.show?.movie?.title,
+          venueName: booking?.theatre?.name,
+          scanType: "DUPLICATE",
+          operator: operatorName,
+          previousScannedAt: movieTicket.usedAt ? movieTicket.usedAt.toISOString() : null
+        }).catch(() => {
+        });
+        return res.json({
+          success: true,
+          status: "ALREADY_USED",
+          message: `Ticket for Seat ${candidateSeat.toUpperCase()} was already scanned. Duplicate entry denied.`,
+          ticket: {
+            ticketCode: `${movieTicket.ticketCode}-${candidateSeat}`,
+            bookingNumber: booking?.bookingNumber,
+            seat: candidateSeat.toUpperCase(),
+            title: booking?.show?.movie?.title || "Movie Show",
+            venue: booking?.theatre?.name || "Theatre",
+            usedAt: movieTicket.usedAt,
+            scannedBy: operatorName
           }
         });
       }
@@ -18252,44 +18323,59 @@ router14.all("/verify", async (req, res, next) => {
         });
       }
       if (doCheckIn) {
-        const updateResult = await prisma.ticket.updateMany({
-          where: {
-            id: movieTicket.id,
-            isUsed: false
-          },
-          data: {
-            isUsed: true,
-            usedAt: /* @__PURE__ */ new Date(),
-            scannedBy: operatorName
-          }
-        });
-        if (updateResult.count === 0) {
-          const refreshedTicket = await prisma.ticket.findUnique({ where: { id: movieTicket.id } });
-          return res.json({
-            success: true,
-            status: "ALREADY_USED",
-            message: `Ticket already checked in at ${refreshedTicket?.usedAt ? new Date(refreshedTicket.usedAt).toLocaleTimeString() : "an earlier moment"}. Concurrent duplicate admission blocked.`,
-            ticket: {
-              ticketCode: movieTicket.ticketCode,
-              bookingNumber: booking?.bookingNumber,
-              title: booking?.show?.movie?.title || "Movie Show",
-              venue: booking?.theatre?.name || "Theatre",
-              usedAt: refreshedTicket?.usedAt,
-              scannedBy: refreshedTicket?.scannedBy
+        if (candidateSeat) {
+          const updatedUsedSeats = [...usedSeatsList, candidateSeat.toUpperCase()];
+          parsedMetadata.usedSeats = updatedUsedSeats;
+          parsedMetadata.lastScannedSeat = candidateSeat.toUpperCase();
+          parsedMetadata.lastScannedBy = operatorName;
+          await prisma.ticket.update({
+            where: { id: movieTicket.id },
+            data: {
+              scannedBy: JSON.stringify(parsedMetadata),
+              usedAt: /* @__PURE__ */ new Date()
             }
           });
+        } else {
+          const updateResult = await prisma.ticket.updateMany({
+            where: {
+              id: movieTicket.id,
+              isUsed: false
+            },
+            data: {
+              isUsed: true,
+              usedAt: /* @__PURE__ */ new Date(),
+              scannedBy: operatorName
+            }
+          });
+          if (updateResult.count === 0) {
+            const refreshedTicket = await prisma.ticket.findUnique({ where: { id: movieTicket.id } });
+            return res.json({
+              success: true,
+              status: "ALREADY_USED",
+              message: `Ticket already checked in at ${refreshedTicket?.usedAt ? new Date(refreshedTicket.usedAt).toLocaleTimeString() : "an earlier moment"}. Concurrent duplicate admission blocked.`,
+              ticket: {
+                ticketCode: movieTicket.ticketCode,
+                bookingNumber: booking?.bookingNumber,
+                title: booking?.show?.movie?.title || "Movie Show",
+                venue: booking?.theatre?.name || "Theatre",
+                usedAt: refreshedTicket?.usedAt,
+                scannedBy: refreshedTicket?.scannedBy
+              }
+            });
+          }
         }
-        logger2.info(`Ticket ${movieTicket.ticketCode} safely checked in by ${operatorName}`);
+        logger2.info(`Ticket ${movieTicket.ticketCode}${candidateSeat ? ` (Seat ${candidateSeat})` : ""} safely checked in by ${operatorName}`);
       }
       return res.json({
         success: true,
         status: "VALID",
-        message: doCheckIn ? "Gate check-in successful. Welcome to CineVenue!" : "Ticket is valid for admission.",
+        message: doCheckIn ? `Gate check-in successful${candidateSeat ? ` for Seat ${candidateSeat}` : ""}. Welcome to CineVenue!` : `Ticket is valid for admission${candidateSeat ? ` (Seat ${candidateSeat})` : ""}.`,
         checkedIn: doCheckIn,
         ticket: {
-          ticketCode: movieTicket.ticketCode,
+          ticketCode: candidateSeat ? `${movieTicket.ticketCode}-${candidateSeat}` : movieTicket.ticketCode,
           bookingNumber: booking?.bookingNumber,
           type: "MOVIE",
+          seat: candidateSeat || void 0,
           title: booking?.show?.movie?.title || "Movie Show",
           venue: booking?.theatre?.name || "Theatre",
           screen: booking?.show?.screen?.name || "Audi 1",
@@ -25213,9 +25299,9 @@ async function handler(req, res) {
   const isSingleEventEndpoint = (url.startsWith("/api/v1/events/") || url.startsWith("/api/events/") || url.startsWith("/events/")) && !url.includes("/send-pass-email") && !url.includes("/book") && req.method === "GET";
   if (isSingleEventEndpoint) {
     const parts = url.split("/");
-    const eventId2 = parts[parts.length - 1];
+    const eventId = parts[parts.length - 1];
     try {
-      const { data: evt } = await supabaseAdmin.from("Event").select("*").eq("id", eventId2).maybeSingle();
+      const { data: evt } = await supabaseAdmin.from("Event").select("*").eq("id", eventId).maybeSingle();
       if (evt) {
         const event = formatDbEventToClient(evt);
         return res.status(200).json({
@@ -25275,9 +25361,9 @@ async function handler(req, res) {
     const capacity = Number(body?.totalTicketCapacity || body?.totalCapacity || body?.capacity) || 1e3;
     const price = Number(body?.eventType === "FREE" ? 0 : body?.ticketTypes?.[0]?.price || body?.price || 0);
     const status = body?.status === "DRAFT" || body?.status === "Draft" ? "DRAFT" : "PUBLISHED";
-    const eventId2 = body?.id || `EVT-${Date.now().toString().slice(-4)}`;
+    const eventId = body?.id || `EVT-${Date.now().toString().slice(-4)}`;
     const eventRecord = {
-      id: eventId2,
+      id: eventId,
       title,
       description,
       category,
@@ -25300,7 +25386,7 @@ async function handler(req, res) {
     try {
       await Promise.race([
         prisma.event.upsert({
-          where: { id: eventId2 },
+          where: { id: eventId },
           update: {
             title,
             description,
@@ -25316,7 +25402,7 @@ async function handler(req, res) {
             updatedAt: /* @__PURE__ */ new Date()
           },
           create: {
-            id: eventId2,
+            id: eventId,
             title,
             description,
             category,
@@ -25349,14 +25435,14 @@ async function handler(req, res) {
       return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Administrator authentication required." } });
     }
     const parts = url.split("/");
-    const eventId2 = parts[parts.length - 1];
+    const eventId = parts[parts.length - 1];
     try {
-      await supabaseAdmin.from("Event").delete().eq("id", eventId2);
-      await prisma.event.delete({ where: { id: eventId2 } }).catch(() => {
+      await supabaseAdmin.from("Event").delete().eq("id", eventId);
+      await prisma.event.delete({ where: { id: eventId } }).catch(() => {
       });
     } catch (e) {
     }
-    return res.status(200).json({ success: true, message: `Event ${eventId2} deleted successfully.` });
+    return res.status(200).json({ success: true, message: `Event ${eventId} deleted successfully.` });
   }
   if (url.includes("/admin/events/") && (url.endsWith("/publish") || url.endsWith("/unpublish") || url.endsWith("/cancel") || url.endsWith("/status")) && (req.method === "POST" || req.method === "PATCH")) {
     if (!isAuthorizedAdminRequest(req)) {
@@ -25364,7 +25450,7 @@ async function handler(req, res) {
     }
     const parts = url.split("/");
     let action = parts[parts.length - 1];
-    let eventId2 = parts[parts.length - 2];
+    let eventId = parts[parts.length - 2];
     if (action === "status") {
       let b = req.body;
       if (typeof b === "string") {
@@ -25378,10 +25464,10 @@ async function handler(req, res) {
     }
     const newStatus = action === "publish" ? "PUBLISHED" : action === "unpublish" ? "DRAFT" : "CANCELLED";
     try {
-      await supabaseAdmin.from("Event").update({ status: newStatus, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", eventId2);
+      await supabaseAdmin.from("Event").update({ status: newStatus, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", eventId);
       await Promise.race([
         prisma.event.update({
-          where: { id: eventId2 },
+          where: { id: eventId },
           data: { status: newStatus }
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error("DB timeout")), 2e3))
@@ -25391,7 +25477,7 @@ async function handler(req, res) {
     }
     return res.status(200).json({
       success: true,
-      message: `Event ${eventId2} successfully updated to ${newStatus}.`,
+      message: `Event ${eventId} successfully updated to ${newStatus}.`,
       status: newStatus,
       bookingStatus: newStatus === "PUBLISHED" ? "OPEN" : "CLOSED"
     });

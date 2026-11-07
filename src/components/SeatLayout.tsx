@@ -1,6 +1,7 @@
 import React, { useState, useContext, useCallback } from "react";
 import Seat from "./Seat";
 import { BookingContext } from "../context/BookingContext";
+import { centralizedPricingClient } from "../services/centralizedPricingService";
 
 interface SeatState {
   id: string;
@@ -37,11 +38,58 @@ export default function SeatLayout() {
       );
 
       const selectedIds = updated.filter((s) => s.selected).map((s) => s.id);
+
+      if (selectedIds.length === 0) {
+        setBooking((prevBooking) => ({
+          ...prevBooking,
+          seats: [],
+          total: 0,
+          ticketSubtotal: 0,
+          convenienceFee: 0,
+          taxAmount: 0,
+          pricingBreakdown: null,
+        }));
+        return updated;
+      }
+
+      // Authoritative slab calculation (₹250 per seat)
+      const tickets = selectedIds.map(() => ({ price: 250, category: "STANDARD" }));
+      const immediateCalc = centralizedPricingClient.calculateLocalFallback({
+        itemType: "MOVIE",
+        tickets,
+      });
+
       setBooking((prevBooking) => ({
         ...prevBooking,
         seats: selectedIds,
-        total: selectedIds.length * 250, // ₹250 per seat
+        total: immediateCalc.finalPayableAmount,
+        ticketSubtotal: immediateCalc.ticketSubtotal,
+        convenienceFee: immediateCalc.baseConvenienceFee,
+        taxAmount: immediateCalc.convenienceFeeGstTotal,
+        pricingBreakdown: immediateCalc,
       }));
+
+      // Async backend authoritative calculation
+      centralizedPricingClient
+        .calculatePrice({
+          itemType: "MOVIE",
+          tickets,
+        })
+        .then((serverCalc) => {
+          if (serverCalc) {
+            setBooking((prevBooking) => ({
+              ...prevBooking,
+              total: serverCalc.finalPayableAmount,
+              ticketSubtotal: serverCalc.ticketSubtotal,
+              convenienceFee: serverCalc.baseConvenienceFee,
+              taxAmount: serverCalc.convenienceFeeGstTotal,
+              pricingBreakdown: serverCalc,
+            }));
+          }
+        })
+        .catch(() => {
+          // Keep immediate calculation on network error
+        });
 
       return updated;
     });

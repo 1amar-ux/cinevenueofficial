@@ -114,6 +114,8 @@ class CentralizedPricingClient {
   private lastFetchTime = 0;
   private readonly CACHE_TTL_MS = 10000; // 10 seconds cache TTL for high freshness
   private listeners: Set<PricingUpdateListener> = new Set();
+  private currentAbortController: AbortController | null = null;
+  private latestRequestSeq: number = 0;
 
   constructor() {
     this.refreshConfig();
@@ -126,7 +128,7 @@ class CentralizedPricingClient {
 
   private notifyListeners() {
     this.listeners.forEach((fn) => {
-      try { fn(this.cachedConfig); } catch (e) {}
+      try { fn(this.cachedConfig); } catch (e) { }
     });
   }
 
@@ -206,14 +208,15 @@ class CentralizedPricingClient {
       if (res.data?.success && Array.isArray(res.data.logs)) {
         return res.data.logs;
       }
-    } catch (e) {}
+    } catch (e) { }
     return [];
   }
 
   /**
    * Authoritative price calculation:
-   * First requests backend POST /pricing/calculate for zero-trust accuracy.
-   * If offline or in immediate render, runs exact synchronous local computation.
+   * Requests backend POST /pricing/calculate for zero-trust accuracy.
+   * Employs AbortController and request sequencing to prevent race conditions.
+   * Throws an error on calculation failure rather than silently using fallback estimates.
    */
   public async calculatePrice(params: {
     itemType?: "MOVIE" | "EVENT";
@@ -226,14 +229,33 @@ class CentralizedPricingClient {
     otherCharges?: number;
     paymentMethod?: string;
   }): Promise<PricingCalculationResult> {
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+    }
+    this.currentAbortController = new AbortController();
+    const seq = ++this.latestRequestSeq;
+
     try {
-      const res = await apiClient.post<any>("/pricing/calculate", params);
+      const res = await apiClient.post<any>("/pricing/calculate", params, {
+        signal: this.currentAbortController.signal
+      });
+
+      if (seq !== this.latestRequestSeq) {
+        throw new Error("STALE_PRICING_RESPONSE");
+      }
+
       if (res.data?.success && res.data.data) {
         return res.data.data;
       }
-    } catch (e) {}
-
-    return this.calculateLocalFallback(params);
+      throw new Error(res.data?.message || "Failed to calculate pricing from server");
+    } catch (err: any) {
+      if (err.name === "CanceledError" || err.code === "ERR_CANCELED" || err.message === "STALE_PRICING_RESPONSE") {
+        throw err;
+      }
+      // Log and re-throw so the UI can accurately present the error state
+      console.error("[CentralizedPricingClient] Calculation failed:", err?.message || err);
+      throw err;
+    }
   }
 
   /**

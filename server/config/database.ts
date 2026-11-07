@@ -380,7 +380,9 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   "app_settings",
   "FinancialAuditLog",
   "EventFeeAuditLog",
-  "MovieFeeAuditLog"
+  "MovieFeeAuditLog",
+  "pricing_audit_logs",
+  "booking_pricing_snapshots"
 ]);
 
 function normalizeReturnedRecord(tableName: string, data: any): any {
@@ -748,9 +750,17 @@ const TABLE_MAP: { [key: string]: string } = {
   castingCall: "CastingCall",
   jobapplication: "JobApplication",
   jobApplication: "JobApplication",
-  userfeedback: "UserFeedback",
-  userFeedback: "UserFeedback",
-  coupon: "Coupon"
+  userfeedback: "user_feedbacks",
+  userFeedback: "user_feedbacks",
+  coupon: "Coupon",
+  pricingconfiguration: "pricing_configurations",
+  pricingConfiguration: "pricing_configurations",
+  conveniencefeeslab: "convenience_fee_slabs",
+  convenienceFeeSlab: "convenience_fee_slabs",
+  pricingauditlog: "pricing_audit_logs",
+  pricingAuditLog: "pricing_audit_logs",
+  bookingpricingsnapshot: "booking_pricing_snapshots",
+  bookingPricingSnapshot: "booking_pricing_snapshots"
 };
 
 function initPrismaClient(): PrismaClient {

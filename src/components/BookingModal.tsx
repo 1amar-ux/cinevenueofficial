@@ -12,7 +12,7 @@ import { POPULAR_CITIES, ALL_INDIAN_CITIES } from "../lib/location";
 import { FeeCalculationService } from "../services/feeCalculationService";
 import { FeeCalculationResult, FeeRule, TaxRule, DiscountRule } from "../types/fees";
 import { movieFeeClient, calculateLocalMovieFeeFallback, MovieFeeBreakdown } from "../services/movieFeeService";
-import { centralizedPricingClient } from "../services/centralizedPricingService";
+import { centralizedPricingClient, PricingCalculationResult } from "../services/centralizedPricingService";
 import { 
   generateAndDownloadTicketPdf, 
   getTicketVerificationUrl, 
@@ -426,46 +426,10 @@ export default function BookingModal({
     }
   };
 
-  // Base raw price calculation
-  const rawBaseTicketPrice = selectedSeats.reduce((sum, sId) => sum + getSeatPrice(sId), 0);
-
-  // Calculate dynamic fees
-  useEffect(() => {
-    if (selectedSeats.length === 0) {
-      setCalculatedBreakdown(null);
-      return;
-    }
-
-    setIsCalculating(true);
-    FeeCalculationService.calculateMovieBookingFees({
-      ticketAmount: rawBaseTicketPrice,
-      theatreId: displayTheatre,
-      timeSlot: displayTimeSlot,
-      movieTitle: movieTitle,
-      city: selectedCity,
-      paymentMethod: paymentMethod,
-      couponCode: appliedCoupon || undefined,
-      feeRules,
-      taxRules,
-      discountRules,
-    })
-      .then((result) => {
-        setCalculatedBreakdown(result);
-      })
-      .catch(console.error)
-      .finally(() => {
-        setIsCalculating(false);
-      });
-  }, [
-    selectedSeats,
-    rawBaseTicketPrice,
-    displayTheatre,
-    displayTimeSlot,
-    movieTitle,
-    selectedCity,
-    paymentMethod,
-    appliedCoupon,
-  ]);
+  // Authoritative Centralized Pricing State
+  const [pricingBreakdown, setPricingBreakdown] = useState<PricingCalculationResult | null>(null);
+  const [isPricingCalculating, setIsPricingCalculating] = useState<boolean>(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
 
   // Promo Code Handlers
   const handleApplyCoupon = () => {
@@ -499,49 +463,37 @@ export default function BookingModal({
       ? currentTheatre.rowCategories[firstSeatRow].toUpperCase()
       : "ELITE";
 
-  // Dynamic Movie Convenience Fee Calculation from Configured Rules
+  // Dynamic Movie Convenience Fee & Pricing Calculation via Authoritative Backend API
   useEffect(() => {
     if (selectedSeats.length === 0) {
-      setMovieFeeBreakdown(null);
+      setPricingBreakdown(null);
+      setPricingError(null);
+      setIsPricingCalculating(false);
       return;
     }
+
     const tickets = selectedSeats.map((sId) => ({
       price: getSeatPrice(sId),
       category: seatCategoryLabel,
     }));
-    const discount = appliedCoupon ? (appliedCoupon === "WELCOME50" ? 50 : 20) : 0;
-    const donation = isMusicianDonationAdded ? selectedSeats.length * 1.0 : 0;
 
-    // Instant local calculation using centralized pricing engine
-    const localCalc = centralizedPricingClient.calculateLocalFallback({
-      itemType: "MOVIE",
-      tickets,
-      couponCode: appliedCoupon || undefined,
-      musicianDonation: isMusicianDonationAdded,
-    });
-    
-    const normalizePricingResult = (calc: any): any => {
-      if (!calc) return null;
-      const baseCharge = Number(calc.baseConvenienceFee ?? calc.baseChargeTotal ?? 0);
-      const gst = Number(calc.convenienceFeeGstTotal ?? calc.taxAmount ?? 0);
-      const totalFee = Number(calc.totalConvenienceFee ?? calc.convenienceFee ?? (baseCharge + gst));
-      const finalPayable = Number(calc.finalPayableAmount ?? calc.totalAmount ?? 0);
-      return {
-        ...calc,
-        baseChargeTotal: baseCharge,
-        baseConvenienceFee: baseCharge,
-        convenienceFeeGstTotal: gst,
-        totalConvenienceFee: totalFee,
-        finalPayableAmount: finalPayable,
-        feeApplication: calc.feeApplication || "PER_TICKET",
-        feeLines: calc.feeLines || [],
-        feeSnapshot: calc.feeSnapshot || null,
-      };
-    };
+    // Synchronous immediate local fallback to prevent any UI flicker or zero convenience fee
+    try {
+      const immediateCalc = centralizedPricingClient.calculateLocalFallback({
+        itemType: "MOVIE",
+        tickets,
+        couponCode: appliedCoupon || undefined,
+        musicianDonation: isMusicianDonationAdded,
+      });
+      setPricingBreakdown(immediateCalc);
+      setMovieFeeBreakdown(immediateCalc as any);
+    } catch {
+      // Ignore fallback calculation errors
+    }
 
-    setMovieFeeBreakdown(normalizePricingResult(localCalc));
+    setIsPricingCalculating(true);
+    setPricingError(null);
 
-    // Authoritative server calculation via centralized pricing engine
     centralizedPricingClient
       .calculatePrice({
         itemType: "MOVIE",
@@ -551,42 +503,52 @@ export default function BookingModal({
       })
       .then((serverCalc) => {
         if (serverCalc) {
-          setMovieFeeBreakdown(normalizePricingResult(serverCalc));
+          setPricingBreakdown(serverCalc);
+          setMovieFeeBreakdown(serverCalc as any);
         }
       })
       .catch((err) => {
-        console.warn("Using fallback centralized pricing calculation:", err);
+        if (err.name === "CanceledError" || err.message === "STALE_PRICING_RESPONSE") {
+          return; // Ignore cancelled or stale in-flight responses
+        }
+        console.error("Centralized pricing calculation error:", err);
+      })
+      .finally(() => {
+        setIsPricingCalculating(false);
       });
-  }, [selectedSeats, seatCategoryLabel, appliedCoupon, isMusicianDonationAdded, currentTheatre]);
+  }, [selectedSeats, seatCategoryLabel, appliedCoupon, isMusicianDonationAdded]);
 
-  const baseConvenienceAmount = Number(
-    (movieFeeBreakdown as any)?.baseConvenienceFee ??
-    (movieFeeBreakdown as any)?.baseChargeTotal ??
-    calculatedBreakdown?.convenienceFee ??
-    (selectedSeats.length * 20.00)
-  ) || 0;
+  const rawBaseTicketPrice = pricingBreakdown
+    ? Number(pricingBreakdown.ticketSubtotal)
+    : selectedSeats.reduce((sum, sId) => sum + getSeatPrice(sId), 0);
 
-  const igstTaxAmount = Number(
-    (movieFeeBreakdown as any)?.convenienceFeeGstTotal ??
-    (movieFeeBreakdown as any)?.taxAmount ??
-    calculatedBreakdown?.totalTaxes ??
-    Number((baseConvenienceAmount * 0.18).toFixed(2))
-  ) || 0;
+  const averagePricePerSeat = selectedSeats.length > 0 ? (rawBaseTicketPrice / selectedSeats.length) : pricePerSeat;
 
-  const totalConvenienceFee = Number(
-    (movieFeeBreakdown as any)?.totalConvenienceFee ??
-    (movieFeeBreakdown as any)?.convenienceFee ??
-    Number((baseConvenienceAmount + igstTaxAmount).toFixed(2))
-  ) || 0;
+  const baseConvenienceAmount = pricingBreakdown
+    ? Number(pricingBreakdown.baseConvenienceFee)
+    : 0;
 
-  const musicianDonationAmount = isMusicianDonationAdded ? (selectedSeats.length * 1.00) : 0;
-  const couponDiscountAmount = appliedCoupon ? (appliedCoupon === "WELCOME50" ? 50 : 20) : (calculatedBreakdown?.totalDiscount ?? 0);
-  const orderTotalAmount = Number(
-    (movieFeeBreakdown as any)?.finalPayableAmount ??
-    (movieFeeBreakdown as any)?.totalAmount ??
-    Math.max(0, Number((rawBaseTicketPrice + totalConvenienceFee + musicianDonationAmount - couponDiscountAmount).toFixed(2)))
-  ) || 0;
-  const finalPayableAmount = orderTotalAmount;
+  const igstTaxAmount = pricingBreakdown
+    ? Number(pricingBreakdown.convenienceFeeGstTotal ?? pricingBreakdown.taxAmount)
+    : 0;
+
+  const totalConvenienceFee = pricingBreakdown
+    ? Number(pricingBreakdown.totalConvenienceFee ?? pricingBreakdown.convenienceFee)
+    : 0;
+
+  const musicianDonationAmount = pricingBreakdown
+    ? Number(pricingBreakdown.musicianDonationAmount)
+    : (isMusicianDonationAdded ? selectedSeats.length * 1.00 : 0);
+
+  const couponDiscountAmount = pricingBreakdown
+    ? Number(pricingBreakdown.couponDiscount ?? pricingBreakdown.discountAmount)
+    : (appliedCoupon ? (appliedCoupon === "WELCOME50" ? 50 : 20) : 0);
+
+  const finalPayableAmount = pricingBreakdown
+    ? Number(pricingBreakdown.finalPayableAmount)
+    : Math.max(0, Number((rawBaseTicketPrice + totalConvenienceFee + musicianDonationAmount - couponDiscountAmount).toFixed(2)));
+
+  const orderTotalAmount = finalPayableAmount;
 
   // Handle proceed to seat booking
   const handleSelectShowtime = (theatreName: string, time: string, schedId?: string) => {
@@ -1304,16 +1266,22 @@ export default function BookingModal({
             <div className="shrink-0 bg-[#141418] border-t border-white/15 p-3.5 sm:p-5 flex items-center justify-between gap-3 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] z-20">
               <div>
                 <span className="text-[10px] sm:text-xs text-white/60 block">Total Payable ({selectedSeats.length} seats)</span>
-                <span className="text-xl sm:text-2xl font-extrabold text-gold font-mono">
-                  ₹{(Number(finalPayableAmount) || 0).toFixed(2)}
-                </span>
+                {isPricingCalculating ? (
+                  <span className="text-sm font-semibold text-gold/70 animate-pulse block py-1">Calculating...</span>
+                ) : pricingError ? (
+                  <span className="text-xs font-semibold text-rose-400 block py-1">{pricingError}</span>
+                ) : (
+                  <span className="text-xl sm:text-2xl font-extrabold text-gold font-mono">
+                    ₹{(Number(finalPayableAmount) || 0).toFixed(2)}
+                  </span>
+                )}
               </div>
 
               <button
-                disabled={selectedSeats.length === 0 || isProcessingPayment}
+                disabled={selectedSeats.length === 0 || isProcessingPayment || isPricingCalculating || Boolean(pricingError)}
                 onClick={() => setBookingStep("confirm_booking")}
                 className={`px-5 sm:px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer shrink-0 ${
-                  selectedSeats.length > 0 && !isProcessingPayment
+                  selectedSeats.length > 0 && !isProcessingPayment && !isPricingCalculating && !pricingError
                     ? "bg-gold hover:bg-gold-light text-black shadow-gold/20"
                     : "bg-white/10 text-white/40 cursor-not-allowed border border-white/5"
                 }`}
@@ -1418,7 +1386,7 @@ export default function BookingModal({
 
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>Price per ticket:</span>
-                    <span className="font-mono text-gray-700">₹{(Number(pricePerSeat) || 0).toFixed(2)} × {selectedSeats.length}</span>
+                    <span className="font-mono text-gray-700">₹{(Number(averagePricePerSeat) || 0).toFixed(2)} × {selectedSeats.length}</span>
                   </div>
 
                   {/* Convenience Fee Line */}
@@ -1582,11 +1550,15 @@ export default function BookingModal({
                 </span>
               </div>
               <button
-                disabled={isProcessingPayment}
+                disabled={isProcessingPayment || isPricingCalculating || Boolean(pricingError)}
                 onClick={() => setBookingStep("payment_qr")}
-                className="bg-[#E11D48] hover:bg-[#BE123C] text-white px-6 sm:px-8 py-3 rounded-xl font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center gap-2"
+                className={`px-6 sm:px-8 py-3 rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center gap-2 ${
+                  !isProcessingPayment && !isPricingCalculating && !pricingError
+                    ? "bg-[#E11D48] hover:bg-[#BE123C] text-white cursor-pointer"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
-                <span>Proceed to Payment (₹{(Number(orderTotalAmount) || 0).toFixed(2)})</span>
+                <span>{isPricingCalculating ? "Calculating..." : `Proceed to Payment (₹${(Number(finalPayableAmount) || 0).toFixed(2)})`}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1644,7 +1616,7 @@ export default function BookingModal({
                   />
                 ) : (
                   <QRCode
-                    value={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${(Number(orderTotalAmount) || 0).toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${movieTitle.replace(/\s+/g, "")}-${selectedSeats.join("")}`)}`}
+                    value={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
                     size={190}
                     level="M"
                   />
@@ -1675,15 +1647,15 @@ export default function BookingModal({
               {/* Itemized calculation breakdown */}
               <div className="w-full bg-gray-50 rounded-xl p-3 text-xs space-y-1.5 text-gray-600 border border-gray-100">
                 <div className="flex justify-between">
-                  <span>Base Ticket Price ({selectedSeats.length} × ₹{(Number(pricePerSeat) || 0).toFixed(2)}):</span>
+                  <span>Base Ticket Price ({selectedSeats.length} × ₹{(Number(averagePricePerSeat) || 0).toFixed(2)}):</span>
                   <span className="font-mono font-semibold text-gray-800">₹{(Number(rawBaseTicketPrice) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Convenience Fee ({movieFeeBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : "Per Ticket"}):</span>
+                  <span>Convenience Fee ({pricingBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : `${selectedSeats.length} × ₹${((Number(baseConvenienceAmount) || 0) / (selectedSeats.length || 1)).toFixed(2)}`}):</span>
                   <span className="font-mono font-semibold text-gray-800">₹{(Number(baseConvenienceAmount) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>GST on Convenience Fee @ {movieFeeBreakdown?.gstRateApplied ?? 18}%:</span>
+                  <span>GST on Convenience Fee @ {pricingBreakdown?.gstRate ?? 18}%:</span>
                   <span className="font-mono font-semibold text-gray-800">₹{(Number(igstTaxAmount) || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-amber-700 font-medium">
@@ -1704,13 +1676,13 @@ export default function BookingModal({
                 )}
                 <div className="border-t border-gray-200 pt-1 flex justify-between font-bold text-gray-900">
                   <span>Total Payable:</span>
-                  <span className="font-mono text-[#E11D48] text-sm font-extrabold">₹{(Number(orderTotalAmount) || 0).toFixed(2)}</span>
+                  <span className="font-mono text-[#E11D48] text-sm font-extrabold">₹{(Number(finalPayableAmount) || 0).toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Direct UPI Mobile Deep Link */}
               <a
-                href={`upi://pay?pa=9491336996@ptsbi&pn=GATTEM%20AMARNATH&am=${(Number(orderTotalAmount) || 0).toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${movieTitle.replace(/\s+/g, "")}-${selectedSeats.join("")}`)}`}
+                href={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
                 className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
               >
                 <Smartphone className="w-4 h-4" />

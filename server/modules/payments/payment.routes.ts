@@ -49,7 +49,7 @@ router.get("/gateways", (req: Request, res: Response) => {
 
 router.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle } = req.body;
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
 
     let amountInINR = 0;
     let resolvedBookingId = bookingId || null;
@@ -72,8 +72,9 @@ router.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMai
 
     if (!amountInINR) {
       if (Array.isArray(tickets) && tickets.length > 0) {
+        const resolvedItemType: "MOVIE" | "EVENT" = (itemType === "EVENT" || Boolean(eventId)) ? "EVENT" : "MOVIE";
         const breakdown = centralizedPricingService.calculatePricing({
-          itemType: eventId ? "EVENT" : "MOVIE",
+          itemType: resolvedItemType,
           tickets: tickets.map((t: any) => ({
             price: Number(typeof t === "number" ? t : t.price || 0),
             category: (typeof t === "object" ? t.category : undefined) || "STANDARD"
@@ -106,7 +107,7 @@ router.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMai
         showId: showId || "",
         eventId: eventId || "",
         eventTitle: eventTitle || "",
-        source: eventId ? "EVENT_BOOKING" : "MOVIE_BOOKING"
+        source: (itemType === "EVENT" || Boolean(eventId)) ? "EVENT_BOOKING" : "MOVIE_BOOKING"
       }
     });
 
@@ -191,7 +192,7 @@ router.post("/razorpay/webhook", async (req: Request, res: Response) => {
 // Legacy /create-order routed directly to Cashfree
 router.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets } = req.body;
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
 
     let amountInINR = 0;
     let resolvedBookingId = bookingId || null;
@@ -214,8 +215,9 @@ router.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance,
 
     if (!amountInINR) {
       if (Array.isArray(tickets) && tickets.length > 0) {
+        const resolvedItemType: "MOVIE" | "EVENT" = (itemType === "EVENT" || Boolean(eventId)) ? "EVENT" : "MOVIE";
         const breakdown = centralizedPricingService.calculatePricing({
-          itemType: eventId ? "EVENT" : "MOVIE",
+          itemType: resolvedItemType,
           tickets: tickets.map((t: any) => ({
             price: Number(typeof t === "number" ? t : t.price || 0),
             category: (typeof t === "object" ? t.category : undefined) || "STANDARD"
@@ -249,7 +251,9 @@ router.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance,
       notes: {
         bookingId: resolvedBookingId || "",
         showId: showId || "",
-        source: "MOVIE_BOOKING"
+        eventId: eventId || "",
+        eventTitle: eventTitle || "",
+        source: (itemType === "EVENT" || Boolean(eventId)) ? "EVENT_BOOKING" : "MOVIE_BOOKING"
       }
     });
 
@@ -315,7 +319,7 @@ router.post("/verify-payment", optionalAuthenticate, checkMovieBookingMaintenanc
 // 4. Create Cashfree Order for Movie Booking
 router.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets } = req.body;
+    const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
 
     let amountInINR = 0;
     let resolvedCustomerName = customerName || req.user?.name || "Cinema Guest";
@@ -349,8 +353,9 @@ router.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMai
 
     if (!amountInINR) {
       if (Array.isArray(tickets) && tickets.length > 0) {
+        const resolvedItemType: "MOVIE" | "EVENT" = (itemType === "EVENT" || Boolean(eventId)) ? "EVENT" : "MOVIE";
         const breakdown = centralizedPricingService.calculatePricing({
-          itemType: eventId ? "EVENT" : "MOVIE",
+          itemType: resolvedItemType,
           tickets: tickets.map((t: any) => ({
             price: Number(typeof t === "number" ? t : t.price || 0),
             category: (typeof t === "object" ? t.category : undefined) || "STANDARD"
@@ -384,7 +389,10 @@ router.post("/cashfree/create-order", optionalAuthenticate, checkMovieBookingMai
       notes: {
         bookingId: resolvedBookingId || "",
         showId: showId || "",
-        userId: req.user?.userId || ""
+        eventId: eventId || "",
+        eventTitle: eventTitle || "",
+        userId: req.user?.userId || "",
+        source: (itemType === "EVENT" || Boolean(eventId)) ? "EVENT_BOOKING" : "MOVIE_BOOKING"
       }
     });
 

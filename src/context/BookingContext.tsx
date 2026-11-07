@@ -6,6 +6,10 @@ interface BookingType {
   show: any;
   seats: any[];
   total: number;
+  ticketSubtotal?: number;
+  convenienceFee?: number;
+  taxAmount?: number;
+  pricingBreakdown?: any;
 }
 
 interface BookingContextType {

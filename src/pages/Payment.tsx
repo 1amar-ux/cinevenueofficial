@@ -18,6 +18,7 @@ import api from "../services/api";
 import { triggerCashfreeCheckout, createMovieBookingCashfreeOrder, verifyMovieBookingCashfreePayment } from "../services/cashfreeService";
 import { triggerRazorpayCheckout, createRazorpayOrder, verifyRazorpayPayment } from "../services/razorpayService";
 import { dispatchTicketEmail, dispatchTicketSms, generateSecureTicketToken } from "../utils/ticketDeliveryService";
+import { centralizedPricingClient } from "../services/centralizedPricingService";
 import ThemeToggle from "../components/ThemeToggle";
 
 export default function Payment() {
@@ -31,7 +32,18 @@ export default function Payment() {
   const movieTitle = booking.movie ? booking.movie.title : "Baththa";
   const theatreName = booking.theatre ? booking.theatre : "CineVenue Sandbox Multiplex";
   const seats = booking.seats.length > 0 ? booking.seats.join(" ") : "A1 A2";
-  const total = booking.total > 0 ? booking.total : 12.36;
+
+  // Authoritative Pricing Breakdown
+  const seatCount = booking.seats.length > 0 ? booking.seats.length : 2;
+  const pricingBreakdown = booking.pricingBreakdown || centralizedPricingClient.calculateLocalFallback({
+    itemType: "MOVIE",
+    tickets: Array(seatCount).fill({ price: 250, category: "STANDARD" })
+  });
+
+  const basePrice = pricingBreakdown?.ticketSubtotal ?? (booking.ticketSubtotal || 500);
+  const feeAmount = pricingBreakdown?.baseConvenienceFee ?? (booking.convenienceFee || 50);
+  const gstAmount = pricingBreakdown?.convenienceFeeGstTotal ?? (booking.taxAmount || 9);
+  const total = Number(pricingBreakdown?.finalPayableAmount ?? (booking.total > 0 ? booking.total : 559.00));
 
   const handlePayment = async () => {
     setPaymentError(null);
@@ -337,10 +349,22 @@ export default function Payment() {
               <Typography color="text.secondary">Seats:</Typography>
               <Typography sx={{ fontWeight: "medium" }}>{seats}</Typography>
             </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography color="text.secondary">Ticket Subtotal:</Typography>
+              <Typography sx={{ fontWeight: "medium" }}>₹{Number(basePrice).toFixed(2)}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography color="text.secondary">Convenience Fee:</Typography>
+              <Typography sx={{ fontWeight: "medium" }}>₹{Number(feeAmount).toFixed(2)}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography color="text.secondary">GST (18%):</Typography>
+              <Typography sx={{ fontWeight: "medium" }}>₹{Number(gstAmount).toFixed(2)}</Typography>
+            </Box>
             <Divider sx={{ my: 1 }} />
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Typography variant="h5" sx={{ fontWeight: "bold" }}>Total Amount:</Typography>
-              <Typography variant="h5" sx={{ fontWeight: "bold" }} color="#F84464">₹{total}</Typography>
+              <Typography variant="h5" sx={{ fontWeight: "bold" }} color="#F84464">₹{Number(total).toFixed(2)}</Typography>
             </Box>
           </Box>
 
