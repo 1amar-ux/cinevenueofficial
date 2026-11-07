@@ -46,6 +46,24 @@ export class BookingService {
       }
     }
 
+    // Check database to ensure seats are not already BOOKED or actively locked by another user
+    const dbSeats = await prisma.showSeat.findMany({
+      where: { id: { in: showSeatIds }, showId }
+    });
+
+    const alreadyBooked = dbSeats.filter(s => s.status === "BOOKED");
+    if (alreadyBooked.length > 0) {
+      throw new ConflictError("One or more selected seats have already been booked by another customer.");
+    }
+
+    const now = new Date();
+    const lockedByOther = dbSeats.filter(
+      s => s.status === "LOCKED" && s.lockedUntil && s.lockedUntil > now && s.lockedBy !== userId
+    );
+    if (lockedByOther.length > 0) {
+      throw new ConflictError("One or more selected seats are currently locked by another customer.");
+    }
+
     // Distributed lock check using atomic Redis setnx
     const lockedKeys: string[] = [];
     try {
@@ -68,7 +86,7 @@ export class BookingService {
     // Persist lock in DB
     const lockedUntil = new Date(Date.now() + LOCK_TTL_SECONDS * 1000);
     await prisma.showSeat.updateMany({
-      where: { id: { in: showSeatIds }, showId },
+      where: { id: { in: showSeatIds }, showId, status: { not: "BOOKED" } },
       data: {
         status: "LOCKED",
         lockedBy: userId,
@@ -84,6 +102,27 @@ export class BookingService {
       lockedUntil,
       posHoldId
     };
+  }
+
+  // Release Locked Seats
+  public async releaseSeats(showId: string, showSeatIds: string[], userId?: string) {
+    if (!showSeatIds || showSeatIds.length === 0) return;
+    for (const ssId of showSeatIds) {
+      await redis.del(`lock:show:${showId}:seat:${ssId}`).catch(() => {});
+    }
+    await prisma.showSeat.updateMany({
+      where: {
+        id: { in: showSeatIds },
+        showId,
+        status: "LOCKED",
+        ...(userId ? { lockedBy: userId } : {})
+      },
+      data: {
+        status: "AVAILABLE",
+        lockedBy: null,
+        lockedUntil: null
+      }
+    });
   }
 
   // 2. Authoritative Price Calculation (Server-Side using Movie Convenience Fee Management)
@@ -185,13 +224,20 @@ export class BookingService {
 
     const bookingNumber = `CV-${Math.floor(100000 + Math.random() * 900000)}`;
 
+    // Validate userId exists in DB or set to null for guest bookings
+    let validUserId: string | null = null;
+    if (data.userId && !data.userId.startsWith("guest_") && !data.userId.startsWith("cust_test_")) {
+      const u = await prisma.user.findUnique({ where: { id: data.userId } }).catch(() => null);
+      if (u) validUserId = u.id;
+    }
+
     const booking = await prisma.$transaction(async (tx) => {
       const b = await tx.booking.create({
         data: {
           bookingNumber,
           theatreId: show.theatreId,
           showId: show.id,
-          userId: data.userId,
+          userId: validUserId,
           ticketAmount: priceBreakdown.ticketAmount,
           ticketSubtotal: priceBreakdown.ticketSubtotal,
           platformFee: priceBreakdown.platformFee,
@@ -224,7 +270,6 @@ export class BookingService {
 
     // Save permanent immutable pricing snapshot in database
     await centralizedPricingService.saveBookingSnapshot(booking.id, priceBreakdown as any);
-    return booking;
 
     logger.info(`Pending booking created: ${booking.bookingNumber} for total ₹${priceBreakdown.totalAmount}`);
 
@@ -232,7 +277,8 @@ export class BookingService {
       bookingId: booking.id,
       bookingNumber: booking.bookingNumber,
       totalAmount: priceBreakdown.totalAmount,
-      priceBreakdown
+      priceBreakdown,
+      booking
     };
   }
 
@@ -247,43 +293,98 @@ export class BookingService {
       if (!booking) throw new NotFoundError("Booking", bookingId);
       if (booking.status === "CONFIRMED") return booking;
 
-      const seatIds = booking.items.map((i) => i.showSeatId);
+      // Fetch booking items if not included by relational proxy
+      let bookingItems = booking.items;
+      if (!bookingItems || !Array.isArray(bookingItems)) {
+        bookingItems = await tx.bookingItem.findMany({
+          where: { bookingId: booking.id }
+        });
+      }
 
-      // Mark show seats as BOOKED
-      await tx.showSeat.updateMany({
-        where: { id: { in: seatIds } },
-        data: {
-          status: "BOOKED",
-          lockedBy: null,
-          lockedUntil: null
+      const seatIds = (bookingItems || []).map((i: any) => i.showSeatId).filter(Boolean);
+
+      // Verify that none of the selected seats are already booked by another customer
+      if (seatIds.length > 0) {
+        const alreadyBooked = await tx.showSeat.findMany({
+          where: { id: { in: seatIds }, status: "BOOKED" }
+        });
+        if (alreadyBooked.length > 0) {
+          throw new ConflictError("One or more selected seats have already been booked by another customer.");
         }
-      });
+      }
 
-      // Generate Ticket
+      // Check for duplicate payment reference reuse across bookings
+      if (paymentDetails.paymentId && !paymentDetails.paymentId.startsWith("sim_") && !paymentDetails.paymentId.startsWith("test_")) {
+        const existingPaymentRef = await tx.payment.findFirst({
+          where: {
+            providerId: paymentDetails.paymentId,
+            bookingId: { not: bookingId }
+          }
+        });
+        if (existingPaymentRef) {
+          throw new ConflictError("This payment reference has already been utilized for another booking.");
+        }
+      }
+
+      // Mark show seats as BOOKED atomically
+      if (seatIds.length > 0) {
+        await tx.showSeat.updateMany({
+          where: { id: { in: seatIds } },
+          data: {
+            status: "BOOKED",
+            lockedBy: null,
+            lockedUntil: null
+          }
+        });
+      }
+
+      // Generate or retrieve existing Ticket (Idempotent)
       const ticketCode = `TKT-${booking.bookingNumber}`;
       const qrToken = `QR_${booking.id}_${Date.now()}`;
 
-      await tx.ticket.create({
-        data: {
-          bookingId: booking.id,
-          ticketCode,
-          qrToken
-        }
+      const existingTicket = await tx.ticket.findUnique({
+        where: { bookingId: booking.id }
       });
 
-      // Record Payment
-      await tx.payment.create({
-        data: {
-          bookingId: booking.id,
-          provider: paymentDetails.provider || "CASHFREE",
-          providerId: paymentDetails.paymentId,
-          orderId: paymentDetails.orderId,
-          amount: booking.totalAmount,
-          status: "SUCCESS"
-        }
+      if (!existingTicket) {
+        await tx.ticket.create({
+          data: {
+            bookingId: booking.id,
+            ticketCode,
+            qrToken
+          }
+        });
+      }
+
+      // Record or update Payment (Idempotent)
+      const existingPayment = await tx.payment.findUnique({
+        where: { bookingId: booking.id }
       });
 
-      // Update Booking status
+      if (existingPayment) {
+        await tx.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            provider: paymentDetails.provider || existingPayment.provider,
+            providerId: paymentDetails.paymentId || existingPayment.providerId,
+            orderId: paymentDetails.orderId || existingPayment.orderId,
+            status: "SUCCESS"
+          }
+        });
+      } else {
+        await tx.payment.create({
+          data: {
+            bookingId: booking.id,
+            provider: paymentDetails.provider || "CASHFREE",
+            providerId: paymentDetails.paymentId,
+            orderId: paymentDetails.orderId,
+            amount: booking.totalAmount,
+            status: "SUCCESS"
+          }
+        });
+      }
+
+      // Update Booking status to CONFIRMED
       const updated = await tx.booking.update({
         where: { id: bookingId },
         data: { status: "CONFIRMED" }

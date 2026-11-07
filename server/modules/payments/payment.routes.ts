@@ -185,8 +185,61 @@ router.post("/razorpay/verify-payment", optionalAuthenticate, async (req: Reques
 });
 
 router.post("/razorpay/webhook", async (req: Request, res: Response) => {
-  logger.info("[Razorpay Webhook] Received event notification:", { event: req.body?.event });
-  return res.json({ status: "ok" });
+  try {
+    const signature = req.headers["x-razorpay-signature"] as string;
+    if (!signature) {
+      logger.warn("[Razorpay Webhook] Missing x-razorpay-signature header");
+      return res.status(400).json({ error: "Missing webhook signature" });
+    }
+
+    const rawBody = (req as any).rawBody
+      ? (req as any).rawBody.toString("utf8")
+      : (typeof req.body === "string" ? req.body : JSON.stringify(req.body));
+
+    const isValid = razorpayService.verifyWebhookSignature(rawBody, signature);
+    if (!isValid) {
+      logger.error("[Razorpay Webhook] Invalid webhook signature! Rejecting payload.");
+      return res.status(400).json({ error: "Invalid webhook signature" });
+    }
+
+    const event = req.body?.event;
+    const payload = req.body?.payload;
+    logger.info(`[Razorpay Webhook] Processing verified event: ${event}`);
+
+    if (event === "payment.captured" || event === "order.paid") {
+      const paymentEntity = payload?.payment?.entity;
+      const orderEntity = payload?.order?.entity;
+      const orderId = paymentEntity?.order_id || orderEntity?.id;
+      const paymentId = paymentEntity?.id || `rzp_${orderId}`;
+      const notes = paymentEntity?.notes || orderEntity?.notes || {};
+      const bookingId = notes.bookingId || notes.booking_id;
+
+      if (bookingId) {
+        await bookingService.confirmBooking(bookingId, {
+          orderId,
+          paymentId,
+          provider: "RAZORPAY"
+        }).catch((err) => {
+          logger.warn(`[Razorpay Webhook] Note during confirmBooking for ${bookingId}: ${err.message}`);
+        });
+      }
+    } else if (event === "payment.failed") {
+      const paymentEntity = payload?.payment?.entity;
+      const notes = paymentEntity?.notes || {};
+      const bookingId = notes.bookingId || notes.booking_id;
+      if (bookingId) {
+        await prisma.booking.updateMany({
+          where: { id: bookingId, status: "PENDING" },
+          data: { status: "FAILED" }
+        }).catch(() => {});
+      }
+    }
+
+    return res.status(200).json({ status: "ok", processed: true });
+  } catch (err: any) {
+    logger.error(`[Razorpay Webhook] Processing failure: ${err.message}`);
+    return res.status(500).json({ error: "Webhook internal failure" });
+  }
 });
 
 // Legacy /create-order routed directly to Cashfree
@@ -458,24 +511,98 @@ router.post(["/cashfree/webhook", "/webhook/cashfree"], async (req: Request, res
   try {
     const signature = req.headers["x-webhook-signature"] as string;
     const timestamp = req.headers["x-webhook-timestamp"] as string;
-    const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
 
-    if (signature && timestamp) {
-      const isValid = cashfreeService.verifyWebhookSignature(rawBody, signature, timestamp);
-      if (!isValid) {
-        logger.warn("Cashfree webhook signature mismatch! Dropping payload.");
-        return res.status(400).json({ error: "Invalid webhook signature" });
-      }
+    if (!signature || !timestamp) {
+      logger.warn("[Cashfree Webhook] Missing required webhook authentication headers");
+      return res.status(400).json({ error: "Missing required webhook authentication headers" });
+    }
+
+    const rawBody = (req as any).rawBody
+      ? (req as any).rawBody.toString("utf8")
+      : (typeof req.body === "string" ? req.body : JSON.stringify(req.body));
+
+    const isValid = cashfreeService.verifyWebhookSignature(rawBody, signature, timestamp);
+    if (!isValid) {
+      logger.warn("[Cashfree Webhook] Cashfree webhook signature mismatch! Dropping payload.");
+      return res.status(400).json({ error: "Invalid webhook signature" });
     }
 
     const event = req.body?.type;
     const orderData = req.body?.data?.order;
-    logger.info(`Cashfree Webhook received: ${event}`, { orderId: orderData?.order_id });
+    const paymentData = req.body?.data?.payment;
+    logger.info(`[Cashfree Webhook] Verified event received: ${event}`, { orderId: orderData?.order_id });
+
+    if (
+      event === "PAYMENT_SUCCESS_WEBHOOK" ||
+      event === "ORDER_PAID_SUCCESS" ||
+      orderData?.order_status === "PAID"
+    ) {
+      const orderId = orderData?.order_id || paymentData?.order_id;
+      const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : `cf_${orderId}`;
+      const notes = orderData?.order_tags || {};
+      const bookingId = notes.bookingId || notes.booking_id || orderId;
+
+      if (bookingId) {
+        await bookingService.confirmBooking(bookingId, {
+          orderId,
+          paymentId,
+          provider: "CASHFREE"
+        }).catch((err) => {
+          logger.warn(`[Cashfree Webhook] Note during confirmBooking for ${bookingId}: ${err.message}`);
+        });
+      }
+    }
 
     return res.status(200).json({ received: true });
   } catch (error: any) {
     logger.error(`Cashfree webhook processing error: ${error.message}`);
     return res.status(500).json({ error: "Webhook internal failure" });
+  }
+});
+
+// 7. Authoritative Sandbox Test Confirmation (Only allowed in non-production testmode)
+router.post("/test-confirm", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!razorpayService.isTestMode() && env.CASHFREE_ENV === "PROD") {
+      throw new ForbiddenError("Test payment confirmation is strictly disabled in production mode.");
+    }
+
+    const { bookingId, showId, seatIds } = req.body;
+    let targetBookingId = bookingId;
+
+    if (!targetBookingId && showId && Array.isArray(seatIds) && seatIds.length > 0) {
+      const pending = await bookingService.createPendingBooking({
+        showId,
+        showSeatIds: seatIds,
+        userId: req.user?.userId || `guest_${Date.now()}`
+      });
+      targetBookingId = pending.bookingId;
+    }
+
+    if (!targetBookingId) {
+      throw new ValidationError("bookingId or showId + seatIds is required for test confirmation");
+    }
+
+    const testPaymentId = `sim_pay_${Date.now()}`;
+    const testOrderId = `sim_ord_${Date.now()}`;
+
+    const confirmed = await bookingService.confirmBooking(targetBookingId, {
+      orderId: testOrderId,
+      paymentId: testPaymentId,
+      provider: "UPI_SANDBOX"
+    });
+
+    return res.json({
+      success: true,
+      message: "Test payment verified authoritatively in sandbox mode.",
+      data: {
+        booking: confirmed,
+        orderId: testOrderId,
+        paymentId: testPaymentId
+      }
+    });
+  } catch (error) {
+    next(error);
   }
 });
 

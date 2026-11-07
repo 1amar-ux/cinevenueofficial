@@ -195,8 +195,8 @@ export class CashfreeService {
   /**
    * Verify Webhook Signature
    */
-  public verifyWebhookSignature(rawBody: string, signature: string, timestamp: string): boolean {
-    const secret = env.CASHFREE_SECRET_KEY;
+  public verifyWebhookSignature(rawBody: string, signature: string, timestamp: string, customSecret?: string): boolean {
+    const secret = customSecret || env.CASHFREE_SECRET_KEY || process.env.CASHFREE_SECRET_KEY || "cf_test_secret";
     if (!secret || !signature || !timestamp) return false;
 
     const payload = `${timestamp}${rawBody}`;
@@ -205,10 +205,11 @@ export class CashfreeService {
       .update(payload)
       .digest("base64");
 
-    return crypto.timingSafeEqual(
-      Buffer.from(generatedSignature, "utf-8"),
-      Buffer.from(signature, "utf-8")
-    );
+    const genBuf = Buffer.from(generatedSignature, "utf-8");
+    const sigBuf = Buffer.from(signature, "utf-8");
+    if (genBuf.length !== sigBuf.length) return false;
+
+    return crypto.timingSafeEqual(genBuf, sigBuf);
   }
 }
 

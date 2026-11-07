@@ -248,6 +248,36 @@ export class RazorpayService {
     });
     return result.verified;
   }
+
+  /**
+   * Verify HMAC-SHA256 signature for Razorpay Webhooks
+   * Header: x-razorpay-signature
+   * Secret: RAZORPAY_WEBHOOK_SECRET || RAZORPAY_KEY_SECRET
+   */
+  public verifyWebhookSignature(rawBody: string | Buffer, signature: string, customSecret?: string): boolean {
+    const secret = customSecret || process.env.RAZORPAY_WEBHOOK_SECRET || (env as any).RAZORPAY_WEBHOOK_SECRET || this.getKeySecret();
+    if (!secret || !signature) return false;
+
+    try {
+      const bodyStr = Buffer.isBuffer(rawBody) ? rawBody.toString("utf8") : (typeof rawBody === "string" ? rawBody : JSON.stringify(rawBody));
+      const expectedSignature = crypto
+        .createHmac("sha256", secret)
+        .update(bodyStr)
+        .digest("hex");
+
+      const expectedBuffer = Buffer.from(expectedSignature, "utf-8");
+      const signatureBuffer = Buffer.from(signature, "utf-8");
+
+      if (expectedBuffer.length !== signatureBuffer.length) {
+        return false;
+      }
+
+      return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+    } catch (err: any) {
+      logger.error(`[RazorpayService] Webhook signature verification exception: ${err.message}`);
+      return false;
+    }
+  }
 }
 
 export const razorpayService = new RazorpayService();

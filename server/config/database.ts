@@ -210,15 +210,15 @@ function sanitizeRecord(tableName: string, data: any) {
       delete normalized.feeConfigurationSnapshot;
     }
   } else if (tableName === "Booking") {
-    if (normalized.ticketSubtotal !== undefined && normalized.ticket_subtotal === undefined) {
-      normalized.ticket_subtotal = normalized.ticketSubtotal;
-    }
-    if (normalized.convenienceFeeTax !== undefined && normalized.convenience_fee_tax === undefined) {
-      normalized.convenience_fee_tax = normalized.convenienceFeeTax;
-    }
-    if (normalized.feeSnapshot !== undefined && normalized.fee_snapshot === undefined) {
-      normalized.fee_snapshot = normalized.feeSnapshot;
-    }
+    delete normalized.ticketSubtotal;
+    delete normalized.ticket_subtotal;
+    delete normalized.convenienceFeeTax;
+    delete normalized.convenience_fee_tax;
+    delete normalized.feeSnapshot;
+    delete normalized.fee_snapshot;
+    delete normalized.items;
+    delete normalized.payment;
+    delete normalized.ticket;
   } else if (tableName === "MovieConvenienceFee") {
     if (normalized.ticketPrice !== undefined && normalized.ticket_price === undefined) {
       normalized.ticket_price = normalized.ticketPrice;
@@ -344,6 +344,8 @@ function applyWhereClause(query: any, where: any) {
           }
         } else if ("in" in (v as any) && Array.isArray((v as any).in)) {
           q = q.in(k, (v as any).in.map(formatVal));
+        } else if ("not" in (v as any)) {
+          q = q.neq(k, formatVal((v as any).not));
         } else if ("gt" in (v as any)) {
           q = q.gt(k, formatVal((v as any).gt));
         } else if ("gte" in (v as any)) {
@@ -691,14 +693,34 @@ function createSupabaseTableProxy(tableName: string) {
     async count(args?: any) {
       if (!supabaseAdmin) return 0;
       try {
-        const { count, error } = await supabaseAdmin
+        let q = supabaseAdmin
           .from(tableName)
           .select("*", { count: "exact", head: true });
-        if (error) return 0;
-        return count || 0;
+        q = applyWhereClause(q, args?.where);
+        const { count, error } = await q;
+        if (error) {
+          const records = await this.findMany({ where: args?.where, select: { id: true } });
+          return records ? records.length : 0;
+        }
+        return count ?? 0;
       } catch {
-        return 0;
+        const records = await this.findMany({ where: args?.where, select: { id: true } }).catch(() => []);
+        return records ? records.length : 0;
       }
+    },
+
+    async aggregate(args?: any) {
+      const records = await this.findMany({ where: args?.where });
+      const sumResult: any = {};
+      if (args?._sum && typeof args._sum === "object") {
+        for (const key of Object.keys(args._sum)) {
+          sumResult[key] = records.reduce((acc: number, r: any) => acc + (Number(r[key]) || 0), 0);
+        }
+      }
+      return {
+        _sum: sumResult,
+        _count: records.length
+      };
     }
   };
 }

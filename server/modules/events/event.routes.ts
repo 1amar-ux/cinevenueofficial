@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../../config/database";
 import { authenticate, optionalAuthenticate, isValidAdminPasscode } from "../../middleware/auth";
 import { authorize } from "../../middleware/authorize";
-import { NotFoundError, ValidationError, PaymentError } from "../../shared/errors";
+import { NotFoundError, ValidationError, PaymentError, ConflictError } from "../../shared/errors";
 import { sendEventPassEmail } from "../../services/emailService";
 import { razorpayService } from "../payments/razorpay.service";
 import { logger } from "../../shared/logger";
@@ -502,6 +502,28 @@ router.post("/:id/create-order", optionalAuthenticate, async (req: Request, res:
     const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
 
+    // Validate overall event capacity
+    const confirmedCount = await prisma.eventRegistration.aggregate({
+      where: { eventId: event.id, status: "CONFIRMED" },
+      _sum: { ticketCount: true }
+    });
+    const currentBooked = confirmedCount._sum.ticketCount || 0;
+    if (currentBooked + Number(ticketCount) > event.capacity) {
+      throw new ConflictError(
+        `This event is sold out or does not have sufficient capacity. Only ${Math.max(0, event.capacity - currentBooked)} tickets available.`
+      );
+    }
+
+    // Validate tier capacity if ticketTypeId is provided
+    if (ticketTypeId && Array.isArray(event.ticketTypes)) {
+      const targetType = event.ticketTypes.find((t: any) => t.id === ticketTypeId);
+      if (targetType && targetType.available < Number(ticketCount)) {
+        throw new ConflictError(
+          `Selected ticket tier is sold out. Only ${Math.max(0, targetType.available)} tickets available.`
+        );
+      }
+    }
+
     const breakdown = calculateEventPriceBreakdown(
       event,
       ticketCount,
@@ -589,6 +611,28 @@ router.post("/:id/verify-and-register", optionalAuthenticate, async (req: Reques
     const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
 
+    // Validate overall event capacity
+    const confirmedCount = await prisma.eventRegistration.aggregate({
+      where: { eventId: event.id, status: "CONFIRMED" },
+      _sum: { ticketCount: true }
+    });
+    const currentBooked = confirmedCount._sum.ticketCount || 0;
+    if (currentBooked + Number(ticketCount) > event.capacity) {
+      throw new ConflictError(
+        `This event is sold out or does not have sufficient capacity. Only ${Math.max(0, event.capacity - currentBooked)} tickets available.`
+      );
+    }
+
+    // Validate tier capacity if ticketTypeId is provided
+    if (ticketTypeId && Array.isArray(event.ticketTypes)) {
+      const targetType = event.ticketTypes.find((t: any) => t.id === ticketTypeId);
+      if (targetType && targetType.available < Number(ticketCount)) {
+        throw new ConflictError(
+          `Selected ticket tier is sold out. Only ${Math.max(0, targetType.available)} tickets available.`
+        );
+      }
+    }
+
     const breakdown = calculateEventPriceBreakdown(
       event,
       ticketCount,
@@ -639,20 +683,51 @@ router.post("/:id/verify-and-register", optionalAuthenticate, async (req: Reques
 
     const passCode = `CV-EVT-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const registration = await prisma.eventRegistration.create({
-      data: {
-        eventId: event.id,
-        userId: targetUserId,
-        ticketCount: breakdown.quantity,
-        totalAmount: breakdown.finalPayableAmount,
-        ticketSubtotal: breakdown.ticketSubtotal,
-        convenienceFee: breakdown.convenienceFee,
-        discountAmount: breakdown.discountAmount,
-        finalPayableAmount: breakdown.finalPayableAmount,
-        feeConfigurationSnapshot: breakdown.feeSnapshot,
-        status: "CONFIRMED",
-        passCode
+    const registration = await prisma.$transaction(async (tx) => {
+      // 1. Total event capacity validation
+      const confirmedCount = await tx.eventRegistration.aggregate({
+        where: { eventId: event.id, status: "CONFIRMED" },
+        _sum: { ticketCount: true }
+      });
+      const currentBooked = confirmedCount._sum.ticketCount || 0;
+      if (currentBooked + Number(breakdown.quantity) > event.capacity) {
+        throw new ConflictError(
+          `Event capacity exceeded. Only ${Math.max(0, event.capacity - currentBooked)} tickets remaining.`
+        );
       }
+
+      // 2. Decrement ticket type available count atomically
+      if (ticketTypeId) {
+        const currentTier = await tx.eventTicketType.findUnique({
+          where: { id: ticketTypeId }
+        });
+        if (!currentTier || currentTier.available < Number(breakdown.quantity)) {
+          throw new ConflictError("Selected ticket tier is sold out or does not have sufficient tickets available.");
+        }
+        await tx.eventTicketType.update({
+          where: { id: ticketTypeId },
+          data: {
+            available: Math.max(0, currentTier.available - Number(breakdown.quantity))
+          }
+        });
+      }
+
+      // 3. Create confirmed registration
+      return await tx.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          userId: targetUserId,
+          ticketCount: breakdown.quantity,
+          totalAmount: breakdown.finalPayableAmount,
+          ticketSubtotal: breakdown.ticketSubtotal,
+          convenienceFee: breakdown.convenienceFee,
+          discountAmount: breakdown.discountAmount,
+          finalPayableAmount: breakdown.finalPayableAmount,
+          feeConfigurationSnapshot: breakdown.feeSnapshot,
+          status: "CONFIRMED",
+          passCode
+        }
+      });
     });
 
     const ticketType = event.ticketTypes?.find((t: any) => t.id === ticketTypeId) || event.ticketTypes?.[0];
@@ -716,6 +791,28 @@ router.post("/:id/register", optionalAuthenticate, async (req: Request, res: Res
     const event = await fetchEventWithTicketTypes(id);
     if (!event) throw new NotFoundError("Event", id);
 
+    // Validate overall event capacity
+    const confirmedCount = await prisma.eventRegistration.aggregate({
+      where: { eventId: event.id, status: "CONFIRMED" },
+      _sum: { ticketCount: true }
+    });
+    const currentBooked = confirmedCount._sum.ticketCount || 0;
+    if (currentBooked + Number(ticketCount) > event.capacity) {
+      throw new ConflictError(
+        `This event is sold out or does not have sufficient capacity. Only ${Math.max(0, event.capacity - currentBooked)} tickets available.`
+      );
+    }
+
+    // Validate tier capacity if ticketTypeId is provided
+    if (ticketTypeId && Array.isArray(event.ticketTypes)) {
+      const targetType = event.ticketTypes.find((t: any) => t.id === ticketTypeId);
+      if (targetType && targetType.available < Number(ticketCount)) {
+        throw new ConflictError(
+          `Selected ticket tier is sold out. Only ${Math.max(0, targetType.available)} tickets available.`
+        );
+      }
+    }
+
     const breakdown = calculateEventPriceBreakdown(
       event,
       ticketCount,
@@ -771,20 +868,51 @@ router.post("/:id/register", optionalAuthenticate, async (req: Request, res: Res
 
     const passCode = `CV-EVT-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const registration = await prisma.eventRegistration.create({
-      data: {
-        eventId: event.id,
-        userId: targetUserId,
-        ticketCount: breakdown.quantity,
-        totalAmount: breakdown.finalPayableAmount,
-        ticketSubtotal: breakdown.ticketSubtotal,
-        convenienceFee: breakdown.convenienceFee,
-        discountAmount: breakdown.discountAmount,
-        finalPayableAmount: breakdown.finalPayableAmount,
-        feeConfigurationSnapshot: breakdown.feeSnapshot,
-        status: "CONFIRMED",
-        passCode
+    const registration = await prisma.$transaction(async (tx) => {
+      // 1. Total event capacity validation
+      const confirmedCount = await tx.eventRegistration.aggregate({
+        where: { eventId: event.id, status: "CONFIRMED" },
+        _sum: { ticketCount: true }
+      });
+      const currentBooked = confirmedCount._sum.ticketCount || 0;
+      if (currentBooked + Number(breakdown.quantity) > event.capacity) {
+        throw new ConflictError(
+          `Event capacity exceeded. Only ${Math.max(0, event.capacity - currentBooked)} tickets remaining.`
+        );
       }
+
+      // 2. Decrement ticket type available count atomically
+      if (ticketTypeId) {
+        const currentTier = await tx.eventTicketType.findUnique({
+          where: { id: ticketTypeId }
+        });
+        if (!currentTier || currentTier.available < Number(breakdown.quantity)) {
+          throw new ConflictError("Selected ticket tier is sold out or does not have sufficient tickets available.");
+        }
+        await tx.eventTicketType.update({
+          where: { id: ticketTypeId },
+          data: {
+            available: Math.max(0, currentTier.available - Number(breakdown.quantity))
+          }
+        });
+      }
+
+      // 3. Create confirmed registration
+      return await tx.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          userId: targetUserId,
+          ticketCount: breakdown.quantity,
+          totalAmount: breakdown.finalPayableAmount,
+          ticketSubtotal: breakdown.ticketSubtotal,
+          convenienceFee: breakdown.convenienceFee,
+          discountAmount: breakdown.discountAmount,
+          finalPayableAmount: breakdown.finalPayableAmount,
+          feeConfigurationSnapshot: breakdown.feeSnapshot,
+          status: "CONFIRMED",
+          passCode
+        }
+      });
     });
 
     return res.status(201).json({
@@ -1205,11 +1333,26 @@ router.post("/registrations/:registrationId/cancel", async (req: Request, res: R
     const convenienceFeeRefundAmount = isFeeRefunded ? fee : 0;
     const totalRefundAmount = ticketRefundAmount + convenienceFeeRefundAmount;
 
-    const updated = await prisma.eventRegistration.update({
-      where: { id: registrationId },
-      data: {
-        status: "CANCELLED"
+    const updated = await prisma.$transaction(async (tx) => {
+      const reg = await tx.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          status: "CANCELLED"
+        }
+      });
+
+      // Restore available tickets if ticket types exist for this event
+      const tiers = await tx.eventTicketType.findMany({ where: { eventId: reg.eventId } });
+      if (tiers.length > 0) {
+        await tx.eventTicketType.update({
+          where: { id: tiers[0].id },
+          data: {
+            available: tiers[0].available + reg.ticketCount
+          }
+        });
       }
+
+      return reg;
     });
 
     return res.json({

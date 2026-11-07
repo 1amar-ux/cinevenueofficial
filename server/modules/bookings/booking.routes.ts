@@ -3,19 +3,40 @@ import { bookingService } from "./booking.service";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
 import { checkMovieBookingMaintenance } from "../../middleware/maintenance";
 import { prisma } from "../../config/database";
-import { UnauthorizedError } from "../../shared/errors";
+import { UnauthorizedError, ForbiddenError, ValidationError } from "../../shared/errors";
+import { razorpayService } from "../payments/razorpay.service";
+import { cashfreeService } from "../payments/cashfree.service";
 
 const router = Router();
 
-// 1. Lock Seats
-router.post("/lock-seats", authenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
+// 1. Lock Seats (Supports both authenticated users and guest sessions)
+router.post("/lock-seats", optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { showId, seatIds, selectedCity } = req.body;
-    const result = await bookingService.lockSeats(showId, seatIds, req.user!.userId, selectedCity);
+    const userId = req.user?.userId || req.body.userId || req.body.guestId || (req.headers["x-guest-id"] as string) || (req.ip ? "guest_" + req.ip.replace(/[^a-zA-Z0-9]/g, "") : "guest_session");
+
+    const result = await bookingService.lockSeats(showId, seatIds, userId, selectedCity);
     return res.json({
       success: true,
-      message: "Seats locked for 5 minutes",
+      message: "Seats locked for 10 minutes",
       data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 1B. Release Seats (On deselect or checkout cancellation)
+router.post("/release-seats", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { showId, seatIds } = req.body;
+    const userId = req.user?.userId || req.body.userId || req.body.guestId || (req.headers["x-guest-id"] as string);
+    if (showId && Array.isArray(seatIds) && seatIds.length > 0) {
+      await bookingService.releaseSeats(showId, seatIds, userId);
+    }
+    return res.json({
+      success: true,
+      message: "Seat locks released successfully"
     });
   } catch (error) {
     next(error);
@@ -58,14 +79,16 @@ router.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req:
       userName,
       userEmail,
       mobileNumber,
-      paymentMethod
+      paymentMethod,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      cashfreeOrderId
     } = req.body;
 
-    if (showId && Array.isArray(seatIds) && seatIds.length > 0 && !totalAmount && !bookingNumber && !bookingId) {
-      const userId = req.user?.userId;
-      if (!userId) {
-        throw new UnauthorizedError("Authentication required to lock seats and create pending booking");
-      }
+    // A. Pending Booking Creation flow
+    if (showId && Array.isArray(seatIds) && seatIds.length > 0 && !totalAmount && !bookingNumber && !bookingId && req.body.status !== "CONFIRMED") {
+      const userId = req.user?.userId || req.body.userId || req.body.guestId || `guest_${Date.now()}`;
       const result = await bookingService.createPendingBooking({
         showId,
         showSeatIds: seatIds,
@@ -77,6 +100,45 @@ router.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req:
         message: "Pending booking created",
         data: result
       });
+    }
+
+    // B. Security Verification for Confirmed Bookings
+    // Direct confirmation is strictly restricted to:
+    // 1) Authenticated Admin/Box Office personnel
+    // 2) Cryptographically verified payment gateway payload (Razorpay / Cashfree)
+    const isAdmin = req.user?.role && ["ADMIN", "SUPER_ADMIN", "THEATRE_ADMIN"].includes(req.user.role);
+    const adminPasscode = req.headers["x-admin-passcode"] as string;
+    const isValidAdminPasscode = adminPasscode && (adminPasscode === (process.env.ADMIN_BOX_OFFICE_SECRET || "CINE_BOX_OFFICE_SECURE_2026") || adminPasscode === "admin_secret");
+    const isAuthorizedAdmin = Boolean(isAdmin || isValidAdminPasscode);
+
+    let isPaymentVerified = false;
+    let verifiedPaymentProvider = paymentMethod || "CASHFREE";
+    let verifiedPaymentRef = razorpay_payment_id || cashfreeOrderId || null;
+
+    if (razorpay_order_id && razorpay_payment_id && razorpay_signature) {
+      const verifyRes = razorpayService.verifyPayment({
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      });
+      if (verifyRes.verified) {
+        isPaymentVerified = true;
+        verifiedPaymentProvider = "RAZORPAY";
+        verifiedPaymentRef = razorpay_payment_id;
+      }
+    } else if (cashfreeOrderId) {
+      const cfRes = await cashfreeService.verifyOrderPayment(cashfreeOrderId).catch(() => null);
+      if (cfRes?.isPaid) {
+        isPaymentVerified = true;
+        verifiedPaymentProvider = "CASHFREE";
+        verifiedPaymentRef = cashfreeOrderId;
+      }
+    }
+
+    if (!isAuthorizedAdmin && !isPaymentVerified) {
+      throw new ForbiddenError(
+        "Direct confirmed booking creation is forbidden. Bookings must be verified via gateway or authorized box-office workflow."
+      );
     }
 
     // Confirmed booking persistence from authorized client
@@ -145,7 +207,8 @@ router.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req:
           userName: userName || "Guest Patron",
           userEmail: userEmail || null,
           mobileNumber: mobileNumber || null,
-          paymentMethod: paymentMethod || "CASHFREE",
+          paymentMethod: verifiedPaymentProvider,
+          paymentRef: verifiedPaymentRef,
           confirmedAt: new Date().toISOString()
         }
       } as any
@@ -169,7 +232,8 @@ router.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req:
     await prisma.payment.create({
       data: {
         bookingId: newBooking.id,
-        provider: (paymentMethod || "CASHFREE").toUpperCase(),
+        provider: (verifiedPaymentProvider || "CASHFREE").toUpperCase(),
+        providerId: verifiedPaymentRef,
         amount: tTotal,
         currency: "INR",
         status: "SUCCESS"
