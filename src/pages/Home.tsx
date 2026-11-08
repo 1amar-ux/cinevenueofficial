@@ -515,6 +515,7 @@ export default function Home({
       
       {/* GLOBAL LUXURY RESPONSIVE NAVBAR */}
       <Navbar
+        showLocationSelector={false}
         selectedCity="All Cities"
         setSelectedCity={() => {}}
         onOpenLocation={() => navigate("/booking")}

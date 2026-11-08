@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "dvt_1794136728302_kwn50n",
+    "token": "fcm_android_token_test_abc123456789",
+    "platform": "ANDROID",
+    "userId": "usr_push_test_1794136728301",
+    "deviceId": "android_device_001",
+    "deviceModel": null,
+    "appVersion": null,
+    "isActive": false,
+    "createdAt": "2026-11-08T11:18:48.301Z",
+    "updatedAt": "2026-11-08T11:18:48.308Z"
+  },
+  {
+    "id": "dvt_1794136728304_gwtqls",
+    "token": "apns_ios_token_test_xyz9876543210",
+    "platform": "IOS",
+    "userId": "usr_push_test_1794136728301",
+    "deviceId": "iphone_device_002",
+    "deviceModel": null,
+    "appVersion": null,
+    "isActive": false,
+    "createdAt": "2026-11-08T11:18:48.304Z",
+    "updatedAt": "2026-11-08T11:18:48.309Z"
+  }
+]

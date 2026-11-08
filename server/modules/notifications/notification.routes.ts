@@ -3,6 +3,7 @@ import { logger } from "../../shared/logger";
 import { sendEventPassEmail, sendBookingConfirmationEmail, sendMovieTicketEmail } from "../../services/emailService";
 import { optionalAuthenticate } from "../../middleware/auth";
 import { deviceTokenService } from "./deviceToken.service";
+import { pushDispatcherService } from "./pushDispatcher.service";
 
 const router = Router();
 
@@ -81,6 +82,40 @@ router.get("/device-tokens/stats", async (req: Request, res: Response, next: Nex
   try {
     const stats = deviceTokenService.getTotalTokensCount();
     return res.json({ success: true, data: stats });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Dispatch Push Notification (FCM / APNs)
+ * POST /api/v1/notifications/send-push
+ */
+router.post("/send-push", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, token, title, body, data, category } = req.body || {};
+    if (!title || !body) {
+      return res.status(400).json({
+        success: false,
+        message: "Notification title and body are required."
+      });
+    }
+
+    const targetUserId = userId || req.user?.userId;
+    const result = await pushDispatcherService.sendPushNotification({
+      userId: targetUserId,
+      token,
+      title,
+      body,
+      data,
+      category
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Push notification dispatched successfully.",
+      data: result
+    });
   } catch (error) {
     next(error);
   }

@@ -29,6 +29,7 @@ import { authorize } from "./middleware/authorize";
 import proposalsRouter from "./modules/proposals/proposals.routes";
 import pricingRouter from "./modules/pricing/pricing.routes";
 import feedbackRouter from "./modules/feedback/feedback.routes";
+import conciergeRoutes from "./modules/ai/concierge.routes";
 
 const router = Router();
 
@@ -108,6 +109,8 @@ router.use("/sync", syncPublicRouter);
 router.use("/", employeeRouter);
 router.use("/", posRoutes); // Mounts /admin/integrations and /webhooks/pos
 router.use("/", proposalsRouter); // Mounts /proposals and /admin/proposals
+router.use("/gemini", conciergeRoutes);
+router.use("/concierge", conciergeRoutes);
 
 // ==========================================
 // 2A. RAZORPAY STANDARD WEB CHECKOUT ENDPOINTS

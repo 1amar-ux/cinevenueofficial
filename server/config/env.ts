@@ -76,3 +76,57 @@ if (!parsedEnv.success) {
 }
 
 export const env = parsedEnv.success ? parsedEnv.data : envSchema.parse({});
+
+export interface ProductionAuditResult {
+  isReady: boolean;
+  environment: string;
+  errors: string[];
+  warnings: string[];
+}
+
+export function checkProductionReadiness(): ProductionAuditResult {
+  const isProd = process.env.NODE_ENV === "production";
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. JWT Security Validation
+  const accessSecret = process.env.JWT_ACCESS_SECRET || env.JWT_ACCESS_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET || env.JWT_REFRESH_SECRET;
+
+  if (isProd) {
+    if (!accessSecret || accessSecret.includes("dev_access") || accessSecret.length < 32) {
+      errors.push("Production requires a high-entropy JWT_ACCESS_SECRET (minimum 32 characters, no dev default).");
+    }
+    if (!refreshSecret || refreshSecret.includes("dev_refresh") || refreshSecret.length < 32) {
+      errors.push("Production requires a high-entropy JWT_REFRESH_SECRET (minimum 32 characters, no dev default).");
+    }
+    if (env.CORS_ORIGIN === "*") {
+      warnings.push("CORS_ORIGIN is wildcard '*' in production mode; specify exact domain origins.");
+    }
+  } else {
+    if (!accessSecret || accessSecret.length < 16) {
+      warnings.push("JWT_ACCESS_SECRET is short; recommend >= 32 characters.");
+    }
+  }
+
+  // 2. Gateway Credentials Audit
+  if (isProd && env.RAZORPAY_ENV === "LIVE") {
+    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+      errors.push("RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are required when RAZORPAY_ENV='LIVE'.");
+    }
+  }
+
+  if (isProd && env.CASHFREE_ENV === "PROD") {
+    if (!env.CASHFREE_APP_ID || !env.CASHFREE_SECRET_KEY) {
+      errors.push("CASHFREE_APP_ID and CASHFREE_SECRET_KEY are required when CASHFREE_ENV='PROD'.");
+    }
+  }
+
+  return {
+    isReady: errors.length === 0,
+    environment: isProd ? "production" : "development",
+    errors,
+    warnings
+  };
+}
+

@@ -31,11 +31,11 @@ class InMemoryRedisFallback implements RedisClientInterface {
     return "OK";
   }
 
-  // Atomic Set-if-Not-Exists for distributed seat locking
+  // Atomic Set-if-Not-Exists for distributed seat locking (idempotent for same owner)
   async setnx(key: string, value: string, durationSeconds = 300): Promise<boolean> {
     const existing = await this.get(key);
-    if (existing !== null) {
-      return false; // Already locked
+    if (existing !== null && existing !== value) {
+      return false; // Already locked by another user
     }
     const expiresAt = Date.now() + durationSeconds * 1000;
     this.store.set(key, { value, expiresAt });

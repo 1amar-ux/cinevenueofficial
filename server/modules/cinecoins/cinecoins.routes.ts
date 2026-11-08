@@ -13,9 +13,16 @@ const router = Router();
  */
 export const CINECOINS_PAUSED_FOR_DECEMBER = true;
 
+export const isCineCoinsSystemActive = (): boolean => {
+  if (process.env.ENABLE_CINECOINS === "true" || process.env.CINECOINS_ENABLED === "true") {
+    return true;
+  }
+  return !CINECOINS_PAUSED_FOR_DECEMBER;
+};
+
 export const gateCineCoinsMutations = (req: Request, res: Response, next: NextFunction) => {
-  const isEnabled = process.env.ENABLE_CINECOINS === "true";
-  if (CINECOINS_PAUSED_FOR_DECEMBER && !isEnabled) {
+  const isEnabled = isCineCoinsSystemActive();
+  if (!isEnabled) {
     return res.status(403).json({
       success: false,
       message: "CineCoins is launching soon and is currently disabled."
@@ -168,8 +175,8 @@ router.use(authenticate);
 // CINECOINS ENDPOINTS (PRESERVED FOR DECEMBER LAUNCH)
 // ==========================================
 
-// 1. Get User Wallet & Transactions
-router.get("/wallet", async (req: Request, res: Response, next: NextFunction) => {
+// 1. Get User Wallet & Transactions (Supports both /wallet and mobile /my-wallet)
+router.get(["/wallet", "/my-wallet"], async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
     let wallet = await prisma.cineCoinWallet.findUnique({
