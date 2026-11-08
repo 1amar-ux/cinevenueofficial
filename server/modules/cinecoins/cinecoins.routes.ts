@@ -14,7 +14,8 @@ const router = Router();
 export const CINECOINS_PAUSED_FOR_DECEMBER = true;
 
 export const gateCineCoinsMutations = (req: Request, res: Response, next: NextFunction) => {
-  if (CINECOINS_PAUSED_FOR_DECEMBER) {
+  const isEnabled = process.env.ENABLE_CINECOINS === "true";
+  if (CINECOINS_PAUSED_FOR_DECEMBER && !isEnabled) {
     return res.status(403).json({
       success: false,
       message: "CineCoins is launching soon and is currently disabled."
@@ -293,7 +294,7 @@ router.post("/claim-daily", async (req: Request, res: Response, next: NextFuncti
 
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
-        data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
+        data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0, updatedAt: new Date() }
       });
     }
 
@@ -339,7 +340,7 @@ router.post("/spin", async (req: Request, res: Response, next: NextFunction) => 
     let wallet = await prisma.cineCoinWallet.findUnique({ where: { userId } });
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
-        data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
+        data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0, updatedAt: new Date() }
       });
     }
 
@@ -467,7 +468,7 @@ router.post("/claim", async (req: Request, res: Response, next: NextFunction) =>
     let wallet = await prisma.cineCoinWallet.findUnique({ where: { userId } });
     if (!wallet) {
       wallet = await prisma.cineCoinWallet.create({
-        data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0 }
+        data: { userId, balance: 0, lifetimeEarned: 0, totalRedeemed: 0, updatedAt: new Date() }
       });
     }
 

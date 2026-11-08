@@ -121,7 +121,7 @@ router.all("/verify", async (req: Request, res: Response, next: NextFunction) =>
           venueName: booking?.theatre?.name,
           scanType: "DUPLICATE",
           operator: operatorName,
-          previousScannedAt: movieTicket.usedAt ? movieTicket.usedAt.toISOString() : null
+          previousScannedAt: movieTicket.usedAt ? new Date(movieTicket.usedAt).toISOString() : null
         }).catch(() => {});
 
         return res.json({
@@ -148,7 +148,7 @@ router.all("/verify", async (req: Request, res: Response, next: NextFunction) =>
           venueName: booking?.theatre?.name,
           scanType: "DUPLICATE",
           operator: operatorName,
-          previousScannedAt: movieTicket.usedAt ? movieTicket.usedAt.toISOString() : null
+          previousScannedAt: movieTicket.usedAt ? new Date(movieTicket.usedAt).toISOString() : null
         }).catch(() => {});
 
         return res.json({

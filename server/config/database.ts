@@ -384,7 +384,8 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   "EventFeeAuditLog",
   "MovieFeeAuditLog",
   "pricing_audit_logs",
-  "booking_pricing_snapshots"
+  "booking_pricing_snapshots",
+  "CineCoinTransaction"
 ]);
 
 function normalizeReturnedRecord(tableName: string, data: any): any {
@@ -567,7 +568,7 @@ function createSupabaseTableProxy(tableName: string) {
       if (!dataToInsert.id) {
         dataToInsert.id = `${tableName.toLowerCase().slice(0, 3)}_${Math.random().toString(36).substring(2, 10)}`;
       }
-      if (hasUpdatedAt && ['User', 'Movie', 'Theatre', 'Screen', 'Seat', 'Show', 'Booking', 'Payment', 'Ticket', 'Event'].includes(tableName)) {
+      if (hasUpdatedAt) {
         dataToInsert.updatedAt = dataToInsert.updatedAt || new Date().toISOString();
       }
       const { data, error } = await supabaseAdmin.from(tableName).insert(dataToInsert).select().single();
@@ -600,7 +601,31 @@ function createSupabaseTableProxy(tableName: string) {
 
     async update(args: any) {
       if (!supabaseAdmin) throw new Error(`Database offline: cannot update ${tableName}`);
-      const cleanData = sanitizeRecord(tableName, args.data);
+      let dataToUpdate = { ...(args.data || {}) };
+      const hasAtomicOps = Object.values(dataToUpdate).some(
+        (v: any) => v && typeof v === "object" && ("increment" in v || "decrement" in v)
+      );
+      if (hasAtomicOps) {
+        try {
+          let checkQuery = supabaseAdmin.from(tableName).select("*");
+          checkQuery = applyWhereClause(checkQuery, args?.where);
+          const { data: existing } = await checkQuery.maybeSingle();
+          if (existing) {
+            for (const [k, v] of Object.entries(dataToUpdate)) {
+              if (v && typeof v === "object") {
+                if ("increment" in (v as any)) {
+                  dataToUpdate[k] = (Number(existing[k]) || 0) + Number((v as any).increment);
+                } else if ("decrement" in (v as any)) {
+                  dataToUpdate[k] = (Number(existing[k]) || 0) - Number((v as any).decrement);
+                }
+              }
+            }
+          }
+        } catch {
+          // Fall back gracefully
+        }
+      }
+      const cleanData = sanitizeRecord(tableName, dataToUpdate);
       const updatePayload = hasUpdatedAt
         ? { ...cleanData, updatedAt: new Date().toISOString() }
         : { ...cleanData };
@@ -782,7 +807,11 @@ const TABLE_MAP: { [key: string]: string } = {
   pricingauditlog: "pricing_audit_logs",
   pricingAuditLog: "pricing_audit_logs",
   bookingpricingsnapshot: "booking_pricing_snapshots",
-  bookingPricingSnapshot: "booking_pricing_snapshots"
+  bookingPricingSnapshot: "booking_pricing_snapshots",
+  cinecoinwallet: "CineCoinWallet",
+  cineCoinWallet: "CineCoinWallet",
+  cinecointransaction: "CineCoinTransaction",
+  cineCoinTransaction: "CineCoinTransaction"
 };
 
 function initPrismaClient(): PrismaClient {
