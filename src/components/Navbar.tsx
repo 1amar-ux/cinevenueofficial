@@ -36,7 +36,7 @@ export default function Navbar({
   selectedCity,
   setSelectedCity,
   onOpenLocation,
-  showLocationSelector = false,
+  showLocationSelector = true,
   cities = [],
   userEmail,
   searchQuery = "",

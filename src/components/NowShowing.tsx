@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Star, Film, Eye, Play, Sparkles, Calendar, Clapperboard, ChevronRight, Flame, ArrowLeft, X, CheckCircle2, MessageSquare } from "lucide-react";
+import { Search, Star, Film, Eye, Play, Sparkles, Calendar, Clapperboard, ChevronRight, ChevronDown, MapPin, Flame, ArrowLeft, X, CheckCircle2, MessageSquare } from "lucide-react";
 import { Movie, MovieVideo, Advertisement } from "../types";
 import { getActiveMovieVideos, deriveMovieReleaseStatus } from "../utils/movieAvailability";
 import { formatRating, parseRatingNumber } from "../utils/ratingFormatter";
@@ -11,6 +11,7 @@ import YouTubePlayerModal from "./video/YouTubePlayerModal";
 interface NowShowingProps {
   movies: Movie[];
   selectedCity?: string;
+  onOpenLocation?: () => void;
   onBookMovie: (movieTitle: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -25,6 +26,7 @@ interface NowShowingProps {
 export default function NowShowing({
   movies,
   selectedCity = "All Cities",
+  onOpenLocation,
   onBookMovie,
   searchQuery,
   setSearchQuery,
@@ -335,10 +337,23 @@ export default function NowShowing({
       {/* Desktop Search & Filter Bar Container */}
       <div className="w-full bg-white dark:bg-[#121214]/90 border border-gray-200 dark:border-white/10 p-3 sm:p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 shadow-sm dark:shadow-2xl backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full lg:w-auto">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-black/60 rounded-xl border border-amber-200 dark:border-gold/30 text-xs font-semibold uppercase text-amber-800 dark:text-gold select-none">
-            <Clapperboard className="w-4 h-4 text-gold" />
-            <span>{selectedCity} Screenings</span>
-          </div>
+          {onOpenLocation ? (
+            <button
+              type="button"
+              onClick={onOpenLocation}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-black/60 dark:hover:bg-gold/10 rounded-xl border border-amber-200 dark:border-gold/30 hover:border-amber-400 dark:hover:border-gold/60 text-xs font-semibold uppercase text-amber-800 dark:text-gold transition-all cursor-pointer shadow-xs group"
+              title="Click to select another city or district"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#D4AF37] group-hover:scale-110 transition-transform" />
+              <span>{selectedCity} Screenings</span>
+              <ChevronDown className="w-3 h-3 text-amber-700 dark:text-gold/80 group-hover:translate-y-0.5 transition-transform" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-black/60 rounded-xl border border-amber-200 dark:border-gold/30 text-xs font-semibold uppercase text-amber-800 dark:text-gold select-none">
+              <Clapperboard className="w-4 h-4 text-gold" />
+              <span>{selectedCity} Screenings</span>
+            </div>
+          )}
 
           {/* Category Switcher */}
           <div className="flex bg-gray-100 dark:bg-black/50 p-1 rounded-xl border border-gray-200 dark:border-white/10 text-xs shadow-xs dark:shadow-none">

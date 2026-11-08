@@ -2367,6 +2367,7 @@ export default function App() {
           <div className="bg-white dark:bg-[#0A0A0B] min-h-screen text-slate-950 dark:text-text-primary selection:bg-yellow-300 selection:text-black">
             {/* Dynamic luxury layout navigation */}
             <Navbar
+              showLocationSelector={true}
               selectedCity={selectedCity}
               setSelectedCity={setSelectedCity}
               onOpenLocation={() => setLocationOpen(true)}
@@ -2437,6 +2438,7 @@ export default function App() {
                 <NowShowing
                   movies={movies}
                   selectedCity={selectedCity}
+                  onOpenLocation={() => setLocationOpen(true)}
                   onBookMovie={handleBookMovie}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
@@ -3109,6 +3111,7 @@ export default function App() {
                 ) : (
                   <div className="min-h-screen bg-white dark:bg-dark-bg text-slate-950 dark:text-text-primary flex flex-col justify-between">
                     <Navbar 
+                      showLocationSelector={true}
                       selectedCity={selectedCity}
                       setSelectedCity={setSelectedCity}
                       onOpenLocation={() => setLocationOpen(true)}
