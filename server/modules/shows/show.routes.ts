@@ -146,17 +146,40 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
       a.theatreName.localeCompare(b.theatreName)
     );
 
-    return res.json({
+    const isPaginated = req.query.page !== undefined || req.query.limit !== undefined;
+    const pageNum = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+
+    const total = shows.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginatedShows = isPaginated
+      ? shows.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : shows;
+
+    const responsePayload: any = {
       success: true,
-      count: shows.length,
+      count: paginatedShows.length,
       data: {
-        shows,
+        shows: paginatedShows,
         theatres: groupedTheatres,
         movieId: finalMovieId,
         city: targetCity,
         date: formattedDate
       }
-    });
+    };
+
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }

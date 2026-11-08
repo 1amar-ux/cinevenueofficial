@@ -196,7 +196,13 @@ export class AuthController {
       return res.json({
         success: true,
         message: "Session refreshed successfully",
-        data: {}
+        token: tokens.accessToken,
+        data: {
+          tokens: {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken
+          }
+        }
       });
     } catch (error) {
       next(error);
@@ -231,6 +237,28 @@ export class AuthController {
       return res.json({
         success: true,
         data: { user }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public updateMe = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const updatedUser = await authService.updateProfile(req.user!.userId, req.body);
+      auditEntryLogService.recordAuthEvent({
+        activity: "PROFILE_UPDATE",
+        status: "SUCCESS",
+        actorId: req.user?.userId,
+        actorEmail: req.user?.email,
+        actorRole: req.user?.role || "CUSTOMER",
+        details: `Profile updated for ${req.user?.email}`,
+        req
+      });
+      return res.json({
+        success: true,
+        message: "Profile updated successfully",
+        data: { user: updatedUser }
       });
     } catch (error) {
       next(error);

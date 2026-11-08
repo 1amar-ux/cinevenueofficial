@@ -6,10 +6,19 @@ import { authorize, authorizeTheatre, preventManagerFinancials } from "../../mid
 
 export const theatreManagerOperationsRouter = Router();
 
-// Enforce authentication, role authorization, and theatre-level data isolation
-theatreManagerOperationsRouter.use(authenticate);
-theatreManagerOperationsRouter.use(authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"));
-theatreManagerOperationsRouter.use(authorizeTheatre("theatreId"));
+// Enforce authentication, role authorization, and theatre-level data isolation only on /operations routes
+theatreManagerOperationsRouter.use((req: Request, res: Response, next: NextFunction) => {
+  if (!req.path.includes("/operations")) {
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER")(req, res, (authErr) => {
+      if (authErr) return next(authErr);
+      return authorizeTheatre("theatreId")(req, res, next);
+    });
+  });
+});
 
 theatreManagerOperationsRouter.param("theatreId", (req: Request, res: Response, next: NextFunction, theatreId: string) => {
   if (req.user && req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {

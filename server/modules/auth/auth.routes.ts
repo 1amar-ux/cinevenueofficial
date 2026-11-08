@@ -8,7 +8,8 @@ import {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
-  googleAuthSchema
+  googleAuthSchema,
+  updateProfileSchema
 } from "./auth.validation";
 
 const router = Router();
@@ -30,6 +31,8 @@ router.get("/callback", authController.handleGoogleCallback);
 router.post("/refresh", validate({ body: refreshTokenSchema }), authController.refresh);
 router.post("/logout", authController.logout);
 router.get("/me", authenticate, authController.getMe);
+router.put(["/me", "/profile"], authenticate, validate({ body: updateProfileSchema }), authController.updateMe);
+router.patch(["/me", "/profile"], authenticate, validate({ body: updateProfileSchema }), authController.updateMe);
 router.post("/forgot-password", validate({ body: forgotPasswordSchema }), authController.forgotPassword);
 router.post("/reset-password", validate({ body: resetPasswordSchema }), authController.resetPassword);
 

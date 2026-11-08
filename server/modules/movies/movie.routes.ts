@@ -6,10 +6,10 @@ import { authorize } from "../../middleware/authorize";
 
 const router = Router();
 
-// 1. Get All Movies (with status filter: NOW_SHOWING, COMING_SOON, SPOTLIGHT)
+// 1. Get All Movies (with status, genre, language, search, and optional pagination)
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { status, genre, language } = req.query;
+    const { status, genre, language, search, q, page, limit } = req.query;
 
     const movies = await prisma.movie.findMany({
       where: {
@@ -27,11 +27,44 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
       filtered = filtered.filter(m => m.languages.some(l => l.toLowerCase() === String(language).toLowerCase()));
     }
 
-    return res.json({
+    const searchQuery = (search || q) ? String(search || q).toLowerCase().trim() : null;
+    if (searchQuery) {
+      filtered = filtered.filter(m =>
+        m.title.toLowerCase().includes(searchQuery) ||
+        (m.description && m.description.toLowerCase().includes(searchQuery)) ||
+        m.genres.some(g => g.toLowerCase().includes(searchQuery)) ||
+        m.languages.some(l => l.toLowerCase().includes(searchQuery))
+      );
+    }
+
+    const isPaginated = page !== undefined || limit !== undefined;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginated = isPaginated
+      ? filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : filtered;
+
+    const responsePayload: any = {
       success: true,
-      count: filtered.length,
-      data: { movies: filtered }
-    });
+      count: paginated.length,
+      data: { movies: paginated }
+    };
+
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }

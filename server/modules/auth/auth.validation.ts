@@ -55,3 +55,10 @@ export const googleAuthSchema = z.object({
   path: ["idToken"]
 });
 
+export const updateProfileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long").max(100, "Name must not exceed 100 characters").optional(),
+  mobile: z.string().regex(/^[0-9+ -]{10,15}$/, "Please provide a valid 10-digit mobile number").optional().nullable().or(z.literal("")),
+  profileImageUrl: z.string().url("Please provide a valid avatar URL").optional().nullable().or(z.literal(""))
+}).strict();
+
+

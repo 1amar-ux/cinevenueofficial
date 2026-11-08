@@ -7,10 +7,10 @@ import { theatreLayoutService } from "./theatreLayout.service";
 
 const router = Router();
 
-// 1. Get All Theatres
+// 1. Get All Theatres (with optional city, status, search, and pagination)
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { city, status } = req.query;
+    const { city, status, search, q, page, limit } = req.query;
 
     const theatres = await prisma.theatre.findMany({
       where: {
@@ -24,11 +24,44 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
       }
     });
 
-    return res.json({
+    let filtered = theatres;
+    const searchQuery = (search || q) ? String(search || q).toLowerCase().trim() : null;
+    if (searchQuery) {
+      filtered = filtered.filter(t =>
+        t.name.toLowerCase().includes(searchQuery) ||
+        (t.city && t.city.toLowerCase().includes(searchQuery)) ||
+        (t.address && t.address.toLowerCase().includes(searchQuery))
+      );
+    }
+
+    const isPaginated = page !== undefined || limit !== undefined;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginated = isPaginated
+      ? filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : filtered;
+
+    const responsePayload: any = {
       success: true,
-      count: theatres.length,
-      data: { theatres }
-    });
+      count: paginated.length,
+      data: { theatres: paginated }
+    };
+
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }

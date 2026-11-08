@@ -89,10 +89,10 @@ router.post("/send-pass-email", async (req: Request, res: Response, next: NextFu
   }
 });
 
-// 1. List Public Events
+// 1. List Public Events (with category, city, search, and optional pagination)
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { category, city } = req.query;
+    const { category, city, search, q, page, limit } = req.query;
 
     let events = await prisma.event.findMany({
       where: {
@@ -145,12 +145,47 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
       } catch (e) {}
     }
 
-    return res.json({
+    let filtered = events;
+    const searchQuery = (search || q) ? String(search || q).toLowerCase().trim() : null;
+    if (searchQuery) {
+      filtered = filtered.filter(e =>
+        e.title.toLowerCase().includes(searchQuery) ||
+        (e.description && e.description.toLowerCase().includes(searchQuery)) ||
+        (e.category && e.category.toLowerCase().includes(searchQuery)) ||
+        (e.venue && e.venue.toLowerCase().includes(searchQuery)) ||
+        (e.city && e.city.toLowerCase().includes(searchQuery))
+      );
+    }
+
+    const isPaginated = page !== undefined || limit !== undefined;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginated = isPaginated
+      ? filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum)
+      : filtered;
+
+    const responsePayload: any = {
       success: true,
-      count: events.length,
-      events,
-      data: { events }
-    });
+      count: paginated.length,
+      events: paginated,
+      data: { events: paginated }
+    };
+
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }

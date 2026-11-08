@@ -68,6 +68,24 @@ export default function MyAccountModule({
   const [profilePhone, setProfilePhone] = useState("");
   const [profileDob, setProfileDob] = useState("");
   const [isSavedSettings, setIsSavedSettings] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // Sync profile from backend on mount
+  React.useEffect(() => {
+    if (!userEmail) return;
+    apiClient.get("/auth/me")
+      .then((res: any) => {
+        const u = res.data?.data?.user;
+        if (u) {
+          if (u.name) setProfileName(u.name);
+          if (u.mobile) setProfilePhone(u.mobile);
+        }
+      })
+      .catch((err: any) => {
+        console.warn("Note fetching profile from backend:", err?.message);
+      });
+  }, [userEmail]);
 
   // User-specific filtering
   const myBookings = bookings.filter(b => b.userEmail?.toLowerCase() === userEmail?.toLowerCase());
@@ -122,10 +140,23 @@ export default function MyAccountModule({
     alert("✓ Audition Application Submitted successfully! Our casting director will review your profile.");
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSavedSettings(true);
-    setTimeout(() => setIsSavedSettings(false), 3000);
+    setIsSavingSettings(true);
+    setSettingsError(null);
+    try {
+      await apiClient.put("/auth/me", {
+        name: profileName.trim(),
+        mobile: profilePhone.trim() ? profilePhone.trim() : null
+      });
+      setIsSavedSettings(true);
+      setTimeout(() => setIsSavedSettings(false), 4000);
+    } catch (err: any) {
+      const msg = err.response?.data?.error?.message || err.response?.data?.message || err.message || "Failed to update profile";
+      setSettingsError(msg);
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   return (
@@ -460,7 +491,13 @@ export default function MyAccountModule({
 
               {isSavedSettings && (
                 <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3 rounded-xl font-bold text-center">
-                  ✓ Profile preferences updated successfully!
+                  ✓ Profile preferences updated successfully in database!
+                </div>
+              )}
+
+              {settingsError && (
+                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl font-bold text-center">
+                  ✕ {settingsError}
                 </div>
               )}
 

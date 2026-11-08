@@ -2333,8 +2333,8 @@ var init_emailService = __esm({
 });
 
 // server/serverless.ts
-import fs15 from "fs";
-import path15 from "path";
+import fs16 from "fs";
+import path16 from "path";
 
 // server/app.ts
 init_env();
@@ -3337,7 +3337,10 @@ var AuthService = class {
         const storedToken = await prisma.refreshToken.findUnique({
           where: { token }
         });
-        if (storedToken && !storedToken.revokedAt && /* @__PURE__ */ new Date() <= storedToken.expiresAt) {
+        if (storedToken) {
+          if (storedToken.revokedAt || /* @__PURE__ */ new Date() > storedToken.expiresAt) {
+            throw new UnauthorizedError("Refresh token has been revoked or expired");
+          }
           const user = await prisma.user.findUnique({
             where: { id: decoded.userId }
           });
@@ -3360,15 +3363,14 @@ var AuthService = class {
           }
         }
       } catch (dbErr) {
+        if (dbErr instanceof UnauthorizedError) throw dbErr;
         if (!isDbConnectionError(dbErr)) throw dbErr;
       }
-      const fallbackUser = resilientUsers.get(decoded.userId) || {
-        id: decoded.userId,
-        email: "customer@cinevenue.com",
-        name: "Valued Customer",
-        role: "CUSTOMER"
-      };
-      return this.generateTokens(fallbackUser);
+      const fallbackUser = resilientUsers.get(decoded.userId);
+      if (fallbackUser) {
+        return this.generateTokens(fallbackUser);
+      }
+      throw new UnauthorizedError("Invalid or expired refresh token");
     } catch {
       throw new UnauthorizedError("Invalid or expired refresh token");
     }
@@ -3447,6 +3449,58 @@ var AuthService = class {
       };
     }
     throw new NotFoundError("User", userId);
+  }
+  async updateProfile(userId, data) {
+    if (!userId) {
+      throw new ValidationError("User identifier is required for profile update");
+    }
+    const allowedUpdates = {};
+    if (data.name !== void 0) {
+      allowedUpdates.name = data.name.trim();
+    }
+    if (data.mobile !== void 0) {
+      allowedUpdates.mobile = data.mobile ? data.mobile.trim() : null;
+    }
+    if (data.profileImageUrl !== void 0) {
+      allowedUpdates.profileImageUrl = data.profileImageUrl ? data.profileImageUrl.trim() : null;
+    }
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: allowedUpdates,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          mobile: true,
+          role: true,
+          profileImageUrl: true,
+          createdAt: true,
+          updatedAt: true,
+          wallet: {
+            select: {
+              balance: true,
+              lifetimeEarned: true,
+              totalRedeemed: true
+            }
+          }
+        }
+      });
+      return updatedUser;
+    } catch (err) {
+      if (err.code === "P2002" || err.message?.includes("unique constraint") || err.message?.includes("User_mobile_key")) {
+        throw new ValidationError("The provided mobile number is already linked to another CineVenue account.");
+      }
+      if (!isDbConnectionError(err)) throw err;
+      const fallback = resilientUsers.get(userId);
+      if (fallback) {
+        if (allowedUpdates.name) fallback.name = allowedUpdates.name;
+        if (allowedUpdates.mobile !== void 0) fallback.mobile = allowedUpdates.mobile;
+        if (allowedUpdates.profileImageUrl !== void 0) fallback.profileImageUrl = allowedUpdates.profileImageUrl;
+        return fallback;
+      }
+      throw err;
+    }
   }
   async requestPasswordReset(identifier) {
     const rawInput = (identifier || "").trim();
@@ -4389,7 +4443,13 @@ var AuthController = class {
         return res.json({
           success: true,
           message: "Session refreshed successfully",
-          data: {}
+          token: tokens.accessToken,
+          data: {
+            tokens: {
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken
+            }
+          }
         });
       } catch (error) {
         next(error);
@@ -4422,6 +4482,27 @@ var AuthController = class {
         return res.json({
           success: true,
           data: { user }
+        });
+      } catch (error) {
+        next(error);
+      }
+    };
+    this.updateMe = async (req, res, next) => {
+      try {
+        const updatedUser = await authService.updateProfile(req.user.userId, req.body);
+        auditEntryLogService.recordAuthEvent({
+          activity: "PROFILE_UPDATE",
+          status: "SUCCESS",
+          actorId: req.user?.userId,
+          actorEmail: req.user?.email,
+          actorRole: req.user?.role || "CUSTOMER",
+          details: `Profile updated for ${req.user?.email}`,
+          req
+        });
+        return res.json({
+          success: true,
+          message: "Profile updated successfully",
+          data: { user: updatedUser }
         });
       } catch (error) {
         next(error);
@@ -4635,6 +4716,11 @@ var googleAuthSchema = z2.object({
   message: "A valid cryptographic provider token (idToken), authorization code, or authenticated session identity is required",
   path: ["idToken"]
 });
+var updateProfileSchema = z2.object({
+  name: z2.string().min(2, "Name must be at least 2 characters long").max(100, "Name must not exceed 100 characters").optional(),
+  mobile: z2.string().regex(/^[0-9+ -]{10,15}$/, "Please provide a valid 10-digit mobile number").optional().nullable().or(z2.literal("")),
+  profileImageUrl: z2.string().url("Please provide a valid avatar URL").optional().nullable().or(z2.literal(""))
+}).strict();
 
 // server/modules/auth/auth.routes.ts
 var router = Router();
@@ -4655,6 +4741,8 @@ router.get("/callback", authController.handleGoogleCallback);
 router.post("/refresh", validate({ body: refreshTokenSchema }), authController.refresh);
 router.post("/logout", authController.logout);
 router.get("/me", authenticate, authController.getMe);
+router.put(["/me", "/profile"], authenticate, validate({ body: updateProfileSchema }), authController.updateMe);
+router.patch(["/me", "/profile"], authenticate, validate({ body: updateProfileSchema }), authController.updateMe);
 router.post("/forgot-password", validate({ body: forgotPasswordSchema }), authController.forgotPassword);
 router.post("/reset-password", validate({ body: resetPasswordSchema }), authController.resetPassword);
 var auth_routes_default = router;
@@ -4735,7 +4823,7 @@ function preventManagerFinancials(req, res, next) {
 var router2 = Router2();
 router2.get("/", async (req, res, next) => {
   try {
-    const { status, genre, language } = req.query;
+    const { status, genre, language, search, q, page, limit } = req.query;
     const movies = await prisma.movie.findMany({
       where: {
         isActive: true,
@@ -4750,11 +4838,34 @@ router2.get("/", async (req, res, next) => {
     if (language) {
       filtered = filtered.filter((m) => m.languages.some((l) => l.toLowerCase() === String(language).toLowerCase()));
     }
-    return res.json({
+    const searchQuery = search || q ? String(search || q).toLowerCase().trim() : null;
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (m) => m.title.toLowerCase().includes(searchQuery) || m.description && m.description.toLowerCase().includes(searchQuery) || m.genres.some((g) => g.toLowerCase().includes(searchQuery)) || m.languages.some((l) => l.toLowerCase().includes(searchQuery))
+      );
+    }
+    const isPaginated = page !== void 0 || limit !== void 0;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginated = isPaginated ? filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum) : filtered;
+    const responsePayload = {
       success: true,
-      count: filtered.length,
-      data: { movies: filtered }
-    });
+      count: paginated.length,
+      data: { movies: paginated }
+    };
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }
@@ -6426,7 +6537,7 @@ var theatreLayoutService = new TheatreLayoutService();
 var router3 = Router3();
 router3.get("/", async (req, res, next) => {
   try {
-    const { city, status } = req.query;
+    const { city, status, search, q, page, limit } = req.query;
     const theatres = await prisma.theatre.findMany({
       where: {
         ...city ? { city: String(city) } : {},
@@ -6438,11 +6549,35 @@ router3.get("/", async (req, res, next) => {
         }
       }
     });
-    return res.json({
+    let filtered = theatres;
+    const searchQuery = search || q ? String(search || q).toLowerCase().trim() : null;
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (t) => t.name.toLowerCase().includes(searchQuery) || t.city && t.city.toLowerCase().includes(searchQuery) || t.address && t.address.toLowerCase().includes(searchQuery)
+      );
+    }
+    const isPaginated = page !== void 0 || limit !== void 0;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginated = isPaginated ? filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum) : filtered;
+    const responsePayload = {
       success: true,
-      count: theatres.length,
-      data: { theatres }
-    });
+      count: paginated.length,
+      data: { theatres: paginated }
+    };
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }
@@ -6704,9 +6839,18 @@ import { Router as Router4 } from "express";
 import fs3 from "fs";
 import path3 from "path";
 var theatreManagerOperationsRouter = Router4();
-theatreManagerOperationsRouter.use(authenticate);
-theatreManagerOperationsRouter.use(authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER"));
-theatreManagerOperationsRouter.use(authorizeTheatre("theatreId"));
+theatreManagerOperationsRouter.use((req, res, next) => {
+  if (!req.path.includes("/operations")) {
+    return next();
+  }
+  return authenticate(req, res, (err) => {
+    if (err) return next(err);
+    return authorize("SUPER_ADMIN", "ADMIN", "THEATRE_ADMIN", "THEATRE_MANAGER")(req, res, (authErr) => {
+      if (authErr) return next(authErr);
+      return authorizeTheatre("theatreId")(req, res, next);
+    });
+  });
+});
 theatreManagerOperationsRouter.param("theatreId", (req, res, next, theatreId) => {
   if (req.user && req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
     const normalize = (val) => String(val).toLowerCase().trim().replace(/^th_/, "");
@@ -7665,17 +7809,34 @@ router4.get("/", async (req, res, next) => {
     const groupedTheatres = Array.from(theatreMap.values()).sort(
       (a, b) => a.theatreName.localeCompare(b.theatreName)
     );
-    return res.json({
+    const isPaginated = req.query.page !== void 0 || req.query.limit !== void 0;
+    const pageNum = Math.max(1, parseInt(req.query.page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const total = shows.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginatedShows = isPaginated ? shows.slice((pageNum - 1) * limitNum, pageNum * limitNum) : shows;
+    const responsePayload = {
       success: true,
-      count: shows.length,
+      count: paginatedShows.length,
       data: {
-        shows,
+        shows: paginatedShows,
         theatres: groupedTheatres,
         movieId: finalMovieId,
         city: targetCity,
         date: formattedDate
       }
-    });
+    };
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }
@@ -13923,7 +14084,7 @@ router9.post("/send-pass-email", async (req, res, next) => {
 });
 router9.get("/", async (req, res, next) => {
   try {
-    const { category, city } = req.query;
+    const { category, city, search, q, page, limit } = req.query;
     let events = await prisma.event.findMany({
       where: {
         status: "PUBLISHED",
@@ -13970,12 +14131,36 @@ router9.get("/", async (req, res, next) => {
       } catch (e) {
       }
     }
-    return res.json({
+    let filtered = events;
+    const searchQuery = search || q ? String(search || q).toLowerCase().trim() : null;
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (e) => e.title.toLowerCase().includes(searchQuery) || e.description && e.description.toLowerCase().includes(searchQuery) || e.category && e.category.toLowerCase().includes(searchQuery) || e.venue && e.venue.toLowerCase().includes(searchQuery) || e.city && e.city.toLowerCase().includes(searchQuery)
+      );
+    }
+    const isPaginated = page !== void 0 || limit !== void 0;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limitNum);
+    const paginated = isPaginated ? filtered.slice((pageNum - 1) * limitNum, pageNum * limitNum) : filtered;
+    const responsePayload = {
       success: true,
-      count: events.length,
-      events,
-      data: { events }
-    });
+      count: paginated.length,
+      events: paginated,
+      data: { events: paginated }
+    };
+    if (isPaginated) {
+      responsePayload.pagination = {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      };
+    }
+    return res.json(responsePayload);
   } catch (error) {
     next(error);
   }
@@ -18843,12 +19028,140 @@ init_logger();
 init_emailService();
 import { Router as Router16 } from "express";
 
+// server/modules/notifications/deviceToken.service.ts
+init_logger();
+import fs9 from "fs";
+import path9 from "path";
+var STORE_PATH2 = path9.resolve(process.cwd(), "server/config/device_tokens.json");
+var DeviceTokenService = class {
+  constructor() {
+    this.tokens = /* @__PURE__ */ new Map();
+    this.isLoaded = false;
+    this.loadTokens();
+  }
+  loadTokens() {
+    if (this.isLoaded) return;
+    try {
+      if (fs9.existsSync(STORE_PATH2)) {
+        const raw = fs9.readFileSync(STORE_PATH2, "utf8");
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            this.tokens.set(item.token, item);
+          }
+        }
+      }
+      this.isLoaded = true;
+    } catch (err) {
+      logger2.warn(`[DeviceTokenService] Failed to load device tokens store: ${err.message}`);
+      this.isLoaded = true;
+    }
+  }
+  persistTokens() {
+    try {
+      const dir = path9.dirname(STORE_PATH2);
+      if (!fs9.existsSync(dir)) {
+        fs9.mkdirSync(dir, { recursive: true });
+      }
+      const list = Array.from(this.tokens.values());
+      fs9.writeFileSync(STORE_PATH2, JSON.stringify(list, null, 2), "utf8");
+    } catch (err) {
+      logger2.warn(`[DeviceTokenService] Failed to persist device tokens: ${err.message}`);
+    }
+  }
+  /**
+   * Registers or updates a device push token (FCM for Android, APNs for iOS)
+   * Enforces exact uniqueness per token to prevent duplicate notification deliveries.
+   */
+  registerToken(params) {
+    const rawToken = String(params.token || "").trim();
+    if (!rawToken || rawToken.length < 10) {
+      throw new ValidationError("A valid device push notification token is required (minimum 10 characters).");
+    }
+    const rawPlatform = String(params.platform || "").toUpperCase().trim();
+    if (!["ANDROID", "IOS", "WEB"].includes(rawPlatform)) {
+      throw new ValidationError("Invalid device platform. Allowed platforms: 'ANDROID', 'IOS', 'WEB'.");
+    }
+    const platform = rawPlatform;
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const existing = this.tokens.get(rawToken);
+    if (existing) {
+      existing.userId = params.userId || existing.userId || null;
+      existing.platform = platform;
+      existing.deviceId = params.deviceId !== void 0 ? params.deviceId : existing.deviceId;
+      existing.deviceModel = params.deviceModel !== void 0 ? params.deviceModel : existing.deviceModel;
+      existing.appVersion = params.appVersion !== void 0 ? params.appVersion : existing.appVersion;
+      existing.isActive = true;
+      existing.updatedAt = now;
+      this.persistTokens();
+      logger2.info(`[DeviceTokenService] Updated push token for ${platform} user: ${existing.userId || "anonymous"}`);
+      return existing;
+    }
+    const newRecord = {
+      id: `dvt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      token: rawToken,
+      platform,
+      userId: params.userId || null,
+      deviceId: params.deviceId || null,
+      deviceModel: params.deviceModel || null,
+      appVersion: params.appVersion || null,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.tokens.set(rawToken, newRecord);
+    this.persistTokens();
+    logger2.info(`[DeviceTokenService] Registered new ${platform} push token for user: ${newRecord.userId || "anonymous"}`);
+    return newRecord;
+  }
+  /**
+   * Deactivates a device push token (e.g., on logout or app uninstall)
+   */
+  deactivateToken(token, userId) {
+    const rawToken = String(token || "").trim();
+    if (!rawToken) return false;
+    const existing = this.tokens.get(rawToken);
+    if (!existing) return false;
+    if (userId && existing.userId && existing.userId !== userId) {
+      logger2.warn(`[DeviceTokenService] Unauthorized attempt to deactivate token owned by ${existing.userId} from ${userId}`);
+      return false;
+    }
+    existing.isActive = false;
+    existing.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    this.persistTokens();
+    logger2.info(`[DeviceTokenService] Deactivated push token for ${existing.platform} user: ${existing.userId || "anonymous"}`);
+    return true;
+  }
+  /**
+   * Retrieves active tokens for a specific user ID
+   */
+  getActiveTokensForUser(userId) {
+    if (!userId) return [];
+    return Array.from(this.tokens.values()).filter((t) => t.userId === userId && t.isActive);
+  }
+  /**
+   * Total registered tokens count
+   */
+  getTotalTokensCount() {
+    const list = Array.from(this.tokens.values());
+    const active = list.filter((t) => t.isActive);
+    return {
+      total: list.length,
+      active: active.length,
+      android: active.filter((t) => t.platform === "ANDROID").length,
+      ios: active.filter((t) => t.platform === "IOS").length,
+      web: active.filter((t) => t.platform === "WEB").length
+    };
+  }
+};
+var deviceTokenService = new DeviceTokenService();
+
 // server/modules/notifications/reminder.service.ts
 init_logger();
 init_database();
-import fs9 from "fs";
-import path9 from "path";
-var CONFIG_PATH = path9.resolve(process.cwd(), "server/config/booking_reminders.json");
+import fs10 from "fs";
+import path10 from "path";
+var CONFIG_PATH = path10.resolve(process.cwd(), "server/config/booking_reminders.json");
 var DEFAULT_SETTINGS = {
   movieRemindersEnabled: true,
   eventRemindersEnabled: true,
@@ -18874,8 +19187,8 @@ var DEFAULT_SETTINGS = {
 var ReminderService = class {
   readStore() {
     try {
-      if (fs9.existsSync(CONFIG_PATH)) {
-        const raw = fs9.readFileSync(CONFIG_PATH, "utf-8");
+      if (fs10.existsSync(CONFIG_PATH)) {
+        const raw = fs10.readFileSync(CONFIG_PATH, "utf-8");
         const parsed = JSON.parse(raw);
         return {
           settings: parsed.settings || DEFAULT_SETTINGS,
@@ -18889,11 +19202,11 @@ var ReminderService = class {
   }
   writeStore(data) {
     try {
-      const dir = path9.dirname(CONFIG_PATH);
-      if (!fs9.existsSync(dir)) {
-        fs9.mkdirSync(dir, { recursive: true });
+      const dir = path10.dirname(CONFIG_PATH);
+      if (!fs10.existsSync(dir)) {
+        fs10.mkdirSync(dir, { recursive: true });
       }
-      fs9.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 2), "utf-8");
+      fs10.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 2), "utf-8");
     } catch (err) {
       logger2.error("[ReminderService] Error writing store to disk:", err);
     }
@@ -18987,6 +19300,59 @@ var reminderService = new ReminderService();
 
 // server/modules/notifications/notification.routes.ts
 var router15 = Router16();
+router15.post("/device-token", optionalAuthenticate, async (req, res, next) => {
+  try {
+    const { token, platform, deviceId, deviceModel, appVersion } = req.body || {};
+    const userId = req.user?.userId || req.body?.userId || null;
+    const record = deviceTokenService.registerToken({
+      token,
+      platform,
+      userId,
+      deviceId,
+      deviceModel,
+      appVersion
+    });
+    return res.status(200).json({
+      success: true,
+      message: `${record.platform} device token registered successfully.`,
+      data: {
+        id: record.id,
+        platform: record.platform,
+        isActive: record.isActive,
+        registeredAt: record.updatedAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+var handleTokenDeactivation = async (req, res, next) => {
+  try {
+    const token = req.body?.token || req.query?.token;
+    const userId = req.user?.userId || null;
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Device push token is required for deactivation." });
+    }
+    const deactivated = deviceTokenService.deactivateToken(token, userId);
+    return res.status(200).json({
+      success: true,
+      message: deactivated ? "Device token deactivated successfully." : "Token not found or already inactive.",
+      data: { deactivated }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+router15.post("/device-token/deactivate", optionalAuthenticate, handleTokenDeactivation);
+router15.delete("/device-token", optionalAuthenticate, handleTokenDeactivation);
+router15.get("/device-tokens/stats", async (req, res, next) => {
+  try {
+    const stats = deviceTokenService.getTotalTokensCount();
+    return res.json({ success: true, data: stats });
+  } catch (error) {
+    next(error);
+  }
+});
 router15.post("/send-ticket-email", async (req, res, next) => {
   try {
     const toEmail = req.body.email || req.body.recipientEmail || req.body.to;
@@ -19211,10 +19577,10 @@ import { Router as Router17 } from "express";
 // server/modules/advertising/advertising.service.ts
 init_env();
 init_logger();
-import fs10 from "fs";
-import path10 from "path";
-var DATA_FILE_PATH = path10.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
-var PLACEMENTS_FILE_PATH = path10.resolve(process.cwd(), "server/config/live_banner_placements.json");
+import fs11 from "fs";
+import path11 from "path";
+var DATA_FILE_PATH = path11.resolve(process.cwd(), "server/config/live_banner_campaigns.json");
+var PLACEMENTS_FILE_PATH = path11.resolve(process.cwd(), "server/config/live_banner_placements.json");
 var DEFAULT_PLACEMENTS = [
   {
     id: "homepage_top",
@@ -19375,14 +19741,14 @@ var AdvertisingService = class {
   loadData() {
     if (this.isLoaded) return;
     try {
-      if (fs10.existsSync(PLACEMENTS_FILE_PATH)) {
-        const raw = fs10.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
+      if (fs11.existsSync(PLACEMENTS_FILE_PATH)) {
+        const raw = fs11.readFileSync(PLACEMENTS_FILE_PATH, "utf8");
         this.placements = JSON.parse(raw);
       } else {
         this.savePlacements();
       }
-      if (fs10.existsSync(DATA_FILE_PATH)) {
-        const raw = fs10.readFileSync(DATA_FILE_PATH, "utf8");
+      if (fs11.existsSync(DATA_FILE_PATH)) {
+        const raw = fs11.readFileSync(DATA_FILE_PATH, "utf8");
         this.campaigns = JSON.parse(raw);
       } else {
         this.saveCampaigns();
@@ -19398,18 +19764,18 @@ var AdvertisingService = class {
   }
   saveCampaigns() {
     try {
-      const dir = path10.dirname(DATA_FILE_PATH);
-      if (!fs10.existsSync(dir)) fs10.mkdirSync(dir, { recursive: true });
-      fs10.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
+      const dir = path11.dirname(DATA_FILE_PATH);
+      if (!fs11.existsSync(dir)) fs11.mkdirSync(dir, { recursive: true });
+      fs11.writeFileSync(DATA_FILE_PATH, JSON.stringify(this.campaigns, null, 2), "utf8");
     } catch (err) {
       logger2.error(`Failed saving live banner campaigns: ${err.message}`);
     }
   }
   savePlacements() {
     try {
-      const dir = path10.dirname(PLACEMENTS_FILE_PATH);
-      if (!fs10.existsSync(dir)) fs10.mkdirSync(dir, { recursive: true });
-      fs10.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
+      const dir = path11.dirname(PLACEMENTS_FILE_PATH);
+      if (!fs11.existsSync(dir)) fs11.mkdirSync(dir, { recursive: true });
+      fs11.writeFileSync(PLACEMENTS_FILE_PATH, JSON.stringify(this.placements, null, 2), "utf8");
     } catch (err) {
       logger2.error(`Failed saving live banner placements: ${err.message}`);
     }
@@ -20126,8 +20492,8 @@ init_database();
 import { Router as Router18 } from "express";
 import bcrypt3 from "bcryptjs";
 import jwt3 from "jsonwebtoken";
-import fs11 from "fs";
-import path11 from "path";
+import fs12 from "fs";
+import path12 from "path";
 init_env();
 var employeeRouter = Router18();
 var SYSTEM_MODULES = [
@@ -20306,11 +20672,11 @@ var INITIAL_ROLES = [
     }
   }
 ];
-var FALLBACK_STORE_PATH3 = path11.resolve(process.cwd(), "server/config/employee_store.json");
+var FALLBACK_STORE_PATH3 = path12.resolve(process.cwd(), "server/config/employee_store.json");
 function loadFallbackStore2() {
   try {
-    if (fs11.existsSync(FALLBACK_STORE_PATH3)) {
-      const data = JSON.parse(fs11.readFileSync(FALLBACK_STORE_PATH3, "utf-8"));
+    if (fs12.existsSync(FALLBACK_STORE_PATH3)) {
+      const data = JSON.parse(fs12.readFileSync(FALLBACK_STORE_PATH3, "utf-8"));
       return data;
     }
   } catch (err) {
@@ -20420,9 +20786,9 @@ function loadFallbackStore2() {
 }
 function saveFallbackStore2(store) {
   try {
-    const dir = path11.dirname(FALLBACK_STORE_PATH3);
-    if (!fs11.existsSync(dir)) fs11.mkdirSync(dir, { recursive: true });
-    fs11.writeFileSync(FALLBACK_STORE_PATH3, JSON.stringify(store, null, 2), "utf-8");
+    const dir = path12.dirname(FALLBACK_STORE_PATH3);
+    if (!fs12.existsSync(dir)) fs12.mkdirSync(dir, { recursive: true });
+    fs12.writeFileSync(FALLBACK_STORE_PATH3, JSON.stringify(store, null, 2), "utf-8");
   } catch (err) {
     console.error("[EMPLOYEE_STORE_WRITE_ERROR]", err);
   }
@@ -21306,8 +21672,8 @@ entryLogsRouter.post("/entry-logs/export", verifyEntryLogsAccess, async (req, re
 });
 entryLogsRouter.post("/entry-logs/record-access", async (req, res) => {
   try {
-    const { path: path16, module, actorId, actorName, actorEmail, actorRole } = req.body || {};
-    if (!path16) {
+    const { path: path17, module, actorId, actorName, actorEmail, actorRole } = req.body || {};
+    if (!path17) {
       return res.status(400).json({ success: false, message: "Path is required" });
     }
     const record = await auditEntryLogService.recordPageAccess({
@@ -21315,7 +21681,7 @@ entryLogsRouter.post("/entry-logs/record-access", async (req, res) => {
       actorName: actorName || "Authenticated Client",
       actorEmail: actorEmail || null,
       actorRole: actorRole || "CUSTOMER",
-      path: String(path16),
+      path: String(path17),
       module: String(module || "NAV"),
       req
     });
@@ -21616,14 +21982,14 @@ import { Router as Router21 } from "express";
 // server/services/entertainmentAnalyticsService.ts
 init_database();
 init_logger();
-import fs12 from "fs";
-import path12 from "path";
+import fs13 from "fs";
+import path13 from "path";
 import Decimal from "decimal.js";
-var STORE_PATH2 = path12.resolve(process.cwd(), "server/config/analytics_store.json");
+var STORE_PATH3 = path13.resolve(process.cwd(), "server/config/analytics_store.json");
 function loadStore4() {
   try {
-    if (fs12.existsSync(STORE_PATH2)) {
-      return JSON.parse(fs12.readFileSync(STORE_PATH2, "utf-8"));
+    if (fs13.existsSync(STORE_PATH3)) {
+      return JSON.parse(fs13.readFileSync(STORE_PATH3, "utf-8"));
     }
   } catch (err) {
     logger2.error("[EntertainmentAnalytics] Error loading fallback store", err);
@@ -21632,9 +21998,9 @@ function loadStore4() {
 }
 function saveStore4(data) {
   try {
-    const dir = path12.dirname(STORE_PATH2);
-    if (!fs12.existsSync(dir)) fs12.mkdirSync(dir, { recursive: true });
-    fs12.writeFileSync(STORE_PATH2, JSON.stringify(data, null, 2), "utf-8");
+    const dir = path13.dirname(STORE_PATH3);
+    if (!fs13.existsSync(dir)) fs13.mkdirSync(dir, { recursive: true });
+    fs13.writeFileSync(STORE_PATH3, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     logger2.error("[EntertainmentAnalytics] Error saving fallback store", err);
   }
@@ -22817,15 +23183,15 @@ init_database();
 
 // server/modules/proposals/proposals.routes.ts
 import { Router as Router23 } from "express";
-import fs13 from "fs";
-import path13 from "path";
+import fs14 from "fs";
+import path14 from "path";
 var router16 = Router23();
-var PROPOSALS_DATA_FILE = path13.join(process.cwd(), "server", "config", "proposals_store.json");
+var PROPOSALS_DATA_FILE = path14.join(process.cwd(), "server", "config", "proposals_store.json");
 var proposalSeq = 100;
 function readProposals() {
   try {
-    if (fs13.existsSync(PROPOSALS_DATA_FILE)) {
-      const data = fs13.readFileSync(PROPOSALS_DATA_FILE, "utf-8");
+    if (fs14.existsSync(PROPOSALS_DATA_FILE)) {
+      const data = fs14.readFileSync(PROPOSALS_DATA_FILE, "utf-8");
       return JSON.parse(data);
     }
   } catch (err) {
@@ -22835,11 +23201,11 @@ function readProposals() {
 }
 function writeProposals(list) {
   try {
-    const dir = path13.dirname(PROPOSALS_DATA_FILE);
-    if (!fs13.existsSync(dir)) {
-      fs13.mkdirSync(dir, { recursive: true });
+    const dir = path14.dirname(PROPOSALS_DATA_FILE);
+    if (!fs14.existsSync(dir)) {
+      fs14.mkdirSync(dir, { recursive: true });
     }
-    fs13.writeFileSync(PROPOSALS_DATA_FILE, JSON.stringify(list, null, 2), "utf-8");
+    fs14.writeFileSync(PROPOSALS_DATA_FILE, JSON.stringify(list, null, 2), "utf-8");
   } catch (err) {
     console.error("Could not write proposals data file:", err);
   }
@@ -23447,11 +23813,11 @@ import { Router as Router25 } from "express";
 // server/services/feedback.service.ts
 init_database();
 init_logger();
-import fs14 from "fs";
-import path14 from "path";
+import fs15 from "fs";
+import path15 from "path";
 import crypto5 from "crypto";
-var STORAGE_FILE = path14.join(process.cwd(), "server/config/user_feedback.json");
-var TMP_STORAGE_FILE = path14.join("/tmp", "user_feedback.json");
+var STORAGE_FILE = path15.join(process.cwd(), "server/config/user_feedback.json");
+var TMP_STORAGE_FILE = path15.join("/tmp", "user_feedback.json");
 var SEED_FEEDBACKS = [
   {
     id: "fb-seed-001",
@@ -23543,8 +23909,8 @@ var FeedbackService = class _FeedbackService {
   }
   loadFromStorage() {
     try {
-      if (fs14.existsSync(TMP_STORAGE_FILE)) {
-        const raw = fs14.readFileSync(TMP_STORAGE_FILE, "utf-8");
+      if (fs15.existsSync(TMP_STORAGE_FILE)) {
+        const raw = fs15.readFileSync(TMP_STORAGE_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           this.feedbacks = parsed;
@@ -23552,8 +23918,8 @@ var FeedbackService = class _FeedbackService {
           return;
         }
       }
-      if (fs14.existsSync(STORAGE_FILE)) {
-        const raw = fs14.readFileSync(STORAGE_FILE, "utf-8");
+      if (fs15.existsSync(STORAGE_FILE)) {
+        const raw = fs15.readFileSync(STORAGE_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           this.feedbacks = parsed;
@@ -23572,13 +23938,13 @@ var FeedbackService = class _FeedbackService {
     try {
       const payload = JSON.stringify(this.feedbacks, null, 2);
       try {
-        const dir = path14.dirname(STORAGE_FILE);
-        if (!fs14.existsSync(dir)) fs14.mkdirSync(dir, { recursive: true });
-        fs14.writeFileSync(STORAGE_FILE, payload, "utf-8");
+        const dir = path15.dirname(STORAGE_FILE);
+        if (!fs15.existsSync(dir)) fs15.mkdirSync(dir, { recursive: true });
+        fs15.writeFileSync(STORAGE_FILE, payload, "utf-8");
       } catch (e) {
       }
       try {
-        fs14.writeFileSync(TMP_STORAGE_FILE, payload, "utf-8");
+        fs15.writeFileSync(TMP_STORAGE_FILE, payload, "utf-8");
       } catch (e) {
       }
     } catch (err) {
@@ -24099,11 +24465,11 @@ async function getPlatformConfig() {
   } catch (dbErr) {
   }
   try {
-    const fs16 = await import("fs");
-    const path16 = await import("path");
-    const configPath = path16.resolve(process.cwd(), "platform_config.json");
-    if (fs16.existsSync(configPath)) {
-      return JSON.parse(fs16.readFileSync(configPath, "utf-8"));
+    const fs17 = await import("fs");
+    const path17 = await import("path");
+    const configPath = path17.resolve(process.cwd(), "platform_config.json");
+    if (fs17.existsSync(configPath)) {
+      return JSON.parse(fs17.readFileSync(configPath, "utf-8"));
     }
   } catch (fileErr) {
   }
@@ -24122,10 +24488,10 @@ async function savePlatformConfig(config) {
     console.error("[savePlatformConfig] Failed to persist to database:", dbErr);
   }
   try {
-    const fs16 = await import("fs");
-    const path16 = await import("path");
-    const configPath = path16.resolve(process.cwd(), "platform_config.json");
-    fs16.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+    const fs17 = await import("fs");
+    const path17 = await import("path");
+    const configPath = path17.resolve(process.cwd(), "platform_config.json");
+    fs17.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
   } catch (fileErr) {
   }
 }
@@ -24862,8 +25228,8 @@ google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
 init_database();
 init_supabaseAdmin();
 init_maintenance();
-var CONFIG_FILE_PATH2 = path15.resolve(process.cwd(), "server/config/global_settings.json");
-var TMP_CONFIG_PATH2 = path15.resolve("/tmp", "cine_global_settings.json");
+var CONFIG_FILE_PATH2 = path16.resolve(process.cwd(), "server/config/global_settings.json");
+var TMP_CONFIG_PATH2 = path16.resolve("/tmp", "cine_global_settings.json");
 var globalServerlessState = {
   globalSubwebsiteEnabled: true,
   subwebsiteMaintenanceMessage: "CineVenue sub-websites are temporarily unavailable while undergoing scheduled maintenance.",
@@ -24886,8 +25252,8 @@ var globalServerlessState = {
 function syncServerlessStateFromDisk() {
   const readFromPath = (p) => {
     try {
-      if (fs15.existsSync(p)) {
-        const data = JSON.parse(fs15.readFileSync(p, "utf-8"));
+      if (fs16.existsSync(p)) {
+        const data = JSON.parse(fs16.readFileSync(p, "utf-8"));
         if (typeof data.globalSubwebsiteEnabled === "boolean") {
           globalServerlessState.globalSubwebsiteEnabled = data.globalSubwebsiteEnabled;
         }
@@ -24952,11 +25318,11 @@ function persistServerlessState(enabled, message) {
   }
   const payload = JSON.stringify(globalServerlessState, null, 2);
   try {
-    fs15.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
+    fs16.writeFileSync(CONFIG_FILE_PATH2, payload, "utf-8");
   } catch (e) {
   }
   try {
-    fs15.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
+    fs16.writeFileSync(TMP_CONFIG_PATH2, payload, "utf-8");
   } catch (e) {
   }
 }
@@ -25258,11 +25624,11 @@ async function handler(req, res) {
     globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     const serialized = JSON.stringify(globalServerlessState, null, 2);
     try {
-      fs15.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+      fs16.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
-      fs15.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+      fs16.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
     } catch (e) {
     }
     try {
@@ -25391,8 +25757,8 @@ async function handler(req, res) {
       globalServerlessState.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
       try {
         const serialized = JSON.stringify(globalServerlessState, null, 2);
-        fs15.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
-        fs15.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
+        fs16.writeFileSync(CONFIG_FILE_PATH2, serialized, "utf-8");
+        fs16.writeFileSync(TMP_CONFIG_PATH2, serialized, "utf-8");
       } catch (e) {
       }
       return res.status(200).json({

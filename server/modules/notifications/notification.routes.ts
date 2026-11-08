@@ -1,8 +1,91 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { logger } from "../../shared/logger";
 import { sendEventPassEmail, sendBookingConfirmationEmail, sendMovieTicketEmail } from "../../services/emailService";
+import { optionalAuthenticate } from "../../middleware/auth";
+import { deviceTokenService } from "./deviceToken.service";
 
 const router = Router();
+
+// ==========================================
+// MOBILE PUSH NOTIFICATION DEVICE TOKENS (FCM & APNs)
+// ==========================================
+
+/**
+ * Register or Update Device Push Notification Token
+ * POST /api/v1/notifications/device-token
+ */
+router.post("/device-token", optionalAuthenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, platform, deviceId, deviceModel, appVersion } = req.body || {};
+    const userId = req.user?.userId || req.body?.userId || null;
+
+    const record = deviceTokenService.registerToken({
+      token,
+      platform,
+      userId,
+      deviceId,
+      deviceModel,
+      appVersion
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${record.platform} device token registered successfully.`,
+      data: {
+        id: record.id,
+        platform: record.platform,
+        isActive: record.isActive,
+        registeredAt: record.updatedAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Deactivate Device Push Notification Token (Logout / App Uninstall)
+ * POST /api/v1/notifications/device-token/deactivate
+ * DELETE /api/v1/notifications/device-token
+ */
+const handleTokenDeactivation = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.body?.token || (req.query?.token as string);
+    const userId = req.user?.userId || null;
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Device push token is required for deactivation." });
+    }
+
+    const deactivated = deviceTokenService.deactivateToken(token, userId);
+    return res.status(200).json({
+      success: true,
+      message: deactivated
+        ? "Device token deactivated successfully."
+        : "Token not found or already inactive.",
+      data: { deactivated }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.post("/device-token/deactivate", optionalAuthenticate, handleTokenDeactivation);
+router.delete("/device-token", optionalAuthenticate, handleTokenDeactivation);
+
+/**
+ * Get Device Token Registration Metrics (Admin/Diagnostics)
+ * GET /api/v1/notifications/device-tokens/stats
+ */
+router.get("/device-tokens/stats", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = deviceTokenService.getTotalTokensCount();
+    return res.json({ success: true, data: stats });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 /**
  * Send Booking Confirmation Email

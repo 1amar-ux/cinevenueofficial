@@ -1203,7 +1203,11 @@ export class AuthService {
           where: { token }
         });
 
-        if (storedToken && !storedToken.revokedAt && new Date() <= storedToken.expiresAt) {
+        if (storedToken) {
+          if (storedToken.revokedAt || new Date() > storedToken.expiresAt) {
+            throw new UnauthorizedError("Refresh token has been revoked or expired");
+          }
+
           const user = await prisma.user.findUnique({
             where: { id: decoded.userId }
           });
@@ -1229,17 +1233,17 @@ export class AuthService {
           }
         }
       } catch (dbErr: any) {
+        if (dbErr instanceof UnauthorizedError) throw dbErr;
         if (!isDbConnectionError(dbErr)) throw dbErr;
       }
 
-      // Resilient fallback: issue new tokens if JWT was valid
-      const fallbackUser = resilientUsers.get(decoded.userId) || {
-        id: decoded.userId,
-        email: "customer@cinevenue.com",
-        name: "Valued Customer",
-        role: "CUSTOMER"
-      };
-      return this.generateTokens(fallbackUser);
+      // Resilient fallback only if in-memory user exists during DB outage
+      const fallbackUser = resilientUsers.get(decoded.userId);
+      if (fallbackUser) {
+        return this.generateTokens(fallbackUser);
+      }
+
+      throw new UnauthorizedError("Invalid or expired refresh token");
     } catch {
       throw new UnauthorizedError("Invalid or expired refresh token");
     }
@@ -1326,6 +1330,65 @@ export class AuthService {
     }
 
     throw new NotFoundError("User", userId);
+  }
+
+  public async updateProfile(userId: string, data: { name?: string; mobile?: string | null; profileImageUrl?: string | null }) {
+    if (!userId) {
+      throw new ValidationError("User identifier is required for profile update");
+    }
+
+    // Only allow updating safe profile attributes
+    const allowedUpdates: { name?: string; mobile?: string | null; profileImageUrl?: string | null } = {};
+    if (data.name !== undefined) {
+      allowedUpdates.name = data.name.trim();
+    }
+    if (data.mobile !== undefined) {
+      allowedUpdates.mobile = data.mobile ? data.mobile.trim() : null;
+    }
+    if (data.profileImageUrl !== undefined) {
+      allowedUpdates.profileImageUrl = data.profileImageUrl ? data.profileImageUrl.trim() : null;
+    }
+
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: allowedUpdates,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          mobile: true,
+          role: true,
+          profileImageUrl: true,
+          createdAt: true,
+          updatedAt: true,
+          wallet: {
+            select: {
+              balance: true,
+              lifetimeEarned: true,
+              totalRedeemed: true
+            }
+          }
+        }
+      });
+
+      return updatedUser;
+    } catch (err: any) {
+      if (err.code === "P2002" || err.message?.includes("unique constraint") || err.message?.includes("User_mobile_key")) {
+        throw new ValidationError("The provided mobile number is already linked to another CineVenue account.");
+      }
+      if (!isDbConnectionError(err)) throw err;
+
+      // Resilient fallback update for memory/mock users
+      const fallback = resilientUsers.get(userId);
+      if (fallback) {
+        if (allowedUpdates.name) fallback.name = allowedUpdates.name;
+        if (allowedUpdates.mobile !== undefined) fallback.mobile = allowedUpdates.mobile;
+        if (allowedUpdates.profileImageUrl !== undefined) fallback.profileImageUrl = allowedUpdates.profileImageUrl;
+        return fallback;
+      }
+      throw err;
+    }
   }
 
   public async requestPasswordReset(identifier: string) {
