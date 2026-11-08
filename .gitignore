@@ -27,3 +27,14 @@ android/build-error.txt
 
 scratch/
 android/app/src/main/res_backup/
+
+# Flutter / Dart
+.dart_tool/
+.idea/
+.packages
+.pub-cache/
+.pub/
+*.lock
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+ios/Flutter/
+ios/Runner/GeneratedPluginRegistrant.*

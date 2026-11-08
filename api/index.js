@@ -10510,6 +10510,7 @@ router5.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req
       bookingNumber,
       bookingId,
       qrToken,
+      individualTickets,
       theatreId,
       movieTitle,
       theatreName,
@@ -10599,12 +10600,14 @@ router5.post("/", optionalAuthenticate, checkMovieBookingMaintenance, async (req
       }
     });
     const token = qrToken || `QR_${newBooking.id}_${Date.now()}`;
+    const scannedMetadata = Array.isArray(individualTickets) && individualTickets.length > 0 ? JSON.stringify({ individualTickets }) : null;
     await prisma.ticket.create({
       data: {
         bookingId: newBooking.id,
         ticketCode: bNumber,
         qrToken: token,
-        isUsed: false
+        isUsed: false,
+        scannedBy: scannedMetadata
       }
     });
     await prisma.payment.create({
@@ -18170,8 +18173,22 @@ router14.all("/verify", async (req, res, next) => {
       });
     }
     const cleanToken = token.trim();
+    const cvqrMatch = cleanToken.match(/^(?:CVQR|TKT)-([A-Za-z0-9]+?)(?:-([A-Za-z0-9]+))?(?:-.*)?$/);
+    const candidateBooking = cvqrMatch ? cvqrMatch[1] : null;
+    const candidateSeat = cvqrMatch && cvqrMatch[2] && !cvqrMatch[2].match(/^\d+$/) ? cvqrMatch[2] : null;
+    const orConditions = [
+      { qrToken: cleanToken },
+      { ticketCode: cleanToken },
+      { id: cleanToken },
+      { bookingId: cleanToken }
+    ];
+    if (candidateBooking) {
+      orConditions.push({ bookingId: candidateBooking });
+      orConditions.push({ ticketCode: { contains: candidateBooking } });
+      orConditions.push({ booking: { bookingNumber: { contains: candidateBooking } } });
+    }
     const movieTicket = await prisma.ticket.findFirst({
-      where: { OR: [{ qrToken: cleanToken }, { ticketCode: cleanToken }, { id: cleanToken }] },
+      where: { OR: orConditions },
       include: {
         booking: {
           include: {
@@ -18189,26 +18206,62 @@ router14.all("/verify", async (req, res, next) => {
     if (movieTicket) {
       const booking = movieTicket.booking;
       if (booking?.status === "CANCELLED" || booking?.status === "REFUNDED") {
+        const isRefund = booking.status === "REFUNDED";
         fraudTrustService.recordTicketScanAnomaly({
           ticketCode: movieTicket.ticketCode,
           bookingNumber: booking.bookingNumber,
           title: booking.show?.movie?.title,
           venueName: booking.theatre?.name,
-          scanType: "CANCELLED",
+          scanType: isRefund ? "REFUNDED" : "CANCELLED",
           operator: operatorName,
           previousScannedAt: null
         }).catch(() => {
         });
         return res.json({
           success: true,
-          status: "CANCELLED",
-          message: "This booking has been cancelled or refunded. Entry denied.",
+          status: isRefund ? "REFUNDED" : "CANCELLED",
+          message: isRefund ? "This booking has been refunded. Entry denied." : "This booking has been cancelled. Entry denied.",
           ticket: {
             ticketCode: movieTicket.ticketCode,
             bookingNumber: booking.bookingNumber,
             title: booking.show?.movie?.title || "Movie Show",
             venue: booking.theatre?.name || "Theatre",
-            status: "CANCELLED"
+            seat: candidateSeat || void 0,
+            status: isRefund ? "REFUNDED" : "CANCELLED"
+          }
+        });
+      }
+      let parsedMetadata = {};
+      try {
+        if (movieTicket.scannedBy && (movieTicket.scannedBy.startsWith("{") || movieTicket.scannedBy.startsWith("["))) {
+          parsedMetadata = JSON.parse(movieTicket.scannedBy);
+        }
+      } catch (e) {
+      }
+      const usedSeatsList = Array.isArray(parsedMetadata.usedSeats) ? parsedMetadata.usedSeats : [];
+      if (candidateSeat && usedSeatsList.includes(candidateSeat.toUpperCase())) {
+        fraudTrustService.recordTicketScanAnomaly({
+          ticketCode: `${movieTicket.ticketCode}-${candidateSeat}`,
+          bookingNumber: booking?.bookingNumber,
+          title: booking?.show?.movie?.title,
+          venueName: booking?.theatre?.name,
+          scanType: "DUPLICATE",
+          operator: operatorName,
+          previousScannedAt: movieTicket.usedAt ? movieTicket.usedAt.toISOString() : null
+        }).catch(() => {
+        });
+        return res.json({
+          success: true,
+          status: "ALREADY_USED",
+          message: `Ticket for Seat ${candidateSeat.toUpperCase()} was already scanned. Duplicate entry denied.`,
+          ticket: {
+            ticketCode: `${movieTicket.ticketCode}-${candidateSeat}`,
+            bookingNumber: booking?.bookingNumber,
+            seat: candidateSeat.toUpperCase(),
+            title: booking?.show?.movie?.title || "Movie Show",
+            venue: booking?.theatre?.name || "Theatre",
+            usedAt: movieTicket.usedAt,
+            scannedBy: operatorName
           }
         });
       }
@@ -18252,44 +18305,59 @@ router14.all("/verify", async (req, res, next) => {
         });
       }
       if (doCheckIn) {
-        const updateResult = await prisma.ticket.updateMany({
-          where: {
-            id: movieTicket.id,
-            isUsed: false
-          },
-          data: {
-            isUsed: true,
-            usedAt: /* @__PURE__ */ new Date(),
-            scannedBy: operatorName
-          }
-        });
-        if (updateResult.count === 0) {
-          const refreshedTicket = await prisma.ticket.findUnique({ where: { id: movieTicket.id } });
-          return res.json({
-            success: true,
-            status: "ALREADY_USED",
-            message: `Ticket already checked in at ${refreshedTicket?.usedAt ? new Date(refreshedTicket.usedAt).toLocaleTimeString() : "an earlier moment"}. Concurrent duplicate admission blocked.`,
-            ticket: {
-              ticketCode: movieTicket.ticketCode,
-              bookingNumber: booking?.bookingNumber,
-              title: booking?.show?.movie?.title || "Movie Show",
-              venue: booking?.theatre?.name || "Theatre",
-              usedAt: refreshedTicket?.usedAt,
-              scannedBy: refreshedTicket?.scannedBy
+        if (candidateSeat) {
+          const updatedUsedSeats = [...usedSeatsList, candidateSeat.toUpperCase()];
+          parsedMetadata.usedSeats = updatedUsedSeats;
+          parsedMetadata.lastScannedSeat = candidateSeat.toUpperCase();
+          parsedMetadata.lastScannedBy = operatorName;
+          await prisma.ticket.update({
+            where: { id: movieTicket.id },
+            data: {
+              scannedBy: JSON.stringify(parsedMetadata),
+              usedAt: /* @__PURE__ */ new Date()
             }
           });
+        } else {
+          const updateResult = await prisma.ticket.updateMany({
+            where: {
+              id: movieTicket.id,
+              isUsed: false
+            },
+            data: {
+              isUsed: true,
+              usedAt: /* @__PURE__ */ new Date(),
+              scannedBy: operatorName
+            }
+          });
+          if (updateResult.count === 0) {
+            const refreshedTicket = await prisma.ticket.findUnique({ where: { id: movieTicket.id } });
+            return res.json({
+              success: true,
+              status: "ALREADY_USED",
+              message: `Ticket already checked in at ${refreshedTicket?.usedAt ? new Date(refreshedTicket.usedAt).toLocaleTimeString() : "an earlier moment"}. Concurrent duplicate admission blocked.`,
+              ticket: {
+                ticketCode: movieTicket.ticketCode,
+                bookingNumber: booking?.bookingNumber,
+                title: booking?.show?.movie?.title || "Movie Show",
+                venue: booking?.theatre?.name || "Theatre",
+                usedAt: refreshedTicket?.usedAt,
+                scannedBy: refreshedTicket?.scannedBy
+              }
+            });
+          }
         }
-        logger2.info(`Ticket ${movieTicket.ticketCode} safely checked in by ${operatorName}`);
+        logger2.info(`Ticket ${movieTicket.ticketCode}${candidateSeat ? ` (Seat ${candidateSeat})` : ""} safely checked in by ${operatorName}`);
       }
       return res.json({
         success: true,
         status: "VALID",
-        message: doCheckIn ? "Gate check-in successful. Welcome to CineVenue!" : "Ticket is valid for admission.",
+        message: doCheckIn ? `Gate check-in successful${candidateSeat ? ` for Seat ${candidateSeat}` : ""}. Welcome to CineVenue!` : `Ticket is valid for admission${candidateSeat ? ` (Seat ${candidateSeat})` : ""}.`,
         checkedIn: doCheckIn,
         ticket: {
-          ticketCode: movieTicket.ticketCode,
+          ticketCode: candidateSeat ? `${movieTicket.ticketCode}-${candidateSeat}` : movieTicket.ticketCode,
           bookingNumber: booking?.bookingNumber,
           type: "MOVIE",
+          seat: candidateSeat || void 0,
           title: booking?.show?.movie?.title || "Movie Show",
           venue: booking?.theatre?.name || "Theatre",
           screen: booking?.show?.screen?.name || "Audi 1",
