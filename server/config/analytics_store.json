@@ -584,6 +584,42 @@
   ],
   "engagementEvents": [
     {
+      "id": "eng_1794212425790_d3rfe",
+      "sessionId": "test-sess-analytics-999",
+      "eventType": "PAGE_VIEW",
+      "entityType": "MOVIE",
+      "entityId": "mov-01",
+      "entityTitle": null,
+      "category": null,
+      "city": "Hyderabad",
+      "device": "Mobile Chrome",
+      "createdAt": "2026-11-09T08:20:25.790Z"
+    },
+    {
+      "id": "eng_1794205912380_k4pyc",
+      "sessionId": "test-sess-analytics-999",
+      "eventType": "PAGE_VIEW",
+      "entityType": "MOVIE",
+      "entityId": "mov-01",
+      "entityTitle": null,
+      "category": null,
+      "city": "Hyderabad",
+      "device": "Mobile Chrome",
+      "createdAt": "2026-11-09T06:31:52.380Z"
+    },
+    {
+      "id": "eng_1794204477637_ykayb",
+      "sessionId": "test-sess-analytics-999",
+      "eventType": "PAGE_VIEW",
+      "entityType": "MOVIE",
+      "entityId": "mov-01",
+      "entityTitle": null,
+      "category": null,
+      "city": "Hyderabad",
+      "device": "Mobile Chrome",
+      "createdAt": "2026-11-09T06:07:57.637Z"
+    },
+    {
       "id": "eng_1793888816438_dldan",
       "sessionId": "test-sess-analytics-999",
       "eventType": "PAGE_VIEW",

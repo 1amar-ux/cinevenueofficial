@@ -1,6 +1,6 @@
 {
-  "syncVersion": 1049,
-  "lastSyncedAt": "2026-11-05T14:26:57.471Z",
+  "syncVersion": 1088,
+  "lastSyncedAt": "2026-11-09T08:23:57.611Z",
   "banners": [
     {
       "id": "b1",
@@ -83,8 +83,8 @@
       "rating": 5,
       "comment": "Breathtaking visual effects! Truly world-class cinema output.",
       "status": "Approved",
-      "updatedAt": "2026-11-05T14:26:57.289Z",
-      "version": 9
+      "updatedAt": "2026-11-09T08:22:54.047Z",
+      "version": 15
     },
     {
       "id": "rev-2",
@@ -115,8 +115,8 @@
       "status": "Resolved",
       "priority": "High",
       "date": "Today",
-      "updatedAt": "2026-11-05T14:26:57.344Z",
-      "version": 5,
+      "updatedAt": "2026-11-09T08:23:08.154Z",
+      "version": 8,
       "responseMessage": "Issue resolved by Global Admin across all active consoles."
     },
     {
@@ -178,8 +178,8 @@
     "isCineCoinsActive": true,
     "isRentalSystemActive": true,
     "isFoodOrderingActive": true,
-    "version": 9,
-    "updatedAt": "2026-11-05T14:26:57.471Z"
+    "version": 15,
+    "updatedAt": "2026-11-09T08:23:57.611Z"
   },
   "recentBroadcasts": [
     {

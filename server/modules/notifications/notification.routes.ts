@@ -111,9 +111,10 @@ router.post("/send-push", optionalAuthenticate, async (req: Request, res: Respon
       category
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "Push notification dispatched successfully.",
+    const statusCode = result.success ? 200 : (result.error === "PUSH_PROVIDER_UNCONFIGURED" ? 503 : 500);
+    return res.status(statusCode).json({
+      success: result.success,
+      message: result.success ? "Push notification dispatched successfully." : (result.details || "Push dispatch failed"),
       data: result
     });
   } catch (error) {

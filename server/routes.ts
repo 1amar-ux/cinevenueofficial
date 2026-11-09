@@ -30,6 +30,7 @@ import proposalsRouter from "./modules/proposals/proposals.routes";
 import pricingRouter from "./modules/pricing/pricing.routes";
 import feedbackRouter from "./modules/feedback/feedback.routes";
 import conciergeRoutes from "./modules/ai/concierge.routes";
+import { authRateLimiter, paymentInitRateLimiter } from "./middleware/rateLimiter";
 
 const router = Router();
 
@@ -79,7 +80,7 @@ router.get("/ready", async (req, res) => {
 // ==========================================
 // 2. DOMAIN MODULE ROUTERS (/api/v1)
 // ==========================================
-router.use("/auth", authRoutes);
+router.use("/auth", authRateLimiter, authRoutes);
 router.use("/movies", movieRoutes);
 router.use("/theatres", theatreManagerOperationsRouter);
 router.use("/theatres", theatreRoutes);
@@ -115,7 +116,7 @@ router.use("/concierge", conciergeRoutes);
 // ==========================================
 // 2A. RAZORPAY STANDARD WEB CHECKOUT ENDPOINTS
 // ==========================================
-router.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/create-order", "/payments/create-order"], async (req, res, next) => {
+router.post(["/create-order", "/razorpay/create-order", "/payments/razorpay/create-order", "/payments/create-order"], paymentInitRateLimiter, async (req, res, next) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;
     

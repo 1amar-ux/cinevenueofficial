@@ -849,11 +849,32 @@ function initPrismaClient(): PrismaClient {
         }
         if (prop === "$transaction") {
           return async (fnOrArray: any) => {
+            if (prismaConnected && typeof (target as any).$transaction === "function") {
+              try {
+                return await (target as any).$transaction(fnOrArray);
+              } catch (txErr) {
+                logger.error("[Database:Transaction] Native Prisma transaction failed:", txErr);
+                throw txErr;
+              }
+            }
+
+            // In production mode, proxy-mode multi-statement financial transactions cannot guarantee atomic ACID rollback
+            if (process.env.NODE_ENV === "production") {
+              logger.error("[Database:Transaction] Proxy mode transaction blocked in production. Native PostgreSQL connection required for financial atomicity.");
+              throw new Error("Transactional atomicity requirement: Multi-statement database transactions require native PostgreSQL connection (DATABASE_URL) in production. Proxy mode rollback is unverified.");
+            }
+
+            // In development / test mode:
             if (typeof fnOrArray === "function") {
-              return fnOrArray(hybridClient);
+              return await fnOrArray(hybridClient);
             }
             if (Array.isArray(fnOrArray)) {
-              return Promise.all(fnOrArray);
+              // Execute array sequentially, abort and rethrow immediately on first failure
+              const results = [];
+              for (const op of fnOrArray) {
+                results.push(await op);
+              }
+              return results;
             }
             return null;
           };

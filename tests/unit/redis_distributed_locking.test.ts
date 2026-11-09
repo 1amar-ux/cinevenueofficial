@@ -1,4 +1,4 @@
-import { redis } from "../../server/config/redis";
+import { redis, validateRedisConfiguration, FailingClosedProductionRedisClient } from "../../server/config/redis";
 
 async function runRedisLockingTests() {
   console.log("==========================================================================");
@@ -70,6 +70,32 @@ async function runRedisLockingTests() {
   assert(s2Val === null, "S2 was rolled back and is completely free (no orphaned locks)");
   const s1Val = await redis.get(seatKey1);
   assert(s1Val === "user_bob", "S1 remains securely locked by Bob");
+
+  // 5. Testing Production Configuration Validation & Fail-Closed Guard
+  console.log("\n--- 5. Testing Production Configuration Validation & Fail-Closed Guard ---");
+  const origEnv = process.env.NODE_ENV;
+  const origRedis = process.env.REDIS_URL;
+
+  try {
+    process.env.NODE_ENV = "production";
+    delete process.env.REDIS_URL;
+    const prodVal = validateRedisConfiguration();
+    assert(prodVal.isReady === false, "Production validator flags missing REDIS_URL as NOT ready");
+    assert(prodVal.mode === "FAIL_CLOSED", "Production validator mode is FAIL_CLOSED");
+
+    const failClosedClient = new FailingClosedProductionRedisClient();
+    let threw = false;
+    try {
+      await failClosedClient.setnx("seat:fail:1", "user_test", 10);
+    } catch {
+      threw = true;
+    }
+    assert(threw === true, "Fail-closed client blocks lock acquisition in production without live Redis");
+  } finally {
+    process.env.NODE_ENV = origEnv;
+    if (origRedis) process.env.REDIS_URL = origRedis;
+    else delete process.env.REDIS_URL;
+  }
 
   // Clean up
   await redis.del(seatKey1);

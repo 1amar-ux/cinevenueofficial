@@ -1,4 +1,4 @@
-import { checkProductionReadiness } from "../../server/config/env";
+import { checkProductionReadiness, assertProductionReadiness } from "../../server/config/env";
 import { isValidAdminPasscode } from "../../server/middleware/auth";
 
 async function runProductionSecurityTests() {
@@ -56,6 +56,14 @@ async function runProductionSecurityTests() {
     prodAudit.errors.some(e => e.includes("JWT_ACCESS_SECRET")),
     "Flags dev default JWT_ACCESS_SECRET as a production security error"
   );
+
+  let assertThrew = false;
+  try {
+    assertProductionReadiness();
+  } catch (err: any) {
+    assertThrew = true;
+  }
+  assert(assertThrew === true, "assertProductionReadiness() strictly aborts startup in production with insecure defaults");
 
   // Restore env
   if (origNodeEnv !== undefined) process.env.NODE_ENV = origNodeEnv;

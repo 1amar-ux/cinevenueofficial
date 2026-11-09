@@ -3,24 +3,60 @@
     "id": "dvt_1794136728302_kwn50n",
     "token": "fcm_android_token_test_abc123456789",
     "platform": "ANDROID",
-    "userId": "usr_push_test_1794136728301",
+    "userId": "usr_push_test_1794205246992",
     "deviceId": "android_device_001",
     "deviceModel": null,
     "appVersion": null,
     "isActive": false,
     "createdAt": "2026-11-08T11:18:48.301Z",
-    "updatedAt": "2026-11-08T11:18:48.308Z"
+    "updatedAt": "2026-11-09T06:20:46.999Z"
   },
   {
     "id": "dvt_1794136728304_gwtqls",
     "token": "apns_ios_token_test_xyz9876543210",
     "platform": "IOS",
-    "userId": "usr_push_test_1794136728301",
+    "userId": "usr_push_test_1794205246992",
     "deviceId": "iphone_device_002",
     "deviceModel": null,
     "appVersion": null,
     "isActive": false,
     "createdAt": "2026-11-08T11:18:48.304Z",
-    "updatedAt": "2026-11-08T11:18:48.309Z"
+    "updatedAt": "2026-11-09T06:20:47.000Z"
+  },
+  {
+    "id": "dvt_1794205013620_6g1x9n",
+    "token": "fcm_test_token_1794205013618_abc123",
+    "platform": "ANDROID",
+    "userId": "usr_push_test_01",
+    "deviceId": "dev_pixel_7",
+    "deviceModel": "Pixel 7 Pro",
+    "appVersion": "2.4.0",
+    "isActive": true,
+    "createdAt": "2026-11-09T06:16:53.618Z",
+    "updatedAt": "2026-11-09T06:16:53.618Z"
+  },
+  {
+    "id": "dvt_1794205013624_kk7m2j",
+    "token": "fcm_clean_token_1794205013624_123456789",
+    "platform": "ANDROID",
+    "userId": "usr_clean_test",
+    "deviceId": null,
+    "deviceModel": null,
+    "appVersion": null,
+    "isActive": false,
+    "createdAt": "2026-11-09T06:16:53.624Z",
+    "updatedAt": "2026-11-09T06:16:53.625Z"
+  },
+  {
+    "id": "dvt_1794205013627_zr0g43",
+    "token": "fcm_invalid_unregistered_1794205013627_xyz",
+    "platform": "ANDROID",
+    "userId": "usr_invalid_test",
+    "deviceId": null,
+    "deviceModel": null,
+    "appVersion": null,
+    "isActive": false,
+    "createdAt": "2026-11-09T06:16:53.627Z",
+    "updatedAt": "2026-11-09T06:16:53.628Z"
   }
 ]

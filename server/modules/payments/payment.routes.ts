@@ -9,6 +9,7 @@ import { ForbiddenError, NotFoundError, PaymentError, ValidationError } from "..
 import { logger } from "../../shared/logger";
 import { authenticate, optionalAuthenticate } from "../../middleware/auth";
 import { checkMovieBookingMaintenance } from "../../middleware/maintenance";
+import { paymentInitRateLimiter } from "../../middleware/rateLimiter";
 import { cashfreeService } from "./cashfree.service";
 import { razorpayService } from "./razorpay.service";
 import { fraudTrustService } from "../../services/fraudTrustService";
@@ -47,7 +48,7 @@ router.get("/gateways", (req: Request, res: Response) => {
 // RAZORPAY TESTMODE / LIVE ENDPOINTS
 // =========================================================================
 
-router.post("/razorpay/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/razorpay/create-order", paymentInitRateLimiter, optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
 
@@ -243,7 +244,7 @@ router.post("/razorpay/webhook", async (req: Request, res: Response) => {
 });
 
 // Legacy /create-order routed directly to Cashfree
-router.post("/create-order", optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/create-order", paymentInitRateLimiter, optionalAuthenticate, checkMovieBookingMaintenance, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { bookingId, customerName, customerPhone, customerEmail, amount, showId, tickets, eventId, eventTitle, itemType } = req.body;
 

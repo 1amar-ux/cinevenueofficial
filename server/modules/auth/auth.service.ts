@@ -553,9 +553,25 @@ export class AuthService {
     }
 
     try {
-      const user = await prisma.user.findFirst({
+      let user = await prisma.user.findFirst({
         where: { OR: orConditions }
       });
+
+      if (!user) {
+        // Check resilient users if database returned null (offline/degraded mode)
+        for (const u of resilientUsers.values()) {
+          const uDigits = (u.mobile || "").replace(/\D/g, "");
+          const uPhone10 = uDigits.length >= 10 ? uDigits.slice(-10) : uDigits;
+          if (
+            u.email.toLowerCase() === rawIdentifier ||
+            u.mobile === rawIdentifier ||
+            (phone10 && uPhone10 === phone10)
+          ) {
+            user = u as any;
+            break;
+          }
+        }
+      }
 
       if (!user || !user.isActive) {
         throw new UnauthorizedError("Account not found. Please check your email or mobile number, or create an account.");

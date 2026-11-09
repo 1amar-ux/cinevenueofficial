@@ -100,8 +100,8 @@ export function checkProductionReadiness(): ProductionAuditResult {
     if (!refreshSecret || refreshSecret.includes("dev_refresh") || refreshSecret.length < 32) {
       errors.push("Production requires a high-entropy JWT_REFRESH_SECRET (minimum 32 characters, no dev default).");
     }
-    if (env.CORS_ORIGIN === "*") {
-      warnings.push("CORS_ORIGIN is wildcard '*' in production mode; specify exact domain origins.");
+    if (!process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === "*" || env.CORS_ORIGIN === "*") {
+      errors.push("Production requires an explicit, non-wildcard CORS_ORIGIN (e.g. https://cinevenue.com).");
     }
   } else {
     if (!accessSecret || accessSecret.length < 16) {
@@ -122,11 +122,34 @@ export function checkProductionReadiness(): ProductionAuditResult {
     }
   }
 
+  // 3. Admin Passcode Audit
+  if (isProd) {
+    const adminPasscode = process.env.ADMIN_PASSCODE;
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
+    if ((!adminPasscode || adminPasscode === "8888" || adminPasscode === "admin8888") && !superAdminPassword) {
+      errors.push("Production requires a non-default ADMIN_PASSCODE or SUPER_ADMIN_PASSWORD.");
+    }
+  }
+
   return {
     isReady: errors.length === 0,
     environment: isProd ? "production" : "development",
     errors,
     warnings
   };
+}
+
+export function assertProductionReadiness(): ProductionAuditResult {
+  const audit = checkProductionReadiness();
+  if (!audit.isReady && audit.environment === "production") {
+    const errorList = audit.errors.map((e) => `  - ${e}`).join("\n");
+    const fatalMsg = `[FATAL: Production Readiness Audit Failed]\n${errorList}`;
+    console.error(fatalMsg);
+    throw new Error(fatalMsg);
+  }
+  if (audit.warnings.length > 0) {
+    audit.warnings.forEach((w) => console.warn(`[Startup Warning] ${w}`));
+  }
+  return audit;
 }
 

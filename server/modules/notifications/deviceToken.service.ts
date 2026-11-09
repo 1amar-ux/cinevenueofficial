@@ -145,6 +145,37 @@ export class DeviceTokenService {
   }
 
   /**
+   * Deactivates an invalid or expired token detected during dispatch
+   */
+  public deactivateInvalidToken(token: string, reason: string = "TOKEN_EXPIRED_OR_UNREGISTERED"): boolean {
+    const rawToken = String(token || "").trim();
+    if (!rawToken) return false;
+
+    const existing = this.tokens.get(rawToken);
+    if (!existing) return false;
+
+    existing.isActive = false;
+    existing.updatedAt = new Date().toISOString();
+    this.persistTokens();
+
+    logger.warn(`[DeviceTokenService] Deactivated invalid token (${reason}): [${rawToken.substring(0, 15)}...]`);
+    return true;
+  }
+
+  /**
+   * Batch cleanup of invalid tokens
+   */
+  public cleanupInvalidTokens(tokens: string[]): number {
+    let count = 0;
+    for (const t of tokens) {
+      if (this.deactivateInvalidToken(t, "BATCH_CLEANUP")) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
    * Retrieves active tokens for a specific user ID
    */
   public getActiveTokensForUser(userId: string): DeviceTokenRecord[] {

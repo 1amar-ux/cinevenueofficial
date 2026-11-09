@@ -1,6 +1,6 @@
 import express, { Express } from "express";
 import cors from "cors";
-import { env } from "./config/env";
+import { env, assertProductionReadiness } from "./config/env";
 import apiV1Router from "./routes";
 import { requestIdMiddleware } from "./middleware/requestId";
 import { errorHandler } from "./middleware/errorHandler";
@@ -8,6 +8,9 @@ import { logger } from "./shared/logger";
 import { checkGlobalSubwebsiteMiddleware } from "./middleware/subwebsiteGate";
 
 export function createApp(): Express {
+  // Enforce production security readiness on app bootstrap
+  assertProductionReadiness();
+
   const app = express();
 
   // 1. Basic Security & Correlation Middleware
@@ -25,8 +28,8 @@ export function createApp(): Express {
     cors({
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
-        if (env.CORS_ORIGIN === "*") return callback(null, true);
-        const configured = env.CORS_ORIGIN.split(",").map((s) => s.trim());
+        if (env.CORS_ORIGIN === "*" && process.env.NODE_ENV !== "production") return callback(null, true);
+        const configured = (env.CORS_ORIGIN || "").split(",").map((s) => s.trim()).filter(Boolean);
         if (
           configured.includes(origin) ||
           allowedOrigins.includes(origin) ||
@@ -36,7 +39,8 @@ export function createApp(): Express {
         ) {
           return callback(null, true);
         }
-        return callback(null, true);
+        logger.warn(`[CORS] Blocked access from untrusted origin: ${origin}`);
+        return callback(new Error(`CORS blocked for untrusted origin: ${origin}`));
       },
       credentials: true
     })

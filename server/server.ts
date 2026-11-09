@@ -1,12 +1,15 @@
 import http from "http";
 import path from "path";
 import { createApp } from "./app";
-import { env } from "./config/env";
+import { env, assertProductionReadiness } from "./config/env";
 import { prisma, checkDatabaseConnection } from "./config/database";
 import { logger } from "./shared/logger";
 import { realtimeHub } from "./services/realtimeHub";
 
 async function bootstrap() {
+  // Validate production environment readiness before starting server
+  assertProductionReadiness();
+
   const app = createApp();
   const server = http.createServer(app);
 

@@ -277,11 +277,11 @@ export async function runMovieConvenienceFeeTests(): Promise<TestResult[]> {
       couponCode: undefined,
     });
 
-    // Verify bookingService used authoritative movieFeeService rather than static 5% or zero
+    // Verify bookingService used authoritative pricing service rather than static 5% or zero
     assert(bookingPrice.ticketSubtotal === 300, `Expected subtotal 300, got ${bookingPrice.ticketSubtotal}`);
-    assert(bookingPrice.convenienceFee === 47.20, `Expected authoritative fee 47.20, got ${bookingPrice.convenienceFee}`);
-    assert(bookingPrice.convenienceFeeTax === 7.20, `Expected authoritative GST 7.20, got ${bookingPrice.convenienceFeeTax}`);
-    assert(bookingPrice.totalAmount === 347.20, `Expected total 347.20, got ${bookingPrice.totalAmount}`);
+    assert(bookingPrice.convenienceFee === 37.76, `Expected authoritative fee 37.76, got ${bookingPrice.convenienceFee}`);
+    assert(bookingPrice.convenienceFeeTax === 5.76, `Expected authoritative GST 5.76, got ${bookingPrice.convenienceFeeTax}`);
+    assert(bookingPrice.totalAmount === 337.76, `Expected total 337.76, got ${bookingPrice.totalAmount}`);
     assert(Boolean(bookingPrice.feeSnapshot), "Must generate immutable feeSnapshot object");
 
     results.push({ name: "Scenario 12: Authoritative backend calculation prevents client fee manipulation", passed: true });

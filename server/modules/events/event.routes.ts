@@ -409,18 +409,31 @@ export function calculateEventPriceBreakdown(
   });
 
   let convenienceFee = 0;
-  if (centralPricing.isFeeEnabled) {
-    convenienceFee = centralPricing.totalConvenienceFee;
-  } else if (ticketSubtotal > 0 && isFeeApproved && feeAmount > 0) {
-    if (feeType === "PERCENTAGE") {
-      convenienceFee = Math.round(((ticketSubtotal * feeAmount) / 100) * 100) / 100;
-    } else {
-      if (feeApplication === "PER_BOOKING") {
-        convenienceFee = Math.round(feeAmount * 100) / 100;
+  const hasEventSpecificConfig =
+    event.convenienceFeeEnabled !== undefined ||
+    event.convenience_fee_enabled !== undefined ||
+    event.convenienceFeeAmount !== undefined ||
+    event.convenience_fee_amount !== undefined ||
+    event.convenienceFeeStatus !== undefined ||
+    event.convenience_fee_status !== undefined;
+
+  if (hasEventSpecificConfig) {
+    if (ticketSubtotal > 0 && isFeeApproved && feeAmount > 0) {
+      if (feeType === "PERCENTAGE") {
+        convenienceFee = Math.round(((ticketSubtotal * feeAmount) / 100) * 100) / 100;
       } else {
-        convenienceFee = Math.round(feeAmount * validCount * 100) / 100;
+        if (feeApplication === "PER_BOOKING") {
+          convenienceFee = Math.round(feeAmount * 100) / 100;
+        } else {
+          convenienceFee = Math.round(feeAmount * validCount * 100) / 100;
+        }
       }
+    } else {
+      // Explicitly disabled, rejected, or pending organizer fee
+      convenienceFee = 0;
     }
+  } else if (centralPricing.isFeeEnabled) {
+    convenienceFee = centralPricing.totalConvenienceFee;
   }
 
   // Discounts (e.g. promotional coupon codes)
