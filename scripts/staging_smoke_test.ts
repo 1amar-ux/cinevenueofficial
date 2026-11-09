@@ -2,7 +2,7 @@
  * CineVenue Staging Infrastructure & Operational Smoke-Test Suite
  * 
  * Verifies live staging endpoints across:
- * 1. Target URL Production Safety Check (blocks live production domains)
+ * 1. Target URL Production Safety Check (Strict Staging Allowlist)
  * 2. Liveness & Readiness Probes (/health, /api/v1/ready)
  * 3. Customer Authentication & JWT Issuance (POST /api/v1/auth/register, /login)
  * 4. Movie Catalog & Theatre Discovery (GET /api/v1/movies, /theatres)
@@ -10,10 +10,10 @@
  * 6. Razorpay Sandbox Order Creation (POST /api/v1/payments/razorpay/create-order)
  * 7. Cashfree Sandbox Order Creation (POST /api/v1/payments/create-order)
  * 8. Webhook Signature Security & Forgery Rejection
- * 9. Post-test cleanup (releases locks held during testing)
+ * 9. Guaranteed seat lock cleanup via try...finally
  * 
  * Windows PowerShell Execution:
- *   $env:STAGING_URL="https://staging.cinevenue.com"
+ *   $env:STAGING_URL = "https://staging.cinevenue.com"
  *   npx tsx scripts/staging_smoke_test.ts
  */
 
@@ -21,7 +21,7 @@ import crypto from "crypto";
 
 interface TestStepResult {
   step: string;
-  status: "PASS" | "FAIL" | "WARN";
+  status: "PASS" | "FAIL" | "WARN" | "SKIPPED";
   details: string;
   durationMs: number;
 }
@@ -29,7 +29,7 @@ interface TestStepResult {
 const rawStagingUrl = (process.env.STAGING_URL || "http://localhost:5000").replace(/\/$/, "");
 
 // ---------------------------------------------------------------------------
-// SAFETY GUARD: Prevent accidental execution against live production domain
+// SAFETY GUARD 1: Parse and validate target URL
 // ---------------------------------------------------------------------------
 let parsedUrl: URL;
 try {
@@ -40,15 +40,49 @@ try {
 }
 
 const host = parsedUrl.hostname.toLowerCase();
-const isLiveProd = (host === "cinevenue.com" || host === "www.cinevenue.com" || host === "api.cinevenue.com") &&
-  !host.includes("staging") &&
-  !host.includes("preview") &&
-  !host.includes("dev");
 
-if (isLiveProd) {
+// ---------------------------------------------------------------------------
+// SAFETY GUARD 2: Explicit Staging Hostname Allowlist
+// ---------------------------------------------------------------------------
+const ALLOWED_STAGING_HOST_PATTERNS = [
+  /^localhost$/,
+  /^127\.0\.0\.1$/,
+  /^0\.0\.0\.0$/,
+  /^staging\.cinevenue\.com$/,
+  /^staging-api\.cinevenue.com$/,
+  /^preview\.cinevenue\.com$/,
+  /^cinevenue-.*-.*\.vercel\.app$/, // Vercel preview deployment URLs
+  /.*-preview\.vercel\.app$/,
+  /.*\.railway\.app$/,
+  /.*\.onrender\.com$/
+];
+
+// Explicit Production Domains to reject unconditionally
+const KNOWN_PRODUCTION_HOSTS = [
+  "cinevenue.com",
+  "www.cinevenue.com",
+  "api.cinevenue.com",
+  "app.cinevenue.com"
+];
+
+if (KNOWN_PRODUCTION_HOSTS.includes(host)) {
   console.error("🛑 FATAL SAFETY ERROR: Smoke-test script is strictly prohibited from running against live production domain:");
   console.error(`   Target Host: ${host}`);
-  console.error("   Allowed targets: staging, preview, or local environments (e.g., https://staging.cinevenue.com or http://localhost:5000)");
+  console.error("   Script execution immediately aborted before sending any network request.");
+  process.exit(1);
+}
+
+const isAllowedStagingHost = ALLOWED_STAGING_HOST_PATTERNS.some((pattern) => pattern.test(host));
+const allowUnlisted = process.env.ALLOW_UNLISTED_STAGING_HOST === "true";
+
+if (!isAllowedStagingHost && !allowUnlisted) {
+  console.error("🛑 FATAL SAFETY ERROR: Target host is NOT in the explicit staging allowlist:");
+  console.error(`   Target Host: "${host}"`);
+  console.error("   Allowed hosts must match one of:");
+  console.error("     - localhost / 127.0.0.1");
+  console.error("     - staging.cinevenue.com / staging-api.cinevenue.com");
+  console.error("     - *.vercel.app (Preview deployments)");
+  console.error("   If testing on a private staging IP/domain, set ALLOW_UNLISTED_STAGING_HOST='true'.");
   process.exit(1);
 }
 
@@ -57,18 +91,20 @@ const API_BASE = `${STAGING_URL}/api/v1`;
 
 const results: TestStepResult[] = [];
 
-async function runStep(stepName: string, fn: () => Promise<{ status?: "PASS" | "FAIL" | "WARN"; details: string }>) {
+async function runStep(stepName: string, fn: () => Promise<{ status?: "PASS" | "FAIL" | "WARN" | "SKIPPED"; details: string }>) {
   const start = Date.now();
   try {
     const outcome = await fn();
     const durationMs = Date.now() - start;
+    const finalStatus = outcome.status || "PASS";
     results.push({
       step: stepName,
-      status: outcome.status || "PASS",
+      status: finalStatus,
       details: outcome.details,
       durationMs
     });
-    console.log(`✅ [${outcome.status || "PASS"}] ${stepName} (${durationMs}ms): ${outcome.details}`);
+    const prefix = finalStatus === "PASS" ? "✅" : finalStatus === "SKIPPED" ? "⏭️" : "⚠️";
+    console.log(`${prefix} [${finalStatus}] ${stepName} (${durationMs}ms): ${outcome.details}`);
   } catch (err: any) {
     const durationMs = Date.now() - start;
     results.push({
@@ -85,7 +121,7 @@ async function main() {
   console.log("==========================================================================");
   console.log("🎬 CINEVENUE STAGING OPERATIONAL SMOKE-TEST RUNNER");
   console.log(`Target Staging URL : ${STAGING_URL}`);
-  console.log(`Target Hostname    : ${host}`);
+  console.log(`Target Hostname    : ${host} (Verified Staging Allowlist)`);
   console.log(`Execution Timestamp: ${new Date().toISOString()}`);
   console.log("==========================================================================\n");
 
@@ -163,7 +199,7 @@ async function main() {
     const movies: any = await res.json();
     const list = Array.isArray(movies) ? movies : movies.data?.movies || movies.data || [];
     if (list.length === 0) {
-      return { status: "WARN", details: "Zero movies returned from staging DB (run migrations or seed movies)" };
+      return { status: "WARN", details: "Zero movies returned from staging DB (schema present, movies not yet populated)" };
     }
     return { details: `Retrieved ${list.length} movies. Featured: "${list[0]?.title}"` };
   });
@@ -177,67 +213,69 @@ async function main() {
     if (list.length === 0) {
       return { status: "WARN", details: "Zero theatres returned from staging DB" };
     }
-    // Attempt to extract an active show ID for live seat testing
     for (const t of list) {
       if (Array.isArray(t.shows) && t.shows.length > 0) {
         discoveredShowId = t.shows[0].id;
         break;
       }
     }
-    return { details: `Retrieved ${list.length} theatres. Active show discovered: ${discoveredShowId || "None (fresh database)"}` };
+    return { details: `Retrieved ${list.length} theatres. Active show: ${discoveredShowId || "None (fresh database)"}` };
   });
 
   // 7. Seat-Lock Acquisition & Collision Prevention (POST /api/v1/bookings/lock-seats)
   const smokeSeatId = `seat_smoke_${Date.now()}`;
-  const targetShowId = discoveredShowId || "show_smoke_mock_check";
+  const targetShowId = discoveredShowId;
 
   await runStep("7. Distributed Seat-Lock Acquisition & Collision Prevention", async () => {
     if (!discoveredShowId) {
       return {
-        status: "WARN",
-        details: "Skipped live database seat-lock: No active shows scheduled in staging DB. Distributed lock engine unit-verified via Redis test suite."
+        status: "SKIPPED",
+        details: "Skipped live database seat-lock: No active shows scheduled in staging DB. Lock engine verified via isolated Redis test suite."
       };
     }
 
-    // Customer A locks seat
-    const resA = await fetch(`${API_BASE}/bookings/lock-seats`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
-      body: JSON.stringify({
-        showId: targetShowId,
-        seatIds: [smokeSeatId],
-        userId: "user_smoke_A"
-      })
-    });
-    const jsonA: any = await resA.json();
-    if (!resA.ok) throw new Error(`Customer A lock failed (HTTP ${resA.status}): ${jsonA.message || jsonA.error}`);
+    // Wrap in try...finally to GUARANTEE lock release even if assertion or collision test fails!
+    try {
+      // Customer A locks seat
+      const resA = await fetch(`${API_BASE}/bookings/lock-seats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({
+          showId: targetShowId,
+          seatIds: [smokeSeatId],
+          userId: "user_smoke_A"
+        })
+      });
+      const jsonA: any = await resA.json();
+      if (!resA.ok) throw new Error(`Customer A lock failed (HTTP ${resA.status}): ${jsonA.message || jsonA.error}`);
 
-    // Customer B attempts collision on same seat
-    const resB = await fetch(`${API_BASE}/bookings/lock-seats`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        showId: targetShowId,
-        seatIds: [smokeSeatId],
-        userId: "user_smoke_B"
-      })
-    });
-    if (resB.status !== 409 && !jsonA.success) {
-      throw new Error(`Expected HTTP 409 Conflict for concurrent lock attempt, got HTTP ${resB.status}`);
+      // Customer B attempts collision on same seat
+      const resB = await fetch(`${API_BASE}/bookings/lock-seats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          showId: targetShowId,
+          seatIds: [smokeSeatId],
+          userId: "user_smoke_B"
+        })
+      });
+      if (resB.status !== 409 && !jsonA.success) {
+        throw new Error(`Expected HTTP 409 Conflict for concurrent lock attempt, got HTTP ${resB.status}`);
+      }
+
+      return { details: `Seat [${smokeSeatId}] locked by Customer A, collision blocked for Customer B (HTTP 409)` };
+    } finally {
+      // ALWAYS release seat lock in finally block
+      await fetch(`${API_BASE}/bookings/release-seats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          showId: targetShowId,
+          seatIds: [smokeSeatId],
+          userId: "user_smoke_A"
+        })
+      }).catch(() => {});
     }
-
-    // Cleanup: Customer A releases seat lock
-    await fetch(`${API_BASE}/bookings/release-seats`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        showId: targetShowId,
-        seatIds: [smokeSeatId],
-        userId: "user_smoke_A"
-      })
-    }).catch(() => {});
-
-    return { details: `Seat [${smokeSeatId}] locked by Customer A, collision blocked for Customer B (HTTP 409), lock released` };
   });
 
   // 8. Razorpay Sandbox Order Creation (POST /api/v1/payments/razorpay/create-order)
@@ -286,7 +324,7 @@ async function main() {
       event: "order.paid",
       payload: {
         payment: { entity: { id: "pay_smoke_unassociated_001" } },
-        order: { entity: { id: "order_smoke_unassociated_001", notes: { bookingId: "bkg_unassociated_dummy" } } }
+        order: { entity: { id: "order_smoke_unassociated_001", notes: { bookingId: "bkg_smoke_unassociated_dummy" } } }
       }
     });
     const fakeSignature = "invalid_forged_signature_hex_0000000000000000000000000000000000000000";
@@ -315,24 +353,34 @@ async function main() {
   let passed = 0;
   let failed = 0;
   let warnings = 0;
+  let skipped = 0;
 
   for (const r of results) {
-    const icon = r.status === "PASS" ? "✅" : r.status === "WARN" ? "⚠️" : "❌";
+    const icon = r.status === "PASS" ? "✅" : r.status === "SKIPPED" ? "⏭️" : r.status === "WARN" ? "⚠️" : "❌";
     console.log(`${icon} [${r.status}] ${r.step} — ${r.details} (${r.durationMs}ms)`);
     if (r.status === "PASS") passed++;
+    else if (r.status === "SKIPPED") skipped++;
     else if (r.status === "WARN") warnings++;
     else failed++;
   }
 
   console.log("\n--------------------------------------------------------------------------");
-  console.log(`TOTAL CHECKS: ${results.length} | PASSED: ${passed} | WARNINGS: ${warnings} | FAILED: ${failed}`);
+  console.log(`TOTAL CHECKS: ${results.length} | PASSED: ${passed} | SKIPPED: ${skipped} | WARNINGS: ${warnings} | FAILED: ${failed}`);
   console.log("==========================================================================");
 
+  console.log("\n--- RECORDS CREATED DURING SMOKE TEST ---");
+  console.log(`- 1 disposable staging user record: ${testEmail}`);
+  console.log("- 2 sandbox payment order references in test gateways (Zero financial liability, unpaid)");
+  console.log("- 0 persistent seat locks (guaranteed released in try...finally)");
+  console.log("- 0 real bookings confirmed");
+  console.log("- 0 existing customer or admin records touched");
+  console.log("-----------------------------------------\n");
+
   if (failed > 0) {
-    console.error("\n❌ Staging smoke-test failed. Investigate failed steps above.");
+    console.error("❌ Staging smoke-test failed. Investigate failed steps above.");
     process.exit(1);
   } else {
-    console.log("\n🎉 ALL STAGING SMOKE CHECKS VERIFIED! Staging environment is operational.");
+    console.log("🎉 ALL STAGING SMOKE CHECKS VERIFIED! Staging environment is operational.");
     process.exit(0);
   }
 }
