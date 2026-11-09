@@ -41,7 +41,7 @@ graph TD
 
 ### A. Items Verified Locally in Repository
 The following configuration properties have been verified from the local codebase:
-1. **Build Command:** Verified in [`vercel.json`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/vercel.json):
+1. **Build Command:** Verified in [`vercel.json`](../../vercel.json):
    ```json
    "buildCommand": "prisma generate && vite build && esbuild server/serverless.ts --bundle --platform=node --format=esm --packages=external --outfile=api/index.js"
    ```
@@ -66,7 +66,7 @@ The following configuration properties have been verified from the local codebas
   - `staging.cinevenue.com` MUST be assigned explicitly to branch `staging`.
   - Preview deployments must NEVER touch or alias `cinevenue.com`.
 * [ ] **Environment Variable Scope:** In Settings → Environment Variables:
-  - All staging variables (from [`docs/staging/staging.env.example`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/docs/staging/staging.env.example)) must have their environment checkbox set **ONLY to "Preview"**.
+  - All staging variables (from [`docs/staging/staging.env.example`](staging.env.example)) must have their environment checkbox set **ONLY to "Preview"**.
   - Ensure "Production" is UNCHECKED for all staging variables.
 
 ---
