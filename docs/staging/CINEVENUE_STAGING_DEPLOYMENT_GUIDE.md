@@ -1,6 +1,6 @@
 # CINEVENUE — STAGING DEPLOYMENT RUNBOOK (WINDOWS POWERSHELL & VERCEL PREVIEW)
 
-**Document Version:** 1.3.0  
+**Document Version:** 1.4.0  
 **Target Environment:** Staging / Pre-Production (Isolated Vercel Preview & Node Staging)  
 **Security Standard:** Strict Sandbox, Zero-Mock, Fail-Closed, No-Live-Transactions  
 **Last Verified:** November 9, 2026  
@@ -74,7 +74,7 @@ The following configuration properties have been verified from the local codebas
 ## 3. PRISMA SCHEMA DEPLOYMENT RISKS & SAFETY PROTOCOL
 
 ### A. Real Risks of `prisma db push` on Existing Databases
-`prisma db push` is often used for rapid prototyping, but on staging and production databases, it poses severe risks:
+`prisma db push` is not a non-destructive command:
 1. **Potential Data Loss:** If models, fields, or enums in `prisma/schema.prisma` differ from existing database columns, Prisma detects data loss and prompts for `--accept-data-loss`. If accepted, columns and tables are **permanently dropped**.
 2. **Accidental Database Wipe:** Commands like `prisma db push --force-reset` completely drop the schema and recreate it, deleting all data.
 3. **No Migration Ledger:** `db push` does not record applied migrations in `_prisma_migrations`, making rollbacks manual and complex.
@@ -85,59 +85,130 @@ The following configuration properties have been verified from the local codebas
 * ❌ **NEVER execute `npx prisma db push --force-reset`** on staging or production.
 * ❌ **NEVER execute database reset or truncate commands.**
 * ❌ **DO NOT assume `prisma db push` is non-destructive.**
+* ❌ **DO NOT automatically chain schema diff inspection into schema application.** Schema application requires separate, explicit manual review and approval.
 * ⚠️ **A reliable schema diff cannot be generated without an active connection to the staging database.** This is documented as a **Pending External Verification**.
-
-### C. Safe Schema-Diff Inspection Procedure (Windows PowerShell)
-Before synchronizing schema changes to staging, you MUST generate and inspect a dry-run SQL diff:
-
-```powershell
-# Step 1: Set temporary connection to staging database (Current PowerShell session only)
-$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
-
-# Step 2: Generate Dry-Run SQL Diff without making any database changes
-npx prisma migrate diff `
-  --from-url "$env:DATABASE_URL" `
-  --to-schema-datamodel prisma/schema.prisma `
-  --script > staging_schema_diff.sql
-
-# Step 3: Inspect staging_schema_diff.sql for destructive operations
-Get-Content staging_schema_diff.sql | Select-String -Pattern "DROP TABLE", "DROP COLUMN", "TRUNCATE", "ALTER COLUMN"
-
-# Step 4: Decision Gate
-# If the diff contains ANY destructive operations (DROP TABLE, DROP COLUMN, etc.):
-# -> STOP IMMEDIATELY! Do NOT proceed. Require lead architect review and data-preservation scripts.
-# If the diff contains ONLY additive operations (CREATE TABLE, ADD COLUMN nullable, CREATE INDEX):
-# -> Proceed to Step 5 (Backup first, then apply).
-
-# Step 5: Clean up session variable if pausing
-Remove-Item env:DATABASE_URL
-```
 
 ---
 
-## 4. STAGING DATABASE BACKUP, APPLY & RECOVERY RUNBOOK
+## 4. FAIL-CLOSED DATABASE BACKUP & SCHEMA-DIFF INSPECTION RUNBOOK
 
 Follow these commands in **Windows PowerShell**:
 
-### Step A: Pre-Change Staging Database Backup (MANDATORY)
+### Step A: Pre-Change Staging Database Binary Backup (MANDATORY GATE)
 ```powershell
+$backupFile = "cinevenue_staging_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').dump"
+Write-Host "Creating pre-migration database snapshot: $backupFile..." -ForegroundColor Cyan
+
 # Create full PostgreSQL binary snapshot dump before touching the database:
-pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f "cinevenue_staging_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').dump"
+pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f $backupFile
+
+if ($LASTEXITCODE -ne 0) {
+    throw "🛑 FATAL: pg_dump backup failed with exit code $LASTEXITCODE. Database modification cannot proceed."
+}
+Write-Host "✅ Database snapshot successfully created and verified: $backupFile" -ForegroundColor Green
 ```
 
-### Step B: Apply Schema to Staging (ONLY After Passing Diff Review)
+### Step B: Dry-Run Schema Diff Generation with Strict Error & Hazard Traps
+```powershell
+# Set temporary connection string targeting cinevenue_staging:
+$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
+$diffFile = "staging_schema_diff.sql"
+
+# Clean up any stale diff file:
+if (Test-Path $diffFile) { Remove-Item $diffFile -Force }
+
+Write-Host "Generating dry-run schema diff..." -ForegroundColor Cyan
+npx prisma migrate diff `
+  --from-url "$env:DATABASE_URL" `
+  --to-schema-datamodel prisma/schema.prisma `
+  --script > $diffFile
+
+# 1. Immediate exit code check:
+if ($LASTEXITCODE -ne 0) {
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+    throw "🛑 FATAL: 'prisma migrate diff' failed with exit code $LASTEXITCODE. Could not generate reliable schema diff. Aborting."
+}
+
+# 2. File existence and non-empty validation:
+if (-not (Test-Path $diffFile)) {
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+    throw "🛑 FATAL: Schema diff file '$diffFile' was not created. Procedure halted."
+}
+
+$fileItem = Get-Item $diffFile
+if ($fileItem.Length -eq 0) {
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+    Write-Host "ℹ️ Schema diff file is 0 bytes. Target database schema is already in sync with prisma/schema.prisma. No schema change needed." -ForegroundColor Green
+    return
+}
+
+# 3. Automated Hazardous Statement Detection (Strict Failure Trap):
+$destructivePatterns = @(
+    "DROP TABLE",
+    "DROP COLUMN",
+    "TRUNCATE",
+    "ALTER COLUMN.*TYPE",
+    "DROP SEQUENCE",
+    "DROP INDEX",
+    "DROP TYPE",
+    "DROP SCHEMA",
+    "CASCADE"
+)
+
+$detectedHazardousLines = @()
+foreach ($pattern in $destructivePatterns) {
+    $matches = Select-String -Path $diffFile -Pattern $pattern
+    if ($matches) {
+        $detectedHazardousLines += $matches
+    }
+}
+
+if ($detectedHazardousLines.Count -gt 0) {
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+    Write-Host "🛑 TERMINATING ERROR: Destructive or potentially hazardous SQL detected in '$diffFile'!" -ForegroundColor Red
+    $detectedHazardousLines | ForEach-Object {
+        Write-Host "   Line $($_.LineNumber): $($_.Line.Trim())" -ForegroundColor Yellow
+    }
+    throw "🛑 SAFETY GATE ABORT: Automated schema application is strictly forbidden when destructive SQL is detected. Never pass --accept-data-loss or --force-reset."
+}
+
+Write-Host "✅ Automated scan found 0 known destructive keywords." -ForegroundColor Green
+Write-Host "⚠️ MANDATORY GATE: Keyword matching alone is NOT sufficient." -ForegroundColor Yellow
+Write-Host "Open '$diffFile' and inspect every SQL statement manually before approving." -ForegroundColor Yellow
+
+# Display first 50 lines for inspection:
+Get-Content $diffFile | Select-Object -First 50
+
+# SCRIPT TERMINATES HERE. IT DOES NOT AUTOMATICALLY EXECUTE 'prisma db push'.
+Write-Host "`n==========================================================================" -ForegroundColor Cyan
+Write-Host "MANUAL REVIEW REQUIRED: Inspect '$diffFile' completely." -ForegroundColor Cyan
+Write-Host "If and ONLY if manual review confirms all statements are safe:" -ForegroundColor Cyan
+Write-Host "Execute Step C separately in a new terminal session." -ForegroundColor Cyan
+Write-Host "==========================================================================" -ForegroundColor Cyan
+```
+
+### Step C: Apply Schema to Staging (SEPARATE MANUAL STEP — ONLY After Diff Approval)
+> [!IMPORTANT]
+> This step MUST be executed separately and manually. It is never automatically called by the diff script.
+
 ```powershell
 # Set temporary connection string:
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
 
-# Apply schema (Prisma will automatically abort if destructive changes are detected):
+# Apply verified additive schema:
 npx prisma db push
+
+if ($LASTEXITCODE -ne 0) {
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+    throw "🛑 FATAL: 'prisma db push' failed with exit code $LASTEXITCODE."
+}
 
 # Immediately remove session variable:
 Remove-Item env:DATABASE_URL
+Write-Host "✅ Staging database schema updated successfully." -ForegroundColor Green
 ```
 
-### Step C: Staging Database Rollback Procedure (Incident Recovery)
+### Step D: Staging Database Rollback Procedure (Emergency Recovery)
 ```powershell
 # In case of schema conflict, failure, or accidental table alteration:
 pg_restore -h [STAGING_HOST] -U postgres -d cinevenue_staging -v --clean "cinevenue_staging_backup_YYYYMMDD_HHMMSS.dump"
@@ -210,12 +281,6 @@ The smoke test enforces strict, fail-closed target URL validation before transmi
 | **9. Cashfree Order** | Cashfree Sandbox Order (`order_<id>`) | Persisted in Cashfree test dashboard | **RETAINED** | Retained in gateway sandbox (Unpaid, no API delete endpoint) | Zero financial charge; expires automatically in gateway |
 | **10. Webhook Signature Check** | Dummy unassociated payload | Rejected at HMAC layer | **ZERO RECORDS** | Cryptographic failure returns HTTP 400 before DB touch | Zero mutation |
 
-### C. Behavior on Halfway Failure
-* If the smoke test fails before Step 3: Zero database records exist.
-* If the smoke test fails after Step 3: The single disposable customer account remains persisted and is explicitly accounted for in the output summary.
-* If the smoke test fails during Step 7 (Seat Lock): The `finally` block executes automatically and attempts release. If network disconnection prevents release, the Redis key automatically expires via its 600-second TTL. Cleanup failures are logged separately from test assertion failures.
-* Existing customers, bookings, shows, and transactions are **never modified or deleted**.
-
 ---
 
 ## 7. COMPLETE WINDOWS POWERSHELL DEPLOYMENT RUNBOOK
@@ -233,15 +298,36 @@ npx tsx --test tests/unit/stagingSmokeTestSafety.test.ts
 
 ---
 
-### Step 2: Vercel Dashboard Pre-Flight Check (Manual Sign-Off)
-Log in to [vercel.com](https://vercel.com) and confirm:
-1. Staging environment variables are scoped **ONLY to "Preview"**.
-2. Production domain `cinevenue.com` is linked **ONLY to "main"**.
-3. Staging domain `staging.cinevenue.com` is linked to branch `staging`.
+### Step 2: Confirm Git Remote & Branch Invariants
+```powershell
+# Verify remote URL is the official repository:
+git remote get-url origin
+# Expected: https://github.com/1amar-ux/cinevenueofficial.git
+
+# Confirm current branch is 'staging':
+git branch --show-current
+# Expected: staging
+
+# Confirm working tree is clean:
+git status --short
+# Expected: (Empty / nothing to commit)
+
+# Confirm 'main' remains preserved at 22c22a9:
+git rev-parse --short main
+# Expected: 22c22a9
+```
 
 ---
 
-### Step 3: Staging Database Backup (Pre-Migration Safety Snapshot)
+### Step 3: Push ONLY Staging Branch to Remote
+```powershell
+# Push staging branch to remote origin (Never touches main):
+git push origin staging:staging
+```
+
+---
+
+### Step 4: Staging Database Backup (Pre-Migration Safety Snapshot)
 ```powershell
 # Create snapshot of staging database:
 pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f "cinevenue_staging_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').dump"
@@ -249,35 +335,26 @@ pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f "cineve
 
 ---
 
-### Step 4: Dry-Run Schema Diff Inspection
+### Step 5: Dry-Run Schema Diff Inspection & Manual Approval Gate
 ```powershell
-$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
-
-# Preview exact SQL changes:
-npx prisma migrate diff `
-  --from-url "$env:DATABASE_URL" `
-  --to-schema-datamodel prisma/schema.prisma `
-  --script > staging_schema_diff.sql
-
-# Review for destructive statements:
-Get-Content staging_schema_diff.sql | Select-String -Pattern "DROP", "TRUNCATE"
+# Execute Step B from Section 4 to generate and inspect staging_schema_diff.sql.
+# Verify that 0 hazardous statements exist.
+# SCRIPT HALTS FOR HUMAN APPROVAL.
 ```
-*If any destructive changes appear, HALT and resolve them before applying.*
 
 ---
 
-### Step 5: Apply Schema to Staging (ONLY After Diff Approval)
+### Step 6: Apply Verified Schema to Staging (Separate Manual Execution)
 ```powershell
-# Deploy verified schema:
+# ONLY after completing manual review and sign-off in Step 5:
+$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
 npx prisma db push
-
-# Immediately clear connection string:
 Remove-Item env:DATABASE_URL
 ```
 
 ---
 
-### Step 6: Verify Shared Staging Redis Connectivity
+### Step 7: Verify Shared Staging Redis Connectivity
 ```powershell
 $env:REDIS_URL = "redis://:[PASSWORD]@[STAGING_REDIS_HOST]:6379"
 
@@ -290,7 +367,11 @@ Remove-Item env:REDIS_URL
 
 ---
 
-### Step 7: Deploy Vercel Preview (Strictly Isolated)
+### Step 8: Deploy Vercel Preview (Strictly Isolated)
+> [!IMPORTANT]
+> Confirm in Vercel Dashboard that staging variables are scoped ONLY to "Preview".
+> If project is not yet linked locally, run `npx vercel link` to confirm target project.
+
 ```powershell
 # Deploy as a Vercel Preview Deployment (DO NOT use --prod!):
 npx vercel
@@ -299,9 +380,9 @@ npx vercel
 
 ---
 
-### Step 8: Verify Health & Readiness Probes
+### Step 9: Verify Health & Readiness Probes
 ```powershell
-$PREVIEW_URL = "https://staging.cinevenue.com" # Or your Vercel preview URL
+$PREVIEW_URL = "https://cinevenue-git-staging-yourteam.vercel.app"
 
 # 1. Liveness check (HTTP 200 expected):
 Invoke-RestMethod -Uri "$PREVIEW_URL/health" -Method Get
@@ -312,9 +393,8 @@ Invoke-RestMethod -Uri "$PREVIEW_URL/api/v1/ready" -Method Get
 
 ---
 
-### Step 9: Run Automated Staging Smoke Test
+### Step 10: Run Automated Staging Smoke Test
 ```powershell
-# If using a unique Vercel preview domain, allowlist it explicitly:
 $env:STAGING_ALLOWED_HOSTS = "cinevenue-git-staging-yourteam.vercel.app"
 $env:STAGING_URL = "https://cinevenue-git-staging-yourteam.vercel.app"
 
