@@ -1,193 +1,176 @@
-# CINEVENUE — STAGING DEPLOYMENT RUNBOOK & ARCHITECTURE GUIDE
+# CINEVENUE — STAGING DEPLOYMENT RUNBOOK (WINDOWS POWERSHELL & VERCEL PREVIEW)
 
-**Document Version:** 1.0.0  
-**Target Architecture:** Multi-Tier Web & API Deployment (Vercel Serverless + Node Express / Cloud Run)  
-**Security Standard:** Zero-Mock, Fail-Closed, Strict Sandbox  
+**Document Version:** 1.1.0  
+**Target Environment:** Staging / Pre-Production (Isolated Preview Deployment)  
+**Security Standard:** Strict Sandbox, Zero-Mock, Fail-Closed, No-Live-Transactions  
 **Last Verified:** November 9, 2026  
 
 ---
 
-## 1. ARCHITECTURAL DEPLOYMENT TOPOLOGY
-
-CineVenue is designed to support two production-ready deployment topologies:
+## 1. ARCHITECTURAL DEPLOYMENT TOPOLOGY & SAFETY BOUNDARIES
 
 ```mermaid
 graph TD
-    Client["Client Devices (Web Browser / Android / iOS)"] --> Cloudflare["Cloudflare / DNS & Edge CDN"]
-    
-    subgraph Staging_Deployment_Options["Staging Deployment Targets"]
-        Cloudflare -->|Route: /api/* & /health| VercelAPI["Option A: Vercel Serverless (api/index.js)"]
-        Cloudflare -->|Route: /* (Static Assets)| VercelSPA["Vercel SPA (dist/)"]
-        
-        Cloudflare -.->|Alternative Route: /api/*| ExpressNode["Option B: Dedicated Node Express (dist-server/server.cjs)"]
+    Client["Client Devices (Browser / Android / iOS)"] --> CDN["Cloudflare / Edge Network"]
+
+    subgraph Vercel_Isolated_Environments["Vercel Deployment Architecture"]
+        ProductionDomain["Production Domain: cinevenue.com<br/>(Triggered ONLY by 'main' branch)"]
+        PreviewDomain["Staging / Preview Domain: staging.cinevenue.com<br/>(Triggered by 'staging' branch / 'vercel' preview CLI)"]
     end
-    
-    VercelAPI --> PostgreSQL[("PostgreSQL 15+ (Direct TCP Connection)")]
-    ExpressNode --> PostgreSQL
-    
-    VercelAPI --> Redis[("Shared Redis 7.x Cluster (Distributed Seat Locks)")]
-    ExpressNode --> Redis
-    
-    VercelAPI --> SandboxGateways["Sandbox Gateways (Razorpay TEST / Cashfree TEST)"]
-    ExpressNode --> SandboxGateways
+
+    CDN -->|Production Traffic| ProductionDomain
+    CDN -->|Staging Traffic| PreviewDomain
+
+    subgraph Staging_Backend_Resources["Isolated Staging Infrastructure"]
+        PreviewDomain -->|Direct TCP (Port 5432)| StagingDB[("PostgreSQL 15+ (cinevenue_staging)")]
+        PreviewDomain -->|TLS / TCP (Port 6379)| StagingRedis[("Shared Redis 7.x (Staging Instance)")]
+        PreviewDomain -->|Sandbox Mode Only| SandboxGateways["Razorpay TEST & Cashfree TEST"]
+    end
+
+    style ProductionDomain fill:#331111,stroke:#ff4444,stroke-width:2px;
+    style PreviewDomain fill:#113311,stroke:#44ff44,stroke-width:2px;
+```
+
+> [!CAUTION]
+> **CRITICAL VERCEL DEPLOYMENT SAFETY RULE:**
+> Never execute `vercel --prod` for staging deployments! The `--prod` flag automatically deploys to the production environment and modifies live domain aliases (`cinevenue.com`). Staging MUST be deployed strictly as a **Vercel Preview Deployment** via `vercel` (without `--prod`) or via Git branch integration targeting the `staging` branch.
+
+---
+
+## 2. VERCEL PREVIEW DEPLOYMENT CONFIGURATION
+
+### A. Vercel Project & Branch Linking
+1. **Repository Branch:** `staging` (Branched from commit `22c22a9`).
+2. **Deployment Mode:** **Preview Deployment**.
+3. **Environment Scope:** In Vercel Project Settings → Environment Variables, inject variables with environment scope checked **ONLY for "Preview"** (optionally scoped specifically to the `staging` branch). **Do NOT select "Production"**.
+4. **Preview Domain Assignment:**
+   * In Vercel Dashboard → Settings → Domains, add `staging.cinevenue.com` and set its **Git Branch** to `staging`.
+   * Production domains (`cinevenue.com`, `www.cinevenue.com`) remain strictly tied to `main` and are completely isolated.
+
+### B. Vercel Build & Route Verification
+* **Build Command:** `npm run vercel-build` (`prisma generate && vite build && esbuild server/serverless.ts ...`)
+* **Output Directory:** `dist`
+* **Serverless Function:** `api/index.js` (Timeout: 30s)
+* **Rewrites:** Verified in [`vercel.json`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/vercel.json):
+  * `/api/(.*)` rewrites to `/api/index.js`
+  * `/health` rewrites to `/api/index.js`
+  * `/(.*)` rewrites to `/index.html`
+
+---
+
+## 3. DATABASE SAFETY, MIGRATION & BACKUP PROCEDURE
+
+### Database Inspection Findings
+* **Prisma Seed Script:** There is **NO `prisma/seed.ts` file in the repository**. Running `prisma/seed.ts` will fail.
+* **Migration Behavior:** Running `npx prisma migrate deploy` executes existing SQL migrations sequentially against the target database (`DATABASE_URL`). It is **idempotent** and will only apply unapplied migrations.
+* **Database Isolation:** All commands below explicitly target `cinevenue_staging`. They will never touch production databases unless the user supplies a production connection string.
+
+### Windows PowerShell Database Backup & Rollback Runbook
+
+#### 1. Pre-Migration Staging Backup (Run in PowerShell)
+Before running migrations on staging, create a complete snapshot:
+```powershell
+# Windows PowerShell:
+pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f "cinevenue_staging_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').dump"
+```
+
+#### 2. Execute Prisma Migrations (Run in PowerShell)
+```powershell
+# Windows PowerShell (Sets DATABASE_URL for current session only):
+$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
+npx prisma migrate deploy
+```
+
+#### 3. Staging Database Rollback (If Migration Fails)
+If a newly applied migration needs to be rolled back:
+```powershell
+# Option A: Revert Prisma migration state record
+$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public"
+npx prisma migrate resolve --rolled-back [MIGRATION_DIRECTORY_NAME]
+
+# Option B: Restore from snapshot dump
+pg_restore -h [STAGING_HOST] -U postgres -d cinevenue_staging -v --clean "cinevenue_staging_backup_YYYYMMDD_HHMMSS.dump"
 ```
 
 ---
 
-## 2. STAGING INFRASTRUCTURE PROVISIONING
+## 4. SHARED REDIS STAGING SETUP & VERIFICATION
 
-### A. PostgreSQL Staging Database
-1. **Engine:** PostgreSQL 15.x or 16.x (AWS RDS, Neon, Supabase, or Railway).
-2. **Configuration Settings:**
-   * `max_connections`: $\ge 50$
-   * `statement_timeout`: `30000` (30 seconds)
-   * `idle_in_transaction_session_timeout`: `15000` (15 seconds to prevent hung transactions)
-3. **Database Migration Deployment:**
-   Run Prisma schema migrations directly against staging:
-   ```bash
-   DATABASE_URL="postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public" npx prisma migrate deploy
-   ```
-4. **Seed Baseline Entities:**
-   Populate initial sample movies, theatres, and pricing tiers:
-   ```bash
-   DATABASE_URL="postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public" npx tsx prisma/seed.ts
-   ```
+### Redis Requirements
+* **Engine:** Redis 7.x (Cloud instance or Docker container).
+* **Eviction Policy:** `volatile-ttl` or `noeviction` (Never use `allkeys-lru` for seat-locking).
+* **Production / Staging Guard:** The application validator strictly rejects `localhost` or `127.0.0.1` when `NODE_ENV=production`. `REDIS_URL` must point to an external shared Redis instance.
 
-### B. Shared Redis Staging Instance
-1. **Engine:** Redis 7.x (Redis Cloud, Upstash, or AWS ElastiCache).
-2. **Network Security:** Must be accessible over TLS (`rediss://`) or private VPC peering from both Vercel and Node backends.
-3. **Capacity:** 256MB to 1GB RAM is sufficient for staging (handles ~500,000 active 10-minute seat locks).
-4. **Eviction Policy:** `volatile-ttl` or `noeviction` (Critical: never use `allkeys-lru` for seat locks, as lock eviction before TTL would create double-booking race conditions).
-5. **Connectivity Verification:**
-   ```bash
-   redis-cli -u "redis://:[PASSWORD]@[STAGING_REDIS_HOST]:6379" ping
-   # Output must be: PONG
-   ```
+### Windows PowerShell Redis Verification Commands
+```powershell
+# Test Redis connectivity from Windows:
+$env:REDIS_URL = "redis://:[PASSWORD]@[STAGING_REDIS_HOST]:6379"
+
+# Send PING via redis-cli:
+redis-cli -u $env:REDIS_URL ping
+# Output must be: PONG
+
+# Test seat lock write & read (Simulated 10-minute hold):
+redis-cli -u $env:REDIS_URL set "seat_lock_test:show_1:seat_1" "usr_staging_test" EX 600 NX
+# Output: OK
+
+redis-cli -u $env:REDIS_URL get "seat_lock_test:show_1:seat_1"
+# Output: "usr_staging_test"
+
+# Clean up test lock:
+redis-cli -u $env:REDIS_URL del "seat_lock_test:show_1:seat_1"
+```
 
 ---
 
-## 3. VERIFIED HEALTH & READINESS ENDPOINTS
+## 5. COMPLETE WINDOWS POWERSHELL DEPLOYMENT RUNBOOK
 
-The CineVenue codebase provides three distinct health check endpoints. Use these for load balancer health checks and CI/CD deployment gates:
+Follow this sequential checklist to deploy and verify staging on Windows:
 
-### 1. Liveness Probe: `GET /health`
-* **Source:** Implemented in [`server/app.ts`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/server/app.ts#L71) and [`server/routes.ts`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/server/routes.ts#L57-L64).
-* **Vercel Rewrite:** Rewritten via [`vercel.json`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/vercel.json#L18-L20) to `/api/index.js`.
-* **Expected Response (HTTP 200):**
-  ```json
-  {
-    "status": "ok",
-    "timestamp": "2026-11-09T08:15:00.000Z",
-    "service": "CineVenue Canonical API",
-    "version": "2.0.0"
-  }
-  ```
+### Step 1: Local Build & Test Validation (Safe Local Execution)
+```powershell
+# Run in PowerShell from workspace root:
+npm run vercel-build
+npm test
+```
+*Expected: 0 build errors, 101/101 canonical tests passing.*
 
-### 2. Readiness Probe: `GET /api/v1/ready`
-* **Source:** Implemented in [`server/routes.ts`](file:///c:/Users/amani/OneDrive/Desktop/cinevenuefinal/server/routes.ts#L66-L78).
-* **Logic:** Dynamically tests live PostgreSQL database connection via `prisma.$queryRaw` AND Redis ping via `redis.isHealthy()`.
-* **Expected Response when Fully Operational (HTTP 200):**
-  ```json
-  {
-    "status": "ready",
-    "checks": {
-      "database": "connected",
-      "cache": "connected"
-    }
-  }
-  ```
-* **Degraded Response if Database or Redis is Down (HTTP 503):**
-  ```json
-  {
-    "status": "degraded",
-    "checks": {
-      "database": "connected",
-      "cache": "alert"
-    }
-  }
-  ```
+### Step 2: Apply Database Schema to Staging
+```powershell
+# Set temporary connection string and deploy Prisma schema:
+$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
+npx prisma migrate deploy
 
----
+# Clear session variable:
+Remove-Item env:DATABASE_URL
+```
 
-## 4. DEPLOYMENT SEQUENCE — STEP-BY-STEP
+### Step 3: Trigger Vercel Preview Deployment
+```powershell
+# Method A: Via Vercel CLI (Generates isolated preview URL without touching production):
+npx vercel
 
-### Option A: Vercel Full-Stack Deployment (Recommended)
-1. **Step 1 — Local Build & Verification:**
-   ```bash
-   npm run vercel-build
-   npm test
-   ```
-2. **Step 2 — Configure Environment Variables in Vercel:**
-   In Vercel Project Dashboard -> Settings -> Environment Variables, add all variables from [`CINEVENUE_STAGING_ENVIRONMENT_CHECKLIST.md`](file:///c:/Users/amani/.gemini/antigravity/brain/25abbfc5-3d3b-4a75-a6f3-71adefdaccd8/CINEVENUE_STAGING_ENVIRONMENT_CHECKLIST.md) targeting the **Preview** and **Production** environments.
-3. **Step 3 — Deploy to Staging Alias:**
-   ```bash
-   vercel --prod --name cinevenue-staging
-   ```
-4. **Step 4 — Probe Deployment Health:**
-   ```bash
-   curl -i https://staging.cinevenue.com/health
-   curl -i https://staging.cinevenue.com/api/v1/ready
-   ```
+# Method B: Via Git (Push staging branch to remote repository):
+# git push origin staging
+# Vercel Git integration will automatically build and deploy to a preview URL.
+```
 
----
+### Step 4: Verify Health & Readiness Endpoints
+Once the preview URL is generated (e.g. `https://staging.cinevenue.com`):
+```powershell
+# Test Liveness Probe (HTTP 200):
+Invoke-RestMethod -Uri "https://staging.cinevenue.com/health" -Method Get
 
-### Option B: Containerized Docker / Node Express Backend
-1. **Step 1 — Docker Build:**
-   ```dockerfile
-   FROM node:20-alpine AS builder
-   WORKDIR /app
-   COPY package*.json prisma ./
-   RUN npm ci
-   COPY . .
-   RUN npx prisma generate && npm run build
+# Test Readiness Probe (HTTP 200, DB & Cache connected):
+Invoke-RestMethod -Uri "https://staging.cinevenue.com/api/v1/ready" -Method Get
+```
 
-   FROM node:20-alpine AS runner
-   WORKDIR /app
-   ENV NODE_ENV=production
-   COPY package*.json ./
-   RUN npm ci --omit=dev
-   COPY --from=builder /app/dist ./dist
-   COPY --from=builder /app/dist-server ./dist-server
-   COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-   EXPOSE 5000
-   CMD ["node", "dist-server/server.cjs"]
-   ```
-2. **Step 2 — Launch Staging Container:**
-   ```bash
-   docker build -t cinevenue-staging:latest .
-   docker run -d --name cinevenue-staging \
-     -p 5000:5000 \
-     --env-file .env.staging \
-     cinevenue-staging:latest
-   ```
-3. **Step 3 — Verify Readiness:**
-   ```bash
-   curl -s http://localhost:5000/api/v1/ready | jq
-   ```
+### Step 5: Execute Automated Staging Smoke Test
+```powershell
+# Run smoke-test runner against staging preview URL:
+$env:STAGING_URL = "https://staging.cinevenue.com"
+npx tsx scripts/staging_smoke_test.ts
 
----
-
-## 5. INCIDENT RESPONSE & ZERO-DOWNTIME ROLLBACK RUNBOOK
-
-If any staging health probe fails or a critical regression is discovered during testing:
-
-### Scenario 1: Vercel Instant Rollback
-1. Open Vercel Project -> Deployments.
-2. Locate the previous operational staging deployment.
-3. Click **...** -> **Promote to Production** (or use CLI: `vercel rollback [deployment-id]`).
-4. Instant DNS switch completes in $< 5$ seconds without re-building.
-
-### Scenario 2: Database Migration Rollback
-If a newly applied migration causes query failures:
-1. Revert schema changes locally.
-2. Mark migration as rolled back in Prisma:
-   ```bash
-   DATABASE_URL="postgresql://..." npx prisma migrate resolve --rolled-back [migration_directory_name]
-   ```
-
-### Scenario 3: Redis Distributed Lock Purge
-If a test run leaves abandoned test seat locks:
-```bash
-# Connect to Redis CLI and flush database (STAGING ONLY)
-redis-cli -u $REDIS_URL FLUSHDB
+# Clear session variable:
+Remove-Item env:STAGING_URL
 ```

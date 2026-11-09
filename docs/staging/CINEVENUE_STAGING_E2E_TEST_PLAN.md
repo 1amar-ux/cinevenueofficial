@@ -47,13 +47,14 @@ flowchart LR
 ---
 
 ### Domain 3: Real-Time Seat Selection & Distributed Seat Locking
-* **Endpoint:** `POST /api/v1/theatres/shows/:showId/lock-seats`
+* **Endpoint:** `POST /api/v1/bookings/lock-seats`
 * **Test Procedure:**
-  1. User A locks seats `["s_A1", "s_A2"]` for show `show_staging_1` with TTL 600 seconds (10 minutes).
+  1. User A locks seats `["s_A1", "s_A2"]` for show `show_staging_1` with payload `{"showId": "show_staging_1", "seatIds": ["s_A1", "s_A2"], "userId": "user_A"}` with TTL 600 seconds (10 minutes).
   2. Inspect Redis: verify key `lock:show_staging_1:seat:s_A1` exists with value `{"userId": "user_A", ...}` and TTL $\approx 600$.
-  3. User B simultaneously attempts to lock `["s_A2", "s_A3"]`.
+  3. User B simultaneously attempts to lock `["s_A2", "s_A3"]` via `POST /api/v1/bookings/lock-seats`.
   4. Verify User B request is rejected with `HTTP 409 Conflict`.
   5. Verify partial collision cleanup: `s_A3` was rolled back and is completely free.
+  6. Release lock via `POST /api/v1/bookings/release-seats` with `{"showId": "show_staging_1", "seatIds": ["s_A1", "s_A2"], "userId": "user_A"}`.
 * **Pass Criteria:** Atomic Lua script guarantees zero split-brain seat hold.
 
 ---
@@ -196,15 +197,15 @@ async function runStagingConcurrencyAudit() {
 
   // Send simultaneous lock requests
   const [res1, res2] = await Promise.all([
-    fetch(`${STAGING_API_INSTANCE_1}/theatres/shows/${targetShowId}/lock-seats`, {
+    fetch(`${STAGING_API_INSTANCE_1}/bookings/lock-seats`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seatIds: [contestedSeat], userId: "user_alpha" })
+      body: JSON.stringify({ showId: targetShowId, seatIds: [contestedSeat], userId: "user_alpha" })
     }),
-    fetch(`${STAGING_API_INSTANCE_2}/theatres/shows/${targetShowId}/lock-seats`, {
+    fetch(`${STAGING_API_INSTANCE_2}/bookings/lock-seats`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seatIds: [contestedSeat], userId: "user_beta" })
+      body: JSON.stringify({ showId: targetShowId, seatIds: [contestedSeat], userId: "user_beta" })
     })
   ]);
 
