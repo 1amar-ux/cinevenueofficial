@@ -1,6 +1,6 @@
 # CINEVENUE — STAGING DEPLOYMENT RUNBOOK (WINDOWS POWERSHELL & VERCEL PREVIEW)
 
-**Document Version:** 1.4.0  
+**Document Version:** 1.5.0  
 **Target Environment:** Staging / Pre-Production (Isolated Vercel Preview & Node Staging)  
 **Security Standard:** Strict Sandbox, Zero-Mock, Fail-Closed, No-Live-Transactions  
 **Last Verified:** November 9, 2026  
@@ -86,6 +86,7 @@ The following configuration properties have been verified from the local codebas
 * ❌ **NEVER execute database reset or truncate commands.**
 * ❌ **DO NOT assume `prisma db push` is non-destructive.**
 * ❌ **DO NOT automatically chain schema diff inspection into schema application.** Schema application requires separate, explicit manual review and approval.
+* 🔒 **DATABASE_URL MUST be cleaned up via `try ... finally` blocks** on every execution path.
 * ⚠️ **A reliable schema diff cannot be generated without an active connection to the staging database.** This is documented as a **Pending External Verification**.
 
 ---
@@ -102,89 +103,105 @@ Write-Host "Creating pre-migration database snapshot: $backupFile..." -Foregroun
 # Create full PostgreSQL binary snapshot dump before touching the database:
 pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f $backupFile
 
+# 1. Exit code validation:
 if ($LASTEXITCODE -ne 0) {
     throw "🛑 FATAL: pg_dump backup failed with exit code $LASTEXITCODE. Database modification cannot proceed."
 }
-Write-Host "✅ Database snapshot successfully created and verified: $backupFile" -ForegroundColor Green
+
+# 2. File existence validation:
+if (-not (Test-Path $backupFile)) {
+    throw "🛑 FATAL: pg_dump exited with code 0 but backup file '$backupFile' does not exist on disk."
+}
+
+# 3. Non-empty file validation:
+$backupItem = Get-Item $backupFile
+if ($backupItem.Length -eq 0) {
+    Remove-Item $backupFile -Force -ErrorAction SilentlyContinue
+    throw "🛑 FATAL: pg_dump created a 0-byte (empty) backup file. Backup snapshot is invalid. Database modification cannot proceed."
+}
+
+Write-Host "✅ Database snapshot verified: $backupFile ($($backupItem.Length) bytes)" -ForegroundColor Green
 ```
 
-### Step B: Dry-Run Schema Diff Generation with Strict Error & Hazard Traps
+### Step B: Dry-Run Schema Diff Generation with `try ... finally` Credential Scrubber
 ```powershell
-# Set temporary connection string targeting cinevenue_staging:
-$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
 $diffFile = "staging_schema_diff.sql"
-
-# Clean up any stale diff file:
 if (Test-Path $diffFile) { Remove-Item $diffFile -Force }
 
-Write-Host "Generating dry-run schema diff..." -ForegroundColor Cyan
-npx prisma migrate diff `
-  --from-url "$env:DATABASE_URL" `
-  --to-schema-datamodel prisma/schema.prisma `
-  --script > $diffFile
+$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
 
-# 1. Immediate exit code check:
-if ($LASTEXITCODE -ne 0) {
-    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
-    throw "🛑 FATAL: 'prisma migrate diff' failed with exit code $LASTEXITCODE. Could not generate reliable schema diff. Aborting."
-}
+try {
+    Write-Host "Generating dry-run schema diff..." -ForegroundColor Cyan
+    npx prisma migrate diff `
+      --from-url "$env:DATABASE_URL" `
+      --to-schema-datamodel prisma/schema.prisma `
+      --script > $diffFile
 
-# 2. File existence and non-empty validation:
-if (-not (Test-Path $diffFile)) {
-    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
-    throw "🛑 FATAL: Schema diff file '$diffFile' was not created. Procedure halted."
-}
-
-$fileItem = Get-Item $diffFile
-if ($fileItem.Length -eq 0) {
-    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
-    Write-Host "ℹ️ Schema diff file is 0 bytes. Target database schema is already in sync with prisma/schema.prisma. No schema change needed." -ForegroundColor Green
-    return
-}
-
-# 3. Automated Hazardous Statement Detection (Strict Failure Trap):
-$destructivePatterns = @(
-    "DROP TABLE",
-    "DROP COLUMN",
-    "TRUNCATE",
-    "ALTER COLUMN.*TYPE",
-    "DROP SEQUENCE",
-    "DROP INDEX",
-    "DROP TYPE",
-    "DROP SCHEMA",
-    "CASCADE"
-)
-
-$detectedHazardousLines = @()
-foreach ($pattern in $destructivePatterns) {
-    $matches = Select-String -Path $diffFile -Pattern $pattern
-    if ($matches) {
-        $detectedHazardousLines += $matches
+    # 1. Immediate exit code check:
+    if ($LASTEXITCODE -ne 0) {
+        throw "🛑 FATAL: 'prisma migrate diff' failed with exit code $LASTEXITCODE. Could not generate reliable schema diff. Aborting."
     }
-}
 
-if ($detectedHazardousLines.Count -gt 0) {
-    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
-    Write-Host "🛑 TERMINATING ERROR: Destructive or potentially hazardous SQL detected in '$diffFile'!" -ForegroundColor Red
-    $detectedHazardousLines | ForEach-Object {
-        Write-Host "   Line $($_.LineNumber): $($_.Line.Trim())" -ForegroundColor Yellow
+    # 2. File existence validation:
+    if (-not (Test-Path $diffFile)) {
+        throw "🛑 FATAL: Schema diff file '$diffFile' was not created. Comparison could not be verified."
     }
-    throw "🛑 SAFETY GATE ABORT: Automated schema application is strictly forbidden when destructive SQL is detected. Never pass --accept-data-loss or --force-reset."
+
+    # 3. Non-empty inspection:
+    $fileItem = Get-Item $diffFile
+    if ($fileItem.Length -eq 0) {
+        Write-Host "ℹ️ Schema diff file is 0 bytes. Target database schema has zero pending changes and matches prisma/schema.prisma." -ForegroundColor Green
+        Write-Host "No schema modification needed." -ForegroundColor Green
+        return
+    }
+
+    # 4. Automated Hazardous Statement Detection (Strict Failure Trap):
+    $destructivePatterns = @(
+        "DROP TABLE",
+        "DROP COLUMN",
+        "TRUNCATE",
+        "ALTER COLUMN.*TYPE",
+        "DROP SEQUENCE",
+        "DROP INDEX",
+        "DROP TYPE",
+        "DROP SCHEMA",
+        "CASCADE"
+    )
+
+    $detectedHazardousLines = @()
+    foreach ($pattern in $destructivePatterns) {
+        $matches = Select-String -Path $diffFile -Pattern $pattern
+        if ($matches) {
+            $detectedHazardousLines += $matches
+        }
+    }
+
+    if ($detectedHazardousLines.Count -gt 0) {
+        Write-Host "🛑 TERMINATING ERROR: Destructive or potentially hazardous SQL detected in '$diffFile'!" -ForegroundColor Red
+        $detectedHazardousLines | ForEach-Object {
+            Write-Host "   Line $($_.LineNumber): $($_.Line.Trim())" -ForegroundColor Yellow
+        }
+        throw "🛑 SAFETY GATE ABORT: Automated schema application is strictly forbidden when destructive SQL is detected. Never pass --accept-data-loss or --force-reset."
+    }
+
+    Write-Host "✅ Automated scan found 0 known destructive keywords." -ForegroundColor Green
+    Write-Host "⚠️ MANDATORY GATE: Keyword matching alone is NOT sufficient." -ForegroundColor Yellow
+    Write-Host "Open '$diffFile' and inspect every SQL statement manually before approving." -ForegroundColor Yellow
+
+    # Display first 50 lines for inspection:
+    Get-Content $diffFile | Select-Object -First 50
+
+    # SCRIPT TERMINATES HERE. IT DOES NOT AUTOMATICALLY EXECUTE 'prisma db push'.
+    Write-Host "`n==========================================================================" -ForegroundColor Cyan
+    Write-Host "MANUAL REVIEW REQUIRED: Inspect '$diffFile' completely." -ForegroundColor Cyan
+    Write-Host "If and ONLY if manual review confirms all statements are safe:" -ForegroundColor Cyan
+    Write-Host "Execute Step C separately in a new terminal session." -ForegroundColor Cyan
+    Write-Host "==========================================================================" -ForegroundColor Cyan
+} finally {
+    # GUARANTEED CLEANUP on every execution path (throw, return, or exit)
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+    Write-Host "🔒 Session cleanup: DATABASE_URL successfully removed from environment." -ForegroundColor Gray
 }
-
-Write-Host "✅ Automated scan found 0 known destructive keywords." -ForegroundColor Green
-Write-Host "⚠️ MANDATORY GATE: Keyword matching alone is NOT sufficient." -ForegroundColor Yellow
-Write-Host "Open '$diffFile' and inspect every SQL statement manually before approving." -ForegroundColor Yellow
-
-# Display first 50 lines for inspection:
-Get-Content $diffFile | Select-Object -First 50
-
-# SCRIPT TERMINATES HERE. IT DOES NOT AUTOMATICALLY EXECUTE 'prisma db push'.
-Write-Host "`n==========================================================================" -ForegroundColor Cyan
-Write-Host "MANUAL REVIEW REQUIRED: Inspect '$diffFile' completely." -ForegroundColor Cyan
-Write-Host "If and ONLY if manual review confirms all statements are safe:" -ForegroundColor Cyan
-Write-Host "Execute Step C separately in a new terminal session." -ForegroundColor Cyan
-Write-Host "==========================================================================" -ForegroundColor Cyan
 ```
 
 ### Step C: Apply Schema to Staging (SEPARATE MANUAL STEP — ONLY After Diff Approval)
@@ -192,20 +209,21 @@ Write-Host "====================================================================
 > This step MUST be executed separately and manually. It is never automatically called by the diff script.
 
 ```powershell
-# Set temporary connection string:
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
 
-# Apply verified additive schema:
-npx prisma db push
+try {
+    # Apply verified additive schema:
+    npx prisma db push
 
-if ($LASTEXITCODE -ne 0) {
+    if ($LASTEXITCODE -ne 0) {
+        throw "🛑 FATAL: 'prisma db push' failed with exit code $LASTEXITCODE."
+    }
+
+    Write-Host "✅ Staging database schema updated successfully." -ForegroundColor Green
+} finally {
     Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
-    throw "🛑 FATAL: 'prisma db push' failed with exit code $LASTEXITCODE."
+    Write-Host "🔒 Session cleanup: DATABASE_URL successfully removed from environment." -ForegroundColor Gray
 }
-
-# Immediately remove session variable:
-Remove-Item env:DATABASE_URL
-Write-Host "✅ Staging database schema updated successfully." -ForegroundColor Green
 ```
 
 ### Step D: Staging Database Rollback Procedure (Emergency Recovery)
@@ -330,7 +348,12 @@ git push origin staging:staging
 ### Step 4: Staging Database Backup (Pre-Migration Safety Snapshot)
 ```powershell
 # Create snapshot of staging database:
-pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f "cinevenue_staging_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').dump"
+$backupFile = "cinevenue_staging_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').dump"
+pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f $backupFile
+
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $backupFile) -or (Get-Item $backupFile).Length -eq 0) {
+    throw "🛑 FATAL: Backup validation failed. Halting."
+}
 ```
 
 ---
@@ -348,8 +371,12 @@ pg_dump -h [STAGING_HOST] -U postgres -d cinevenue_staging -F c -b -v -f "cineve
 ```powershell
 # ONLY after completing manual review and sign-off in Step 5:
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@[STAGING_HOST]:5432/cinevenue_staging?schema=public&connection_limit=20"
-npx prisma db push
-Remove-Item env:DATABASE_URL
+try {
+    npx prisma db push
+    if ($LASTEXITCODE -ne 0) { throw "🛑 FATAL: 'prisma db push' failed." }
+} finally {
+    Remove-Item env:DATABASE_URL -ErrorAction SilentlyContinue
+}
 ```
 
 ---
