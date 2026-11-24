@@ -61,4 +61,14 @@ export const updateProfileSchema = z.object({
   profileImageUrl: z.string().url("Please provide a valid avatar URL").optional().nullable().or(z.literal(""))
 }).strict();
 
+export const sendOtpSchema = z.object({
+  identifier: z.string().min(3, "Identifier (email or mobile number) is required"),
+  type: z.enum(["VERIFY_ACCOUNT", "LOGIN", "SIGNUP", "RESET_PASSWORD"]).optional().default("VERIFY_ACCOUNT")
+});
+
+export const verifyOtpSchema = z.object({
+  identifier: z.string().min(3, "Identifier is required"),
+  otp: z.string().regex(/^\d{4}$/, "Verification code must be exactly 4 digits")
+});
+
 

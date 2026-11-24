@@ -1,15 +1,16 @@
 import React, { useState, useContext } from "react";
-import { X, Mail, Lock, User, Phone, ArrowRight, ArrowLeft, KeyRound, CheckCircle2 } from "lucide-react";
+import { X, Mail, Lock, User, Phone, ArrowRight, ArrowLeft, KeyRound, CheckCircle2, Sparkles } from "lucide-react";
 import CineVenueLogo from "./CineVenueLogo";
 import apiClient from "../services/apiClient";
 import { AuthContext } from "../context/AuthContext";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { GlassyOtpVerification } from "./GlassyOtpVerification";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess: (email: string) => void;
-  initialMode?: "signin" | "signup" | "forgot";
+  initialMode?: "signin" | "signup" | "forgot" | "reset" | "otp";
   registeredUsers?: any;
   onRegisterUser?: any;
   superAdminEmail?: any;
@@ -20,7 +21,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = "signin" }: AuthModalProps) {
   const { signInWithGoogle, login, refreshSession } = useContext(AuthContext);
-  const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "reset">(initialMode);
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "reset" | "otp">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +29,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [otpIdentifier, setOtpIdentifier] = useState("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -278,6 +280,31 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
     }
   };
 
+  const handleInitiateOtp = async (targetId?: string) => {
+    const id = (targetId || otpIdentifier || form.email || form.mobile || forgotIdentifier).trim();
+    if (!id) {
+      setErrorMessage("Please enter your registered mobile number or email address.");
+      return;
+    }
+    setIsLoading(true);
+    setErrorMessage("");
+    try {
+      const res = await apiClient.post("/auth/send-otp", {
+        identifier: id,
+        type: "LOGIN",
+      });
+      setOtpIdentifier(id);
+      if (res.data?.code) {
+        setOtpDeliveredCode(res.data.code);
+      }
+      setMode("otp");
+    } catch (err: any) {
+      setErrorMessage(err.response?.data?.message || err.message || "Failed to send OTP code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogle = async () => {
     if (isGoogleLoading) return;
     setIsGoogleLoading(true);
@@ -367,7 +394,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               {mode === "signup" && "Create your account"}
               {mode === "forgot" && "Forgot Password"}
               {mode === "reset" && "Verify OTP & Reset Password"}
+              {mode === "otp" && "Glassy OTP Verification"}
             </h2>
+            {mode === "otp" && (
+              <p className="mt-1 text-xs text-white/60">
+                Experience seamless, encrypted single-use OTP verification.
+              </p>
+            )}
             {mode === "forgot" && (
               <p className="mt-1 text-xs text-white/60">
                 Enter your registered mobile number or email. A 6-digit OTP will be dispatched for verification.
@@ -392,7 +425,57 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "otp" && otpIdentifier ? (
+            <div className="py-2">
+              <GlassyOtpVerification
+                embedded={true}
+                identifier={otpIdentifier}
+                initialDevCode={otpDeliveredCode}
+                onSuccess={async (data) => {
+                  setSuccessMessage("Your account has been securely verified.");
+                  onAuthSuccess(data.identifier);
+                  setTimeout(() => {
+                    onClose();
+                  }, 1200);
+                }}
+                onCancel={() => {
+                  setMode("signin");
+                }}
+                title="Verify Access"
+                subtitle="Enter 4-digit code to complete verification"
+              />
+            </div>
+          ) : mode === "otp" ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">
+                  Mobile Number or Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3.5 h-4 w-4 text-white/40" />
+                  <input
+                    type="text"
+                    value={form.email}
+                    onChange={(e) => {
+                      setForm((prev) => ({ ...prev, email: e.target.value }));
+                      setErrorMessage("");
+                    }}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-gold"
+                    placeholder="Enter phone or email"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleInitiateOtp(form.email)}
+                disabled={isLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-gold-light disabled:opacity-60 cursor-pointer shadow-lg shadow-gold/20"
+              >
+                {isLoading ? "Sending OTP..." : <>Send Verification OTP <ArrowRight className="h-4 w-4" /></>}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {/* SIGN UP FIELDS */}
             {mode === "signup" && (
               <>
@@ -523,6 +606,23 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                     Forgot Password?
                   </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = form.email.trim();
+                    if (id) {
+                      handleInitiateOtp(id);
+                    } else {
+                      setOtpIdentifier("");
+                      setMode("otp");
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-gold/30 bg-gold/5 py-2.5 px-3 text-xs font-semibold text-gold transition hover:border-gold hover:bg-gold/15 cursor-pointer shadow-sm"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-gold" />
+                  <span>Sign In with Animated Glassy OTP</span>
+                </button>
               </>
             )}
 
@@ -781,6 +881,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               </>
             )}
           </form>
+        )}
 
           {/* BOTTOM SWITCHER */}
           <div className="mt-5 text-center text-sm text-white/60">
@@ -818,7 +919,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
               </>
             )}
 
-            {(mode === "forgot" || mode === "reset") && (
+            {(mode === "forgot" || mode === "reset" || mode === "otp") && (
               <button
                 type="button"
                 onClick={() => {

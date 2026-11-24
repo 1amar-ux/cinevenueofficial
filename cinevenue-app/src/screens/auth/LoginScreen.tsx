@@ -15,6 +15,7 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../constants/theme
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../store/AuthContext';
+import { authApi } from '../../api/authApi';
 
 export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -110,6 +111,32 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             loading={loading}
             style={styles.loginBtn}
           />
+
+          <TouchableOpacity
+            style={styles.otpBtn}
+            onPress={async () => {
+              if (!email.trim()) {
+                Alert.alert('Identifier Required', 'Please enter your email or mobile number first.');
+                return;
+              }
+              setLoading(true);
+              try {
+                const res = await authApi.sendOtp(email.trim(), 'LOGIN');
+                navigation.navigate('OtpVerification', {
+                  identifier: email.trim(),
+                  initialDevCode: res?.code || res?.devCode || '',
+                  type: 'LOGIN',
+                });
+              } catch (err: any) {
+                Alert.alert('OTP Request Error', err.message || 'Unable to send OTP at this time.');
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Ionicons name="sparkles" size={16} color={Colors.gold} style={{ marginRight: 6 }} />
+            <Text style={styles.otpBtnText}>SIGN IN WITH ANIMATED OTP</Text>
+          </TouchableOpacity>
 
           {/* Social / Google & Guest Logins */}
           <View style={styles.dividerRow}>
@@ -227,7 +254,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   loginBtn: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  otpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: BorderRadius.md || 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.4)',
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    marginBottom: Spacing.sm,
+  },
+  otpBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.gold,
+    letterSpacing: 0.5,
   },
   dividerRow: {
     flexDirection: 'row',

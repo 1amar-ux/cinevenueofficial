@@ -140,6 +140,52 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> sendOtp({
+    required String identifier,
+    String type = 'LOGIN',
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.sendOtp,
+      data: {
+        'identifier': identifier.trim(),
+        'type': type,
+      },
+    );
+    return response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : {'success': true};
+  }
+
+  Future<Map<String, dynamic>> verifyOtp({
+    required String identifier,
+    required String otp,
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.verifyOtp,
+      data: {
+        'identifier': identifier.trim(),
+        'otp': otp.trim(),
+      },
+    );
+
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final token = data['token'] ?? data['data']?['tokens']?['accessToken'] ?? data['data']?['token'];
+      final refreshToken = data['refreshToken'] ?? data['data']?['tokens']?['refreshToken'];
+      if (token != null) {
+        await _storageService.saveAccessToken(token.toString());
+      }
+      if (refreshToken != null) {
+        await _storageService.saveRefreshToken(refreshToken.toString());
+      }
+      if (data['data']?['user'] != null) {
+        await _storageService.saveUserProfile(jsonEncode(data['data']['user']));
+      }
+      return data;
+    }
+    return {'success': true, 'verified': true};
+  }
+
   Future<bool> isAuthenticated() async {
     final token = await _storageService.getAccessToken();
     return token != null && token.isNotEmpty;

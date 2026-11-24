@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../auth_service.dart';
+import 'otp_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -180,6 +181,65 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                           )
                         : const Text('Sign In'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Animated OTP Login Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            final email = _emailController.text.trim();
+                            if (email.isEmpty) {
+                              setState(() {
+                                _errorMessage = 'Please enter your email address to send an OTP.';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              _isLoading = true;
+                              _errorMessage = null;
+                            });
+                            try {
+                              final res = await _authService.sendOtp(identifier: email, type: 'LOGIN');
+                              if (mounted) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => OtpVerificationScreen(
+                                      identifier: email,
+                                      initialDevCode: res['code']?.toString() ?? res['devCode']?.toString(),
+                                      onVerificationSuccess: widget.onLoginSuccess,
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setState(() {
+                                _errorMessage = e.toString().replaceAll('ApiException: ', '');
+                              });
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                              }
+                            }
+                          },
+                    icon: const Icon(Icons.auto_awesome, color: Color(0xFFD4AF37), size: 18),
+                    label: const Text(
+                      'Sign In with Animated OTP',
+                      style: TextStyle(
+                        color: Color(0xFF997D22),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0x66D4AF37)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),

@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { authService } from "./auth.service";
 import { UnauthorizedError } from "../../shared/errors";
 import { auditEntryLogService } from "../../services/auditEntryLogService";
+import { env } from "../../config/env";
+import { logger } from "../../shared/logger";
 
 export class AuthController {
   private setSessionCookies = (res: Response, tokens: { accessToken: string; refreshToken: string }) => {
@@ -291,6 +293,41 @@ export class AuthController {
         status: "SUCCESS",
         actorEmail: identifier,
         details: `Password reset completed successfully for identifier: ${identifier || "token-holder"}`,
+        req
+      });
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public sendOtp = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const identifier = String(req.body.identifier || req.body.email || req.body.mobile || "");
+      const type = String(req.body.type || "VERIFY_ACCOUNT");
+      const result = await authService.sendOtp(identifier, type);
+      auditEntryLogService.recordAuthEvent({
+        activity: "OTP_DISPATCHED",
+        status: "SUCCESS",
+        actorEmail: identifier,
+        details: `4-Digit OTP dispatched for ${type} to identifier: ${identifier}`,
+        req
+      });
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { identifier, otp } = req.body;
+      const result = await authService.verifyOtp(identifier, otp);
+      auditEntryLogService.recordAuthEvent({
+        activity: "OTP_VERIFIED",
+        status: "SUCCESS",
+        actorEmail: identifier,
+        details: `4-Digit OTP verified successfully for identifier: ${identifier}`,
         req
       });
       return res.json(result);

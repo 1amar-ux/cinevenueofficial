@@ -9,6 +9,7 @@ import { useAppSettings } from '../store/AppSettingsContext';
 import { MainTabNavigator } from './MainTabNavigator';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
+import { OtpVerificationScreen } from '../screens/auth/OtpVerificationScreen';
 import { GlobalSearchScreen } from '../screens/home/GlobalSearchScreen';
 import { LocationSelectScreen } from '../screens/home/LocationSelectScreen';
 import { MovieDetailsScreen } from '../screens/movies/MovieDetailsScreen';
@@ -103,6 +104,11 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="OtpVerification"
+          component={OtpVerificationScreen}
           options={{ animation: 'slide_from_right' }}
         />
 

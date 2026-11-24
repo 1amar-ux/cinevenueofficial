@@ -10,6 +10,7 @@ import { runFraudTrustTests } from "./unit/fraudTrust.test";
 import { runEntertainmentAnalyticsTests } from "./unit/entertainmentAnalytics.test";
 import { runGlobalSyncTests } from "./unit/globalSync.test";
 import { runTicketVerificationTests } from "./unit/ticketVerification.test";
+import { runOtpVerificationTests } from "./unit/otp_verification.test";
 
 async function main() {
   console.log("==========================================");
@@ -142,6 +143,18 @@ async function main() {
   console.log("\n--- 11. Automatic QR Ticket Generation & Multi-Seat Verification Tests ---");
   const ticketResults = await runTicketVerificationTests();
   for (const r of ticketResults) {
+    if (r.passed) {
+      console.log(`  ✅ PASS: ${r.name}`);
+      totalPassed++;
+    } else {
+      console.error(`  ❌ FAIL: ${r.name} - ${r.error}`);
+      totalFailed++;
+    }
+  }
+
+  console.log("\n--- 12. 4-Digit Glassy OTP Verification Suite ---");
+  const otpResults = await runOtpVerificationTests();
+  for (const r of otpResults) {
     if (r.passed) {
       console.log(`  ✅ PASS: ${r.name}`);
       totalPassed++;

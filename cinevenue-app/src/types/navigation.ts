@@ -4,6 +4,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  OtpVerification: { identifier: string; initialDevCode?: string; type?: string };
   GlobalSearch: undefined;
   LocationSelect: undefined;
   MovieDetails: { movieId: string; title: string };

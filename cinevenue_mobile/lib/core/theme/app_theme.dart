@@ -15,6 +15,13 @@ class AppColors {
   static const Color textMuted = Color(0xFFA0AEC0);
   static const Color border = Color(0xFFE5ECF5);
   static const Color danger = Color(0xFFEF4444);
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color goldLight = Color(0xFFF3E5AB);
+  static const Color goldDark = Color(0xFF997D22);
+  static const Color goldBronze = Color(0xFFC59B27);
+  static const Color darkBackground = Color(0xFF0A0A0B);
+  static const Color darkSurface = Color(0xFF141418);
+  static const Color successGreen = Color(0xFF10B981);
   static const Color seatAvailable = Color(0xFFE2E8F0);
   static const Color seatSelected = Color(0xFF4F8CFF);
   static const Color seatBooked = Color(0xFF94A3B8);

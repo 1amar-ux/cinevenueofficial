@@ -17,6 +17,8 @@ class ApiEndpoints {
   static const String updateProfile = '/auth/me';
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
+  static const String sendOtp = '/auth/send-otp';
+  static const String verifyOtp = '/auth/verify-otp';
 
   // Movies
   static const String movies = '/movies';

@@ -48,6 +48,20 @@ export const authApi = {
     return res.data;
   },
 
+  sendOtp: async (identifier: string, type: string = 'LOGIN') => {
+    const res = await apiClient.post('/auth/send-otp', { identifier, type });
+    return res.data;
+  },
+
+  verifyOtp: async (identifier: string, otp: string) => {
+    const res = await apiClient.post('/auth/verify-otp', { identifier, otp });
+    const token = res.data?.token || res.data?.data?.tokens?.accessToken;
+    if (token) {
+      await setAuthToken(token);
+    }
+    return res.data;
+  },
+
   updateProfile: async (data: Partial<UserProfile>) => {
     const res = await apiClient.put('/auth/profile', data);
     return res.data;

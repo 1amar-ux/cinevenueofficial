@@ -9,7 +9,9 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   googleAuthSchema,
-  updateProfileSchema
+  updateProfileSchema,
+  sendOtpSchema,
+  verifyOtpSchema
 } from "./auth.validation";
 
 const router = Router();
@@ -18,6 +20,8 @@ router.post("/register", validate({ body: registerSchema }), authController.regi
 router.post("/login", validate({ body: loginSchema }), authController.login);
 router.get("/verify-email", authController.verifyEmail);
 router.post("/resend-verification", authController.resendVerification);
+router.post("/send-otp", validate({ body: sendOtpSchema }), authController.sendOtp);
+router.post("/verify-otp", validate({ body: verifyOtpSchema }), authController.verifyOtp);
 router.post("/google", validate({ body: googleAuthSchema }), authController.googleLogin);
 router.post("/oauth", validate({ body: googleAuthSchema }), authController.googleLogin);
 router.post("/sync", validate({ body: googleAuthSchema }), authController.googleLogin);
