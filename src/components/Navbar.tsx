@@ -263,13 +263,13 @@ export default function Navbar({
           {/* Top Search Input: Visible on 2xl screens */}
           {setSearchQuery && (
             <div className="hidden 2xl:flex items-center relative w-44 xl:w-52">
-              <Search className="w-3.5 h-3.5 text-slate-400 dark:text-white/40 absolute left-3 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-[#7E8590] dark:text-white/40 absolute left-3 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search movies, venues..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-100 hover:bg-slate-200/70 focus:bg-white dark:bg-white/[0.06] dark:hover:bg-white/[0.08] dark:focus:bg-black/80 border border-slate-200 dark:border-white/10 focus:border-yellow-400 dark:focus:border-gold/50 rounded-full pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/40 focus:outline-none transition-all shadow-xs"
+                className="w-full bg-white hover:bg-[#FAF7F2] focus:bg-white dark:bg-white/[0.06] dark:hover:bg-white/[0.08] dark:focus:bg-black/80 border border-[#E5DED1] dark:border-white/10 focus:border-[#A87932] dark:focus:border-gold/50 rounded-full pl-8 pr-3 py-1.5 text-xs text-[#24344B] dark:text-white placeholder:text-[#7E8590] dark:placeholder:text-white/40 focus:outline-none transition-all shadow-xs"
               />
             </div>
           )}
@@ -286,7 +286,7 @@ export default function Navbar({
           <button
             type="button"
             onClick={handleOpenSettingsAction}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 hover:bg-yellow-100/70 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-slate-700 hover:text-black dark:text-white/80 dark:hover:text-gold active:scale-95 transition-all cursor-pointer shadow-xs dark:shadow-none shrink-0"
+            className="flex items-center justify-center w-8 h-8 rounded-full border border-[#E5DED1] dark:border-white/10 bg-white hover:bg-[#FAF3E6] dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-[#24344B] hover:text-[#1B2A3D] dark:text-white/80 dark:hover:text-gold active:scale-95 transition-all cursor-pointer shadow-xs dark:shadow-none shrink-0"
             title="Application Settings & Preferences"
             aria-label="Settings"
           >
@@ -297,11 +297,11 @@ export default function Navbar({
           <button
             type="button"
             onClick={handleOpenPasses}
-            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-yellow-400/80 bg-[#FEF08A] hover:bg-[#FDE047] active:scale-95 text-slate-950 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs sm:shadow-sm transition-all cursor-pointer shrink-0"
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#1B2A3D] dark:border-gold bg-[#1B2A3D] hover:bg-[#131E2D] active:scale-95 text-white dark:bg-gold dark:hover:bg-gold-light dark:text-black text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-xs sm:shadow-sm transition-all cursor-pointer shrink-0"
             title="My Bookings & Event Passes"
             aria-label="My Passes"
           >
-            <Ticket className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+            <Ticket className="w-3.5 h-3.5 text-white dark:text-black shrink-0" />
             <span className="hidden xs:inline sm:inline">My Passes</span>
           </button>
 
@@ -340,8 +340,8 @@ export default function Navbar({
               }}
               title={userEmail.toLowerCase().includes("superadmin") ? "Account Profile" : `Account: ${userEmail}`}
             >
-              <div className="w-6 h-6 rounded-full bg-[#FDE047] text-black border border-[#FACC15] flex items-center justify-center text-[10px] sm:text-[11px] font-extrabold shadow-xs shrink-0">
-                {userEmail.toLowerCase().includes("superadmin") ? <User className="w-3 h-3 text-black" /> : (userInitials || <User className="w-3 h-3 text-black" />)}
+              <div className="w-6 h-6 rounded-full bg-[#1B2A3D] text-white border border-[#24344B] dark:bg-gold dark:text-black dark:border-gold flex items-center justify-center text-[10px] sm:text-[11px] font-extrabold shadow-xs shrink-0">
+                {userEmail.toLowerCase().includes("superadmin") ? <User className="w-3 h-3 text-white dark:text-black" /> : (userInitials || <User className="w-3 h-3 text-white dark:text-black" />)}
               </div>
               <span className="hidden lg:inline text-[11px] font-bold text-slate-900 dark:text-white/90 max-w-[70px] truncate">
                 {userEmail.toLowerCase().includes("superadmin") ? "Admin" : userEmail.split("@")[0]}
@@ -377,7 +377,7 @@ export default function Navbar({
                   if (onOpenAuth) onOpenAuth("signup");
                   else window.location.href = "/register";
                 }}
-                className="hidden md:inline-flex rounded-full bg-[#FDE047] hover:bg-[#FEF08A] px-3 py-1.5 text-xs text-black font-black border border-yellow-400/80 shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
+                className="hidden md:inline-flex rounded-full bg-[#1B2A3D] hover:bg-[#131E2D] px-3 py-1.5 text-xs text-white font-bold border border-[#1B2A3D] dark:bg-gold dark:hover:bg-gold-light dark:text-black dark:border-gold shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign Up
               </button>
@@ -410,14 +410,14 @@ export default function Navbar({
                 setMobileMenuOpen(false);
                 handleOpenPasses();
               }}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-yellow-100/80 dark:bg-gold/15 border border-yellow-300 dark:border-gold/30 text-left cursor-pointer hover:bg-yellow-200/80 dark:hover:bg-gold/25 transition-all"
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF3E6] dark:bg-gold/15 border border-[#E5DED1] dark:border-gold/30 text-left cursor-pointer hover:bg-[#EBE5DA] dark:hover:bg-gold/25 transition-all"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#FDE047] text-black flex items-center justify-center shrink-0 shadow-xs">
-                <Ticket className="w-4 h-4 text-black" />
+              <div className="w-7 h-7 rounded-lg bg-[#1B2A3D] text-white dark:bg-gold dark:text-black flex items-center justify-center shrink-0 shadow-xs">
+                <Ticket className="w-4 h-4 text-white dark:text-black" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-black text-slate-950 dark:text-amber-200 leading-tight truncate">My Passes</div>
-                <div className="text-[10px] text-slate-600 dark:text-amber-300/70 truncate">Tickets & Orders</div>
+                <div className="text-xs font-black text-[#24344B] dark:text-amber-200 leading-tight truncate">My Passes</div>
+                <div className="text-[10px] text-[#555B65] dark:text-amber-300/70 truncate">Tickets & Orders</div>
               </div>
             </button>
 
@@ -657,8 +657,8 @@ export default function Navbar({
                     else window.location.href = "/account";
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#FDE047] text-black border border-[#FACC15] flex items-center justify-center text-xs font-extrabold shrink-0 shadow-xs">
-                    {userEmail.toLowerCase().includes("superadmin") ? <User className="w-4 h-4 text-black" /> : (userInitials || <User className="w-4 h-4 text-black" />)}
+                  <div className="w-8 h-8 rounded-full bg-[#1B2A3D] text-white border border-[#24344B] dark:bg-gold dark:text-black dark:border-gold flex items-center justify-center text-xs font-extrabold shrink-0 shadow-xs">
+                    {userEmail.toLowerCase().includes("superadmin") ? <User className="w-4 h-4 text-white dark:text-black" /> : (userInitials || <User className="w-4 h-4 text-white dark:text-black" />)}
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
@@ -698,7 +698,7 @@ export default function Navbar({
                     if (onOpenAuth) onOpenAuth("signup"); 
                     else window.location.href = "/register"; 
                   }}
-                  className="flex-1 rounded-xl bg-[#FDE047] hover:bg-[#FEF08A] py-2.5 text-center text-xs font-black text-black border border-yellow-400/80 shadow-md shadow-yellow-400/25 transition-all cursor-pointer"
+                  className="flex-1 rounded-xl bg-[#1B2A3D] hover:bg-[#131E2D] py-2.5 text-center text-xs font-black text-white border border-[#1B2A3D] dark:bg-gold dark:hover:bg-gold-light dark:text-black dark:border-gold shadow-md shadow-navy/20 transition-all cursor-pointer"
                 >
                   Sign Up
                 </button>

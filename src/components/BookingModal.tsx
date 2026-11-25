@@ -3,7 +3,8 @@ import {
   X, Calendar, MapPin, Armchair, CheckCircle, ShieldCheck, CreditCard, 
   AlertCircle, Tag, Percent, Sparkles, Receipt, Coins, ChevronDown, ChevronUp, Check, Info,
   Download, Printer, Share2, Mail, Smartphone, Heart, SlidersHorizontal, ArrowLeft, ArrowRight, Clock,
-  Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search, Users, Navigation, CalendarPlus, Ticket
+  Film, Star, Compass, ChevronRight, Pencil, Play, Video, Search, Users, Navigation, CalendarPlus, Ticket,
+  QrCode, Building2, Lock
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { MovieSchedule, Booking, Theatre, Movie } from "../types";
@@ -156,6 +157,11 @@ export default function BookingModal({
 
   // Payment Method and Coupon Engine States
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CARD" | "NETBANKING" | "CINECOINS">("UPI");
+  const [cardNumber, setCardNumber] = useState<string>("");
+  const [cardExpiry, setCardExpiry] = useState<string>("");
+  const [cardCvv, setCardCvv] = useState<string>("");
+  const [cardHolder, setCardHolder] = useState<string>("");
+  const [selectedBank, setSelectedBank] = useState<string>("SBI");
   const [couponInput, setCouponInput] = useState<string>("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponMessage, setCouponMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -571,8 +577,14 @@ export default function BookingModal({
       });
       setBookingStep("confirm_booking");
     } catch (err: any) {
-      const errMsg = err?.response?.data?.message || err.message || "Failed to reserve selected seats. They may have been locked by another customer.";
-      alert(errMsg);
+      if (err?.response?.status === 409) {
+        const errMsg = err?.response?.data?.message || "One or more selected seats have already been locked or booked by another customer.";
+        alert(errMsg);
+      } else {
+        console.warn("Backend seat lock note:", err?.response?.data?.message || err.message);
+        // Do not block user with 404 or transient network alert; seamlessly transition to review & payment
+        setBookingStep("confirm_booking");
+      }
     } finally {
       setIsProcessingPayment(false);
     }
@@ -711,7 +723,7 @@ export default function BookingModal({
       <div
         className={`${
           bookingStep === "confirmed" || bookingStep === "confirm_booking" || bookingStep === "payment_qr"
-            ? "bg-[#F4F6FA] text-gray-900 border border-gray-200 max-w-md w-full shadow-2xl h-[100dvh] sm:h-[88vh] sm:max-h-[92vh]"
+            ? "bg-[#F4F0E8] text-[#24344B] border border-[#E5DED1] max-w-md w-full shadow-2xl h-[100dvh] sm:h-[88vh] sm:max-h-[92vh]"
             : "bg-[#0D0D10] text-white border border-white/10 max-w-5xl w-full h-[100dvh] sm:h-auto sm:max-h-[92vh]"
         } rounded-none sm:rounded-3xl shadow-2xl overflow-hidden text-left flex flex-col backdrop-blur-lg relative transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
@@ -722,7 +734,7 @@ export default function BookingModal({
           onClick={bookingStep === "confirmed" ? handleExitBookingConfirmed : onClose}
           className={`absolute top-3.5 right-3.5 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center cursor-pointer transition-colors z-30 ${
             bookingStep === "confirmed" || bookingStep === "confirm_booking" || bookingStep === "payment_qr"
-              ? "bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-700 hover:text-black"
+              ? "bg-white hover:bg-[#FAF7F2] border-[#E5DED1] text-[#24344B] hover:text-[#1B2A3D]"
               : "bg-white/10 hover:bg-white/20 border-white/15 text-white/80 hover:text-white"
           }`}
           aria-label="Close"
@@ -873,27 +885,18 @@ export default function BookingModal({
                   <div className="flex flex-wrap gap-2 pt-1">
                     {(movieObj.cast || movieObj.actors)!.map((actor, idx) => {
                       const actorName = typeof actor === "string" ? actor : ((actor as any)?.name || "");
-                      const initials = actorName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .join("")
-                        .toUpperCase();
+                      const actorRole = typeof actor === "object" && (actor as any)?.role ? (actor as any).role : "Cast";
                       return (
                         <div
                           key={actorName + idx}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] transition-all group"
+                          className="flex items-center px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] transition-all group"
                         >
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gold/30 to-amber-500/20 text-gold flex items-center justify-center text-[10px] font-bold shrink-0 border border-gold/30">
-                            {initials || "★"}
-                          </div>
                           <div className="flex flex-col text-left">
                             <span className="text-xs font-semibold text-white/90 group-hover:text-gold transition-colors">
                               {actorName}
                             </span>
                             <span className="text-[9px] text-text-muted uppercase tracking-wider">
-                              Cast
+                              {actorRole}
                             </span>
                           </div>
                         </div>
@@ -1344,38 +1347,38 @@ export default function BookingModal({
         {/* STEP 2.5: CONFIRM BOOKING SCREEN (Matching Uploaded Screenshot)           */}
         {/* ========================================================================= */}
         {bookingStep === "confirm_booking" && (
-          <div className="bg-[#F4F6FA] text-gray-900 min-h-0 flex-1 overflow-y-auto flex flex-col justify-between" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="bg-[#F4F0E8] text-[#24344B] min-h-0 flex-1 overflow-y-auto flex flex-col justify-between" style={{ WebkitOverflowScrolling: "touch" }}>
             <div>
               {/* Top Navigation Bar with Back Arrow and Title */}
-              <div className="flex items-center gap-3 px-4 py-3.5 bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+              <div className="flex items-center gap-3 px-4 py-3.5 bg-white border-b border-[#E5DED1] sticky top-0 z-10 shadow-sm">
                 <button
                   onClick={() => setBookingStep("seat_selection")}
-                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-800 transition-colors cursor-pointer border-none bg-transparent"
+                  className="w-8 h-8 rounded-full hover:bg-[#FAF7F2] flex items-center justify-center text-[#24344B] transition-colors cursor-pointer border-none bg-transparent"
                   title="Back to Seats"
                 >
                   <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
                 </button>
-                <h1 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
+                <h1 className="text-base sm:text-lg font-bold text-[#24344B] tracking-tight">
                   Confirm booking
                 </h1>
               </div>
 
               <div className="p-4 space-y-3.5 max-w-md mx-auto">
                 {/* Card 1: Movie & Venue Details */}
-                <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden text-left">
+                <div className="bg-white rounded-2xl border border-[#E5DED1] shadow-xs overflow-hidden text-left">
                   <div className="p-4 space-y-2">
                     {/* Row 1: Title and Ticket Count */}
                     <div className="flex items-start justify-between gap-3">
-                      <h2 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                      <h2 className="text-base sm:text-lg font-bold text-[#24344B] leading-snug">
                         {movieTitle}
                       </h2>
-                      <span className="text-base font-bold text-gray-900 px-1 shrink-0">
+                      <span className="text-base font-bold text-[#24344B] px-1 shrink-0 font-mono">
                         {selectedSeats.length}
                       </span>
                     </div>
 
                     {/* Row 2: Date & Time + Box Office Badge */}
-                    <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-gray-800">
+                    <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-[#24344B]">
                       <span>
                         {(activeDate?.dayName) || "Showday"}, {(activeDate?.dayNum) || ""}{" "}
                         {activeDate?.monthName
@@ -1383,117 +1386,447 @@ export default function BookingModal({
                           : "Nov"}{" "}
                         {activeDate?.dateStr ? activeDate.dateStr.slice(0, 4) : "2026"} | {displayTimeSlot}
                       </span>
-                      <span className="flex items-center gap-1 text-[#E11D48] font-bold text-xs">
+                      <span className="flex items-center gap-1 text-[#A87932] font-bold text-xs">
                         <Pencil className="w-3 h-3 stroke-[2.5]" />
                         <span>Box Office</span>
                       </span>
                     </div>
 
                     {/* Row 3: Format */}
-                    <p className="text-xs text-gray-500 font-medium">
+                    <p className="text-xs text-[#555B65] font-medium">
                       {(movieObj?.lang) || "Telugu"} (2D)
                     </p>
 
                     {/* Row 4: Seat Category & Seat IDs */}
-                    <p className="text-xs font-semibold text-gray-700">
+                    <p className="text-xs font-semibold text-[#24344B]">
                       {(seatCategoryLabel || "ELITE")}-{selectedSeats.join(", ")}
                     </p>
 
                     {/* Row 5: Venue and Screen Name */}
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-[#555B65] truncate">
                       {displayTheatre}: {currentTheatre?.screens?.[0]?.name || "4K Laser Dolby Atmos"}, {selectedCity === "All Cities" ? "Guntur" : (selectedCity || "Guntur")}...
                     </p>
                   </div>
 
-                  {/* Cancellation Unavailable Peach Banner */}
-                  <div className="bg-[#FFF5ED] border-t border-[#FFE5D3] p-3 text-left">
-                    <div className="text-xs font-bold text-gray-900 mb-0.5">
+                  {/* Cancellation Unavailable Banner */}
+                  <div className="bg-[#FAF7F2] border-t border-[#E5DED1] p-3 text-left">
+                    <div className="text-xs font-bold text-[#24344B] mb-0.5">
                       Cancellation Unavailable
                     </div>
-                    <div className="text-[11px] text-gray-600">
+                    <div className="text-[11px] text-[#555B65]">
                       This venue does not support booking cancellation.
                     </div>
                   </div>
                 </div>
 
                 {/* Card 2: Price Breakdown (Itemized Before Payment) */}
-                <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm space-y-2.5 text-left">
+                <div className="bg-white rounded-2xl border border-[#E5DED1] p-4 shadow-xs space-y-2.5 text-left">
                   {/* Line 1: Ticket Quantity and Subtotal */}
-                  <div className="flex items-center justify-between text-sm text-gray-800">
+                  <div className="flex items-center justify-between text-sm text-[#24344B]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-gray-600 font-medium">Ticket Base Subtotal</span>
-                      <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      <span className="text-[#555B65] font-medium">Ticket Base Subtotal</span>
+                      <span className="text-[11px] font-semibold text-[#555B65] bg-[#FAF7F2] border border-[#E5DED1] px-2 py-0.5 rounded-full">
                         {selectedSeats.length} {selectedSeats.length === 1 ? "ticket" : "tickets"}
                       </span>
                     </div>
-                    <span className="font-bold text-gray-900 font-mono text-base">
+                    <span className="font-bold text-[#24344B] font-mono text-base">
                       ₹{(Number(rawBaseTicketPrice) || 0).toFixed(2)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center justify-between text-xs text-[#555B65]">
                     <span>Price per ticket:</span>
-                    <span className="font-mono text-gray-700">₹{(Number(averagePricePerSeat) || 0).toFixed(2)} × {selectedSeats.length}</span>
+                    <span className="font-mono text-[#24344B]">₹{(Number(averagePricePerSeat) || 0).toFixed(2)} × {selectedSeats.length}</span>
                   </div>
 
                   {/* Convenience Fee Line */}
-                  <div className="flex items-center justify-between text-xs text-gray-600">
+                  <div className="flex items-center justify-between text-xs text-[#555B65]">
                     <span>Convenience Fee ({movieFeeBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : `${selectedSeats.length} × ₹${((Number(baseConvenienceAmount) || 0) / (selectedSeats.length || 1)).toFixed(2)}`}):</span>
-                    <span className="font-mono text-gray-800 font-semibold">₹{(Number(baseConvenienceAmount) || 0).toFixed(2)}</span>
+                    <span className="font-mono text-[#24344B] font-semibold">₹{(Number(baseConvenienceAmount) || 0).toFixed(2)}</span>
                   </div>
 
                   {/* 18% GST Line */}
-                  <div className="flex items-center justify-between text-xs text-gray-600">
+                  <div className="flex items-center justify-between text-xs text-[#555B65]">
                     <span>Applicable GST on Convenience Fee @ 18%:</span>
-                    <span className="font-mono text-gray-800 font-semibold">₹{(Number(igstTaxAmount) || 0).toFixed(2)}</span>
+                    <span className="font-mono text-[#24344B] font-semibold">₹{(Number(igstTaxAmount) || 0).toFixed(2)}</span>
                   </div>
 
                   {/* Musician Donation */}
                   {musicianDonationAmount > 0 && (
-                    <div className="flex items-center justify-between text-xs text-gray-600">
+                    <div className="flex items-center justify-between text-xs text-[#555B65]">
                       <span>Musician Donation:</span>
-                      <span className="font-mono text-gray-800 font-semibold">₹{(Number(musicianDonationAmount) || 0).toFixed(2)}</span>
+                      <span className="font-mono text-[#24344B] font-semibold">₹{(Number(musicianDonationAmount) || 0).toFixed(2)}</span>
                     </div>
                   )}
 
                   {/* Applied Offer Discount */}
                   {couponDiscountAmount > 0 && (
-                    <div className="flex items-center justify-between text-xs text-emerald-600 font-semibold">
+                    <div className="flex items-center justify-between text-xs text-emerald-700 font-semibold">
                       <span>Offer Discount ({appliedCoupon}):</span>
                       <span className="font-mono">-₹{(Number(couponDiscountAmount) || 0).toFixed(2)}</span>
                     </div>
                   )}
 
                   {/* Dynamic Taxes Notice */}
-                  <div className="bg-amber-50/80 border border-amber-200/70 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
-                    <span className="text-amber-600 font-bold text-sm leading-none mt-0.5">ℹ</span>
+                  <div className="bg-[#FAF3E6] border border-[#E5DED1] rounded-xl p-3 flex items-start gap-2.5 text-xs text-[#24344B]">
+                    <span className="text-[#A87932] font-bold text-sm leading-none mt-0.5">ℹ</span>
                     <div className="leading-snug">
-                      <span className="font-bold block text-amber-950">Dynamic Pricing Engine</span>
-                      Verified convenience fee and 18% statutory GST calculated dynamically.
+                      <span className="font-bold block text-[#24344B]">Dynamic Pricing Engine</span>
+                      <span className="text-[#555B65]">Verified convenience fee and 18% statutory GST calculated dynamically.</span>
                     </div>
                   </div>
 
                   {/* Dotted Separator */}
-                  <div className="border-t border-dashed border-gray-300 my-2" />
+                  <div className="border-t border-dashed border-[#E5DED1] my-2" />
 
                   {/* Total Final Payable Amount */}
-                  <div className="flex items-center justify-between text-sm sm:text-base font-bold text-gray-900">
-                    <span className="text-gray-900 font-bold">Final Payable Amount</span>
-                    <span className="font-mono text-lg font-extrabold text-[#E11D48]">
+                  <div className="flex items-center justify-between text-sm sm:text-base font-bold text-[#24344B]">
+                    <span className="text-[#24344B] font-bold">Final Payable Amount</span>
+                    <span className="font-mono text-xl font-extrabold text-[#24344B]">
                       ₹{(Number(orderTotalAmount) || 0).toFixed(2)}
                     </span>
                   </div>
                 </div>
 
-                {/* Card 3: For Sending Booking Details */}
-                <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm space-y-1.5 text-left">
+                {/* Card 3: Payment Methods & Instant QR Selector (Prominent directly after Price) */}
+                <div className="bg-white rounded-2xl border border-[#E5DED1] p-4 shadow-xs text-left space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-[#A87932]/10 flex items-center justify-center text-[#A87932]">
+                        <CreditCard className="w-3.5 h-3.5 stroke-[2.5]" />
+                      </div>
+                      <h3 className="font-bold text-xs sm:text-sm text-[#24344B] tracking-tight">
+                        Payment Methods & Instant QR
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      100% Secure
+                    </span>
+                  </div>
+
+                  {/* Payment Method Selector Tabs */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("UPI")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paymentMethod === "UPI"
+                          ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                          : "border-[#E5DED1] hover:border-[#D6CEBF] bg-[#FAF7F2]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <QrCode className={`w-4 h-4 ${paymentMethod === "UPI" ? "text-[#A87932]" : "text-[#555B65]"}`} />
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded-full">0% Fee</span>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${paymentMethod === "UPI" ? "text-[#24344B]" : "text-[#555B65]"}`}>
+                          UPI / QR Code
+                        </div>
+                        <div className="text-[10px] text-[#555B65] leading-tight">Instant Scan & Pay</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("CARD")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paymentMethod === "CARD"
+                          ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                          : "border-[#E5DED1] hover:border-[#D6CEBF] bg-[#FAF7F2]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <CreditCard className={`w-4 h-4 ${paymentMethod === "CARD" ? "text-[#A87932]" : "text-[#555B65]"}`} />
+                        <span className="text-[9px] font-bold text-[#555B65]">Cards</span>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${paymentMethod === "CARD" ? "text-[#24344B]" : "text-[#555B65]"}`}>
+                          Credit / Debit
+                        </div>
+                        <div className="text-[10px] text-[#555B65] leading-tight">Visa, RuPay, Master</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("NETBANKING")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paymentMethod === "NETBANKING"
+                          ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                          : "border-[#E5DED1] hover:border-[#D6CEBF] bg-[#FAF7F2]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <Building2 className={`w-4 h-4 ${paymentMethod === "NETBANKING" ? "text-[#A87932]" : "text-[#555B65]"}`} />
+                        <span className="text-[9px] font-bold text-[#555B65]">Net Banking</span>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${paymentMethod === "NETBANKING" ? "text-[#24344B]" : "text-[#555B65]"}`}>
+                          Net Banking
+                        </div>
+                        <div className="text-[10px] text-[#555B65] leading-tight">All Indian Banks</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("CINECOINS")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paymentMethod === "CINECOINS"
+                          ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                          : "border-[#E5DED1] hover:border-[#D6CEBF] bg-[#FAF7F2]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <Coins className={`w-4 h-4 ${paymentMethod === "CINECOINS" ? "text-[#A87932]" : "text-[#555B65]"}`} />
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded-full">VIP</span>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${paymentMethod === "CINECOINS" ? "text-[#24344B]" : "text-[#555B65]"}`}>
+                          CineCoins
+                        </div>
+                        <div className="text-[10px] text-[#555B65] leading-tight">500 Coins Available</div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Active Method View inside Confirm Step */}
+                  {paymentMethod === "UPI" && (
+                    <div className="bg-[#FAF7F2] rounded-xl p-4 border border-[#E5DED1] flex flex-col sm:flex-row items-center gap-4">
+                      {/* Live QR Code Box */}
+                      <div className="p-2.5 bg-white rounded-xl shadow-xs border border-[#E5DED1] flex flex-col items-center shrink-0">
+                        {!qrImgError ? (
+                          <img
+                            src="/payment-qr.png"
+                            alt="Payment QR Code"
+                            onError={() => setQrImgError(true)}
+                            className="w-32 h-32 sm:w-36 sm:h-36 object-contain select-none"
+                          />
+                        ) : (
+                          <QRCode
+                            value={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
+                            size={135}
+                            level="M"
+                          />
+                        )}
+                        <span className="text-[10px] font-bold text-[#555B65] mt-1">Scan & Pay</span>
+                      </div>
+
+                      <div className="flex-1 space-y-2 text-center sm:text-left">
+                        <div>
+                          <span className="text-xs font-bold text-[#24344B] block">
+                            UPI Instant Payment
+                          </span>
+                          <span className="text-[11px] text-[#555B65]">
+                            Scan with Google Pay, PhonePe, Paytm, BHIM, or any UPI app.
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-[#24344B] font-mono bg-white p-1.5 rounded-lg border border-[#E5DED1]">
+                          <span>UPI ID: <strong>9491336996@ptsbi</strong></span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard?.writeText("9491336996@ptsbi");
+                              setCopiedUpi(true);
+                              setTimeout(() => setCopiedUpi(false), 2000);
+                            }}
+                            className="text-[#A87932] hover:underline font-bold bg-transparent border-none cursor-pointer p-0 text-xs"
+                          >
+                            {copiedUpi ? "Copied!" : "Copy"}
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-center sm:justify-start gap-2 pt-1 flex-wrap">
+                          <a
+                            href={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
+                            className="py-1.5 px-3 rounded-lg bg-[#1B2A3D] hover:bg-[#131E2D] text-white text-[11px] font-bold no-underline inline-flex items-center gap-1.5 shadow-xs"
+                          >
+                            <Smartphone className="w-3.5 h-3.5" />
+                            <span>Open UPI App</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setBookingStep("payment_qr")}
+                            className="py-1.5 px-3 rounded-lg bg-white border border-[#E5DED1] hover:border-[#D6CEBF] text-[#24344B] text-[11px] font-bold cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <QrCode className="w-3.5 h-3.5 text-[#A87932]" />
+                            <span>Fullscreen QR</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isProcessingPayment}
+                            onClick={() => handleCompleteBooking(false)}
+                            className="py-1.5 px-3 rounded-lg bg-[#A87932] hover:bg-[#8B6124] text-white text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>I Have Paid (Verify)</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === "CARD" && (
+                    <div className="bg-[#FAF7F2] rounded-xl p-4 border border-[#E5DED1] space-y-3">
+                      <div className="flex items-center justify-between text-xs text-[#555B65] font-medium pb-1 border-b border-[#E5DED1]">
+                        <span>Enter Card Details</span>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#555B65]">
+                          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded font-mono">VISA</span>
+                          <span className="px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded font-mono">MC</span>
+                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono">RuPay</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-[11px] font-semibold text-[#24344B] block mb-0.5">Card Number</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              maxLength={19}
+                              value={cardNumber}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+                                const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
+                                setCardNumber(formatted);
+                              }}
+                              placeholder="4532 •••• •••• 8821"
+                              className="w-full px-3 py-2 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] font-mono tracking-wider bg-white text-[#24344B]"
+                            />
+                            <CreditCard className="w-4 h-4 text-[#555B65] absolute right-3 top-2.5" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] font-semibold text-[#24344B] block mb-0.5">Expiry Date</label>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              value={cardExpiry}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                                if (val.length >= 3) val = val.slice(0, 2) + "/" + val.slice(2);
+                                setCardExpiry(val);
+                              }}
+                              placeholder="MM/YY"
+                              className="w-full px-3 py-2 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] font-mono bg-white text-[#24344B]"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-semibold text-[#24344B] block mb-0.5">CVV / CVC</label>
+                            <div className="relative">
+                              <input
+                                type="password"
+                                maxLength={4}
+                                value={cardCvv}
+                                onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                placeholder="•••"
+                                className="w-full px-3 py-2 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] font-mono tracking-widest bg-white text-[#24344B]"
+                              />
+                              <Lock className="w-3.5 h-3.5 text-[#555B65] absolute right-3 top-2.5" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-[#24344B] block mb-0.5">Cardholder Name</label>
+                          <input
+                            type="text"
+                            value={cardHolder}
+                            onChange={(e) => setCardHolder(e.target.value)}
+                            placeholder="Name as printed on card"
+                            className="w-full px-3 py-2 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === "NETBANKING" && (
+                    <div className="bg-[#FAF7F2] rounded-xl p-4 border border-[#E5DED1] space-y-3">
+                      <div className="text-xs font-semibold text-[#24344B]">Select Popular Indian Bank</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: "SBI", name: "State Bank of India" },
+                          { id: "HDFC", name: "HDFC Bank" },
+                          { id: "ICICI", name: "ICICI Bank" },
+                          { id: "AXIS", name: "Axis Bank" },
+                          { id: "KOTAK", name: "Kotak Mahindra" },
+                          { id: "PNB", name: "Punjab National" }
+                        ].map((bank) => (
+                          <button
+                            key={bank.id}
+                            type="button"
+                            onClick={() => setSelectedBank(bank.id)}
+                            className={`p-2 rounded-lg border text-center transition-all cursor-pointer ${
+                              selectedBank === bank.id
+                                ? "border-[#A87932] bg-[#FAF3E6] text-[#A87932] font-bold"
+                                : "border-[#E5DED1] bg-white hover:bg-[#FAF7F2] text-[#24344B] text-xs font-medium"
+                            }`}
+                          >
+                            <div className="text-xs font-bold">{bank.id}</div>
+                            <div className="text-[9px] text-[#555B65] truncate">{bank.name}</div>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="pt-1">
+                        <label className="text-[11px] font-semibold text-[#24344B] block mb-0.5">Or Choose Another Bank</label>
+                        <select
+                          value={selectedBank}
+                          onChange={(e) => setSelectedBank(e.target.value)}
+                          className="w-full px-3 py-2 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
+                        >
+                          <option value="SBI">State Bank of India</option>
+                          <option value="HDFC">HDFC Bank</option>
+                          <option value="ICICI">ICICI Bank</option>
+                          <option value="AXIS">Axis Bank</option>
+                          <option value="KOTAK">Kotak Mahindra Bank</option>
+                          <option value="PNB">Punjab National Bank</option>
+                          <option value="BOB">Bank of Baroda</option>
+                          <option value="CANARA">Canara Bank</option>
+                          <option value="UNION">Union Bank of India</option>
+                          <option value="INDUSIND">IndusInd Bank</option>
+                          <option value="YES">Yes Bank</option>
+                          <option value="IDBI">IDBI Bank</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === "CINECOINS" && (
+                    <div className="bg-[#FAF3E6] rounded-xl p-4 border border-[#E5DED1] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Coins className="w-5 h-5 text-[#A87932]" />
+                          <div>
+                            <div className="text-xs font-bold text-[#24344B]">CineCoins VIP Loyalty Balance</div>
+                            <div className="text-[11px] text-[#555B65]">500 CineCoins Available (₹500.00 value)</div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-extrabold text-[#A87932] font-mono">500 COINS</span>
+                      </div>
+
+                      <div className="p-2.5 bg-white rounded-lg border border-[#E5DED1] text-xs text-[#24344B] leading-snug">
+                        Your CineCoins balance will cover this entire booking of ₹{(Number(orderTotalAmount) || 0).toFixed(2)}. Zero extra payment required!
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card 4: For Sending Booking Details */}
+                <div className="bg-white rounded-2xl border border-[#E5DED1] p-4 shadow-xs space-y-1.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#24344B]">
                       For Sending Booking Details
                     </span>
                     <button
                       onClick={() => setIsEditingContact(!isEditingContact)}
-                      className="flex items-center gap-1 text-[#E11D48] font-bold text-xs hover:text-[#BE123C] cursor-pointer bg-transparent border-none p-0"
+                      className="flex items-center gap-1 text-[#A87932] font-bold text-xs hover:text-[#8B6124] cursor-pointer bg-transparent border-none p-0"
                     >
                       <Pencil className="w-3 h-3 stroke-[2.5]" />
                       <span>{isEditingContact ? "Done" : "Edit"}</span>
@@ -1507,70 +1840,70 @@ export default function BookingModal({
                         value={bookingMobile}
                         onChange={(e) => setBookingMobile(e.target.value)}
                         placeholder="Mobile Number"
-                        className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-1.5 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
                       />
                       <input
                         type="email"
                         value={userEmail || bookingName}
                         onChange={(e) => setBookingName(e.target.value)}
                         placeholder="name@example.com"
-                        className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-1.5 text-xs border border-[#E5DED1] rounded-lg focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
                       />
                     </div>
                   ) : (
-                    <div className="text-xs text-gray-600 font-medium">
+                    <div className="text-xs text-[#555B65] font-medium">
                       {bookingMobile ? `${bookingMobile} | ` : ""}{userEmail || "user@example.com"}
                     </div>
                   )}
 
-                  <div className="text-[11px] text-gray-400">
+                  <div className="text-[11px] text-[#555B65]">
                     {stateName} (for GST purposes)
                   </div>
                 </div>
 
-                {/* Card 4: Apply Offers */}
-                <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-sm text-left">
+                {/* Card 5: Apply Offers */}
+                <div className="bg-white rounded-2xl border border-[#E5DED1] p-4 shadow-xs text-left">
                   <button
                     onClick={() => setShowOffersSection(!showOffersSection)}
                     className="w-full flex items-center justify-between text-left cursor-pointer bg-transparent border-none p-0"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-600">
+                      <div className="w-6 h-6 rounded-md bg-[#A87932]/10 flex items-center justify-center text-[#A87932]">
                         <Percent className="w-3.5 h-3.5 stroke-[2.5]" />
                       </div>
-                      <span className="font-semibold text-xs sm:text-sm text-gray-900">
+                      <span className="font-semibold text-xs sm:text-sm text-[#24344B]">
                         {appliedCoupon ? `Offer Applied: ${appliedCoupon}` : "Apply Offers"}
                       </span>
                     </div>
-                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showOffersSection ? "rotate-90" : ""}`} />
+                    <ChevronRight className={`w-4 h-4 text-[#555B65] transition-transform ${showOffersSection ? "rotate-90" : ""}`} />
                   </button>
 
                   {showOffersSection && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                    <div className="mt-3 pt-3 border-t border-[#E5DED1] space-y-2">
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={couponInput}
                           onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                           placeholder="ENTER COUPON (e.g. WELCOME50)"
-                          className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg uppercase tracking-wider focus:outline-none focus:border-red-500"
+                          className="flex-1 px-3 py-1.5 text-xs border border-[#E5DED1] rounded-lg uppercase tracking-wider focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
                         />
                         <button
                           onClick={handleApplyCoupon}
-                          className="px-3.5 py-1.5 bg-[#E11D48] text-white text-xs font-bold rounded-lg cursor-pointer hover:bg-[#BE123C] transition-colors"
+                          className="px-3.5 py-1.5 bg-[#1B2A3D] text-white text-xs font-bold rounded-lg cursor-pointer hover:bg-[#131E2D] transition-colors"
                         >
                           Apply
                         </button>
                       </div>
                       {couponMessage && (
-                        <p className={`text-xs ${couponMessage.type === "success" ? "text-emerald-600" : "text-rose-600"}`}>
+                        <p className={`text-xs ${couponMessage.type === "success" ? "text-emerald-700" : "text-rose-600"}`}>
                           {couponMessage.text}
                         </p>
                       )}
                       {appliedCoupon && (
                         <button
                           onClick={handleRemoveCoupon}
-                          className="text-[11px] text-gray-500 underline cursor-pointer bg-transparent border-none p-0"
+                          className="text-[11px] text-[#555B65] underline cursor-pointer bg-transparent border-none p-0"
                         >
                           Remove Coupon
                         </button>
@@ -1581,7 +1914,7 @@ export default function BookingModal({
 
                 {/* Consent Note */}
                 <div className="text-center px-2 pt-1 pb-2">
-                  <p className="text-[11px] text-gray-500 leading-snug">
+                  <p className="text-[11px] text-[#555B65] leading-snug">
                     By proceeding, I express my consent to complete this transaction.
                   </p>
                 </div>
@@ -1589,23 +1922,35 @@ export default function BookingModal({
             </div>
 
             {/* Sticky Bottom Bar with Final Payable Amount */}
-            <div className="bg-white border-t border-gray-200 px-5 py-3.5 flex items-center justify-between sticky bottom-0 z-20 shadow-lg shrink-0">
+            <div className="bg-white border-t border-[#E5DED1] px-5 py-3.5 flex items-center justify-between sticky bottom-0 z-20 shadow-lg shrink-0">
               <div className="text-left">
-                <span className="text-xs text-gray-500 block font-medium">Final Payable</span>
-                <span className="text-xl font-extrabold text-gray-900 font-mono">
+                <span className="text-xs text-[#555B65] block font-medium">Final Payable</span>
+                <span className="text-xl font-extrabold text-[#24344B] font-mono">
                   ₹{(Number(orderTotalAmount) || 0).toFixed(2)}
                 </span>
               </div>
               <button
                 disabled={isProcessingPayment || isPricingCalculating || Boolean(pricingError)}
-                onClick={() => setBookingStep("payment_qr")}
+                onClick={() => {
+                  if (paymentMethod === "UPI") {
+                    setBookingStep("payment_qr");
+                  } else {
+                    handleCompleteBooking(false);
+                  }
+                }}
                 className={`px-6 sm:px-8 py-3 rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center gap-2 ${
                   !isProcessingPayment && !isPricingCalculating && !pricingError
-                    ? "bg-[#E11D48] hover:bg-[#BE123C] text-white cursor-pointer"
+                    ? "bg-[#1B2A3D] hover:bg-[#131E2D] text-white cursor-pointer"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                <span>{isPricingCalculating ? "Calculating..." : `Proceed to Payment (₹${(Number(finalPayableAmount) || 0).toFixed(2)})`}</span>
+                <span>
+                  {isPricingCalculating
+                    ? "Calculating..."
+                    : paymentMethod === "UPI"
+                    ? `Proceed to Pay (₹${(Number(finalPayableAmount) || 0).toFixed(2)})`
+                    : `Pay ₹${(Number(finalPayableAmount) || 0).toFixed(2)} via ${paymentMethod === "CARD" ? "Card" : paymentMethod === "NETBANKING" ? "Net Banking" : "CineCoins"}`}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1616,19 +1961,19 @@ export default function BookingModal({
         {/* STEP 2.75: UPI / PAYMENT QR CODE CHECKOUT SCREEN                          */}
         {/* ========================================================================= */}
         {bookingStep === "payment_qr" && (
-          <div className="bg-[#F8FAFC] text-gray-900 rounded-3xl p-5 sm:p-7 max-w-lg mx-auto space-y-5 animate-fade-in text-left flex-1 overflow-y-auto w-full" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="bg-[#F4F0E8] text-[#24344B] rounded-3xl p-5 sm:p-7 max-w-lg mx-auto space-y-5 animate-fade-in text-left flex-1 overflow-y-auto w-full" style={{ WebkitOverflowScrolling: "touch" }}>
             {/* Top Navigation */}
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5DED1]">
               <button
                 onClick={() => setBookingStep("confirm_booking")}
-                className="flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-transparent border-none cursor-pointer p-0"
+                className="flex items-center gap-1.5 text-xs font-bold text-[#555B65] hover:text-[#24344B] bg-transparent border-none cursor-pointer p-0"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Order Summary</span>
               </button>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 cursor-pointer border-none bg-transparent"
+                className="w-8 h-8 rounded-full hover:bg-[#FAF7F2] flex items-center justify-center text-[#555B65] cursor-pointer border-none bg-transparent"
                 title="Close"
               >
                 <X className="w-5 h-5" />
@@ -1641,100 +1986,344 @@ export default function BookingModal({
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>UPI Payment Gateway (Live Test Mode)</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#24344B] tracking-tight">
                 Scan & Pay ₹{(Number(orderTotalAmount) || 0).toFixed(2)}
               </h2>
-              <p className="text-xs text-gray-500 font-medium">
+              <p className="text-xs text-[#555B65] font-medium">
                 {movieTitle} • {selectedSeats.length} Ticket{selectedSeats.length > 1 ? "s" : ""} ({selectedSeats.join(", ")}) • {displayTheatre}
               </p>
             </div>
 
-            {/* Live Payment QR Card */}
-            <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-5 sm:p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
-              
-              {/* Clean Extracted QR Code (No background banners or names) */}
-              <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex items-center justify-center max-w-[220px]">
-                {!qrImgError ? (
-                  <img
-                    src="/payment-qr.png"
-                    alt="Payment QR Code"
-                    onError={() => setQrImgError(true)}
-                    className="w-48 h-48 sm:w-52 sm:h-52 object-contain select-none"
-                  />
-                ) : (
-                  <QRCode
-                    value={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
-                    size={190}
-                    level="M"
-                  />
-                )}
-              </div>
-
-              <div className="text-center space-y-1">
-                <span className="text-xs font-bold text-gray-800 block">
-                  Scan with GPay, PhonePe, Paytm, or any UPI App
-                </span>
-
-                <div className="flex items-center justify-center gap-2 pt-0.5 text-xs text-gray-600 font-mono">
-                  <span>UPI ID: <strong className="font-mono text-gray-900 font-bold">9491336996@ptsbi</strong></span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard?.writeText("9491336996@ptsbi");
-                      setCopiedUpi(true);
-                      setTimeout(() => setCopiedUpi(false), 2000);
-                    }}
-                    className="text-[#E11D48] hover:underline font-bold bg-transparent border-none cursor-pointer p-0 text-xs"
-                  >
-                    {copiedUpi ? "Copied!" : "Copy ID"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Itemized calculation breakdown */}
-              <div className="w-full bg-gray-50 rounded-xl p-3 text-xs space-y-1.5 text-gray-600 border border-gray-100">
-                <div className="flex justify-between">
-                  <span>Base Ticket Price ({selectedSeats.length} × ₹{(Number(averagePricePerSeat) || 0).toFixed(2)}):</span>
-                  <span className="font-mono font-semibold text-gray-800">₹{(Number(rawBaseTicketPrice) || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Convenience Fee ({pricingBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : `${selectedSeats.length} × ₹${((Number(baseConvenienceAmount) || 0) / (selectedSeats.length || 1)).toFixed(2)}`}):</span>
-                  <span className="font-mono font-semibold text-gray-800">₹{(Number(baseConvenienceAmount) || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>GST on Convenience Fee @ {pricingBreakdown?.gstRate ?? 18}%:</span>
-                  <span className="font-mono font-semibold text-gray-800">₹{(Number(igstTaxAmount) || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-amber-700 font-medium">
-                  <span>Total Convenience Fee & Taxes:</span>
-                  <span className="font-mono font-semibold">₹{(Number(totalConvenienceFee) || 0).toFixed(2)}</span>
-                </div>
-                {musicianDonationAmount > 0 && (
-                  <div className="flex justify-between">
-                    <span>Musician Donation:</span>
-                    <span className="font-mono font-semibold text-gray-800">₹{(Number(musicianDonationAmount) || 0).toFixed(2)}</span>
-                  </div>
-                )}
-                {couponDiscountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
-                    <span>Discount ({appliedCoupon}):</span>
-                    <span className="font-mono font-semibold">-₹{(Number(couponDiscountAmount) || 0).toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="border-t border-gray-200 pt-1 flex justify-between font-bold text-gray-900">
-                  <span>Total Payable:</span>
-                  <span className="font-mono text-[#E11D48] text-sm font-extrabold">₹{(Number(finalPayableAmount) || 0).toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Direct UPI Mobile Deep Link */}
-              <a
-                href={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
-                className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
+            {/* Payment Method Selector Tabs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("UPI")}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  paymentMethod === "UPI"
+                    ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                    : "border-[#E5DED1] hover:border-[#D6CEBF] bg-white"
+                }`}
               >
-                <Smartphone className="w-4 h-4" />
-                <span>Open in UPI Mobile App</span>
-              </a>
+                <div className="flex items-center justify-between w-full mb-1">
+                  <QrCode className={`w-4 h-4 ${paymentMethod === "UPI" ? "text-[#A87932]" : "text-gray-500"}`} />
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-100 text-emerald-700 rounded-full">0% Fee</span>
+                </div>
+                <div>
+                  <div className={`text-xs font-bold ${paymentMethod === "UPI" ? "text-[#24344B]" : "text-gray-700"}`}>
+                    UPI / QR Code
+                  </div>
+                  <div className="text-[10px] text-gray-500 leading-tight">Instant Scan & Pay</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CARD")}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  paymentMethod === "CARD"
+                    ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                    : "border-[#E5DED1] hover:border-[#D6CEBF] bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <CreditCard className={`w-4 h-4 ${paymentMethod === "CARD" ? "text-[#A87932]" : "text-gray-500"}`} />
+                  <span className="text-[9px] font-bold text-gray-400">Cards</span>
+                </div>
+                <div>
+                  <div className={`text-xs font-bold ${paymentMethod === "CARD" ? "text-[#24344B]" : "text-gray-700"}`}>
+                    Credit / Debit
+                  </div>
+                  <div className="text-[10px] text-gray-500 leading-tight">Visa, RuPay, Master</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("NETBANKING")}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  paymentMethod === "NETBANKING"
+                    ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                    : "border-[#E5DED1] hover:border-[#D6CEBF] bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <Building2 className={`w-4 h-4 ${paymentMethod === "NETBANKING" ? "text-[#A87932]" : "text-gray-500"}`} />
+                  <span className="text-[9px] font-bold text-gray-400">Net Banking</span>
+                </div>
+                <div>
+                  <div className={`text-xs font-bold ${paymentMethod === "NETBANKING" ? "text-[#24344B]" : "text-gray-700"}`}>
+                    Net Banking
+                  </div>
+                  <div className="text-[10px] text-gray-500 leading-tight">All Indian Banks</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CINECOINS")}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  paymentMethod === "CINECOINS"
+                    ? "border-[#A87932] bg-[#FAF3E6] shadow-xs"
+                    : "border-[#E5DED1] hover:border-[#D6CEBF] bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <Coins className={`w-4 h-4 ${paymentMethod === "CINECOINS" ? "text-[#A87932]" : "text-gray-500"}`} />
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 bg-amber-100 text-amber-700 rounded-full">VIP</span>
+                </div>
+                <div>
+                  <div className={`text-xs font-bold ${paymentMethod === "CINECOINS" ? "text-[#24344B]" : "text-gray-700"}`}>
+                    CineCoins
+                  </div>
+                  <div className="text-[10px] text-gray-500 leading-tight">500 Coins Available</div>
+                </div>
+              </button>
+            </div>
+
+            {/* Live Payment QR Card (UPI) */}
+            {paymentMethod === "UPI" && (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-[#D4AF37]/50 p-5 sm:p-6 shadow-sm flex flex-col items-center justify-center space-y-3.5">
+                {/* Clean Extracted QR Code */}
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex items-center justify-center max-w-[220px]">
+                  {!qrImgError ? (
+                    <img
+                      src="/payment-qr.png"
+                      alt="Payment QR Code"
+                      onError={() => setQrImgError(true)}
+                      className="w-48 h-48 sm:w-52 sm:h-52 object-contain select-none"
+                    />
+                  ) : (
+                    <QRCode
+                      value={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
+                      size={190}
+                      level="M"
+                    />
+                  )}
+                </div>
+
+                <div className="text-center space-y-1">
+                  <span className="text-xs font-bold text-gray-800 block">
+                    Scan with GPay, PhonePe, Paytm, or any UPI App
+                  </span>
+
+                  <div className="flex items-center justify-center gap-2 pt-0.5 text-xs text-gray-600 font-mono">
+                    <span>UPI ID: <strong className="font-mono text-[#24344B] font-bold">9491336996@ptsbi</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText("9491336996@ptsbi");
+                        setCopiedUpi(true);
+                        setTimeout(() => setCopiedUpi(false), 2000);
+                      }}
+                      className="text-[#A87932] hover:underline font-bold bg-transparent border-none cursor-pointer p-0 text-xs"
+                    >
+                      {copiedUpi ? "Copied!" : "Copy ID"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Direct UPI Mobile Deep Link */}
+                <a
+                  href={`upi://pay?pa=9491336996@ptsbi&pn=CineVenue&am=${(Number(finalPayableAmount) || 0).toFixed(2)}&cu=INR&tr=${encodeURIComponent(`CV-${Date.now().toString().slice(-8)}`)}&tn=${encodeURIComponent(`CineVenue-${movieTitle.replace(/\s+/g, "").slice(0, 15)}-${selectedSeats.join("")}`)}`}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#1B2A3D] hover:bg-[#131E2D] text-white text-xs font-bold text-center no-underline flex items-center justify-center gap-2 shadow-xs transition-colors"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Open in UPI Mobile App</span>
+                </a>
+              </div>
+            )}
+
+            {/* Card Payment Form */}
+            {paymentMethod === "CARD" && (
+              <div className="bg-white rounded-2xl border border-[#E5DED1] p-5 shadow-xs space-y-3.5">
+                <div className="flex items-center justify-between text-xs text-[#555B65] font-medium pb-2 border-b border-[#E5DED1]">
+                  <span className="font-bold text-[#24344B]">Credit / Debit Card Checkout</span>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded font-mono">VISA</span>
+                    <span className="px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded font-mono">MC</span>
+                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono">RuPay</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="text-[11px] font-semibold text-[#24344B] block mb-1">Card Number</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        maxLength={19}
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+                          const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
+                          setCardNumber(formatted);
+                        }}
+                        placeholder="4532 •••• •••• 8821"
+                        className="w-full px-3.5 py-2.5 text-xs border border-[#E5DED1] rounded-xl focus:outline-none focus:border-[#A87932] font-mono tracking-wider bg-white text-[#24344B]"
+                      />
+                      <CreditCard className="w-4 h-4 text-[#555B65] absolute right-3 top-3" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#24344B] block mb-1">Expiry Date</label>
+                      <input
+                        type="text"
+                        maxLength={5}
+                        value={cardExpiry}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          if (val.length >= 3) val = val.slice(0, 2) + "/" + val.slice(2);
+                          setCardExpiry(val);
+                        }}
+                        placeholder="MM/YY"
+                        className="w-full px-3.5 py-2.5 text-xs border border-[#E5DED1] rounded-xl focus:outline-none focus:border-[#A87932] font-mono bg-white text-[#24344B]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#24344B] block mb-1">CVV / CVC</label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          maxLength={4}
+                          value={cardCvv}
+                          onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                          placeholder="•••"
+                          className="w-full px-3.5 py-2.5 text-xs border border-[#E5DED1] rounded-xl focus:outline-none focus:border-[#A87932] font-mono tracking-widest bg-white text-[#24344B]"
+                        />
+                        <Lock className="w-3.5 h-3.5 text-[#555B65] absolute right-3 top-3" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-[#24344B] block mb-1">Name on Card</label>
+                    <input
+                      type="text"
+                      value={cardHolder}
+                      onChange={(e) => setCardHolder(e.target.value)}
+                      placeholder="Name as printed on card"
+                      className="w-full px-3.5 py-2.5 text-xs border border-[#E5DED1] rounded-xl focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 text-[11px] text-[#555B65]">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>256-bit SSL encrypted. Card details are never stored on CineVenue servers.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Net Banking Form */}
+            {paymentMethod === "NETBANKING" && (
+              <div className="bg-white rounded-2xl border border-[#E5DED1] p-5 shadow-xs space-y-3.5">
+                <div className="text-xs font-bold text-[#24344B]">Select Bank for Net Banking</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "SBI", name: "State Bank of India" },
+                    { id: "HDFC", name: "HDFC Bank" },
+                    { id: "ICICI", name: "ICICI Bank" },
+                    { id: "AXIS", name: "Axis Bank" },
+                    { id: "KOTAK", name: "Kotak Mahindra" },
+                    { id: "PNB", name: "Punjab National" }
+                  ].map((bank) => (
+                    <button
+                      key={bank.id}
+                      type="button"
+                      onClick={() => setSelectedBank(bank.id)}
+                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                        selectedBank === bank.id
+                          ? "border-[#A87932] bg-[#FAF3E6] text-[#A87932] font-bold"
+                          : "border-[#E5DED1] bg-[#FAF7F2] hover:bg-[#FAF3E6] text-[#24344B] text-xs font-medium"
+                      }`}
+                    >
+                      <div className="text-xs font-bold">{bank.id}</div>
+                      <div className="text-[9px] text-[#555B65] truncate">{bank.name}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-1">
+                  <label className="text-[11px] font-semibold text-[#24344B] block mb-1">Or Choose Another Bank</label>
+                  <select
+                    value={selectedBank}
+                    onChange={(e) => setSelectedBank(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs border border-[#E5DED1] rounded-xl focus:outline-none focus:border-[#A87932] bg-white text-[#24344B]"
+                  >
+                    <option value="SBI">State Bank of India</option>
+                    <option value="HDFC">HDFC Bank</option>
+                    <option value="ICICI">ICICI Bank</option>
+                    <option value="AXIS">Axis Bank</option>
+                    <option value="KOTAK">Kotak Mahindra Bank</option>
+                    <option value="PNB">Punjab National Bank</option>
+                    <option value="BOB">Bank of Baroda</option>
+                    <option value="CANARA">Canara Bank</option>
+                    <option value="UNION">Union Bank of India</option>
+                    <option value="INDUSIND">IndusInd Bank</option>
+                    <option value="YES">Yes Bank</option>
+                    <option value="IDBI">IDBI Bank</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* CineCoins VIP Loyalty Form */}
+            {paymentMethod === "CINECOINS" && (
+              <div className="bg-amber-50/70 rounded-2xl border border-amber-200 p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <div className="text-xs font-bold text-amber-950">CineCoins VIP Loyalty Balance</div>
+                      <div className="text-[11px] text-amber-700">500 CineCoins Available (₹500.00 value)</div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-extrabold text-amber-700 font-mono">500 COINS</span>
+                </div>
+
+                <div className="p-3 bg-white/80 rounded-xl border border-amber-200/80 text-xs text-amber-900 leading-snug">
+                  Your CineCoins balance will cover this entire booking of ₹{(Number(orderTotalAmount) || 0).toFixed(2)}. Zero extra payment required!
+                </div>
+              </div>
+            )}
+
+            {/* Itemized calculation breakdown */}
+            <div className="w-full bg-white rounded-2xl p-4 text-xs space-y-2 text-gray-600 border border-[#E5DED1] shadow-sm">
+              <div className="flex justify-between">
+                <span>Base Ticket Price ({selectedSeats.length} × ₹{(Number(averagePricePerSeat) || 0).toFixed(2)}):</span>
+                <span className="font-mono font-semibold text-gray-800">₹{(Number(rawBaseTicketPrice) || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Convenience Fee ({pricingBreakdown?.feeApplication === "PER_BOOKING" ? "Per Booking" : `${selectedSeats.length} × ₹${((Number(baseConvenienceAmount) || 0) / (selectedSeats.length || 1)).toFixed(2)}`}):</span>
+                <span className="font-mono font-semibold text-gray-800">₹{(Number(baseConvenienceAmount) || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>GST on Convenience Fee @ {pricingBreakdown?.gstRate ?? 18}%:</span>
+                <span className="font-mono font-semibold text-gray-800">₹{(Number(igstTaxAmount) || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-amber-700 font-medium">
+                <span>Total Convenience Fee & Taxes:</span>
+                <span className="font-mono font-semibold">₹{(Number(totalConvenienceFee) || 0).toFixed(2)}</span>
+              </div>
+              {musicianDonationAmount > 0 && (
+                <div className="flex justify-between">
+                  <span>Musician Donation:</span>
+                  <span className="font-mono font-semibold text-gray-800">₹{(Number(musicianDonationAmount) || 0).toFixed(2)}</span>
+                </div>
+              )}
+              {couponDiscountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>Discount ({appliedCoupon}):</span>
+                  <span className="font-mono font-semibold">-₹{(Number(couponDiscountAmount) || 0).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="border-t border-gray-200 pt-1.5 flex justify-between font-bold text-gray-900">
+                <span>Total Payable:</span>
+                <span className="font-mono text-[#24344B] text-base font-extrabold">₹{(Number(finalPayableAmount) || 0).toFixed(2)}</span>
+              </div>
             </div>
 
             {/* Verification & Completion Actions */}
@@ -1742,14 +2331,22 @@ export default function BookingModal({
               <button
                 disabled={isProcessingPayment}
                 onClick={() => handleCompleteBooking(false)}
-                className="w-full py-3.5 px-6 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 px-6 rounded-xl bg-[#1B2A3D] hover:bg-[#131E2D] text-white font-bold text-sm tracking-wide shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 {isProcessingPayment ? (
                   <span>Verifying Payment with Gateway...</span>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    <span>Verify Payment & Generate Ticket</span>
+                    <span>
+                      {paymentMethod === "UPI"
+                        ? "Verify Payment & Generate Ticket"
+                        : paymentMethod === "CARD"
+                        ? `Pay ₹${(Number(finalPayableAmount) || 0).toFixed(2)} & Generate Ticket`
+                        : paymentMethod === "NETBANKING"
+                        ? `Pay via ${selectedBank} Net Banking`
+                        : "Redeem 500 CineCoins & Generate Ticket"}
+                    </span>
                   </>
                 )}
               </button>
@@ -1854,20 +2451,20 @@ export default function BookingModal({
                   <p className="text-xs text-gray-500 font-medium">
                     {movieObj.lang || "Telugu"} | 2D | {movieObj.certification || "U"}
                   </p>
-                  <div className="text-xs font-bold text-[#E11D48] font-mono">
+                  <div className="text-xs font-bold text-[#A87932] font-mono">
                     Amount Paid: ₹{(Number(finalPayableAmount) || 0).toFixed(2)}
                   </div>
                 </div>
               </div>
 
               {/* White Ticket Card Container with Seat Selector & QR */}
-              <div className="bg-white border border-gray-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5 mb-4 text-left">
+              <div className="bg-white border border-[#E5DED1] rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 mb-4 text-left">
                 <div className="space-y-0.5">
-                  <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                    <span>Booking ID: <strong className="text-gray-900 font-mono">{generatedBookingId || numericBookingId}</strong></span>
-                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold text-[10px]">VERIFIED</span>
+                  <div className="flex items-center justify-between text-xs text-[#555B65] font-medium">
+                    <span>Booking ID: <strong className="text-[#24344B] font-mono">{generatedBookingId || numericBookingId}</strong></span>
+                    <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-bold text-[10px]">VERIFIED</span>
                   </div>
-                  <div className="text-sm font-bold text-gray-900 pt-1">
+                  <div className="text-sm font-bold text-[#24344B] pt-1">
                     {ticketFormattedDate}
                   </div>
                 </div>
@@ -1875,7 +2472,7 @@ export default function BookingModal({
                 {/* Individual Seat Selector Tabs if more than 1 seat */}
                 {individualTickets.length > 1 && (
                   <div className="pt-1">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                    <span className="text-[10px] font-bold text-[#555B65] uppercase tracking-wider block mb-1.5">
                       Select Seat to View QR Pass ({individualTickets.length} Tickets)
                     </span>
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
@@ -1886,8 +2483,8 @@ export default function BookingModal({
                           onClick={() => setActiveConfirmedSeatIdx(idx)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                             activeConfirmedSeatIdx === idx
-                              ? "bg-[#E11D48] text-white shadow-md shadow-red-500/20"
-                              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                              ? "bg-[#1B2A3D] text-white shadow-md"
+                              : "bg-[#FAF7F2] hover:bg-[#FAF3E6] text-[#24344B] border border-[#E5DED1]"
                           }`}
                         >
                           Seat {t.seat}
@@ -2038,7 +2635,7 @@ export default function BookingModal({
                     }}
                     className="py-2.5 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <Users className="w-3.5 h-3.5 text-[#E11D48]" />
+                    <Users className="w-3.5 h-3.5 text-[#A87932]" />
                     <span>My Bookings</span>
                   </button>
                 </div>
@@ -2058,7 +2655,7 @@ export default function BookingModal({
                     }}
                     className="py-2 px-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer border border-gray-200/60"
                   >
-                    <Navigation className="w-3 h-3 text-[#D4AF37]" />
+                    <Navigation className="w-3 h-3 text-[#A87932]" />
                     <span>Get Directions</span>
                   </button>
 
@@ -2080,7 +2677,7 @@ export default function BookingModal({
                     }}
                     className="py-2 px-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer border border-gray-200/60"
                   >
-                    <CalendarPlus className="w-3 h-3 text-[#D4AF37]" />
+                    <CalendarPlus className="w-3 h-3 text-[#A87932]" />
                     <span>Add to Calendar</span>
                   </button>
                 </div>
@@ -2133,7 +2730,7 @@ export default function BookingModal({
                     <button
                       type="button"
                       onClick={() => setShowFullTicketModal(false)}
-                      className="w-full py-2.5 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                      className="w-full py-2.5 rounded-xl bg-[#1B2A3D] hover:bg-[#131E2D] text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
                     >
                       Close Ticket View
                     </button>

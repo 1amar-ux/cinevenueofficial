@@ -511,7 +511,7 @@ export default function Home({
   };
 
   return (
-    <div className="home-page bg-white dark:bg-[#09090A] min-h-screen text-slate-950 dark:text-[#F3F4F6] font-sans selection:bg-[#FDE047] selection:text-black antialiased">
+    <div className="home-page bg-[#F4F0E8] dark:bg-[#09090A] min-h-screen text-[#24344B] dark:text-[#F3F4F6] font-sans selection:bg-[#A87932]/25 selection:text-[#24344B] dark:selection:bg-gold/25 dark:selection:text-gold antialiased">
       
       {/* GLOBAL LUXURY RESPONSIVE NAVBAR */}
       <Navbar

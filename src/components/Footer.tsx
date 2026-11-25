@@ -28,7 +28,7 @@ export default function Footer({ onOpenInfo, onOpenRental, onOpenAdmin, onShare 
     }
   };
   return (
-    <footer className="bg-white dark:bg-[#0A0A0B] border-t border-gray-200 dark:border-white/10 py-16 px-6 md:px-12 relative z-10 transition-colors">
+    <footer className="bg-[#FAF7F2] dark:bg-[#0A0A0B] border-t border-[#E5DED1] dark:border-white/10 py-16 px-6 md:px-12 relative z-10 transition-colors">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
         
         {/* Left column */}
