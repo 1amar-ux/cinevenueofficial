@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { 
   Film, MapPin, User, LogOut, ChevronDown, Sliders, Calendar, Sparkles, 
   Ticket, Menu, X, Coins, PlusCircle, Building2, ArrowLeft, Search, Settings, ShieldCheck 
@@ -30,6 +31,7 @@ export interface NavbarProps {
   eventOrganizers?: any[];
   superAdminEmail?: string;
   showLocationSelector?: boolean;
+  activePillar?: "for_you" | "movies" | "events";
 }
 
 export default function Navbar({
@@ -54,9 +56,57 @@ export default function Navbar({
   theatreAdmins = [],
   eventOrganizers = [],
   superAdminEmail = "",
+  activePillar,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isSubwebsiteEnabled, settings } = useAppSettings();
+
+  // Dynamic route & active pillar detection
+  let currentPath = "";
+  let routerNavigate: ((to: string) => void) | null = null;
+  try {
+    const loc = useLocation();
+    currentPath = loc.pathname || "";
+  } catch {
+    currentPath = typeof window !== "undefined" ? window.location.pathname || "" : "";
+  }
+  try {
+    routerNavigate = useNavigate();
+  } catch {
+    routerNavigate = null;
+  }
+
+  const handleNav = (path: string) => {
+    if (currentPath === path) {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } else if (routerNavigate) {
+      routerNavigate(path);
+    } else {
+      window.location.href = path;
+    }
+  };
+
+  const isEventsActive =
+    activePillar === "events" ||
+    currentPath.startsWith("/events") ||
+    currentPath.startsWith("/event-management") ||
+    currentPath.startsWith("/create-event");
+
+  const isMoviesActive =
+    activePillar === "movies" ||
+    (!isEventsActive &&
+      (currentPath.startsWith("/booking") ||
+        currentPath.startsWith("/movies") ||
+        currentPath.startsWith("/theatres") ||
+        currentPath.startsWith("/theatre-selection") ||
+        currentPath.startsWith("/seat-booking") ||
+        currentPath.startsWith("/movie/")));
+
+  const isForYouActive =
+    activePillar === "for_you" ||
+    (!isEventsActive && !isMoviesActive);
 
   const isGlobalWebsiteLive = (settings?.serviceControls?.website?.status !== false) && (settings?.serviceControls?.globalWebsite?.status !== false);
   const isMovieBookingLive = (settings?.serviceControls?.movieBooking?.status !== false) && !settings?.maintenanceMode && isGlobalWebsiteLive;
@@ -200,36 +250,34 @@ export default function Navbar({
         <div className="hidden xl:flex items-center gap-1 bg-slate-100/90 dark:bg-[#151518] p-1 rounded-full border border-slate-200 dark:border-white/10 shadow-inner shrink-0">
           <button
             type="button"
-            onClick={() => {
-              if (window.location.pathname === "/" || window.location.pathname === "") {
-                window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-                document.documentElement.scrollTop = 0;
-                document.body.scrollTop = 0;
-              } else {
-                window.location.href = "/";
-              }
-            }}
-            className="px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5 whitespace-nowrap"
+            onClick={() => handleNav("/")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 whitespace-nowrap ${
+              isForYouActive
+                ? "bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-xs shadow-[#D4AF37]/30"
+                : "bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5"
+            }`}
           >
             For you
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              if (window.location.pathname === "/booking") {
-                window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-                document.documentElement.scrollTop = 0;
-                document.body.scrollTop = 0;
-              } else {
-                window.location.href = "/booking";
-              }
-            }}
-            className="px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-xs shadow-[#D4AF37]/30 whitespace-nowrap flex items-center gap-1"
+            onClick={() => handleNav("/booking")}
+            className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 whitespace-nowrap flex items-center gap-1 ${
+              isMoviesActive
+                ? "bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-xs shadow-[#D4AF37]/30"
+                : "bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5"
+            }`}
           >
             <span>Movies</span>
             {isMovieBookingLive && (
-              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-black bg-white/75 px-1 py-0.2 rounded-full border border-black/15 font-mono">
+              <span
+                className={`inline-flex items-center gap-0.5 text-[8px] font-bold px-1 py-0.2 rounded-full font-mono ${
+                  isMoviesActive
+                    ? "text-black bg-white/75 border border-black/15"
+                    : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 border border-emerald-200 dark:border-emerald-400/20"
+                }`}
+              >
                 <span className="w-1 h-1 rounded-full bg-emerald-600 animate-pulse" />
                 LIVE
               </span>
@@ -238,16 +286,24 @@ export default function Navbar({
 
           <button
             type="button"
-            onClick={() => {
-              window.location.href = "/events";
-            }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 bg-transparent flex items-center gap-1 whitespace-nowrap ${
-              isEventsLive ? "text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5" : "text-rose-600 dark:text-rose-400"
+            onClick={() => handleNav("/events")}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer border-0 flex items-center gap-1 whitespace-nowrap ${
+              isEventsActive
+                ? "bg-[#D4AF37] hover:bg-[#E5C158] text-black shadow-xs shadow-[#D4AF37]/30"
+                : isEventsLive
+                ? "bg-transparent text-slate-950 dark:text-white/70 hover:text-black dark:hover:text-[#D4AF37] hover:bg-[#D4AF37]/15 dark:hover:bg-white/5"
+                : "bg-transparent text-rose-600 dark:text-rose-400"
             }`}
           >
             <span>Event Booking</span>
             {isEventsLive ? (
-              <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1 py-0.2 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+              <span
+                className={`inline-flex items-center gap-0.5 text-[8px] font-bold px-1 py-0.2 rounded-full font-mono ${
+                  isEventsActive
+                    ? "text-black bg-white/75 border border-black/15"
+                    : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 border border-emerald-200 dark:border-emerald-400/20"
+                }`}
+              >
                 <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
                 LIVE
               </span>
@@ -501,10 +557,14 @@ export default function Navbar({
               Explore CineVenue
             </div>
 
-            <button 
+            <button
               type="button"
-              onClick={() => { setMobileMenuOpen(false); window.location.href = "/"; }} 
-              className="w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white flex items-center justify-between"
+              onClick={() => { setMobileMenuOpen(false); handleNav("/"); }}
+              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
+                isForYouActive
+                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
+                  : "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
+              }`}
             >
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-[#D4AF37]" />
@@ -516,16 +576,14 @@ export default function Navbar({
               type="button"
               onClick={() => {
                 setMobileMenuOpen(false);
-                if (window.location.pathname === "/booking") {
-                  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-                  document.documentElement.scrollTop = 0;
-                  document.body.scrollTop = 0;
-                } else {
-                  window.location.href = "/booking";
-                }
+                handleNav("/booking");
               }} 
-              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-between ${
-                isMovieBookingLive ? "text-slate-800 dark:text-white" : "text-rose-500 dark:text-rose-400"
+              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
+                isMoviesActive
+                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
+                  : isMovieBookingLive
+                  ? "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
+                  : "text-rose-500 dark:text-rose-400"
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -541,11 +599,15 @@ export default function Navbar({
               )}
             </button>
 
-            <button 
+            <button
               type="button"
-              onClick={() => { setMobileMenuOpen(false); window.location.href = "/events"; }} 
-              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-between ${
-                isEventsLive ? "text-slate-800 dark:text-white" : "text-rose-500 dark:text-rose-400"
+              onClick={() => { setMobileMenuOpen(false); handleNav("/events"); }}
+              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
+                isEventsActive
+                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
+                  : isEventsLive
+                  ? "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
+                  : "text-rose-500 dark:text-rose-400"
               }`}
             >
               <div className="flex items-center gap-2.5">
