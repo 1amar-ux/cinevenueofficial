@@ -13,14 +13,14 @@ import GlobalBackButton from "./components/GlobalBackButton";
 import ScrollToTop from "./components/ScrollToTop";
 import MobileBottomNav from "./components/MobileBottomNav";
 
-// Core Booking Flow Pages (kept sync for instant transitions)
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import MovieDetails from "./pages/MovieDetails";
-import TheatreSelection from "./pages/TheatreSelection";
-import SeatBooking from "./pages/SeatBooking";
-import Payment from "./pages/Payment";
-import Ticket from "./pages/Ticket";
+// Core Booking Flow Pages (code-split for optimal initial bundle performance)
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const MovieDetails = lazy(() => import("./pages/MovieDetails"));
+const TheatreSelection = lazy(() => import("./pages/TheatreSelection"));
+const SeatBooking = lazy(() => import("./pages/SeatBooking"));
+const Payment = lazy(() => import("./pages/Payment"));
+const Ticket = lazy(() => import("./pages/Ticket"));
 import Home from "./pages/Home";
 import MaintenancePage from "./components/MaintenancePage";
 import AuthCallback from "./pages/AuthCallback";
@@ -2822,8 +2822,8 @@ export default function App() {
       />
 
       {/* CineVenue React Router Clone Pages */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Suspense fallback={<LazyFallback />}><Login /></Suspense>} />
+      <Route path="/register" element={<Suspense fallback={<LazyFallback />}><Register /></Suspense>} />
       <Route
         path="/movie/:id"
         element={
@@ -2836,7 +2836,7 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <MovieDetails />
+            <Suspense fallback={<LazyFallback />}><MovieDetails /></Suspense>
           )
         }
       />
@@ -2852,7 +2852,7 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <TheatreSelection />
+            <Suspense fallback={<LazyFallback />}><TheatreSelection /></Suspense>
           )
         }
       />
@@ -2868,7 +2868,7 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <SeatBooking />
+            <Suspense fallback={<LazyFallback />}><SeatBooking /></Suspense>
           )
         }
       />
@@ -2884,7 +2884,7 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <Payment />
+            <Suspense fallback={<LazyFallback />}><Payment /></Suspense>
           )
         }
       />
@@ -2900,7 +2900,7 @@ export default function App() {
               onBackToHome={() => window.location.href = "/"}
             />
           ) : (
-            <Ticket />
+            <Suspense fallback={<LazyFallback />}><Ticket /></Suspense>
           )
         }
       />

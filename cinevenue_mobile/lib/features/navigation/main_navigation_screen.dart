@@ -80,105 +80,163 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     // 1. Scanner Full-screen Overlay
     if (_isScannerOpen) {
-      return GateScannerScreen(
-        onBack: () => setState(() => _isScannerOpen = false),
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() => _isScannerOpen = false);
+        },
+        child: GateScannerScreen(
+          onBack: () => setState(() => _isScannerOpen = false),
+        ),
       );
     }
 
     // 2. Active Ticket View Overlay
     if (_activeBooking != null) {
-      return TicketViewScreen(
-        booking: _activeBooking!,
-        onDone: _clearBookingFlow,
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          _clearBookingFlow();
+        },
+        child: TicketViewScreen(
+          booking: _activeBooking!,
+          onDone: _clearBookingFlow,
+        ),
       );
     }
 
     // 3. Checkout Screen Overlay
     if (_activeMovie != null && _activeShow != null && _activeSeats != null) {
-      return CheckoutScreen(
-        movie: _activeMovie!,
-        show: _activeShow!,
-        seats: _activeSeats!,
-        onBookingConfirmed: (booking) {
-          setState(() {
-            _activeBooking = booking;
-          });
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() => _activeSeats = null);
         },
-        onBack: () => setState(() => _activeSeats = null),
+        child: CheckoutScreen(
+          movie: _activeMovie!,
+          show: _activeShow!,
+          seats: _activeSeats!,
+          onBookingConfirmed: (booking) {
+            setState(() {
+              _activeBooking = booking;
+            });
+          },
+          onBack: () => setState(() => _activeSeats = null),
+        ),
       );
     }
 
     // 4. Seat Layout Screen Overlay
     if (_activeMovie != null && _activeShow != null) {
-      return SeatLayoutScreen(
-        movie: _activeMovie!,
-        show: _activeShow!,
-        onProceedToCheckout: (seats) {
-          setState(() => _activeSeats = seats);
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() => _activeShow = null);
         },
-        onBack: () => setState(() => _activeShow = null),
+        child: SeatLayoutScreen(
+          movie: _activeMovie!,
+          show: _activeShow!,
+          onProceedToCheckout: (seats) {
+            setState(() => _activeSeats = seats);
+          },
+          onBack: () => setState(() => _activeShow = null),
+        ),
       );
     }
 
     // 5. Showtime Selection Overlay
     if (_activeMovie != null) {
-      return ShowtimeSelectionScreen(
-        movie: _activeMovie!,
-        onShowtimeSelected: (show) {
-          setState(() => _activeShow = show);
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() => _activeMovie = null);
         },
-        onBack: () => setState(() => _activeMovie = null),
+        child: ShowtimeSelectionScreen(
+          movie: _activeMovie!,
+          onShowtimeSelected: (show) {
+            setState(() => _activeShow = show);
+          },
+          onBack: () => setState(() => _activeMovie = null),
+        ),
       );
     }
 
     // 6. Event Detail Overlay
     if (_activeEvent != null) {
-      return EventDetailScreen(
-        event: _activeEvent!,
-        onBookingComplete: (booking) {
-          setState(() {
-            _activeEvent = null;
-            _activeBooking = booking;
-          });
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() => _activeEvent = null);
         },
-        onBack: () => setState(() => _activeEvent = null),
+        child: EventDetailScreen(
+          event: _activeEvent!,
+          onBookingComplete: (booking) {
+            setState(() {
+              _activeEvent = null;
+              _activeBooking = booking;
+            });
+          },
+          onBack: () => setState(() => _activeEvent = null),
+        ),
       );
     }
 
     // 7. Auth Modal Overlay
     if (_isAuthModalOpen) {
-      if (_isRegistering) {
-        return RegisterScreen(
-          onRegisterSuccess: () {
-            setState(() {
-              _isAuthModalOpen = false;
-              _isRegistering = false;
-            });
-            _refreshProfile();
-          },
-          onNavigateToLogin: () => setState(() => _isRegistering = false),
-        );
-      }
-      return LoginScreen(
-        onLoginSuccess: () {
-          setState(() => _isAuthModalOpen = false);
-          _refreshProfile();
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() {
+            _isAuthModalOpen = false;
+            _isRegistering = false;
+          });
         },
-        onNavigateToRegister: () => setState(() => _isRegistering = true),
-        onContinueAsGuest: () => setState(() => _isAuthModalOpen = false),
+        child: _isRegistering
+            ? RegisterScreen(
+                onRegisterSuccess: () {
+                  setState(() {
+                    _isAuthModalOpen = false;
+                    _isRegistering = false;
+                  });
+                  _refreshProfile();
+                },
+                onNavigateToLogin: () => setState(() => _isRegistering = false),
+              )
+            : LoginScreen(
+                onLoginSuccess: () {
+                  setState(() => _isAuthModalOpen = false);
+                  _refreshProfile();
+                },
+                onNavigateToRegister: () => setState(() => _isRegistering = true),
+                onContinueAsGuest: () => setState(() => _isAuthModalOpen = false),
+              ),
       );
     }
 
     // 8. Edit Profile Screen Overlay
     if (_isEditingProfile && _currentUser != null) {
-      return EditProfileScreen(
-        user: _currentUser!,
-        onProfileUpdated: (updated) {
-          setState(() {
-            _currentUser = updated;
-            _isEditingProfile = false;
-          });
+      return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+          setState(() => _isEditingProfile = false);
         },
+        child: EditProfileScreen(
+          user: _currentUser!,
+          onProfileUpdated: (updated) {
+            setState(() {
+              _currentUser = updated;
+              _isEditingProfile = false;
+            });
+          },
+        ),
       );
     }
 

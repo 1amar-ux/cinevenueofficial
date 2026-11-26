@@ -5,10 +5,37 @@ import { ArrowLeft, Home } from "lucide-react";
 export default function GlobalBackButton() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isModalActive, setIsModalActive] = React.useState(false);
 
-  // Hide on the root / landing page and subwebsite dashboards with dedicated sidebars
+  // Monitor DOM for active modals to prevent overlapping modal content
+  React.useEffect(() => {
+    const checkModalState = () => {
+      if (typeof document === "undefined") return;
+      const hasActiveModal = Boolean(
+        document.getElementById("booking-modal-overlay") ||
+        document.getElementById("auth-modal-overlay") ||
+        document.body.style.overflow === "hidden" ||
+        document.querySelector("[data-modal-active='true']")
+      );
+      setIsModalActive(hasActiveModal);
+    };
+
+    checkModalState();
+    const observer = new MutationObserver(checkModalState);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Hide when modal is active, on root / landing page, or subwebsite dashboards with dedicated sidebars
   const pathname = location.pathname.trim();
   if (
+    isModalActive ||
     pathname === "/" ||
     pathname === "" ||
     pathname.startsWith("/productions") ||
@@ -31,7 +58,7 @@ export default function GlobalBackButton() {
   return (
     <aside
       aria-label="Global Navigation Controls"
-      className="fixed bottom-[calc(78px+env(safe-area-inset-bottom,0px))] md:bottom-8 left-5 md:left-8 z-[9999] pointer-events-auto print:hidden animate-fade-in"
+      className="hidden md:block fixed bottom-8 left-5 md:left-8 z-40 pointer-events-auto print:hidden animate-fade-in"
     >
       <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/95 dark:bg-[#0A0D14]/90 border border-gray-300 dark:border-gold/40 hover:border-gray-400 dark:hover:border-gold shadow-md dark:shadow-2xl dark:shadow-black/90 backdrop-blur-xl transition-all duration-200">
         <button

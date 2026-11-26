@@ -2408,9 +2408,10 @@ export default function BookingModal({
               {/* Top Navigation Bar with Back Arrow and Close Button */}
               <div className="flex items-center justify-between pb-2">
                 <button
-                  onClick={() => setBookingStep("theatres_showtimes")}
+                  onClick={handleExitBookingConfirmed}
                   className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-800 transition-colors cursor-pointer border-none bg-transparent"
-                  title="Back"
+                  title="Done / Back to Home"
+                  aria-label="Done and return to home"
                 >
                   <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
                 </button>
@@ -2418,6 +2419,7 @@ export default function BookingModal({
                   onClick={handleExitBookingConfirmed}
                   className="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-800 transition-colors cursor-pointer border-none bg-transparent"
                   title="Close"
+                  aria-label="Close"
                 >
                   <X className="w-5 h-5 stroke-[2.5]" />
                 </button>

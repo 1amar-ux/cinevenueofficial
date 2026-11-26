@@ -313,22 +313,8 @@ export default function NowShowing({
 
   return (
     <section id="movies" className="py-6 sm:py-10 px-3.5 sm:px-6 md:px-12 max-w-7xl mx-auto space-y-6 sm:space-y-8">
-      {/* Mobile Top Header (District Formation: ← Movies in Guntur) */}
-      <div className="flex sm:hidden items-center gap-3 pt-1 pb-2">
-        <button
-          type="button"
-          onClick={() => {
-            if (window.history.length > 1) {
-              window.history.back();
-            } else {
-              window.location.href = "/";
-            }
-          }}
-          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-white transition-colors cursor-pointer border-0 bg-transparent"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-800 dark:text-white" />
-        </button>
+      {/* Mobile Top Header (District Formation) */}
+      <div className="flex sm:hidden items-center gap-2 pt-1 pb-2">
         <h1 className="text-lg font-bold text-gray-950 dark:text-white tracking-tight">
           Movies in {selectedCity === "All Cities" ? "India" : selectedCity}
         </h1>
