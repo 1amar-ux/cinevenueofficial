@@ -62,51 +62,51 @@ export default function Navbar({
   const { isSubwebsiteEnabled, settings } = useAppSettings();
 
   // Dynamic route & active pillar detection
-  let currentPath = "";
-  let routerNavigate: ((to: string) => void) | null = null;
-  try {
-    const loc = useLocation();
-    currentPath = loc.pathname || "";
-  } catch {
-    currentPath = typeof window !== "undefined" ? window.location.pathname || "" : "";
-  }
-  try {
-    routerNavigate = useNavigate();
-  } catch {
-    routerNavigate = null;
-  }
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPath = (location?.pathname || (typeof window !== "undefined" ? window.location.pathname : "") || "").toLowerCase();
 
   const handleNav = (path: string) => {
-    if (currentPath === path) {
+    const target = path.toLowerCase();
+    const isCurrent =
+      currentPath === target ||
+      (target === "/" && (currentPath === "" || currentPath === "/")) ||
+      (target === "/events" && (currentPath === "/events" || currentPath.startsWith("/events/"))) ||
+      (target === "/booking" && (currentPath === "/booking" || currentPath.startsWith("/booking/")));
+
+    if (isCurrent) {
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-    } else if (routerNavigate) {
-      routerNavigate(path);
     } else {
-      window.location.href = path;
+      navigate(path);
     }
   };
 
   const isEventsActive =
     activePillar === "events" ||
-    currentPath.startsWith("/events") ||
-    currentPath.startsWith("/event-management") ||
-    currentPath.startsWith("/create-event");
+    (activePillar === undefined && (
+      currentPath === "/events" ||
+      currentPath.startsWith("/events/") ||
+      currentPath.startsWith("/event-management") ||
+      currentPath.startsWith("/create-event")
+    ));
 
   const isMoviesActive =
     activePillar === "movies" ||
-    (!isEventsActive &&
-      (currentPath.startsWith("/booking") ||
-        currentPath.startsWith("/movies") ||
-        currentPath.startsWith("/theatres") ||
-        currentPath.startsWith("/theatre-selection") ||
-        currentPath.startsWith("/seat-booking") ||
-        currentPath.startsWith("/movie/")));
+    (activePillar === undefined && !isEventsActive && (
+      currentPath === "/booking" ||
+      currentPath.startsWith("/booking/") ||
+      currentPath.startsWith("/movies") ||
+      currentPath.startsWith("/movie/") ||
+      currentPath.startsWith("/theatres") ||
+      currentPath.startsWith("/theatre-selection") ||
+      currentPath.startsWith("/seat-booking")
+    ));
 
   const isForYouActive =
     activePillar === "for_you" ||
-    (!isEventsActive && !isMoviesActive);
+    (activePillar === undefined && !isEventsActive && !isMoviesActive);
 
   const isGlobalWebsiteLive = (settings?.serviceControls?.website?.status !== false) && (settings?.serviceControls?.globalWebsite?.status !== false);
   const isMovieBookingLive = (settings?.serviceControls?.movieBooking?.status !== false) && !settings?.maintenanceMode && isGlobalWebsiteLive;
@@ -207,15 +207,7 @@ export default function Navbar({
           <div className="shrink-0">
             <CineVenueLogo 
               size="md" 
-              onClick={() => {
-                if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "")) {
-                  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-                  document.documentElement.scrollTop = 0;
-                  document.body.scrollTop = 0;
-                } else {
-                  window.location.href = "/";
-                }
-              }} 
+              onClick={() => handleNav("/")}
             />
           </div>
 

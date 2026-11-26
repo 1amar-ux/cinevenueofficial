@@ -515,6 +515,7 @@ export default function Home({
       
       {/* GLOBAL LUXURY RESPONSIVE NAVBAR */}
       <Navbar
+        activePillar="for_you"
         showLocationSelector={false}
         selectedCity="All Cities"
         setSelectedCity={() => {}}

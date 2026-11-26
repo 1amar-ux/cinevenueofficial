@@ -2367,6 +2367,7 @@ export default function App() {
           <div className="bg-white dark:bg-[#0A0A0B] min-h-screen text-slate-950 dark:text-text-primary selection:bg-yellow-300 selection:text-black">
             {/* Dynamic luxury layout navigation */}
             <Navbar
+              activePillar="movies"
               showLocationSelector={true}
               selectedCity={selectedCity}
               setSelectedCity={setSelectedCity}
@@ -3111,6 +3112,7 @@ export default function App() {
                 ) : (
                   <div className="min-h-screen bg-white dark:bg-dark-bg text-slate-950 dark:text-text-primary flex flex-col justify-between">
                     <Navbar 
+                      activePillar="events"
                       showLocationSelector={true}
                       selectedCity={selectedCity}
                       setSelectedCity={setSelectedCity}
