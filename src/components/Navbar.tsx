@@ -330,17 +330,6 @@ export default function Navbar({
             <ThemeToggle variant="dropdown" />
           </div>
 
-          {/* CRITICAL ACTION 1: Settings Shortcut - ALWAYS VISIBLE & ACCESSIBLE ON ALL DEVICES */}
-          <button
-            type="button"
-            onClick={handleOpenSettingsAction}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-[#E5DED1] dark:border-white/10 bg-white hover:bg-[#FAF3E6] dark:bg-white/[0.05] dark:hover:bg-white/[0.1] text-[#24344B] hover:text-[#1B2A3D] dark:text-white/80 dark:hover:text-gold active:scale-95 transition-all cursor-pointer shadow-xs dark:shadow-none shrink-0"
-            title="Application Settings & Preferences"
-            aria-label="Settings"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </button>
-
           {/* CRITICAL ACTION 2: My Passes Button - ALWAYS VISIBLE & NEVER CLIPPED */}
           <button
             type="button"

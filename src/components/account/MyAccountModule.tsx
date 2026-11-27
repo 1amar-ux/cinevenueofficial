@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import QRCode from "react-qr-code";
 import { 
-  User, Ticket, Calendar, Film, Wallet, Coins, Bell, Settings, 
+  User, Ticket, Calendar, Film, Wallet, Coins, Bell, 
   QrCode, Clock, ShieldCheck, Download, Trash2, CheckCircle, 
   AlertCircle, ChevronRight, LogOut, ArrowRight, Sparkles, Printer
 } from "lucide-react";
@@ -173,15 +173,6 @@ export default function MyAccountModule({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => window.location.href = "/settings"}
-              className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-white/80 hover:text-gold transition-all cursor-pointer"
-              title="Application Settings"
-              aria-label="Settings"
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </button>
             <ThemeToggle variant="dropdown" />
             <button
               onClick={onOpenCineCoins}

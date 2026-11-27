@@ -2,7 +2,7 @@ import React from "react";
 import {
   Film, Sparkles, PlusCircle, Search, MessageSquare,
   User, Building2, Briefcase, Users, Clapperboard, Award,
-  CheckCircle2, ArrowRight, ShieldCheck, ChevronRight, Settings
+  CheckCircle2, ArrowRight, ShieldCheck, ChevronRight
 } from "lucide-react";
 import CineVenueLogo from "../CineVenueLogo";
 
@@ -47,14 +47,6 @@ export default function FilmProductionNavbar({
 
           {/* Mobile Profile / Settings / Login trigger */}
           <div className="flex md:hidden items-center gap-2 shrink-0">
-            <button
-              onClick={() => window.location.href = "/settings"}
-              className="w-8 h-8 rounded-full border border-white/10 bg-white/5 text-white/80 hover:text-amber-400 flex items-center justify-center cursor-pointer"
-              title="Settings"
-              aria-label="Settings"
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </button>
             {userEmail ? (
               <button
                 onClick={onOpenMyProfile}
@@ -116,16 +108,6 @@ export default function FilmProductionNavbar({
             <span>Create Project</span>
           </button>
 
-          {/* Settings button */}
-          <button
-            type="button"
-            onClick={() => window.location.href = "/settings"}
-            className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 hover:text-amber-400 transition-all cursor-pointer"
-            title="Settings"
-            aria-label="Settings"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </button>
 
           {userEmail ? (
             <button
