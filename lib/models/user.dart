@@ -35,4 +35,3 @@ class User {
 
   bool get isAdmin => role == 'ADMIN' || role == 'SUPER_ADMIN';
 }
-

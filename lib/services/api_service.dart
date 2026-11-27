@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' show Platform, SocketException;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/movie.dart';
 import '../models/user.dart';
+import '../data/mock_venue_repository.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -16,9 +18,22 @@ class ApiException implements Exception {
   String toString() => 'ApiException: $message (Status: $statusCode)';
 }
 
-class ApiService {
-  // Base URL configured for Android Emulator loopback to local server
-  static const String defaultBaseUrl = 'http://10.0.2.2:3000/api';
+class ApiService implements VenueRepository {
+  /// Dynamically resolves the backend base URL:
+  /// - Web / Chrome: http://localhost:3000/api
+  /// - Android Emulator: http://10.0.2.2:3000/api
+  /// - Desktop / Local Device: http://localhost:3000/api
+  static String get defaultBaseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:3000/api';
+    }
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:3000/api';
+      }
+    } catch (_) {}
+    return 'http://localhost:3000/api';
+  }
 
   final String baseUrl;
   final http.Client _client;
@@ -246,7 +261,7 @@ class ApiService {
         id: 'mov-baththa-01',
         title: 'Baththa (Feared Gangster)',
         posterUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=600&q=80',
-        bannerUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1200&q=80',
+        backdropUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1200&q=80',
         genres: ['Action', 'Crime', 'Thriller'],
         language: 'Telugu',
         durationMinutes: 156,
@@ -259,7 +274,7 @@ class ApiService {
         id: 'mov-pushpa-02',
         title: 'Pushpa 2: The Rule',
         posterUrl: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=600&q=80',
-        bannerUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80',
+        backdropUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80',
         genres: ['Action', 'Thriller'],
         language: 'Telugu',
         durationMinutes: 198,
@@ -272,7 +287,7 @@ class ApiService {
         id: 'mov-kalki-03',
         title: 'Kalki 2898 AD',
         posterUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
-        bannerUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1200&q=80',
+        backdropUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1200&q=80',
         genres: ['Sci-Fi', 'Mythology', 'Action'],
         language: 'Telugu / Pan-India',
         durationMinutes: 181,
@@ -285,7 +300,7 @@ class ApiService {
         id: 'mov-devara-04',
         title: 'Devara: Part 1',
         posterUrl: 'https://images.unsplash.com/photo-1509281373149-e957c6296406?auto=format&fit=crop&w=600&q=80',
-        bannerUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=1200&q=80',
+        backdropUrl: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=1200&q=80',
         genres: ['Action', 'Drama'],
         language: 'Telugu',
         durationMinutes: 172,
@@ -296,5 +311,40 @@ class ApiService {
       ),
     ];
   }
-}
 
+  // ==========================================
+  // VENUE REPOSITORY CONTRACT IMPLEMENTATION
+  // ==========================================
+
+  @override
+  Future<List<Movie>> getMovies({String? city}) async {
+    final movies = await fetchMovies();
+    if (city != null && city.isNotEmpty) {
+      final filtered = movies.where((m) => m.city.toLowerCase() == city.toLowerCase()).toList();
+      if (filtered.isNotEmpty) return filtered;
+    }
+    return movies;
+  }
+
+  @override
+  Future<List<Theatre>> getTheatres({String? city}) async {
+    return MockVenueRepository().getTheatres(city: city);
+  }
+
+  @override
+  Future<List<EventItem>> getEvents({String? city}) async {
+    return MockVenueRepository().getEvents(city: city);
+  }
+
+  @override
+  Future<Movie?> getMovieDetails(String id) async {
+    try {
+      return await fetchMovieDetails(id);
+    } catch (_) {
+      return MockVenueRepository().getMovieDetails(id);
+    }
+  }
+
+  @override
+  List<String> getAvailableCities() => MockVenueRepository.availableCities;
+}

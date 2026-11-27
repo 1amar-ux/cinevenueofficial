@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/api_service.dart';
 
@@ -24,10 +26,12 @@ void main() {
 
 class CineVenueApp extends StatelessWidget {
   final ApiService apiService;
+  final String? initialRoute;
 
   const CineVenueApp({
     super.key,
     required this.apiService,
+    this.initialRoute,
   });
 
   @override
@@ -94,12 +98,18 @@ class CineVenueApp extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
         ),
       ),
-      initialRoute: '/',
+      initialRoute: initialRoute ?? (kIsWeb ? '/auth' : '/'),
       routes: {
         '/': (context) => HomeScreen(apiService: apiService),
         '/home': (context) => HomeScreen(apiService: apiService),
+        '/auth': (context) => AuthScreen(apiService: apiService),
       },
       onGenerateRoute: (settings) {
+        if (settings.name == '/auth') {
+          return MaterialPageRoute(
+            builder: (context) => AuthScreen(apiService: apiService),
+          );
+        }
         return MaterialPageRoute(
           builder: (context) => HomeScreen(apiService: apiService),
         );
