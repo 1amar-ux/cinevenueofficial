@@ -538,71 +538,75 @@ export default function Navbar({
               Explore CineVenue
             </div>
 
-            <button
-              type="button"
-              onClick={() => { setMobileMenuOpen(false); handleNav("/"); }}
-              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
-                isForYouActive
-                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
-                  : "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                <span>Home / For You</span>
-              </div>
-            </button>
+            {!userEmail && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => { setMobileMenuOpen(false); handleNav("/"); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
+                    isForYouActive
+                      ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
+                      : "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Home / For You</span>
+                  </div>
+                </button>
 
-            <button 
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                handleNav("/booking");
-              }} 
-              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
-                isMoviesActive
-                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
-                  : isMovieBookingLive
-                  ? "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
-                  : "text-rose-500 dark:text-rose-400"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Ticket className="w-4 h-4 text-[#D4AF37]" />
-                <span>Movie Ticket Booking</span>
-              </div>
-              {isMovieBookingLive ? (
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-                  LIVE
-                </span>
-              ) : (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
-              )}
-            </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleNav("/booking");
+                  }} 
+                  className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
+                    isMoviesActive
+                      ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
+                      : isMovieBookingLive
+                      ? "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
+                      : "text-rose-500 dark:text-rose-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Ticket className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Movie Ticket Booking</span>
+                  </div>
+                  {isMovieBookingLive ? (
+                    <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+                      LIVE
+                    </span>
+                  ) : (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+                  )}
+                </button>
 
-            <button
-              type="button"
-              onClick={() => { setMobileMenuOpen(false); handleNav("/events"); }}
-              className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
-                isEventsActive
-                  ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
-                  : isEventsLive
-                  ? "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
-                  : "text-rose-500 dark:text-rose-400"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Calendar className="w-4 h-4 text-[#D4AF37]" />
-                <span>Events & Concert Booking</span>
-              </div>
-              {isEventsLive ? (
-                <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
-                  LIVE
-                </span>
-              ) : (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
-              )}
-            </button>
+                <button
+                  type="button"
+                  onClick={() => { setMobileMenuOpen(false); handleNav("/events"); }}
+                  className={`w-full text-left px-3 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer border-none flex items-center justify-between ${
+                    isEventsActive
+                      ? "bg-[#D4AF37]/15 text-[#D4AF37] font-black"
+                      : isEventsLive
+                      ? "bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-white"
+                      : "text-rose-500 dark:text-rose-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Events & Concert Booking</span>
+                  </div>
+                  {isEventsLive ? (
+                    <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-400/20 font-mono">
+                      LIVE
+                    </span>
+                  ) : (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/40 font-bold">OFFLINE</span>
+                  )}
+                </button>
+              </>
+            )}
 
             <button 
               type="button"
